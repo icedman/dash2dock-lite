@@ -15,15 +15,19 @@ class Extension {
 	
 	hide() {
 		Overview.hide();
-		Overview.disconnect(this.signal);
+		if (this.signal) {
+			Overview.disconnect(this.signal);
+		}
 	}
 
 	enable() {
-		this.signal = Overview.connect('shown', this.hide.bind(this));
+		if (!Main.sessionMode.isLocked) {
+			this.signal = Overview.connect('shown', this.hide.bind(this));
+		}
 	}
 
 	disable() {
-		if (Overview.signalHandlerIsConnected(this.signal)) {
+		if (this.signal && Overview.signalHandlerIsConnected(this.signal)) {
 			Overview.disconnect(this.signal);
 		}			
 	}
@@ -32,6 +36,4 @@ class Extension {
 function init() {
 	return new Extension();
 }
-
-
 

@@ -11,25 +11,23 @@ const Overview = Main.overview;
 
 class Extension {
 	constructor() {
+		this.signal = Overview.connect('shown', this._hide.bind(this));
 	}
 	
-	hide() {
+	_hide() {
 		Overview.hide();
 		if (this.signal) {
-			Overview.disconnect(this.signal);
+				Overview.disconnect(this.signal);
 		}
 	}
 
 	enable() {
-		if (!Main.sessionMode.isLocked) {
-			this.signal = Overview.connect('shown', this.hide.bind(this));
-		}
 	}
 
 	disable() {
 		if (this.signal && Overview.signalHandlerIsConnected(this.signal)) {
 			Overview.disconnect(this.signal);
-		}			
+		}
 	}
 }
 

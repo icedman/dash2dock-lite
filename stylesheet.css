@@ -1,0 +1,10 @@
+#MyDash .dash-item-container > StWidget:hover .overview-icon {
+  background-color: rgba(0,0,0,0.6) !important;
+}
+
+#MyDash > StWidget.dash-background {
+  background-color: rgba(0,0,0,0.6) !important;
+  opacity: 0.6 !important;
+  border-radius: 12px !important;
+  border: 0px !important;
+}

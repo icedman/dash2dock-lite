@@ -1,0 +1,96 @@
+
+#MyDash {
+  padding-left: 0px !important;
+  padding-right: 0px !important;
+  margin-top: 0px !important;
+  margin-bottom: 0px !important;
+}
+
+#MyDash .dash-item-container {
+  padding-left: 0px !important;
+  padding-right: 0px !important;
+  padding-top: 0px !important;
+  padding-bottom: 0px !important;
+  margin-top: 0px !important;
+  margin-bottom: 0px !important;
+  margin-left: 0px !important;
+  margin-right: 0px !important;
+
+  width: 60px !important;
+  /*height: 54px !important;*/
+  /*border:2px solid red;*/
+}
+
+#MyDash > StBoxLayout {
+  /*height: 20px !important;*/
+  /*border:2px solid red;*/
+  /*padding-left: 0px !important;*/
+  /*padding-right: 0px !important;*/
+  /*padding-top: 0px !important;*/
+  /*padding-bottom: 0px !important;*/
+  
+}
+
+#MyDash .dash-item-container > StWidget,
+#MyDash .dash-item-container > StDrawingArea,
+#MyDash .dash-item-container > StButton {
+  /*width: 48px !important;*/
+  /*height: 48px !important;*/
+
+  padding-left: 0px !important;
+  padding-right: 0px !important;
+  padding-top: 0px !important;
+  padding-bottom: 0px !important;
+  /*margin-top: 0px !important;*/
+  /*margin-bottom: 0px !important;*/
+  margin-left: 0px !important;
+  margin-right: 0px !important;
+}
+
+
+#MyDash .dash-item-container > StButton.show-apps > .overview-icon {
+  background-color: rgba(0,0,0,0.2) !important;
+}
+
+#MyDash .dash-item-container > StWidget .overview-icon {
+  border:2px solid magenta;
+}
+
+#MyDash .dash-item-container > StWidget:hover .overview-icon {
+  /*border:2px solid magenta;*/
+  /*height: 48px !important;*/
+  background-color: rgba(0,0,0,0.4) !important;  
+}
+
+#MyDash .dash-item-container > .overview-icon,
+#MyDash .dash-item-container > .show-apps,
+#MyDash .dash-item-container > .app-well-app {
+  /*border:2px solid magenta;*/
+  /*width: 48px !important;*/
+  /*height: 48px !important;*/
+  /*padding-top: 0px !important;*/
+  /*padding-bottom: 0px !important;*/
+  /*margin-top: 0px !important;*/
+  /*margin-bottom: 0px !important;*/
+}
+
+#MyDash > StWidget.dash-background {
+  padding-left: 2px !important;
+  padding-right: 2px !important;
+  padding-top: 2px !important;
+  padding-bottom: 2px !important;
+  margin-left: 2px !important;
+  margin-right: 2px !important;
+  margin-top: 2px !important;
+  margin-bottom: 2px !important;
+  background-color: rgba(0,0,0,0.6) !important;
+  opacity: 0.6 !important;
+  border-radius: 12px !important;
+  border: 0px !important;
+  /*border: 2px solid magenta !important;*/
+}
+
+.hi {
+ border: 2px solid magenta !important; 
+ /*background: magenta;*/
+}

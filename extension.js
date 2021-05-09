@@ -41,7 +41,7 @@ class Extension {
             this.dash.last_child.first_child.layout_manager.orientation = 1;
             this.dash.set_height(sh);
         } else {
-            this.dashContainer.set_position(0, sh-dockHeight);
+            this.dashContainer.set_position(0, sh-(dockHeight-4));
             this.dash.set_width(sw);
         }
 
@@ -50,6 +50,7 @@ class Extension {
 
     enable() {
     	this.dash = new Dash();
+        this.dash.set_name('dash');
         this.dash.add_style_class_name('overview');
         this.dash.add_style_class_name('shrink');
 
@@ -66,10 +67,10 @@ class Extension {
         Main.overview.dash.set_width(1);
         Main.overview.dash.hide();
 
-        // global.display.connect('in-fullscreen-changed', (() => {
-        //     let primary = Main.layoutManager.primaryMonitor;
-        //     this.dash.visible = !primary.inFullscreen;
-        // }).bind(this));
+        global.display.connect('in-fullscreen-changed', (() => {
+            let primary = Main.layoutManager.primaryMonitor;
+            this.dash.visible = !primary.inFullscreen;
+        }).bind(this));
 
         this.layout();
     }

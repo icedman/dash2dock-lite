@@ -34,8 +34,8 @@ class Extension {
     layout() {
         let [sw, sh] = global.display.get_size();
 
-        let dockWidth = 80;
-        let dockHeight = 80;
+        this.dockWidth = 80;
+        this.dockHeight = 80;
 
         if (this.shrink) {
             this.dash.add_style_class_name('shrink');
@@ -49,10 +49,9 @@ class Extension {
             this.dash.last_child.first_child.layout_manager.orientation = 1;
             this.dashContainer.set_height(sh);
         } else {
-            this.dashContainer.set_position(0, sh - dockHeight - (this.shrink ? 0 : 12));
-            // this.dashContainer.set_position(0, 0);
+            this.dashContainer.set_position(0, sh - this.dockHeight - (this.shrink ? 0 : 12));
             this.dashContainer.set_width(sw);
-            this.dashContainer.set_height(dockHeight);
+            this.dashContainer.set_height(this.dockHeight);
         }
 
         if (this.recycleOldDash) {
@@ -75,9 +74,6 @@ class Extension {
         this.dashContainer = new St.BoxLayout({ name: 'dashContainer',
                                            vertical: true });
 
-        // Main.uiGroup.add_actor(this.dashContainer);
-        // Main.layoutManager._trackActor(this.dashContainer, {   affectsStruts: true, trackFullscreen: true });
-
         Main.layoutManager.addChrome(
             this.dashContainer,
             {   affectsStruts: true,
@@ -89,10 +85,16 @@ class Extension {
         //     this.dash.visible = !primary.inFullscreen;
         // }).bind(this));
 
+        Main.overview.connect('showing', () => {
+            this.dashContainer.height = 0;
+        });
+
+        Main.overview.connect('hidden', () => {
+            this.dashContainer.height = this.dockHeight;
+        });
+
         Main.overview.dash.height = 0;
         Main.overview.dash.hide();
-        Main.overview.searchEntry.height = 0;
-        Main.overview.searchEntry.hide();
 
         this.layout();
     }
@@ -101,16 +103,8 @@ class Extension {
         Main.layoutManager.removeChrome(this.dashContainer);
         delete this.dashContainer;
 
-        // Main.uiGroup.add_actor(this.dashContainer);
-        // Main.layoutManager._trackActor(this.dashContainer, {   affectsStruts: true, trackFullscreen: true });
-
-    	// Main.uiGroup.remove_actor(this.dashContainer);
-        // delete this.dashContainer;
-
         Main.overview.dash.height = -1;
         Main.overview.dash.show();
-        Main.overview.searchEntry.height = -1;
-        Main.overview.searchEntry.show();       
     }
 }
 

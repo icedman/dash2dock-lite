@@ -34,15 +34,22 @@ class Extension {
         let dockWidth = 80;
         let dockHeight = 80;
         let vertical = false;
+        let shrink = true;
+
+        if (shrink) {
+            this.dash.add_style_class_name('shrink');
+        } else {
+            this.dash.remove_style_class_name('shrink');
+        }
 
         if (vertical) {
             this.dashContainer.set_position(0, 0);
             this.dash.last_child.vertical = true;
             this.dash.last_child.first_child.layout_manager.orientation = 1;
-            this.dash.set_height(sh);
+            this.dashContainer.set_height(sh);
         } else {
-            this.dashContainer.set_position(0, sh-(dockHeight-4));
-            this.dash.set_width(sw);
+            this.dashContainer.set_position(0, sh - dockHeight - (shrink ? 0 : 12));
+            this.dashContainer.set_width(sw);
         }
 
         this.dashContainer.add_child(this.dash);
@@ -52,7 +59,6 @@ class Extension {
     	this.dash = new Dash();
         this.dash.set_name('dash');
         this.dash.add_style_class_name('overview');
-        this.dash.add_style_class_name('shrink');
 
         this.dashContainer = new St.BoxLayout({ name: 'dashContainer',
                                            vertical: true });

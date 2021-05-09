@@ -67,10 +67,10 @@ class Extension {
         Main.overview.dash.set_width(1);
         Main.overview.dash.hide();
 
-        global.display.connect('in-fullscreen-changed', (() => {
-            let primary = Main.layoutManager.primaryMonitor;
-            this.dash.visible = !primary.inFullscreen;
-        }).bind(this));
+        // global.display.connect('in-fullscreen-changed', (() => {
+        //     let primary = Main.layoutManager.primaryMonitor;
+        //     this.dash.visible = !primary.inFullscreen;
+        // }).bind(this));
 
         this.layout();
     }

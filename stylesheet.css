@@ -9,20 +9,6 @@
   margin-bottom: 0px !important;
 }
 
-#dash.shrink .dash-item-container {
-    /*width: 60px !important;*/
-}
-
-
-#dash.shrink .dash-item-container * {
-    height: 48px !important;
-}
-
-#dash.shrink .dash-item-container .app-well-app-running-dot {
-    height: 2px !important;
-
-}
-
 #dash .dash-item-container > StButton.show-apps > .overview-icon {
   /*background-color: rgba(0,0,0,0.2) !important;*/
   border-radius: 6px !important;
@@ -31,22 +17,6 @@
 #dash .dash-item-container > StWidget:hover .overview-icon {
   /*background-color: rgba(0,0,0,0.9) !important;*/
   border-radius: 6px !important;
-}
-
-#dash .dash-item-container > StWidget,
-#dash .dash-item-container > StDrawingArea,
-#dash .dash-item-container > StButton {
-  /*width: 48px !important;*/
-  /*height: 48px !important;*/
-
-  padding-left: 0px !important;
-  padding-right: 0px !important;
-  padding-top: 0px !important;
-  padding-bottom: 0px !important;
-  /*margin-top: 0px !important;*/
-  /*margin-bottom: 0px !important;*/
-  margin-left: 0px !important;
-  margin-right: 0px !important;
 }
 
 #dash .dash-separator {
@@ -61,7 +31,38 @@
   background-color: rgba(0,0,0,0.6) !important;
   border-radius: 6px !important;
   border: 0px !important;
+}
 
+#dash.shrink .dash-item-container {
+    /*width: 60px !important;*/
+}
+
+#dash.shrink .dash-item-container * {
+    height: 48px !important;
+}
+
+#dash.shrink .dash-item-container .app-well-app-running-dot {
+    height: 2px !important;
+
+}
+
+#dash.shrink .dash-item-container > StWidget,
+#dash.shrink .dash-item-container > StDrawingArea,
+#dash.shrink .dash-item-container > StButton {
+  /*width: 48px !important;*/
+  /*height: 48px !important;*/
+
+  padding-left: 0px !important;
+  padding-right: 0px !important;
+  padding-top: 0px !important;
+  padding-bottom: 0px !important;
+  /*margin-top: 0px !important;*/
+  /*margin-bottom: 0px !important;*/
+  margin-left: 0px !important;
+  margin-right: 0px !important;
+}
+
+#dash.shrink > StWidget.dash-background {
   padding-left: 2px !important;
   padding-right: 2px !important;
   padding-top: 2px !important;
@@ -71,6 +72,7 @@
   margin-top: 2px !important;
   margin-bottom: 2px !important;
 }
+
 
 .hi {
  border: 2px solid magenta !important; 

@@ -10,6 +10,11 @@ const Meta = imports.gi.Meta;
 const St = imports.gi.St;
 const GLib = imports.gi.GLib;
 
+const ExtensionUtils = imports.misc.extensionUtils;
+const Me = ExtensionUtils.getCurrentExtension();
+const schema_id = Me.imports.prefs.schema_id;
+const SettingsKey = Me.imports.prefs.SettingsKey;
+
 const setTimeout = (func, delay, ...args) => {
     const wrappedFunc = () => {
         func.apply(this, args);
@@ -26,16 +31,43 @@ const setInterval = (func, delay, ...args) => {
 
 class Extension {
     constructor() {
+        this._settings = ExtensionUtils.getSettings(schema_id);
         this.vertical = false;
-        this.shrink = true;
-        this.recycleOldDash = false;
+        
+        this.shrink = this._settings.get_boolean(SettingsKey.SHRINK_ICONS);
+        this.recycleOldDash = this._settings.get_boolean(SettingsKey.REUSE_DASH);
+
+        Main.overview.connect('showing', this._onOverviewShowing.bind(this));
+        Main.overview.connect('hidden', this._onOverviewHidden.bind(this));        
     }
 
-    layout() {
+    enable() {
+
+        if (this.recycleOldDash) {
+        	this.originalDash = Main.uiGroup.find_child_by_name('dash');
+            this.dash = this.originalDash;
+        } else {
+            this.dash = new Dash();
+            this.dash.set_name('dash');
+            this.dash.add_style_class_name('overview');
+            this.dash.showAppsButton.hide();
+            // this.dash.showAppsButton.connect('notify::checked',
+            //     Main.overview._overview.controls._onShowAppsButtonToggled.bind(Main.overview._overview.controls));
+        }
+
+        this.dashContainer = new St.BoxLayout({ name: 'dashContainer',
+                                           vertical: true });
+
+        Main.layoutManager.addChrome(
+            this.dashContainer,
+            {   affectsStruts: true,
+                trackFullscreen: true
+            });
+
         let [sw, sh] = global.display.get_size();
 
         this.dockWidth = 80;
-        this.dockHeight = 80;
+        this.dockHeight = this.shrink ? 80 : 110;
 
         if (this.shrink) {
             this.dash.add_style_class_name('shrink');
@@ -49,62 +81,43 @@ class Extension {
             this.dash.last_child.first_child.layout_manager.orientation = 1;
             this.dashContainer.set_height(sh);
         } else {
-            this.dashContainer.set_position(0, sh - this.dockHeight - (this.shrink ? 0 : 12));
+            this.dashContainer.set_position(0, sh - this.dockHeight);
             this.dashContainer.set_width(sw);
             this.dashContainer.set_height(this.dockHeight);
         }
 
-        if (this.recycleOldDash) {
+        if (this.recycleOldDash) {         
             Main.uiGroup.find_child_by_name('overview').first_child.remove_child(this.dash);
+            setTimeout(() => {
+                Main.overview.dash.height = -1;
+                Main.overview.dash.show();            
+            }, 500);
+        } else {
+            Main.overview.dash.height = 0;
+            Main.overview.dash.hide();
         }
         this.dashContainer.add_child(this.dash);
     }
 
-    enable() {
-
+    disable() {
         if (this.recycleOldDash) {
-        	this.originalDash = Main.uiGroup.find_child_by_name('dash');
-            this.dash = this.originalDash;
+            this.dashContainer.remove_child(this.dash);
+            Main.uiGroup.find_child_by_name('overview').first_child.add_child(this.dash);
         } else {
-            this.dash = new Dash();
-            this.dash.set_name('dash');
-            this.dash.add_style_class_name('overview');
+            Main.overview.dash.height = -1;
+            Main.overview.dash.show();
         }
 
-        this.dashContainer = new St.BoxLayout({ name: 'dashContainer',
-                                           vertical: true });
-
-        Main.layoutManager.addChrome(
-            this.dashContainer,
-            {   affectsStruts: true,
-                trackFullscreen: true
-            });
-
-        // global.display.connect('in-fullscreen-changed', (() => {
-        //     let primary = Main.layoutManager.primaryMonitor;
-        //     this.dash.visible = !primary.inFullscreen;
-        // }).bind(this));
-
-        Main.overview.connect('showing', () => {
-            this.dashContainer.height = 0;
-        });
-
-        Main.overview.connect('hidden', () => {
-            this.dashContainer.height = this.dockHeight;
-        });
-
-        Main.overview.dash.height = 0;
-        Main.overview.dash.hide();
-
-        this.layout();
-    }
-
-    disable() {
         Main.layoutManager.removeChrome(this.dashContainer);
         delete this.dashContainer;
+    }
 
-        Main.overview.dash.height = -1;
-        Main.overview.dash.show();
+    _onOverviewShowing() {
+        this.dashContainer.height = 0;
+    }
+
+    _onOverviewHidden() {
+        this.dashContainer.height = this.dockHeight;
     }
 }
 

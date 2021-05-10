@@ -9,5 +9,7 @@
   ],
   "url": "https://github.com/icedman/dash2dock-lite",
   "uuid": "dash2dock-lite@icedman.github.com",
+  "schema-id": "org.gnome.shell.extensions.dash2dock-lite",
+  "gettext-domain": "dash2dock-lite",
   "version": 1
 }

@@ -43,6 +43,13 @@ class Extension {
         this._settings.connect(`changed::${SettingsKey.BG_OPACITY}`, () => {
             this.dash.first_child.opacity = 255 * this._settings.get_double(SettingsKey.BG_OPACITY);
         });
+        this._settings.connect(`changed::${SettingsKey.BG_DARK}`, () => {
+            if (this._settings.get_boolean(SettingsKey.BG_DARK)) {
+                this.dashContainer.add_style_class_name('dark');
+            } else {
+                this.dashContainer.remove_style_class_name('dark');
+            }
+        });
     }
 
     enable() {
@@ -101,6 +108,11 @@ class Extension {
         } else {
             this.dashContainer.remove_style_class_name('shrink');
         }
+        if (this._settings.get_boolean(SettingsKey.BG_DARK)) {
+            this.dashContainer.add_style_class_name('dark');
+        } else {
+            this.dashContainer.remove_style_class_name('dark');
+        }        
 
         // theme        
         this.dash.first_child.opacity = 255 * this._settings.get_double(SettingsKey.BG_OPACITY);

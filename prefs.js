@@ -16,7 +16,8 @@ const schema_id = 'org.gnome.shell.extensions.dash2dock-lite';
 const SettingsKey = {
     REUSE_DASH: 'reuse-dash',
     SHRINK_ICONS: 'shrink-icons',
-    BG_OPACITY: 'background-opacity'
+    BG_OPACITY: 'background-opacity',
+    BG_DARK: 'background-dark'
 };
 
 const Dash2DockLiteSettingListBoxRow = GObject.registerClass({
@@ -143,7 +144,10 @@ const Dash2DockLiteSettingsPane = GObject.registerClass(
             _listBox.append(reuseDash);
 
             const shrinkIcons = new Dash2DockLiteSettingListBoxRow(_('Shrink icons'), _('Shrink dash icons'), SettingsKey.SHRINK_ICONS);
-            _listBox.append(shrinkIcons);
+            _listBox.append(shrinkIcons)
+
+            const backgroundDark = new Dash2DockLiteSettingListBoxRow(_('Dark background'), _('Use dark color for dash background'), SettingsKey.BG_DARK);
+            _listBox.append(backgroundDark);
 
             const backgroundOpacity = new Dash2DockLiteSettingListBoxRow(_('Background opacity'), _('Set dash background opacity'), SettingsKey.BG_OPACITY, 'scale');
             _listBox.append(backgroundOpacity);

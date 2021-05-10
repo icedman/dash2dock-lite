@@ -50,11 +50,11 @@ class Extension {
             this.dash = new Dash();
             this.dash.set_name('dash');
             this.dash.add_style_class_name('overview');
-            this.dash.showAppsButton.hide();
             // this.dash.showAppsButton.connect('notify::checked',
             //     Main.overview._overview.controls._onShowAppsButtonToggled.bind(Main.overview._overview.controls));
         }
 
+        this.dash.showAppsButton.hide();
         this.dashContainer = new St.BoxLayout({ name: 'dashContainer',
                                            vertical: true });
 
@@ -100,6 +100,7 @@ class Extension {
     }
 
     disable() {
+        this.dash.showAppsButton.hide();
         if (this.recycleOldDash) {
             this.dashContainer.remove_child(this.dash);
             Main.uiGroup.find_child_by_name('overview').first_child.add_child(this.dash);

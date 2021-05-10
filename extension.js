@@ -38,7 +38,11 @@ class Extension {
         this.recycleOldDash = this._settings.get_boolean(SettingsKey.REUSE_DASH);
 
         Main.overview.connect('showing', this._onOverviewShowing.bind(this));
-        Main.overview.connect('hidden', this._onOverviewHidden.bind(this));        
+        Main.overview.connect('hidden', this._onOverviewHidden.bind(this));
+
+        this._settings.connect(`changed::${SettingsKey.BG_OPACITY}`, () => {
+            this.dash.first_child.opacity = 255 * this._settings.get_double(SettingsKey.BG_OPACITY);
+        });
     }
 
     enable() {
@@ -66,15 +70,10 @@ class Extension {
 
         let [sw, sh] = global.display.get_size();
 
-        this.dockWidth = 80;
-        this.dockHeight = this.shrink ? 80 : 110;
+        // this.dockWidth = 80;
+        this.dockHeight = this.shrink ? 84 : 110;
 
-        if (this.shrink) {
-            this.dash.add_style_class_name('shrink');
-        } else {
-            this.dash.remove_style_class_name('shrink');
-        }
-
+        // layout
         if (this.vertical) {
             this.dashContainer.set_position(0, 0);
             this.dash.last_child.vertical = true;
@@ -96,6 +95,16 @@ class Extension {
             Main.overview.dash.height = 0;
             Main.overview.dash.hide();
         }
+
+        if (this.shrink) {
+            this.dashContainer.add_style_class_name('shrink');
+        } else {
+            this.dashContainer.remove_style_class_name('shrink');
+        }
+
+        // theme        
+        this.dash.first_child.opacity = 255 * this._settings.get_double(SettingsKey.BG_OPACITY);
+
         this.dashContainer.add_child(this.dash);
     }
 
@@ -131,10 +140,8 @@ function init() {
 // animation tests
 
 // this.dash.set_reactive(true);
-
 /*
 this.dash.set_track_hover(true);
-
 
 let defaultSz = 1;
 this.dash.connect('motion-event', (actor, event, motion) => {

@@ -15,7 +15,8 @@ const schema_id = 'org.gnome.shell.extensions.dash2dock-lite';
 
 const SettingsKey = {
     REUSE_DASH: 'reuse-dash',
-    SHRINK_ICONS: 'shrink-icons'
+    SHRINK_ICONS: 'shrink-icons',
+    BG_OPACITY: 'background-opacity'
 };
 
 const Dash2DockLiteSettingListBoxRow = GObject.registerClass({
@@ -94,6 +95,15 @@ class Dash2DockLiteSettingListBoxRow extends Gtk.ListBoxRow {
             });
             this.control.set_active(this._settings.get_enum(settingsKey) || 0);
             break;
+        case 'scale':
+            this.control = new Gtk.Scale({digits:2, hexpand:1, adjustment: new Gtk.Adjustment({upper:1, step_increment:0.01, page_increment:0.1000000001})});
+            _vbox.append(this.control);
+            this.control.set_value(this._settings.get_double(settingsKey) || 0);
+            this.control.connect('value-changed', scale => {
+                this._settings.set_double(settingsKey, scale.get_value());
+            });
+            return;
+            break;
         default:
             this.rowType = 'switch';
             this.control = new Gtk.Switch({
@@ -129,11 +139,14 @@ const Dash2DockLiteSettingsPane = GObject.registerClass(
                 this._rowActivated(widget, row);
             });
 
-            const reuseDash = new Dash2DockLiteSettingListBoxRow(_('Reuse existing Dash'), _('Reuse existing Dash instead of creating another instance<'), SettingsKey.REUSE_DASH);
+            const reuseDash = new Dash2DockLiteSettingListBoxRow(_('Reuse existing Dash'), _('Reuse existing Dash instead of creating another instance'), SettingsKey.REUSE_DASH);
             _listBox.append(reuseDash);
 
             const shrinkIcons = new Dash2DockLiteSettingListBoxRow(_('Shrink icons'), _('Shrink dash icons'), SettingsKey.SHRINK_ICONS);
             _listBox.append(shrinkIcons);
+
+            const backgroundOpacity = new Dash2DockLiteSettingListBoxRow(_('Background opacity'), _('Set dash background opacity'), SettingsKey.BG_OPACITY, 'scale');
+            _listBox.append(backgroundOpacity);
         }
 
         _rowActivated(widget, row) {

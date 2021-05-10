@@ -11,5 +11,10 @@
         <summary>Shrink icons</summary>
         <description>Shrink dash icons</description>
     </key>
+    <key type="d" name="background-opacity">
+        <default>1</default>
+        <summary>Background opacity</summary>
+        <description>Set dash background opacity</description>
+    </key>
   </schema>
 </schemalist>

@@ -18,7 +18,7 @@ const SettingsKey = {
     SHRINK_ICONS: 'shrink-icons'
 };
 
-const SettingListBoxRow = GObject.registerClass({
+const Dash2DockLiteSettingListBoxRow = GObject.registerClass({
     Properties: {
         'label': GObject.ParamSpec.string(
             'label', 'Settings Label', 'label',
@@ -43,7 +43,7 @@ const SettingListBoxRow = GObject.registerClass({
             GObject.ParamFlags.READWRITE),
     },
 },
-class SettingListBoxRow extends Gtk.ListBoxRow {
+class Dash2DockLiteSettingListBoxRow extends Gtk.ListBoxRow {
     _init(label, description, settingsKey, type, options) {
         this.rowType = type;
         this._settings = ExtensionUtils.getSettings(schema_id);
@@ -108,8 +108,8 @@ class SettingListBoxRow extends Gtk.ListBoxRow {
 }
 );
 
-const SettingsPane = GObject.registerClass(
-    class SettingsPane extends Gtk.Frame {
+const Dash2DockLiteSettingsPane = GObject.registerClass(
+    class Dash2DockLiteSettingsPane extends Gtk.Frame {
         _init() {
             super._init({
                 margin_top: 36,
@@ -129,10 +129,10 @@ const SettingsPane = GObject.registerClass(
                 this._rowActivated(widget, row);
             });
 
-            const reuseDash = new SettingListBoxRow(_('Reuse existing Dash'), _('Reuse existing Dash instead of creating another instance<'), SettingsKey.REUSE_DASH);
+            const reuseDash = new Dash2DockLiteSettingListBoxRow(_('Reuse existing Dash'), _('Reuse existing Dash instead of creating another instance<'), SettingsKey.REUSE_DASH);
             _listBox.append(reuseDash);
 
-            const shrinkIcons = new SettingListBoxRow(_('Shrink icons'), _('Shrink dash icons'), SettingsKey.SHRINK_ICONS);
+            const shrinkIcons = new Dash2DockLiteSettingListBoxRow(_('Shrink icons'), _('Shrink dash icons'), SettingsKey.SHRINK_ICONS);
             _listBox.append(shrinkIcons);
         }
 
@@ -145,12 +145,12 @@ const SettingsPane = GObject.registerClass(
     }
 );
 
-const SettingsWidget = GObject.registerClass(
-    class SettingsWidget extends Gtk.Notebook {
+const Dash2DockLiteSettingsWidget = GObject.registerClass(
+    class Dash2DockLiteSettingsWidget extends Gtk.Notebook {
         _init() {
             super._init();
 
-            const _settingsPane = new SettingsPane();
+            const _settingsPane = new Dash2DockLiteSettingsPane();
             this.append_page(_settingsPane, new Gtk.Label({ label: _('General') }));
         }
     }
@@ -161,5 +161,5 @@ function init() {
 }
 
 function buildPrefsWidget() {
-    return new SettingsWidget();
+    return new Dash2DockLiteSettingsWidget();
 }

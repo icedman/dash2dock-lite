@@ -68,6 +68,7 @@ class _Animator
 
 	        Main.uiGroup.remove_child(this.animationContainer);
 	        delete this.animationContainer;
+            this.animationContainer = null;
 		}
 
 		if (this._motionEventId) {
@@ -239,6 +240,18 @@ class _Animator
             }
         })
 	}
+
+    show() {
+        if (this.animationContainer) {
+            this.animationContainer.show();
+        }
+    }
+
+    hide() {
+        if (this.animationContainer) {
+            this.animationContainer.hide();
+        }
+    }
 }
 
 var Animator = _Animator;

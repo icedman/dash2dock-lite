@@ -175,12 +175,14 @@ class Extension {
     _onOverviewShowing() {
         this._inOverview = true;
         this.dashContainer.height = 0;
+        this.animator.hide();
         this.dash.hide();
     }
 
     _onOverviewHidden() {
         this._inOverview = false;
         this.dashContainer.height = this.dockHeight;
+        this.animator.show();
         this.dash.show();
     }    
 }

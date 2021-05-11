@@ -130,6 +130,9 @@ class _Animator
             c._orphan = true;
         })
 
+        let idx = 0;
+        let topIdx = -1;
+        let topY = 0;
         this.dash.last_child.first_child.get_children().forEach(c => {
 
             let newIcon = false;
@@ -137,16 +140,24 @@ class _Animator
             let dx = (pos.x + c.width/2 - pointer[0]);
             let dy = (pos.y + c.height/2 - pointer[1]);
             let d = Math.sqrt(dx * dx);
-            let dst = 100;
+            let dst = 150;
+            let dstx = 500;
             let dd = dst-d;
             let sz = 0;
             let sc = 0;
-            if (!c.first_child || !c.first_child.first_child || !c.first_child.first_child.first_child) return;
+            let sx = 0;
 
+            if (!c.first_child || !c.first_child.first_child || !c.first_child.first_child.first_child) return;
             if (d < dst && dd > 0 && this._inDash) {
-                sz = -20 * (dd / dst);
-                sc = (0.5 * dd / dst);
+                let df = (dd / dst);
+                sz = -10 * df;
+                sc = 0.8 * df;
             }
+
+            // if (d > iconWidth && this._inDash) {
+            //     let df = (dd / dstx);
+            //     sx = 100 * df * (dx > 0 ? 1 : -1);
+            // }
 
             let szTarget = c.first_child.first_child;
             let szTargetIcon = szTarget._icon;
@@ -165,8 +176,7 @@ class _Animator
             }
 
             szTarget.width = iconWidth;
-
-            szTargetIcon.x = pos.x + X + (iconWidth * 0.2)/2;
+            szTargetIcon.x = pos.x + X + (iconWidth * 0.2)/2 - sx;
             szTargetIcon.icon.width = iconWidth * 0.8;
             szTargetIcon.icon.height= iconWidth * 0.8;
             szTargetIcon._orphan = false;
@@ -181,9 +191,47 @@ class _Animator
                 let tz = (pos.y + Y + (iconWidth * 0.4) + sz) - szTargetIcon.y;
                 szTargetIcon.y = szTargetIcon.y + tz * 0.4;
                 c.label.y = szTargetIcon.y + this.animationContainer.y - iconWidth;
+
+                if (sz != 0 && (szTargetIcon.y < topY || topY == 0)) {
+                    topY = szTargetIcon.y;
+                    topIdx = idx;
+                }
             }
 
+            idx++;
+            // c.remove_style_class_name('hi');
+
         });
+
+        if (topIdx != -1) {
+            let tl = topIdx - 1;
+            let tr = topIdx + 1;
+            let pad = iconWidth * 0.24;
+            for(let i=0; i<8; i++) {
+                let cl = this.dash.last_child.first_child.get_children()[tl--];
+                let cr = this.dash.last_child.first_child.get_children()[tr++];
+                
+                if (cl) {
+                    let szTarget = cl.first_child.first_child;
+                    let szTargetIcon = szTarget._icon;
+                    szTargetIcon.x -= pad
+                    // let tx = szTargetIcon.x - pad;
+                    // szTargetIcon.x += (tx - szTargetIcon.x) * 0.4;
+                    // cl.add_style_class_name('hi');
+                }
+
+                if (cr) {
+                    let szTarget = cr.first_child.first_child;
+                    let szTargetIcon = szTarget._icon;
+                    szTargetIcon.x += pad
+                    // let tx = szTargetIcon.x - pad;
+                    // szTargetIcon.x += (tx - szTargetIcon.x) * 0.4;
+                    // cr.add_style_class_name('hi');
+                }
+
+                pad *= 0.8;
+            }
+        }
 
         this.animationContainer.get_children().forEach(c => {
             if (c._orphan) {

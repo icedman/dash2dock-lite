@@ -36,6 +36,7 @@ class _Animator
         this._motionEventId = this.dashContainer.connect('motion-event', this._onMotionEvent.bind(this));
         this._enterEventId = this.dashContainer.connect('enter-event', this._onEnterEvent.bind(this));
         this._leaveEventId = this.dashContainer.connect('leave-event', this._onLeaveEvent.bind(this));
+        this._focusWindowId = global.display.connect('notify::focus-window', this._runForAwhile.bind(this));
 	}
 
 	disable() {
@@ -74,6 +75,8 @@ class _Animator
 	        delete this._enterEventId;
 	        this.dashContainer.disconnect(this._leaveEventId);
 	        delete this._leaveEventId;
+            global.display.disconnect(this._focusWindowId);
+            delete this._focusWindowId;
     	}
 	}
 
@@ -88,13 +91,19 @@ class _Animator
 
 	_onLeaveEvent() {
 		this._inDash = false;
-		for(let i=15; i<200; i+=15) {
+		this._runForAwhile();
+        // this.animationContainer.remove_style_class_name('hi');
+	}
+
+    _runForAwhile() {
+        // if (!this._params.enabled) return;
+
+        for(let i=15; i<200; i+=15) {
             setTimeout(() => {
                 this._animate();
             }, i);
         }
-        // this.animationContainer.remove_style_class_name('hi');
-	}
+    }
 
 	_animate() {
         let pointer = global.get_pointer();

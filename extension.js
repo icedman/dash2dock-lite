@@ -142,9 +142,9 @@ class Extension {
 
     _updateBgOpacity(disable) {
         if (disable) {
-            this.dash.first_child.opacity = 255 * this._bgOpacity;
-        } else {
             this.dash.first_child.opacity = 255;
+        } else {
+            this.dash.first_child.opacity = 255 * this.bgOpacity;
         }
     }
 

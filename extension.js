@@ -26,7 +26,7 @@ class Extension {
         this.shrink = this._settings.get_boolean(SettingsKey.SHRINK_ICONS);
         this.animateIcons = this._settings.get_boolean(SettingsKey.ANIMATE_ICONS);
         this.bgDark = this._settings.get_boolean(SettingsKey.BG_DARK);
-        this.bgOpacity = this._settings.get_boolean(SettingsKey.BG_OPACITY);
+        this.bgOpacity = this._settings.get_double(SettingsKey.BG_OPACITY);
         this.recycleOldDash = this._settings.get_boolean(SettingsKey.REUSE_DASH);
         this.vertical = false;
 

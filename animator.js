@@ -212,7 +212,7 @@ class _Animator
                 let cl = this.dash.last_child.first_child.get_children()[tl--];
                 let cr = this.dash.last_child.first_child.get_children()[tr++];
                 
-                if (cl) {
+                if (cl && cl.first_child && cl.first_child.first_child) {
                     let szTarget = cl.first_child.first_child;
                     let szTargetIcon = szTarget._icon;
                     szTargetIcon.x -= pad
@@ -221,7 +221,7 @@ class _Animator
                     // cl.add_style_class_name('hi');
                 }
 
-                if (cr) {
+                if (cr && cr.first_child && cr.first_child.first_child) {
                     let szTarget = cr.first_child.first_child;
                     let szTargetIcon = szTarget._icon;
                     szTargetIcon.x += pad

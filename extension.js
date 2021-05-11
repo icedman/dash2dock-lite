@@ -28,6 +28,7 @@ class Extension {
         this.bgDark = this._settings.get_boolean(SettingsKey.BG_DARK);
         this.bgOpacity = this._settings.get_double(SettingsKey.BG_OPACITY);
         this.recycleOldDash = this._settings.get_boolean(SettingsKey.REUSE_DASH);
+        this.hideAppsButton = false;
         this.vertical = false;
 
         Main.overview.connect('showing', this._onOverviewShowing.bind(this));
@@ -60,6 +61,15 @@ class Extension {
             this._updateAnimation();
         });
 
+        this.fullScreenId = global.display.connect('in-fullscreen-changed', (() => {
+            let primary = Main.layoutManager.primaryMonitor;
+            if (!primary.inFullscreen) {
+                this.animator.show();
+            } else {
+                this.animator.hide();
+            }
+        }).bind(this));
+
         this.animator = new Animator();
     }
 
@@ -72,11 +82,8 @@ class Extension {
             this.dash = new Dash();
             this.dash.set_name('dash');
             this.dash.add_style_class_name('overview');
-            // this.dash.showAppsButton.connect('notify::checked',
-            //     Main.overview._overview.controls._onShowAppsButtonToggled.bind(Main.overview._overview.controls));
         }
 
-        this.dash.showAppsButton.hide();
         this.dashContainer = new St.BoxLayout({ name: 'dashContainer', vertical: true });
 
         Main.layoutManager.addChrome(
@@ -97,6 +104,7 @@ class Extension {
         }
         this.dashContainer.add_child(this.dash);
 
+        this._updateAppsButton();
         this._updateShrink();
         this._updateBgDark();
         this._updateBgOpacity();
@@ -105,13 +113,13 @@ class Extension {
     }
 
     disable() {
+        this._updateAppsButton(true);
         this._updateShrink(true);
         this._updateBgDark(true);
         this._updateBgOpacity(true);
         this._updateLayout(true);
         this._updateAnimation(true);
 
-        this.dash.showAppsButton.hide();
         if (this.recycleOldDash) {
             this.dashContainer.remove_child(this.dash);
             Main.uiGroup.find_child_by_name('overview').first_child.add_child(this.dash);
@@ -122,9 +130,36 @@ class Extension {
 
         Main.layoutManager.removeChrome(this.dashContainer);
         delete this.dashContainer;
+        this.dashContainer = null;
+
+        global.display.disconnect(this.fullScreenId);
+        delete this.fullScreenId;
+        this.fullScreenId = null;
+    }
+
+    _updateAppsButton(disable) {
+        if (!this.dash) return;
+
+        if (this.hideAppsButton && !disable) {
+            this.dash.showAppsButton.hide();
+            if (this.appButtonId) {
+                this.dash.showAppsButton.disconnect(this.appButtonId);
+                delete this.appButtonId;
+                this.appButtonId = null;
+            }
+        } else {
+            this.dash.showAppsButton.show();
+            this.appButtonId = this.dash.showAppsButton.connect('notify::checked', () => {
+                // Main.overview.show();
+                // Main.overview._overview.controls._onShowAppsButtonToggled();
+                // Main.overview._overview.controls._toggleAppsPage();
+            });
+        }
     }
 
     _updateShrink(disable) {
+        if (!this.dashContainer) return;
+
         if (this.shrink && !disable) {
             this.dashContainer.add_style_class_name('shrink');
         } else {
@@ -133,6 +168,8 @@ class Extension {
     }
 
     _updateBgDark(disable) {
+        if (!this.dashContainer) return;
+
         if (this.bgDark && !disable) {
             this.dashContainer.add_style_class_name('dark');
         } else {
@@ -141,6 +178,8 @@ class Extension {
     }
 
     _updateBgOpacity(disable) {
+        if (!this.dash) return;
+
         if (disable) {
             this.dash.first_child.opacity = 255;
         } else {
@@ -149,18 +188,31 @@ class Extension {
     }
 
     _updateLayout(disable) {
+        if (!this.dashContainer) return;
+
         let [sw, sh] = global.display.get_size();
+        this.dockWidth = (this.shrink && !disable) ? 80 : 110;
         this.dockHeight = (this.shrink && !disable) ? 80 : 110;
+
         if (this.vertical) {
+            this.dashContainer.vertical = false;
             this.dashContainer.set_position(0, 0);
             this.dash.last_child.vertical = true;
             this.dash.last_child.first_child.layout_manager.orientation = 1;
+            this.dashContainer.set_width(this.dockWidth);            
             this.dashContainer.set_height(sh);
         } else {
+            this.dashContainer.vertical = true;
             this.dashContainer.set_position(0, sh - this.dockHeight);
             this.dashContainer.set_width(sw);
             this.dashContainer.set_height(this.dockHeight);
-        }        
+        }
+
+        if (this.vertical && !disable) {
+            this.dashContainer.add_style_class_name('vertical');
+        } else {
+            this.dashContainer.remove_style_class_name('vertical');
+        }
     }
 
     _updateAnimation(disable) {
@@ -181,9 +233,9 @@ class Extension {
 
     _onOverviewHidden() {
         this._inOverview = false;
-        this.dashContainer.height = this.dockHeight;
         this.animator.show();
         this.dash.show();
+        this._updateLayout();
     }    
 }
 

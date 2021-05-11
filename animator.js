@@ -37,6 +37,8 @@ class _Animator
         this._enterEventId = this.dashContainer.connect('enter-event', this._onEnterEvent.bind(this));
         this._leaveEventId = this.dashContainer.connect('leave-event', this._onLeaveEvent.bind(this));
         this._focusWindowId = global.display.connect('notify::focus-window', this._runForAwhile.bind(this));
+
+        this._runForAwhile();
 	}
 
 	disable() {

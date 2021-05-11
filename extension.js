@@ -49,6 +49,11 @@ class Extension {
         this._settings.connect(`changed::${SettingsKey.SHRINK_ICONS}`, () => {
             this.shrink = this._settings.get_boolean(SettingsKey.SHRINK_ICONS);
             this._updateShrink();
+
+            // these will be messed up.. force update
+            this._updateLayout();
+            this._updateAnimation(true);
+            this._updateAnimation();
         });        
         this._settings.connect(`changed::${SettingsKey.ANIMATE_ICONS}`, () => {
             this.animateIcons = this._settings.get_boolean(SettingsKey.ANIMATE_ICONS);
@@ -124,11 +129,6 @@ class Extension {
             this.dashContainer.add_style_class_name('shrink');
         } else {
             this.dashContainer.remove_style_class_name('shrink');
-        }
-        if (!disable) {
-            this._updateLayout();
-            this._updateAnimation(true);
-            this._updateAnimation();
         }
     }
 

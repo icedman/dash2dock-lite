@@ -11,11 +11,12 @@ const _ = Gettext.gettext;
 
 const ExtensionUtils = imports.misc.extensionUtils;
 
-const schema_id = 'org.gnome.shell.extensions.dash2dock-lite';
+var schema_id = 'org.gnome.shell.extensions.dash2dock-lite';
 
-const SettingsKey = {
+var SettingsKey = {
     REUSE_DASH: 'reuse-dash',
     SHRINK_ICONS: 'shrink-icons',
+    ANIMATE_ICONS: 'animate-icons',    
     BG_OPACITY: 'background-opacity',
     BG_DARK: 'background-dark'
 };
@@ -145,6 +146,9 @@ const Dash2DockLiteSettingsPane = GObject.registerClass(
 
             const shrinkIcons = new Dash2DockLiteSettingListBoxRow(_('Shrink icons'), _('Shrink dash icons'), SettingsKey.SHRINK_ICONS);
             _listBox.append(shrinkIcons)
+
+            const animateIcons = new Dash2DockLiteSettingListBoxRow(_('Animate Icons'), _('Animate dash icons on hover'), SettingsKey.ANIMATE_ICONS);
+            _listBox.append(animateIcons)
 
             const backgroundDark = new Dash2DockLiteSettingListBoxRow(_('Dark background'), _('Use dark color for dash background'), SettingsKey.BG_DARK);
             _listBox.append(backgroundDark);

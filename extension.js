@@ -9,6 +9,7 @@ const Shell = imports.gi.Shell;
 const Meta = imports.gi.Meta;
 const St = imports.gi.St;
 const GLib = imports.gi.GLib;
+const Point = imports.gi.Graphene.Point;
 
 const ExtensionUtils = imports.misc.extensionUtils;
 const Me = ExtensionUtils.getCurrentExtension();
@@ -50,6 +51,13 @@ class Extension {
                 this.dashContainer.remove_style_class_name('dark');
             }
         });
+        this._settings.connect(`changed::${SettingsKey.ANIMATE_ICONS}`, () => {
+            if (this._settings.get_boolean(SettingsKey.ANIMATE_ICONS)) {
+                this._enable_animation();
+            } else {
+                this._disable_animation();
+            }
+        });
     }
 
     enable() {
@@ -78,7 +86,9 @@ class Extension {
         let [sw, sh] = global.display.get_size();
 
         // this.dockWidth = 80;
-        this.dockHeight = this.shrink ? 84 : 110;
+        this.dockHeight = this.shrink ? 80 : 110;
+
+        this.animationContainer = new St.Widget();
 
         // layout
         if (this.vertical) {
@@ -96,7 +106,7 @@ class Extension {
             Main.uiGroup.find_child_by_name('overview').first_child.remove_child(this.dash);
             setTimeout(() => {
                 Main.overview.dash.height = -1;
-                Main.overview.dash.show();            
+                Main.overview.dash.show();
             }, 500);
         } else {
             Main.overview.dash.height = 0;
@@ -118,6 +128,10 @@ class Extension {
         this.dash.first_child.opacity = 255 * this._settings.get_double(SettingsKey.BG_OPACITY);
 
         this.dashContainer.add_child(this.dash);
+        Main.uiGroup.add_child(this.animationContainer);
+
+        this.animationContainer.hide();
+        this._enable_animation();
     }
 
     disable() {
@@ -135,11 +149,148 @@ class Extension {
     }
 
     _onOverviewShowing() {
+        this._inOverview = true;
         this.dashContainer.height = 0;
+        this.animationContainer.hide();
+        this.dash.hide();
     }
 
     _onOverviewHidden() {
+        this._inOverview = false;
         this.dashContainer.height = this.dockHeight;
+        this.animationContainer.show();
+        this.dash.show();
+    }
+
+    _enable_animation() {
+        this._animationOn = true;
+        if (!this._settings.get_boolean(SettingsKey.ANIMATE_ICONS) || this._animationControllerSet) {
+            return;
+        }
+
+        this.dashContainer.set_reactive(true);
+        this.dashContainer.set_track_hover(true);        
+        this._animateOut = 0;
+        this._inDash = false;
+
+        setInterval(() => {
+            this._animate();
+        }, 15);
+
+        this.dashContainer.connect('motion-event', (actor, event, motion) => {
+            this._animateOut = 0;
+        });
+
+        this.dashContainer.connect('enter-event', () => {
+            this._animateOut = 0;
+            this._inDash = true;
+        });
+
+        this.dashContainer.connect('leave-event', () => {
+            this._animateOut = 8;
+            this._inDash = false;
+        });
+
+        this._animate(true);
+
+        this._animationControllerSet = true;
+    }
+
+    _disable_animation() {
+        this._animationOn = false;
+    }
+
+    _animate(animateOut) {
+        let Dash = this.dash;
+        let pointer = global.get_pointer();
+        pointer[0] -= Dash.last_child.x;
+        pointer[1] -= Dash.y;
+
+        let iconWidth = this.shrink ? 58 : 68;
+
+        this.animationContainer.position = this.dashContainer.position;
+        this.animationContainer.size = this.dashContainer.size;
+
+        let X = Dash.last_child.x;
+        this.Y = this.Y || Dash.last_child.y;
+        let Y = this.Y;
+
+        if (X == 0) return;
+
+        let pivot = new Point();
+        pivot.x = 0.5;
+        pivot.y = 1.0;
+
+        this.animationContainer.get_children().forEach(c => {
+            c._orphan = true;
+        })
+
+        Dash.last_child.first_child.get_children().forEach(c => { 
+
+            let newIcon = false;
+            let pos = c.position;
+            let dx = (pos.x + c.width/2 - pointer[0]);
+            let dy = (pos.y + c.height/2 - pointer[1]);
+            let d = Math.sqrt(dx * dx);
+            let dst = 100;
+            let dd = dst-d;
+            let sz = 0;
+            let sc = 0;
+            if (!c.first_child || !c.first_child.first_child || !c.first_child.first_child.first_child) return;
+            let szTarget = c.first_child.first_child;
+            let szTargetIcon = szTarget._icon;;
+            if (!szTargetIcon) {
+                szTargetIcon = szTarget.first_child;
+                szTarget._icon = szTargetIcon;
+                szTargetIcon.set_fixed_position_set(true);
+                let iconWidth = szTargetIcon.width;
+                szTarget.remove_child(szTargetIcon);
+                newIcon = true;
+            }
+            if (!animateOut && d < dst && dd > 0 && this._inDash) {
+                sz = -20 * (dd / dst);
+                sc = (0.5 * dd / dst);
+            }
+
+            if (!this._animationOn) {
+                sz = 0;
+                sc = 0;
+            }
+
+            if (!szTargetIcon.icon) return;
+
+            szTarget.width = iconWidth;
+
+            szTargetIcon.x = pos.x + X + (iconWidth * 0.2)/2;
+            szTargetIcon.icon.width = iconWidth * 0.8;
+            szTargetIcon.icon.height= iconWidth * 0.8;
+            szTargetIcon._orphan = false;
+            szTargetIcon.scale_x = 1 + sc;
+            szTargetIcon.scale_y = 1 + sc;
+            szTargetIcon.pivot_point = pivot;
+
+            if (newIcon) {
+                szTargetIcon.y = pos.y + Y + (iconWidth * 0.4) + sz;
+                this.animationContainer.add_child(szTargetIcon);
+            } else {
+                let tz = (pos.y + Y + (iconWidth * 0.4) + sz) - szTargetIcon.y;
+                szTargetIcon.y = szTargetIcon.y + tz * 0.4;
+                c.label.y = szTargetIcon.y + this.animationContainer.y - iconWidth;
+            }
+
+        });
+
+        if (!this._inOverview) {
+            this.animationContainer.show();
+        } else {
+            this.animationContainer.hide();
+        }
+
+        this.animationContainer.get_children().forEach(c => {
+            if (c._orphan) {
+                this.animationContainer.remove_child(c);
+            }
+        })
     }
 }
 
@@ -148,49 +299,3 @@ function init() {
 }
 
 
-
-// animation tests
-
-// this.dash.set_reactive(true);
-/*
-this.dash.set_track_hover(true);
-
-let defaultSz = 1;
-this.dash.connect('motion-event', (actor, event, motion) => {
-    let pointer = global.get_pointer();
-    pointer[0] -= MyDash.last_child.x;
-    pointer[1] -= MyDash.y;
-
-    MyDash.last_child.first_child.get_children().forEach(c => { 
-        let pos = c.position;
-        let dx = (pos.x + c.width/2 - pointer[0]);
-        let dy = (pos.y + c.height/2 - pointer[1]);
-        let d = Math.sqrt(dx * dx); //  + dy * dy;
-
-        let szTarget = c.first_child.first_child;
-        if (d < 200) {
-            let sz = defaultSz + (1 - (d / 200));
-            // c.add_style_class_name('hi');
-            // szTarget.scale_x = sz;
-            // szTarget.scale_y = sz;
-            // szTarget.margin_bottom = sz * 40;
-            szTarget.margin_left = sz * 20;
-        } else {
-            // szTarget.scale_x = defaultSz;
-            // szTarget.scale_y = defaultSz;
-        }
-    });
-
-});
-
-this.dash.connect('leave-event', () => {
-    MyDash.last_child.first_child.get_children().forEach(c => { 
-        // c.remove_style_class_name('hi');
-        let szTarget = c.first_child.first_child;
-        szTarget.margin_left = 0;
-        // szTarget.scale_x = defaultSz;
-        // szTarget.scale_y = defaultSz;
-        // szTarget.margin_bottom = 0;
-    })
-});
-*/

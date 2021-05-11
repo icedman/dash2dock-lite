@@ -11,6 +11,11 @@
         <summary>Shrink icons</summary>
         <description>Shrink dash icons</description>
     </key>
+    <key type="b" name="animate-icons">
+        <default>true</default>
+        <summary>Animate Icons</summary>
+        <description>Animate dash icons on hover</description>
+    </key>
     <key type="b" name="background-dark">
         <default>true</default>
         <summary>Dark background</summary>

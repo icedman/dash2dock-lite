@@ -28,7 +28,7 @@ class Extension {
         this.bgDark = this._settings.get_boolean(SettingsKey.BG_DARK);
         this.bgOpacity = this._settings.get_double(SettingsKey.BG_OPACITY);
         this.recycleOldDash = this._settings.get_boolean(SettingsKey.REUSE_DASH);
-        this.hideAppsButton = false;
+        this.hideAppsButton = true;
         this.vertical = false;
 
         Main.overview.connect('showing', this._onOverviewShowing.bind(this));

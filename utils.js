@@ -13,3 +13,11 @@ var setInterval = (func, delay, ...args) => {
     };
     return GLib.timeout_add(GLib.PRIORITY_DEFAULT, delay, wrappedFunc);
 }
+
+var clearTimeout = (id) => {
+	GLib.source_remove(id);
+}
+
+var clearInterval = (id) => {
+	GLib.source_remove(id);
+}

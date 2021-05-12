@@ -11,6 +11,7 @@ const ExtensionUtils = imports.misc.extensionUtils;
 const Me = ExtensionUtils.getCurrentExtension();
 const setTimeout = Me.imports.utils.setTimeout;
 const setInterval = Me.imports.utils.setInterval;
+const clearInterval = Me.imports.utils.clearInterval;
 
 class _Animator
 {
@@ -39,11 +40,17 @@ class _Animator
         this._focusWindowId = global.display.connect('notify::focus-window', this._runForAwhile.bind(this));
 
         this._runForAwhile();
+        this._intervalId = setInterval(this._animate.bind(this), 500);
 	}
 
 	disable() {
         this.dashContainer.set_reactive(false);
         this.dashContainer.set_track_hover(false);
+
+        if (this._intervalId) {
+            clearInterval(this._intervalId);
+            this._intervalId = null;
+        }
 
         if (this.animationContainer) {
 			this.animationContainer.get_children().forEach(c => {
@@ -99,8 +106,6 @@ class _Animator
 	}
 
     _runForAwhile() {
-        // if (!this._params.enabled) return;
-
         for(let i=15; i<200; i+=15) {
             setTimeout(() => {
                 this._animate();
@@ -155,11 +160,6 @@ class _Animator
                 sc = 0.8 * df;
             }
 
-            // if (d > iconWidth && this._inDash) {
-            //     let df = (dd / dstx);
-            //     sx = 100 * df * (dx > 0 ? 1 : -1);
-            // }
-
             let szTarget = c.first_child.first_child;
             let szTargetIcon = szTarget._icon;
             if (!szTargetIcon) {
@@ -177,7 +177,6 @@ class _Animator
             }
 
             szTarget.width = iconWidth;
-            szTargetIcon.x = pos.x + X + (iconWidth * 0.2)/2 - sx;
             szTargetIcon.icon.width = iconWidth * 0.8;
             szTargetIcon.icon.height= iconWidth * 0.8;
             szTargetIcon._orphan = false;
@@ -186,6 +185,7 @@ class _Animator
             szTargetIcon.pivot_point = pivot;
 
             if (newIcon) {
+                szTargetIcon.x = pos.x + X + (iconWidth * 0.2)/2 - sx;                
                 szTargetIcon.y = pos.y + Y + (iconWidth * 0.4) + sz;
                 this.animationContainer.add_child(szTargetIcon);
             } else {
@@ -199,8 +199,9 @@ class _Animator
                 }
             }
 
+            szTargetIcon._x = pos.x + X + (iconWidth * 0.2)/2 - sx;
+            szTargetIcon.x = (szTargetIcon.x * 3 + szTargetIcon._x)/4;
             idx++;
-            // c.remove_style_class_name('hi');
 
         });
 
@@ -215,19 +216,15 @@ class _Animator
                 if (cl && cl.first_child && cl.first_child.first_child) {
                     let szTarget = cl.first_child.first_child;
                     let szTargetIcon = szTarget._icon;
-                    szTargetIcon.x -= pad
-                    // let tx = szTargetIcon.x - pad;
-                    // szTargetIcon.x += (tx - szTargetIcon.x) * 0.4;
-                    // cl.add_style_class_name('hi');
+                    let tx = szTargetIcon._x - pad;
+                    szTargetIcon.x += (tx - szTargetIcon.x) * 0.4;
                 }
 
                 if (cr && cr.first_child && cr.first_child.first_child) {
                     let szTarget = cr.first_child.first_child;
                     let szTargetIcon = szTarget._icon;
-                    szTargetIcon.x += pad
-                    // let tx = szTargetIcon.x - pad;
-                    // szTargetIcon.x += (tx - szTargetIcon.x) * 0.4;
-                    // cr.add_style_class_name('hi');
+                    let tx = szTargetIcon._x + pad;
+                    szTargetIcon.x += (tx - szTargetIcon.x) * 0.4;
                 }
 
                 pad *= 0.8;

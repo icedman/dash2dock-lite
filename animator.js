@@ -13,6 +13,13 @@ const setTimeout = Me.imports.utils.setTimeout;
 const setInterval = Me.imports.utils.setInterval;
 const clearInterval = Me.imports.utils.clearInterval;
 
+const iconScaleUp = 1.2;
+const iconPadCoef = 0.8;
+const xAnimFactor = 0.2;
+const yAnimFactor = 0.2;
+const scaleAnimFactor = 0.1;
+const padReduceFactor = 0.94;
+
 class _Animator
 {
 	update(params) {
@@ -40,7 +47,7 @@ class _Animator
         this._focusWindowId = global.display.connect('notify::focus-window', this._runForAwhile.bind(this));
 
         this._runForAwhile();
-        this._intervalId = setInterval(this._animate.bind(this), 500);
+        this._intervalId = setInterval(this._animate.bind(this), 200);
 	}
 
 	disable() {
@@ -157,7 +164,7 @@ class _Animator
             if (d < dst && dd > 0 && this._inDash) {
                 let df = (dd / dst);
                 sz = -10 * df;
-                sc = 0.8 * df;
+                sc = iconScaleUp * df;
             }
 
             let szTarget = c.first_child.first_child;
@@ -180,8 +187,11 @@ class _Animator
             szTargetIcon.icon.width = iconWidth * 0.8;
             szTargetIcon.icon.height= iconWidth * 0.8;
             szTargetIcon._orphan = false;
-            szTargetIcon.scale_x = 1 + sc;
-            szTargetIcon.scale_y = 1 + sc;
+
+            let scc = (1 + sc) - szTargetIcon.scale_x;
+            szTargetIcon.scale_x = szTargetIcon.scale_x + scc * scaleAnimFactor;
+            szTargetIcon.scale_y = szTargetIcon.scale_y + scc * scaleAnimFactor;
+
             szTargetIcon.pivot_point = pivot;
 
             if (newIcon) {
@@ -190,8 +200,8 @@ class _Animator
                 this.animationContainer.add_child(szTargetIcon);
             } else {
                 let tz = (pos.y + Y + (iconWidth * 0.4) + sz) - szTargetIcon.y;
-                szTargetIcon.y = szTargetIcon.y + tz * 0.4;
-                c.label.y = szTargetIcon.y + this.animationContainer.y - iconWidth;
+                szTargetIcon.y = szTargetIcon.y + tz * yAnimFactor;
+                c.label.y = szTargetIcon.y + this.animationContainer.y - (iconWidth * 1.4);
 
                 if (sz != 0 && (szTargetIcon.y < topY || topY == 0)) {
                     topY = szTargetIcon.y;
@@ -208,8 +218,8 @@ class _Animator
         if (topIdx != -1) {
             let tl = topIdx - 1;
             let tr = topIdx + 1;
-            let pad = iconWidth * 0.24;
-            for(let i=0; i<8; i++) {
+            let pad = iconWidth * iconPadCoef;
+            for(let i=0; i<20; i++) {
                 let cl = this.dash.last_child.first_child.get_children()[tl--];
                 let cr = this.dash.last_child.first_child.get_children()[tr++];
                 
@@ -217,17 +227,19 @@ class _Animator
                     let szTarget = cl.first_child.first_child;
                     let szTargetIcon = szTarget._icon;
                     let tx = szTargetIcon._x - pad;
-                    szTargetIcon.x += (tx - szTargetIcon.x) * 0.4;
+                    szTargetIcon.x += (tx - szTargetIcon.x) * xAnimFactor;
                 }
 
                 if (cr && cr.first_child && cr.first_child.first_child) {
                     let szTarget = cr.first_child.first_child;
                     let szTargetIcon = szTarget._icon;
                     let tx = szTargetIcon._x + pad;
-                    szTargetIcon.x += (tx - szTargetIcon.x) * 0.4;
+                    szTargetIcon.x += (tx - szTargetIcon.x) * xAnimFactor;
                 }
 
-                pad *= 0.8;
+                if (!cl && !cr) break;
+
+                pad *= padReduceFactor;
             }
         }
 

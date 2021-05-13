@@ -61,6 +61,7 @@ class Extension {
             this._updateAnimation();
         });
 
+        this.animator = new Animator();
         this.fullScreenId = global.display.connect('in-fullscreen-changed', (() => {
             let primary = Main.layoutManager.primaryMonitor;
             if (!primary.inFullscreen) {
@@ -68,9 +69,7 @@ class Extension {
             } else {
                 this.animator.hide();
             }
-        }).bind(this));
-
-        this.animator = new Animator();
+        }).bind(this));        
     }
 
     enable() {

@@ -14,8 +14,8 @@ const setInterval = Me.imports.utils.setInterval;
 const clearInterval = Me.imports.utils.clearInterval;
 
 const iconScaleUp = 1.2;
-const iconPadCoef = 0.8;
-const xAnimFactor = 0.2;
+const iconPadCoef = 0;
+const xAnimFactor = 0.1;
 const yAnimFactor = 0.2;
 const scaleAnimFactor = 0.1;
 const padReduceFactor = 0.94;
@@ -23,11 +23,11 @@ const padReduceFactor = 0.94;
 class _Animator
 {
 	update(params) {
-		this._params = params;
-		this.dash = this._params.dash;
-		this.dashContainer = this._params.container;
+		this.shrink = params.shrink;
+		this.dash = params.dash;
+		this.dashContainer = params.container;
 
-		if (this._params.enable) {
+		if (params.enable) {
 			this.enable();
 		} else {
 			this.disable();
@@ -47,7 +47,16 @@ class _Animator
         this._focusWindowId = global.display.connect('notify::focus-window', this._runForAwhile.bind(this));
 
         this._runForAwhile();
-        this._intervalId = setInterval(this._animate.bind(this), 200);
+        this._intervalId = setInterval(this._animate.bind(this), 100);
+
+        this.fullScreenId = global.display.connect('in-fullscreen-changed', (() => {
+            let primary = Main.layoutManager.primaryMonitor;
+            if (!primary.inFullscreen) {
+                this.show();
+            } else {
+                this.hide();
+            }
+        }).bind(this));        
 	}
 
 	disable() {
@@ -95,6 +104,10 @@ class _Animator
             global.display.disconnect(this._focusWindowId);
             delete this._focusWindowId;
     	}
+
+        global.display.disconnect(this.fullScreenId);
+        delete this.fullScreenId;
+        this.fullScreenId = null;
 	}
 
 	_onMotionEvent() {
@@ -113,7 +126,7 @@ class _Animator
 	}
 
     _runForAwhile() {
-        for(let i=15; i<200; i+=15) {
+        for(let i=25; i<300; i+=25) {
             setTimeout(() => {
                 this._animate();
             }, i);
@@ -125,7 +138,7 @@ class _Animator
         pointer[0] -= this.dash.last_child.x;
         pointer[1] -= this.dash.y;
 
-        let iconWidth = this._params.shrink ? 58 : 64;
+        let iconWidth = this.shrink ? 58 : 64;
 
         this.animationContainer.position = this.dashContainer.position;
         this.animationContainer.size = this.dashContainer.size;
@@ -158,7 +171,6 @@ class _Animator
             let dd = dst-d;
             let sz = 0;
             let sc = 0;
-            let sx = 0;
 
             if (!c.first_child || !c.first_child.first_child || !c.first_child.first_child.first_child) return;
             if (d < dst && dd > 0 && this._inDash) {
@@ -195,7 +207,7 @@ class _Animator
             szTargetIcon.pivot_point = pivot;
 
             if (newIcon) {
-                szTargetIcon.x = pos.x + X + (iconWidth * 0.2)/2 - sx;                
+                szTargetIcon.x = pos.x + X + (iconWidth * 0.2)/2;
                 szTargetIcon.y = pos.y + Y + (iconWidth * 0.4) + sz;
                 this.animationContainer.add_child(szTargetIcon);
             } else {
@@ -209,8 +221,8 @@ class _Animator
                 }
             }
 
-            szTargetIcon._x = pos.x + X + (iconWidth * 0.2)/2 - sx;
-            szTargetIcon.x = (szTargetIcon.x * 3 + szTargetIcon._x)/4;
+            szTargetIcon._x = pos.x + X + (iconWidth * 0.2)/2;
+            szTargetIcon.x = (szTargetIcon.x * 9 + szTargetIcon._x)/10;
             idx++;
 
         });
@@ -218,7 +230,23 @@ class _Animator
         if (topIdx != -1) {
             let tl = topIdx - 1;
             let tr = topIdx + 1;
-            let pad = iconWidth * iconPadCoef;
+            let pz = 0;
+
+            let cc = this.dash.last_child.first_child.get_children()[topIdx];
+            let pos = cc.position;
+            let szTargetIcon = null;
+            if (cc && cc.first_child && cc.first_child.first_child) {
+                let szTarget = cc.first_child.first_child;
+                szTargetIcon = szTarget._icon;
+                pz = (pos.x + (iconWidth/2) - pointer[0]) / iconWidth * 40;
+                let tx = szTargetIcon._x + pz;
+                szTargetIcon.x += (tx - szTargetIcon.x) * xAnimFactor;
+            }
+
+            let pr = szTargetIcon;
+            let pl = szTargetIcon;
+
+            if (szTargetIcon)
             for(let i=0; i<20; i++) {
                 let cl = this.dash.last_child.first_child.get_children()[tl--];
                 let cr = this.dash.last_child.first_child.get_children()[tr++];
@@ -226,20 +254,20 @@ class _Animator
                 if (cl && cl.first_child && cl.first_child.first_child) {
                     let szTarget = cl.first_child.first_child;
                     let szTargetIcon = szTarget._icon;
-                    let tx = szTargetIcon._x - pad;
-                    szTargetIcon.x += (tx - szTargetIcon.x) * xAnimFactor;
+                    let tz = pl.x - iconWidth * szTargetIcon.scale_x;
+                    szTargetIcon.x += (tz - szTargetIcon.x) * xAnimFactor;
+                    pl = szTargetIcon;
                 }
 
                 if (cr && cr.first_child && cr.first_child.first_child) {
                     let szTarget = cr.first_child.first_child;
                     let szTargetIcon = szTarget._icon;
-                    let tx = szTargetIcon._x + pad;
-                    szTargetIcon.x += (tx - szTargetIcon.x) * xAnimFactor;
+                    let tz = pr.x + iconWidth * szTargetIcon.scale_x;
+                    szTargetIcon.x += (tz - szTargetIcon.x) * xAnimFactor;
+                    pr = szTargetIcon;
                 }
 
                 if (!cl && !cr) break;
-
-                pad *= padReduceFactor;
             }
         }
 

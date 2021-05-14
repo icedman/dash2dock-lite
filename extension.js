@@ -62,14 +62,6 @@ class Extension {
         });
 
         this.animator = new Animator();
-        this.fullScreenId = global.display.connect('in-fullscreen-changed', (() => {
-            let primary = Main.layoutManager.primaryMonitor;
-            if (!primary.inFullscreen) {
-                this.animator.show();
-            } else {
-                this.animator.hide();
-            }
-        }).bind(this));        
     }
 
     enable() {
@@ -130,10 +122,6 @@ class Extension {
         Main.layoutManager.removeChrome(this.dashContainer);
         delete this.dashContainer;
         this.dashContainer = null;
-
-        global.display.disconnect(this.fullScreenId);
-        delete this.fullScreenId;
-        this.fullScreenId = null;
     }
 
     _updateAppsButton(disable) {

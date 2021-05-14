@@ -5,9 +5,6 @@
   "repository": "git@github.com:icedman/dash2dock-lite",
   "author": "icedman <m4rvin2005@gmail.com>",
   "license": "MIT",
-  "dependencies": {
-    "sqlite3": "^5.0.2"
-  },
   "scripts": {
     "pretty": "prettier --single-quote --write \"**/*.js\""
   }

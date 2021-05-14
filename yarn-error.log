@@ -1,0 +1,31 @@
+Arguments: 
+  /usr/bin/node /usr/bin/yarn pretty
+
+PATH: 
+  /home/iceman/Developer/flutter/bin:/home/iceman/.local/bin:/home/iceman/Developer/gcc-arm/bin:/home/iceman/Developer/Android/emulator:/home/iceman/Developer/Android/build-tools/28.0.3:/home/iceman/Developer/Android/jdk1.8.0_181/bin:/home/iceman/Developer/Android/platform-tools:/home/iceman/Developer/Android/tools/bin:/home/iceman/Developer/Android/tools/:/home/iceman/Developer/Android/emulator:/home/iceman/Developer/Android:/home/iceman/Developer/Android/ndk/21.3.6528147:/opt/google-cloud-sdk/bin:/opt/google-cloud-sdk/bin:/opt/google-cloud-sdk/bin:/opt/google-cloud-sdk/bin:/opt/google-cloud-sdk/bin:/opt/google-cloud-sdk/bin:/opt/google-cloud-sdk/bin:/opt/google-cloud-sdk/bin:/opt/google-cloud-sdk/bin:/opt/google-cloud-sdk/bin:/opt/google-cloud-sdk/bin:/opt/google-cloud-sdk/bin:/opt/google-cloud-sdk/bin:/opt/google-cloud-sdk/bin:/opt/google-cloud-sdk/bin:/opt/google-cloud-sdk/bin:/opt/google-cloud-sdk/bin:/opt/google-cloud-sdk/bin:/opt/google-cloud-sdk/bin:/opt/google-cloud-sdk/bin:/opt/google-cloud-sdk/bin:/opt/google-cloud-sdk/bin:/opt/google-cloud-sdk/bin:/opt/google-cloud-sdk/bin:/opt/google-cloud-sdk/bin:/opt/google-cloud-sdk/bin:/opt/google-cloud-sdk/bin:/opt/google-cloud-sdk/bin:/opt/google-cloud-sdk/bin:/opt/google-cloud-sdk/bin:/opt/google-cloud-sdk/bin:/opt/google-cloud-sdk/bin:/opt/google-cloud-sdk/bin:/opt/google-cloud-sdk/bin:/opt/google-cloud-sdk/bin:/opt/google-cloud-sdk/bin:/opt/google-cloud-sdk/bin:/opt/google-cloud-sdk/bin:/opt/google-cloud-sdk/bin:/opt/google-cloud-sdk/bin:/opt/google-cloud-sdk/bin:/opt/google-cloud-sdk/bin:/opt/google-cloud-sdk/bin:/opt/google-cloud-sdk/bin:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/lib/jvm/default/bin:/usr/bin/site_perl:/usr/bin/vendor_perl:/usr/bin/core_perl:/usr/lib/jvm/default/bin:/usr/lib/jvm/default/bin:/usr/lib/jvm/default/bin:/usr/lib/jvm/default/bin:/usr/lib/jvm/default/bin:/usr/lib/jvm/default/bin:/usr/lib/jvm/default/bin:/usr/lib/jvm/default/bin:/usr/lib/jvm/default/bin:/usr/lib/jvm/default/bin:/usr/lib/jvm/default/bin:/usr/lib/jvm/default/bin:/usr/lib/jvm/default/bin:/usr/lib/jvm/default/bin:/usr/lib/jvm/default/bin:/usr/lib/jvm/default/bin:/usr/lib/jvm/default/bin:/usr/lib/jvm/default/bin:/usr/lib/jvm/default/bin:/usr/lib/jvm/default/bin:/usr/lib/jvm/default/bin:/usr/lib/jvm/default/bin:/usr/lib/jvm/default/bin:/usr/lib/jvm/default/bin:/usr/lib/jvm/default/bin:/usr/lib/jvm/default/bin:/usr/lib/jvm/default/bin:/usr/lib/jvm/default/bin:/usr/lib/jvm/default/bin:/usr/lib/jvm/default/bin:/usr/lib/jvm/default/bin:/usr/lib/jvm/default/bin:/usr/lib/jvm/default/bin:/usr/lib/jvm/default/bin:/usr/lib/jvm/default/bin:/usr/lib/jvm/default/bin:/usr/lib/jvm/default/bin:/usr/lib/jvm/default/bin:/usr/lib/jvm/default/bin:/usr/lib/jvm/default/bin:/usr/lib/jvm/default/bin:/usr/lib/jvm/default/bin:/usr/lib/jvm/default/bin:/usr/lib/jvm/default/bin:/usr/lib/jvm/default/bin:/usr/lib/jvm/default/bin:/usr/lib/jvm/default/bin:/usr/lib/jvm/default/bin:/usr/lib/jvm/default/bin:/usr/lib/jvm/default/bin:/usr/lib/jvm/default/bin:/usr/lib/jvm/default/bin:/usr/lib/jvm/default/bin:/usr/lib/jvm/default/bin:/usr/lib/jvm/default/bin:/usr/lib/jvm/default/bin:/usr/lib/jvm/default/bin:/usr/lib/jvm/default/bin
+
+Yarn version: 
+  1.22.10
+
+Node version: 
+  16.1.0
+
+Platform: 
+  linux x64
+
+Trace: 
+  SyntaxError: /home/iceman/Developer/gnome/gnome-extensions/dash2dock-lite/package.json: Unexpected end of JSON input
+      at JSON.parse (<anonymous>)
+      at /usr/lib/node_modules/yarn/lib/cli.js:1625:59
+      at Generator.next (<anonymous>)
+      at step (/usr/lib/node_modules/yarn/lib/cli.js:310:30)
+      at /usr/lib/node_modules/yarn/lib/cli.js:321:13
+
+npm manifest: 
+  
+
+yarn manifest: 
+  No manifest
+
+Lockfile: 
+  No lockfile

@@ -227,6 +227,7 @@ class _Animator {
       let scc = 1 + sc - szTargetIcon.scale_x;
       szTargetIcon.scale_x = szTargetIcon.scale_x + scc * scaleAnimFactor;
       szTargetIcon.scale_y = szTargetIcon.scale_y + scc * scaleAnimFactor;
+      // szTargetIcon.scale_z = szTargetIcon.scale_y;
 
       szTargetIcon.pivot_point = pivot;
 
@@ -263,7 +264,7 @@ class _Animator {
         let szTarget = cc.first_child.first_child;
         szTargetIcon = szTarget._icon;
         pz = ((pos.x + iconWidth / 2 - pointer[0]) / iconWidth) * 40;
-        if (pz < iconWidth/2 && pz > -iconWidth/2) {
+        if (pz < iconWidth / 2 && pz > -iconWidth / 2) {
           let tx = szTargetIcon._x + pz;
           szTargetIcon.x += (tx - szTargetIcon.x) * xAnimFactor;
         }

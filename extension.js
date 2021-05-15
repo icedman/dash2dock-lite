@@ -211,11 +211,20 @@ class Extension {
   }
 
   _updateAnimation(disable) {
+    let container = this.dashContainer;
+    let dash = this.dash;
+
+    // let dashtodockBox = Main.uiGroup.find_child_by_name('dashtodockBox');
+    // if (dashtodockBox) {
+    //   container = dashtodockBox;
+    //   dash = dashtodockBox.find_child_by_name('dash');
+    // }
+
     this.animator.update({
       shrink: this.shrink,
       enable: this.animateIcons && !disable,
-      dash: this.dash,
-      container: this.dashContainer,
+      dash: dash,
+      container: container,
     });
   }
 

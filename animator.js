@@ -37,6 +37,8 @@ class _Animator {
     this.dashContainer.set_reactive(true);
     this.dashContainer.set_track_hover(true);
 
+    // this.dashContainer.add_style_class_name('hi');
+
     this.animationContainer = new St.Widget({ name: 'animationContainer' });
     Main.uiGroup.add_child(this.animationContainer);
 
@@ -134,13 +136,13 @@ class _Animator {
 
   _onEnterEvent() {
     this._inDash = true;
-    // this.animationContainer.add_style_class_name('hi');
+    // this.dashContainer.add_style_class_name('hi');
   }
 
   _onLeaveEvent() {
     this._inDash = false;
     this._runForAwhile();
-    // this.animationContainer.remove_style_class_name('hi');
+    // this.dashContainer.remove_style_class_name('hi');
   }
 
   _runForAwhile() {
@@ -261,8 +263,10 @@ class _Animator {
         let szTarget = cc.first_child.first_child;
         szTargetIcon = szTarget._icon;
         pz = ((pos.x + iconWidth / 2 - pointer[0]) / iconWidth) * 40;
-        let tx = szTargetIcon._x + pz;
-        szTargetIcon.x += (tx - szTargetIcon.x) * xAnimFactor;
+        if (pz < iconWidth/2 && pz > -iconWidth/2) {
+          let tx = szTargetIcon._x + pz;
+          szTargetIcon.x += (tx - szTargetIcon.x) * xAnimFactor;
+        }
       }
 
       let pr = szTargetIcon;
@@ -276,7 +280,7 @@ class _Animator {
           if (cl && cl.first_child && cl.first_child.first_child) {
             let szTarget = cl.first_child.first_child;
             let szTargetIcon = szTarget._icon;
-            let tz = pl.x - iconWidth * szTargetIcon.scale_x;
+            let tz = pl.x - iconWidth * szTargetIcon.scale_x * 1.1;
             szTargetIcon.x += (tz - szTargetIcon.x) * xAnimFactor;
             pl = szTargetIcon;
           }
@@ -284,7 +288,7 @@ class _Animator {
           if (cr && cr.first_child && cr.first_child.first_child) {
             let szTarget = cr.first_child.first_child;
             let szTargetIcon = szTarget._icon;
-            let tz = pr.x + iconWidth * szTargetIcon.scale_x;
+            let tz = pr.x + iconWidth * szTargetIcon.scale_x * 1.1;
             szTargetIcon.x += (tz - szTargetIcon.x) * xAnimFactor;
             pr = szTargetIcon;
           }

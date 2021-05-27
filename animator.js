@@ -25,6 +25,7 @@ class _Animator {
     this.shrink = params.shrink;
     this.dash = params.dash;
     this.dashContainer = params.container;
+    this._enabled = params.enable;
 
     if (params.enable) {
       this.enable();
@@ -111,6 +112,17 @@ class _Animator {
           szTarget.queue_relayout();
           szTarget.queue_redraw();
         }
+
+        /*
+        let draggable = c.first_child._draggable;
+        if (draggable) {
+          draggable.disconnect(draggable._dragBeginId);
+          delete draggable._dragBeginId;
+          draggable.disconnect(draggable._dragEndId);
+          delete draggable._dragEndId;
+        }
+        */
+
       });
 
       Main.uiGroup.remove_child(this.animationContainer);
@@ -226,12 +238,16 @@ class _Animator {
       }
 
       let draggable = c.first_child._draggable;
-      if (newIcon && draggable) {
-        draggable.connect('drag-begin', () => {
+      if (newIcon && draggable && !draggable._dragBeginId) {
+        draggable._dragBeginId = draggable.connect('drag-begin', () => {
+          if (this._enabled) {
             this.disable();
+          }
         });
-        draggable.connect('drag-end', () => {
+        draggable._dragEndId = draggable.connect('drag-end', () => {
+          if (this._enabled) {
             this.enable();
+          }
         });
       }
 

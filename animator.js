@@ -93,8 +93,10 @@ class _Animator {
           !c.first_child ||
           !c.first_child.first_child ||
           !c.first_child.first_child.first_child
-        )
+        ) {
           return;
+        }
+
         let szTarget = c.first_child.first_child;
         let szTargetIcon = szTarget._icon;
 
@@ -103,6 +105,8 @@ class _Animator {
           szTarget._icon = null;
           szTarget.width = -1;
           szTarget.height = -1;
+          szTargetIcon.scale_x = 1;
+          szTargetIcon.scale_y = 1;
           szTarget.add_child(szTargetIcon);
           szTarget.queue_relayout();
           szTarget.queue_redraw();
@@ -195,8 +199,10 @@ class _Animator {
         !c.first_child ||
         !c.first_child.first_child ||
         !c.first_child.first_child.first_child
-      )
+      ) {
         return;
+      }
+
       if (d < dst && dd > 0 && this._inDash) {
         let df = dd / dst;
         sz = -10 * df;
@@ -217,6 +223,16 @@ class _Animator {
         let iconWidth = szTargetIcon.width;
         szTarget.remove_child(szTargetIcon);
         newIcon = true;
+      }
+
+      let draggable = c.first_child._draggable;
+      if (newIcon && draggable) {
+        draggable.connect('drag-begin', () => {
+            this.disable();
+        });
+        draggable.connect('drag-end', () => {
+            this.enable();
+        });
       }
 
       szTarget.width = iconWidth;

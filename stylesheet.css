@@ -15,7 +15,7 @@
 }
 
 #dashContainer #dash .dash-item-container > StWidget:hover .overview-icon {
-  /*background-color: rgba(0,0,0,0.9) !important;*/
+  background-color: rgba(150,150,150,0.4) !important;
   border-radius: 6px !important;
 }
 

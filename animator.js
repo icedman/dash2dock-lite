@@ -122,7 +122,6 @@ class _Animator {
           delete draggable._dragEndId;
         }
         */
-
       });
 
       Main.uiGroup.remove_child(this.animationContainer);

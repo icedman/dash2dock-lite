@@ -125,7 +125,8 @@ class Extension {
     }
 
     Main.layoutManager.removeChrome(this.dashContainer);
-    delete this.dashContainer;
+    this.dashContainer.destroy(); // as per guideline
+    // delete this.dashContainer;
     this.dashContainer = null;
   }
 

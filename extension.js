@@ -26,7 +26,7 @@ class Extension {
     this._enableSettings();
 
     this.animator = new Animator();
-    this.autohide = new AutoHide();
+    this.autohider = new AutoHide();
 
     this._onOverviewShowingId = Main.overview.connect(
       'showing',
@@ -51,7 +51,7 @@ class Extension {
       vertical: true,
     });
 
-    Main.layoutManager.addChrome(this.dashContainer, {
+    Main.layoutManager.addTopChrome(this.dashContainer, {
       affectsStruts: this.affectsStruts,
       trackFullscreen: true,
     });
@@ -106,7 +106,7 @@ class Extension {
     Main.overview.disconnect(this._onOverviewHiddenId);
 
     this.animator = null;
-    this.autohide = null;
+    this.autohider = null;
   }
 
   _enableSettings() {
@@ -118,10 +118,10 @@ class Extension {
     this.recycleOldDash = this._settings.get_boolean(SettingsKey.REUSE_DASH);
     this.hideAppsButton = true;
     this.vertical = false;
-    this.affectsStruts = true; // combine with autohide
-    this.autohide = false;
+    this.autohide = true;
+    this.affectsStruts = !this.autohide;
 
-    // zero always primary display?
+    // zero always primary display?z
     let box = global.display.get_monitor_geometry(0);
     this.sw = box.width;
     this.sh = box.height;
@@ -238,8 +238,6 @@ class Extension {
   _updateLayout(disable) {
     if (!this.dashContainer) return;
 
-    // let [sw, sh] = global.display.get_size();
-
     this.dockWidth = this.shrink && !disable ? 80 : 110;
     this.dockHeight = this.shrink && !disable ? 80 : 110;
 
@@ -283,10 +281,10 @@ class Extension {
       });
     }
 
-    if (this.autohide) {
-      this.autohide.update({
+    if (this.autohider) {
+      this.autohider.update({
         shrink: this.shrink,
-        enable: this.animateIcons && !disable,
+        enable: (this.animateIcons && this.autohide) && !disable,
         dash: dash,
         container: container,
         screenHeight: this.sh,

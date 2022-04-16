@@ -35,7 +35,6 @@ var Animator = class {
   }
 
   enable() {
-    this.frameCounter = 0;
     this.dashContainer.set_reactive(true);
     this.dashContainer.set_track_hover(true);
 

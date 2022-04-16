@@ -12,9 +12,18 @@ install:
 update:
 	cp -R ./* ~/.local/share/gnome-shell/extensions/dash2dock-lite@icedman.github.com/
 
-zip:
+publish:
+	rm -rf build
+	mkdir build
+	cp LICENSE ./build
+	cp *.js ./build
+	cp metadata.json ./build
+	cp stylesheet.css ./build
+	cp README.md ./build
+	cp -R schemas ./build
 	rm -rf ./*.zip
-	zip -qr ./dash2dock-lite@icedman.github.com.zip ./*
+	cd build ; \
+	zip -qr ../dash2dock-lite@icedman.github.com.zip .
 
 lint:
 	eslint ./

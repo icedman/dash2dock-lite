@@ -31,9 +31,6 @@ class Extension {
     this.hideAppsButton = true;
     this.vertical = false;
 
-    Main.overview.connect('showing', this._onOverviewShowing.bind(this));
-    Main.overview.connect('hidden', this._onOverviewHidden.bind(this));
-
     this._settings.connect(`changed::${SettingsKey.REUSE_DASH}`, () => {
       this.recycleOldDash = this._settings.get_boolean(SettingsKey.REUSE_DASH);
       this.disable();
@@ -60,11 +57,20 @@ class Extension {
       this.animateIcons = this._settings.get_boolean(SettingsKey.ANIMATE_ICONS);
       this._updateAnimation();
     });
-
-    this.animator = new Animator();
   }
 
   enable() {
+    this.animator = new Animator();
+
+    this._onOverviewShowingId = Main.overview.connect(
+      'showing',
+      this._onOverviewShowing.bind(this)
+    );
+    this._onOverviewHiddenId = Main.overview.connect(
+      'hidden',
+      this._onOverviewHidden.bind(this)
+    );
+
     if (this.recycleOldDash) {
       this.originalDash = Main.uiGroup.find_child_by_name('dash');
       this.dash = this.originalDash;
@@ -125,21 +131,26 @@ class Extension {
     }
 
     Main.layoutManager.removeChrome(this.dashContainer);
-    this.dashContainer.destroy(); // as per guideline
-    // delete this.dashContainer;
+    this.dashContainer.destroy();
     this.dashContainer = null;
+
+    Main.overview.disconnect(this._onOverviewShowingId);
+    Main.overview.disconnect(this._onOverviewHiddenId);
+
+    this.animator = null;
   }
 
   _updateAppsButton(disable) {
     if (!this.dash) return;
 
+    if (this.appButtonId && disable) {
+      this.dash.showAppsButton.disconnect(this.appButtonId);
+      delete this.appButtonId;
+      this.appButtonId = null;
+    }
+
     if (this.hideAppsButton && !disable) {
       this.dash.showAppsButton.hide();
-      if (this.appButtonId) {
-        this.dash.showAppsButton.disconnect(this.appButtonId);
-        delete this.appButtonId;
-        this.appButtonId = null;
-      }
     } else {
       this.dash.showAppsButton.show();
       this.appButtonId = this.dash.showAppsButton.connect(
@@ -186,7 +197,13 @@ class Extension {
   _updateLayout(disable) {
     if (!this.dashContainer) return;
 
-    let [sw, sh] = global.display.get_size();
+    // let [sw, sh] = global.display.get_size();
+
+    // zero always primary display?
+    let box = global.display.get_monitor_geometry(0);
+    let sw = box.width;
+    let sh = box.height;
+
     this.dockWidth = this.shrink && !disable ? 80 : 110;
     this.dockHeight = this.shrink && !disable ? 80 : 110;
 
@@ -221,12 +238,14 @@ class Extension {
     //   dash = dashtodockBox.find_child_by_name('dash');
     // }
 
-    this.animator.update({
-      shrink: this.shrink,
-      enable: this.animateIcons && !disable,
-      dash: dash,
-      container: container,
-    });
+    if (this.animator) {
+      this.animator.update({
+        shrink: this.shrink,
+        enable: this.animateIcons && !disable,
+        dash: dash,
+        container: container,
+      });
+    }
   }
 
   _onOverviewShowing() {

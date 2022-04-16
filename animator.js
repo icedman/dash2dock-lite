@@ -20,7 +20,7 @@ const yAnimFactor = 0.2;
 const scaleAnimFactor = 0.1;
 const padReduceFactor = 0.94;
 
-class _Animator {
+var Animator = class {
   update(params) {
     this.shrink = params.shrink;
     this.dash = params.dash;
@@ -35,10 +35,9 @@ class _Animator {
   }
 
   enable() {
+    this.frameCounter = 0;
     this.dashContainer.set_reactive(true);
     this.dashContainer.set_track_hover(true);
-
-    // this.dashContainer.add_style_class_name('hi');
 
     this.animationContainer = new St.Widget({ name: 'animationContainer' });
     Main.uiGroup.add_child(this.animationContainer);
@@ -57,11 +56,11 @@ class _Animator {
     );
     this._focusWindowId = global.display.connect(
       'notify::focus-window',
-      this._runForAwhile.bind(this)
+      this._beginAnimation.bind(this)
     );
 
-    this._runForAwhile();
-    this._intervalId = setInterval(this._animate.bind(this), 100);
+    this._beginAnimation();
+    // this._beginAnimation()
 
     this.fullScreenId = global.display.connect(
       'in-fullscreen-changed',
@@ -83,6 +82,10 @@ class _Animator {
     if (this._intervalId) {
       clearInterval(this._intervalId);
       this._intervalId = null;
+    }
+    if (this._timeoutId) {
+      clearTimeout(this._timeoutId);
+      this._timeoutId = null;
     }
 
     if (this.animationContainer) {
@@ -132,17 +135,63 @@ class _Animator {
     if (this._motionEventId) {
       this.dashContainer.disconnect(this._motionEventId);
       delete this._motionEventId;
-      this.dashContainer.disconnect(this._enterEventId);
-      delete this._enterEventId;
-      this.dashContainer.disconnect(this._leaveEventId);
-      delete this._leaveEventId;
-      global.display.disconnect(this._focusWindowId);
-      delete this._focusWindowId;
+      this._motionEventId = null;
     }
 
-    global.display.disconnect(this.fullScreenId);
-    delete this.fullScreenId;
-    this.fullScreenId = null;
+    if (this._enterEventId) {
+      this.dashContainer.disconnect(this._enterEventId);
+      delete this._enterEventId;
+      this._enterEventId = null;
+    }
+
+    if (this._leaveEventId) {
+      this.dashContainer.disconnect(this._leaveEventId);
+      delete this._leaveEventId;
+      this._leaveEventId = null;
+    }
+
+    if (this._focusWindowId) {
+      global.display.disconnect(this._focusWindowId);
+      delete this._focusWindowId;
+      this._focusWindowId = null;
+    }
+
+    if (this.fullScreenId) {
+      global.display.disconnect(this.fullScreenId);
+      delete this.fullScreenId;
+      this.fullScreenId = null;
+    }
+  }
+
+  _beginAnimation() {
+    if (this._timeoutId) {
+      clearInterval(this._timeoutId);
+      this._timeoutId = null;
+    }
+    if (this._intervalId == null) {
+      this._intervalId = setInterval(this._animationTick.bind(this), 40);
+    }
+  }
+
+  _endAnimation() {
+    if (this._intervalId) {
+      clearInterval(this._intervalId);
+      this._intervalId = null;
+    }
+    this._timeoutId = null;
+    // this.dashContainer.remove_style_class_name('hi');
+  }
+
+  _debounceEndAnimation() {
+    if (this._timeoutId) {
+      clearInterval(this._timeoutId);
+    }
+    this._timeoutId = setTimeout(this._endAnimation.bind(this), 1500);
+  }
+
+  _animationTick() {
+    this._animate();
+    // this.dashContainer.add_style_class_name('hi');
   }
 
   _onMotionEvent() {
@@ -151,21 +200,12 @@ class _Animator {
 
   _onEnterEvent() {
     this._inDash = true;
-    // this.dashContainer.add_style_class_name('hi');
+    this._beginAnimation();
   }
 
   _onLeaveEvent() {
     this._inDash = false;
-    this._runForAwhile();
-    // this.dashContainer.remove_style_class_name('hi');
-  }
-
-  _runForAwhile() {
-    for (let i = 25; i < 300; i += 25) {
-      setTimeout(() => {
-        this._animate();
-      }, i);
-    }
+    this._debounceEndAnimation();
   }
 
   _animate() {
@@ -347,6 +387,4 @@ class _Animator {
       this.animationContainer.hide();
     }
   }
-}
-
-var Animator = _Animator;
+};

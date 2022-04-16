@@ -17,6 +17,7 @@ var SettingsKey = {
   REUSE_DASH: 'reuse-dash',
   SHRINK_ICONS: 'shrink-icons',
   ANIMATE_ICONS: 'animate-icons',
+  AUTOHIDE_DASH: 'autohide-dash',
   BG_OPACITY: 'background-opacity',
   BG_DARK: 'background-dark',
 };
@@ -189,6 +190,14 @@ const Dash2DockLiteSettingsPane = GObject.registerClass(
         SettingsKey.ANIMATE_ICONS
       );
       _listBox.append(animateIcons);
+
+      // disable for now ... not ready
+      // const autohideDash = new Dash2DockLiteSettingListBoxRow(
+      //   _('Autohide'),
+      //   _('Autohide the dash panel'),
+      //   SettingsKey.AUTOHIDE_DASH
+      // );
+      // _listBox.append(autohideDash);
 
       const backgroundDark = new Dash2DockLiteSettingListBoxRow(
         _('Dark background'),

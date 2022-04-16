@@ -27,3 +27,6 @@ publish:
 
 lint:
 	eslint ./
+
+pretty:
+	prettier --single-quote --write "**/*.js"

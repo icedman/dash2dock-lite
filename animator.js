@@ -35,50 +35,14 @@ var Animator = class {
   }
 
   enable() {
-    this.frameCounter = 0;
-    this.dashContainer.set_reactive(true);
-    this.dashContainer.set_track_hover(true);
-
     this.animationContainer = new St.Widget({ name: 'animationContainer' });
     Main.uiGroup.add_child(this.animationContainer);
 
-    this._motionEventId = this.dashContainer.connect(
-      'motion-event',
-      this._onMotionEvent.bind(this)
-    );
-    this._enterEventId = this.dashContainer.connect(
-      'enter-event',
-      this._onEnterEvent.bind(this)
-    );
-    this._leaveEventId = this.dashContainer.connect(
-      'leave-event',
-      this._onLeaveEvent.bind(this)
-    );
-    this._focusWindowId = global.display.connect(
-      'notify::focus-window',
-      this._beginAnimation.bind(this)
-    );
-
     this._beginAnimation();
     // this._beginAnimation()
-
-    this.fullScreenId = global.display.connect(
-      'in-fullscreen-changed',
-      (() => {
-        let primary = Main.layoutManager.primaryMonitor;
-        if (!primary.inFullscreen) {
-          this.show();
-        } else {
-          this.hide();
-        }
-      }).bind(this)
-    );
   }
 
   disable() {
-    this.dashContainer.set_reactive(false);
-    this.dashContainer.set_track_hover(false);
-
     if (this._intervalId) {
       clearInterval(this._intervalId);
       this._intervalId = null;
@@ -131,36 +95,6 @@ var Animator = class {
       delete this.animationContainer;
       this.animationContainer = null;
     }
-
-    if (this._motionEventId) {
-      this.dashContainer.disconnect(this._motionEventId);
-      delete this._motionEventId;
-      this._motionEventId = null;
-    }
-
-    if (this._enterEventId) {
-      this.dashContainer.disconnect(this._enterEventId);
-      delete this._enterEventId;
-      this._enterEventId = null;
-    }
-
-    if (this._leaveEventId) {
-      this.dashContainer.disconnect(this._leaveEventId);
-      delete this._leaveEventId;
-      this._leaveEventId = null;
-    }
-
-    if (this._focusWindowId) {
-      global.display.disconnect(this._focusWindowId);
-      delete this._focusWindowId;
-      this._focusWindowId = null;
-    }
-
-    if (this.fullScreenId) {
-      global.display.disconnect(this.fullScreenId);
-      delete this.fullScreenId;
-      this.fullScreenId = null;
-    }
   }
 
   _beginAnimation() {
@@ -169,7 +103,7 @@ var Animator = class {
       this._timeoutId = null;
     }
     if (this._intervalId == null) {
-      this._intervalId = setInterval(this._animationTick.bind(this), 40);
+      this._intervalId = setInterval(this._animate.bind(this), 40);
     }
   }
 
@@ -189,23 +123,31 @@ var Animator = class {
     this._timeoutId = setTimeout(this._endAnimation.bind(this), 1500);
   }
 
-  _animationTick() {
-    this._animate();
-    // this.dashContainer.add_style_class_name('hi');
-  }
-
-  _onMotionEvent() {
+  onMotionEvent() {
     this._animate();
   }
 
-  _onEnterEvent() {
+  onEnterEvent() {
     this._inDash = true;
     this._beginAnimation();
   }
 
-  _onLeaveEvent() {
+  onLeaveEvent() {
     this._inDash = false;
     this._debounceEndAnimation();
+  }
+
+  onFocusWindow() {
+    this._beginAnimation();
+  }
+
+  onFullScreenEvent() {
+    let primary = Main.layoutManager.primaryMonitor;
+    if (!primary.inFullscreen) {
+      this.show();
+    } else {
+      this.hide();
+    }
   }
 
   _animate() {

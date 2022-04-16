@@ -169,7 +169,7 @@ var Animator = class {
       this._timeoutId = null;
     }
     if (this._intervalId == null) {
-      this._intervalId = setInterval(this._animationTick.bind(this), 40);
+      this._intervalId = setInterval(this._animate.bind(this), 40);
     }
   }
 
@@ -187,11 +187,6 @@ var Animator = class {
       clearInterval(this._timeoutId);
     }
     this._timeoutId = setTimeout(this._endAnimation.bind(this), 1500);
-  }
-
-  _animationTick() {
-    this._animate();
-    // this.dashContainer.add_style_class_name('hi');
   }
 
   _onMotionEvent() {

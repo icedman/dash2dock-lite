@@ -16,51 +16,17 @@ const Me = ExtensionUtils.getCurrentExtension();
 const schema_id = Me.imports.prefs.schema_id;
 const SettingsKey = Me.imports.prefs.SettingsKey;
 const Animator = Me.imports.animator.Animator;
+const AutoHide = Me.imports.autohide.AutoHide;
 
 const setTimeout = Me.imports.utils.setTimeout;
 const setInterval = Me.imports.utils.setInterval;
 
 class Extension {
-  constructor() {
-    this._settings = ExtensionUtils.getSettings(schema_id);
-    this.shrink = this._settings.get_boolean(SettingsKey.SHRINK_ICONS);
-    this.animateIcons = this._settings.get_boolean(SettingsKey.ANIMATE_ICONS);
-    this.bgDark = this._settings.get_boolean(SettingsKey.BG_DARK);
-    this.bgOpacity = this._settings.get_double(SettingsKey.BG_OPACITY);
-    this.recycleOldDash = this._settings.get_boolean(SettingsKey.REUSE_DASH);
-    this.hideAppsButton = true;
-    this.vertical = false;
-
-    this._settings.connect(`changed::${SettingsKey.REUSE_DASH}`, () => {
-      this.recycleOldDash = this._settings.get_boolean(SettingsKey.REUSE_DASH);
-      this.disable();
-      this.enable();
-    });
-    this._settings.connect(`changed::${SettingsKey.BG_DARK}`, () => {
-      this.bgDark = this._settings.get_boolean(SettingsKey.BG_DARK);
-      this._updateBgDark();
-    });
-    this._settings.connect(`changed::${SettingsKey.BG_OPACITY}`, () => {
-      this.bgOpacity = this._settings.get_double(SettingsKey.BG_OPACITY);
-      this._updateBgOpacity();
-    });
-    this._settings.connect(`changed::${SettingsKey.SHRINK_ICONS}`, () => {
-      this.shrink = this._settings.get_boolean(SettingsKey.SHRINK_ICONS);
-      this._updateShrink();
-
-      // these will be messed up.. force update
-      this._updateLayout();
-      this._updateAnimation(true);
-      this._updateAnimation();
-    });
-    this._settings.connect(`changed::${SettingsKey.ANIMATE_ICONS}`, () => {
-      this.animateIcons = this._settings.get_boolean(SettingsKey.ANIMATE_ICONS);
-      this._updateAnimation();
-    });
-  }
-
   enable() {
+    this._enableSettings();
+
     this.animator = new Animator();
+    this.autohide = new AutoHide();
 
     this._onOverviewShowingId = Main.overview.connect(
       'showing',
@@ -86,7 +52,7 @@ class Extension {
     });
 
     Main.layoutManager.addChrome(this.dashContainer, {
-      affectsStruts: true,
+      affectsStruts: this.affectsStruts,
       trackFullscreen: true,
     });
 
@@ -113,6 +79,8 @@ class Extension {
   }
 
   disable() {
+    this._disableSettings();
+
     this._updateAppsButton(true);
     this._updateShrink(true);
     this._updateBgDark(true);
@@ -138,6 +106,79 @@ class Extension {
     Main.overview.disconnect(this._onOverviewHiddenId);
 
     this.animator = null;
+    this.autohide = null;
+  }
+
+  _enableSettings() {
+    this._settings = ExtensionUtils.getSettings(schema_id);
+    this.shrink = this._settings.get_boolean(SettingsKey.SHRINK_ICONS);
+    this.animateIcons = this._settings.get_boolean(SettingsKey.ANIMATE_ICONS);
+    this.bgDark = this._settings.get_boolean(SettingsKey.BG_DARK);
+    this.bgOpacity = this._settings.get_double(SettingsKey.BG_OPACITY);
+    this.recycleOldDash = this._settings.get_boolean(SettingsKey.REUSE_DASH);
+    this.hideAppsButton = true;
+    this.vertical = false;
+    this.affectsStruts = true; // combine with autohide
+    this.autohide = false;
+
+    // zero always primary display?
+    let box = global.display.get_monitor_geometry(0);
+    this.sw = box.width;
+    this.sh = box.height;
+
+    this._settingsListeners = [];
+
+    this._settingsListeners.push(
+      this._settings.connect(`changed::${SettingsKey.REUSE_DASH}`, () => {
+        this.recycleOldDash = this._settings.get_boolean(
+          SettingsKey.REUSE_DASH
+        );
+        this.disable();
+        this.enable();
+      })
+    );
+
+    this._settingsListeners.push(
+      this._settings.connect(`changed::${SettingsKey.BG_DARK}`, () => {
+        this.bgDark = this._settings.get_boolean(SettingsKey.BG_DARK);
+        this._updateBgDark();
+      })
+    );
+
+    this._settingsListeners.push(
+      this._settings.connect(`changed::${SettingsKey.BG_OPACITY}`, () => {
+        this.bgOpacity = this._settings.get_double(SettingsKey.BG_OPACITY);
+        this._updateBgOpacity();
+      })
+    );
+
+    this._settingsListeners.push(
+      this._settings.connect(`changed::${SettingsKey.SHRINK_ICONS}`, () => {
+        this.shrink = this._settings.get_boolean(SettingsKey.SHRINK_ICONS);
+        this._updateShrink();
+
+        // these will be messed up.. force update
+        this._updateLayout();
+        this._updateAnimation(true);
+        this._updateAnimation();
+      })
+    );
+
+    this._settingsListeners.push(
+      this._settings.connect(`changed::${SettingsKey.ANIMATE_ICONS}`, () => {
+        this.animateIcons = this._settings.get_boolean(
+          SettingsKey.ANIMATE_ICONS
+        );
+        this._updateAnimation();
+      })
+    );
+  }
+
+  _disableSettings() {
+    this._settingsListeners.forEach((id) => {
+      this._settings.disconnect(id);
+    });
+    this._settingsListeners = [];
   }
 
   _updateAppsButton(disable) {
@@ -199,11 +240,6 @@ class Extension {
 
     // let [sw, sh] = global.display.get_size();
 
-    // zero always primary display?
-    let box = global.display.get_monitor_geometry(0);
-    let sw = box.width;
-    let sh = box.height;
-
     this.dockWidth = this.shrink && !disable ? 80 : 110;
     this.dockHeight = this.shrink && !disable ? 80 : 110;
 
@@ -213,11 +249,11 @@ class Extension {
       this.dash.last_child.vertical = true;
       this.dash.last_child.first_child.layout_manager.orientation = 1;
       this.dashContainer.set_width(this.dockWidth);
-      this.dashContainer.set_height(sh);
+      this.dashContainer.set_height(this.sh);
     } else {
       this.dashContainer.vertical = true;
-      this.dashContainer.set_position(0, sh - this.dockHeight);
-      this.dashContainer.set_width(sw);
+      this.dashContainer.set_position(0, this.sh - this.dockHeight);
+      this.dashContainer.set_width(this.sw);
       this.dashContainer.set_height(this.dockHeight);
     }
 
@@ -244,6 +280,16 @@ class Extension {
         enable: this.animateIcons && !disable,
         dash: dash,
         container: container,
+      });
+    }
+
+    if (this.autohide) {
+      this.autohide.update({
+        shrink: this.shrink,
+        enable: this.animateIcons && !disable,
+        dash: dash,
+        container: container,
+        screenHeight: this.sh,
       });
     }
   }

@@ -51,6 +51,8 @@ class Extension {
       vertical: true,
     });
 
+    this._enableEvents();
+
     Main.layoutManager.addTopChrome(this.dashContainer, {
       affectsStruts: this.affectsStruts,
       trackFullscreen: true,
@@ -76,9 +78,11 @@ class Extension {
     this._updateBgOpacity();
     this._updateLayout();
     this._updateAnimation();
+    this._updateAutohide();
   }
 
   disable() {
+    this._disableEvents();
     this._disableSettings();
 
     this._updateAppsButton(true);
@@ -87,6 +91,7 @@ class Extension {
     this._updateBgOpacity(true);
     this._updateLayout(true);
     this._updateAnimation(true);
+    this._updateAutohide(true);
 
     if (this.recycleOldDash) {
       this.dashContainer.remove_child(this.dash);
@@ -119,6 +124,7 @@ class Extension {
     this.hideAppsButton = true;
     this.vertical = false;
     this.autohide = true;
+    this.autohide = this._settings.get_boolean(SettingsKey.AUTOHIDE_DASH);
     this.affectsStruts = !this.autohide;
 
     // zero always primary display?z
@@ -156,11 +162,7 @@ class Extension {
       this._settings.connect(`changed::${SettingsKey.SHRINK_ICONS}`, () => {
         this.shrink = this._settings.get_boolean(SettingsKey.SHRINK_ICONS);
         this._updateShrink();
-
-        // these will be messed up.. force update
-        this._updateLayout();
-        this._updateAnimation(true);
-        this._updateAnimation();
+        this._forceRelayout();
       })
     );
 
@@ -172,6 +174,14 @@ class Extension {
         this._updateAnimation();
       })
     );
+
+    this._settingsListeners.push(
+      this._settings.connect(`changed::${SettingsKey.AUTOHIDE_DASH}`, () => {
+        this.autohide = this._settings.get_boolean(SettingsKey.AUTOHIDE_DASH);
+        this._updateAutohide();
+        this._forceRelayout();
+      })
+    );
   }
 
   _disableSettings() {
@@ -179,6 +189,90 @@ class Extension {
       this._settings.disconnect(id);
     });
     this._settingsListeners = [];
+  }
+
+  _enableEvents() {
+    this.dashContainer.set_reactive(true);
+    this.dashContainer.set_track_hover(true);
+
+    this._motionEventId = this.dashContainer.connect(
+      'motion-event',
+      this._onMotionEvent.bind(this)
+    );
+    this._enterEventId = this.dashContainer.connect(
+      'enter-event',
+      this._onEnterEvent.bind(this)
+    );
+    this._leaveEventId = this.dashContainer.connect(
+      'leave-event',
+      this._onLeaveEvent.bind(this)
+    );
+    this._focusWindowId = global.display.connect(
+      'notify::focus-window',
+      this._onFocusWindow.bind(this)
+    );
+    this.fullScreenId = global.display.connect(
+      'in-fullscreen-changed',
+      this._onFullScreen.bind(this)
+    );
+  }
+
+  _disableEvents() {
+    this.dashContainer.set_reactive(false);
+    this.dashContainer.set_track_hover(false);
+
+    if (this._motionEventId) {
+      this.dashContainer.disconnect(this._motionEventId);
+      delete this._motionEventId;
+      this._motionEventId = null;
+    }
+
+    if (this._enterEventId) {
+      this.dashContainer.disconnect(this._enterEventId);
+      delete this._enterEventId;
+      this._enterEventId = null;
+    }
+
+    if (this._leaveEventId) {
+      this.dashContainer.disconnect(this._leaveEventId);
+      delete this._leaveEventId;
+      this._leaveEventId = null;
+    }
+
+    if (this._focusWindowId) {
+      global.display.disconnect(this._focusWindowId);
+      delete this._focusWindowId;
+      this._focusWindowId = null;
+    }
+
+    if (this.fullScreenId) {
+      global.display.disconnect(this.fullScreenId);
+      delete this.fullScreenId;
+      this.fullScreenId = null;
+    }
+  }
+
+  _onMotionEvent() {
+    if (this.animateIcons) this.animator.onMotionEvent();
+    if (this.autohide) this.autohider.onMotionEvent();
+  }
+
+  _onEnterEvent() {
+    if (this.animateIcons) this.animator.onEnterEvent();
+    if (this.autohide) this.autohider.onEnterEvent();
+  }
+
+  _onLeaveEvent() {
+    if (this.animateIcons) this.animator.onLeaveEvent();
+    if (this.autohide) this.autohider.onLeaveEvent();
+  }
+
+  _onFocusWindow() {
+    if (this.animateIcons) this.animator.onFocusWindow();
+  }
+
+  _onFullScreen() {
+    if (this.animateIcons) this.animator.onFullScreenEvent();
   }
 
   _updateAppsButton(disable) {
@@ -272,24 +366,31 @@ class Extension {
     //   dash = dashtodockBox.find_child_by_name('dash');
     // }
 
-    if (this.animator) {
-      this.animator.update({
-        shrink: this.shrink,
-        enable: this.animateIcons && !disable,
-        dash: dash,
-        container: container,
-      });
-    }
+    this.animator.update({
+      shrink: this.shrink,
+      enable: this.animateIcons && !disable,
+      dash: dash,
+      container: container,
+    });
+  }
 
-    if (this.autohider) {
-      this.autohider.update({
-        shrink: this.shrink,
-        enable: (this.animateIcons && this.autohide) && !disable,
-        dash: dash,
-        container: container,
-        screenHeight: this.sh,
-      });
-    }
+  _updateAutohide(disable) {
+    let container = this.dashContainer;
+    let dash = this.dash;
+
+    this.autohider.update({
+      shrink: this.shrink,
+      enable: this.autohide && !disable,
+      dash: dash,
+      container: container,
+      screenHeight: this.sh,
+    });
+  }
+
+  _forceRelayout() {
+    this._updateLayout();
+    this._updateAnimation(true);
+    this._updateAnimation();
   }
 
   _onOverviewShowing() {

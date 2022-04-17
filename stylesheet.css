@@ -43,7 +43,7 @@
 
 #dashContainer.vertical #dash .dash-item-container .app-well-app-running-dot,
 #dashContainer.shrink #dash .dash-item-container .app-well-app-running-dot {
-    height: 2px !important;
+    height: 4px !important;
 }
 
 #dashContainer.shrink #dash .dash-item-container > StWidget,

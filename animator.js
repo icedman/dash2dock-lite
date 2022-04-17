@@ -183,7 +183,7 @@ var Animator = class {
     this._overlapped = false;
 
     let X = this.dash.last_child.x;
-    let Y = -iconWidth * 0.025;
+    let Y = -iconWidth * 0.08;
     if (X == 0) return;
     pointer[0] -= X;
 
@@ -224,6 +224,14 @@ var Animator = class {
         let df = dd / dst;
         sz = -10 * df;
         sc = iconScaleUp * df;
+      }
+
+      let szDot = szTarget.first_child;
+      if (szDot.icon) {
+        szDot = szTarget.last_child;
+      }
+      if (szDot) {
+        szDot.translation_y = this.shrink ? -8 : 0;
       }
 
       let szTargetIcon = szTarget._icon;

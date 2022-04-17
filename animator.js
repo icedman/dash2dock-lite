@@ -1,3 +1,4 @@
+const Clutter = imports.gi.Clutter;
 const Main = imports.ui.main;
 const Dash = imports.ui.dash.Dash;
 const Layout = imports.ui.layout;
@@ -37,6 +38,10 @@ var Animator = class {
 
   isDragging() {
     return this._dragging === true;
+  }
+
+  hasWindowOverlap() {
+    return this._overlapped === true;
   }
 
   enable() {
@@ -175,6 +180,7 @@ var Animator = class {
 
     this.animationContainer.position = this.dashContainer.position;
     this.animationContainer.size = this.dashContainer.size;
+    this._overlapped = false;
 
     let X = this.dash.last_child.x;
     let Y = -iconWidth * 0.025;
@@ -282,6 +288,7 @@ var Animator = class {
 
       szTargetIcon._x = pos.x + X + (iconWidth * 0.2) / 2;
       szTargetIcon.x = (szTargetIcon.x * 9 + szTargetIcon._x) / 10;
+
       idx++;
     });
 

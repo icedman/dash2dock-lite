@@ -29,7 +29,7 @@ var AutoHide = class {
   }
 
   enable() {
-    this._hide();
+    this.hide();
   }
 
   disable() {
@@ -37,13 +37,18 @@ var AutoHide = class {
       clearInterval(this._intervalId);
       this._intervalId = null;
     }
-    this._show();
+    if (this._timeoutId) {
+      clearTimeout(this._timeoutId);
+      this._timeoutId = null;
+    }
+
+    this.show();
   }
 
   _beginAnimation(t) {
     this.target = t;
     if (this._intervalId == null) {
-      this._intervalId = setInterval(this._animate.bind(this), 40);
+      this._intervalId = setInterval(this._animate.bind(this), 25);
     }
   }
 
@@ -55,27 +60,44 @@ var AutoHide = class {
     // this.dashContainer.remove_style_class_name('hi');
   }
 
+  _debounce(func, delay) {
+    if (this._timeoutId) {
+      clearInterval(this._timeoutId);
+    }
+    this._timeoutId = setTimeout(func.bind(this), delay);
+  }
+
   onMotionEvent() {}
 
   onEnterEvent() {
     this._inDash = true;
-    this._show();
+    this.show();
   }
 
   onLeaveEvent() {
     this._inDash = false;
-    this._hide();
+    this.hide();
   }
 
-  _show() {
+  show() {
+    this.frameDelay = 0;
     this._beginAnimation(this.screenHeight - this.dashContainer.height);
   }
 
-  _hide() {
+  hide() {
+    this.frameDelay = 10;
     this._beginAnimation(this.screenHeight - this.dashContainer.height / 8);
   }
 
   _animate() {
+    // temporarilty disable autohide
+    if (this.animator && this.animator.isDragging()) {
+      this.target = this.screenHeight - this.dashContainer.height;
+    }
+
+    if (this.frameDelay && this.frameDelay-- > 0) {
+      return;
+    }
     // this.dashContainer.add_style_class_name('hi');
     let y = this.dashContainer.position.y;
     let dy = this.target - y;
@@ -83,7 +105,7 @@ var AutoHide = class {
       y = this.target;
       this._endAnimation();
     } else {
-      dy = dy / 2;
+      dy = dy / 4;
       y += dy;
     }
     this.dashContainer.set_position(0, y);

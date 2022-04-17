@@ -24,6 +24,7 @@ const setInterval = Me.imports.utils.setInterval;
 class Extension {
   enable() {
     this._enableSettings();
+    this._queryDisplay();
 
     this.animator = new Animator();
     this.autohider = new AutoHide();
@@ -51,9 +52,7 @@ class Extension {
       vertical: true,
     });
 
-    this._enableEvents();
-
-    Main.layoutManager.addTopChrome(this.dashContainer, {
+    Main.layoutManager.addChrome(this.dashContainer, {
       affectsStruts: this.affectsStruts,
       trackFullscreen: true,
     });
@@ -62,10 +61,8 @@ class Extension {
       Main.uiGroup
         .find_child_by_name('overview')
         .first_child.remove_child(this.dash);
-      setTimeout(() => {
-        Main.overview.dash.height = -1;
-        Main.overview.dash.show();
-      }, 500);
+      Main.overview.dash.height = -1;
+      Main.overview.dash.show();
     } else {
       Main.overview.dash.height = 0;
       Main.overview.dash.hide();
@@ -79,10 +76,12 @@ class Extension {
     this._updateLayout();
     this._updateAnimation();
     this._updateAutohide();
+
+    this._addEvents();
   }
 
   disable() {
-    this._disableEvents();
+    this._removeEvents();
     this._disableSettings();
 
     this._updateAppsButton(true);
@@ -114,6 +113,20 @@ class Extension {
     this.autohider = null;
   }
 
+  _queryDisplay() {
+    // zero always primary display?
+    // todo listen to changes?
+    let box = global.display.get_monitor_geometry(0);
+    this.sw = box.width;
+    this.sh = box.height;
+  }
+
+  _forceRelayout() {
+    this._updateLayout();
+    this._updateAnimation(true);
+    this._updateAnimation();
+  }
+
   _enableSettings() {
     this._settings = ExtensionUtils.getSettings(schema_id);
     this.shrink = this._settings.get_boolean(SettingsKey.SHRINK_ICONS);
@@ -126,11 +139,6 @@ class Extension {
     this.autohide = true;
     this.autohide = this._settings.get_boolean(SettingsKey.AUTOHIDE_DASH);
     this.affectsStruts = !this.autohide;
-
-    // zero always primary display?z
-    let box = global.display.get_monitor_geometry(0);
-    this.sw = box.width;
-    this.sh = box.height;
 
     this._settingsListeners = [];
 
@@ -178,8 +186,8 @@ class Extension {
     this._settingsListeners.push(
       this._settings.connect(`changed::${SettingsKey.AUTOHIDE_DASH}`, () => {
         this.autohide = this._settings.get_boolean(SettingsKey.AUTOHIDE_DASH);
-        this._updateAutohide();
-        this._forceRelayout();
+        this.disable();
+        this.enable();
       })
     );
   }
@@ -189,9 +197,10 @@ class Extension {
       this._settings.disconnect(id);
     });
     this._settingsListeners = [];
+    this._settings = null;
   }
 
-  _enableEvents() {
+  _addEvents() {
     this.dashContainer.set_reactive(true);
     this.dashContainer.set_track_hover(true);
 
@@ -217,7 +226,7 @@ class Extension {
     );
   }
 
-  _disableEvents() {
+  _removeEvents() {
     this.dashContainer.set_reactive(false);
     this.dashContainer.set_track_hover(false);
 
@@ -258,6 +267,7 @@ class Extension {
   }
 
   _onEnterEvent() {
+    this._queryDisplay();
     if (this.animateIcons) this.animator.onEnterEvent();
     if (this.autohide) this.autohider.onEnterEvent();
   }
@@ -360,12 +370,6 @@ class Extension {
     let container = this.dashContainer;
     let dash = this.dash;
 
-    // let dashtodockBox = Main.uiGroup.find_child_by_name('dashtodockBox');
-    // if (dashtodockBox) {
-    //   container = dashtodockBox;
-    //   dash = dashtodockBox.find_child_by_name('dash');
-    // }
-
     this.animator.update({
       shrink: this.shrink,
       enable: this.animateIcons && !disable,
@@ -385,12 +389,8 @@ class Extension {
       container: container,
       screenHeight: this.sh,
     });
-  }
 
-  _forceRelayout() {
-    this._updateLayout();
-    this._updateAnimation(true);
-    this._updateAnimation();
+    this.autohider.animator = this.animator;
   }
 
   _onOverviewShowing() {
@@ -404,7 +404,9 @@ class Extension {
     this._inOverview = false;
     this.animator.show();
     this.dash.show();
-    this._updateLayout();
+    this.dashContainer.height = this.sh;
+    this._forceRelayout();
+    if (this.autohide) this.autohider.hide();
   }
 }
 

@@ -29,17 +29,23 @@ var Animator = class {
 
     if (params.enable) {
       this.enable();
+      this.frameDelay = 100;
     } else {
       this.disable();
     }
   }
 
+  isDragging() {
+    return this._dragging === true;
+  }
+
   enable() {
     this.animationContainer = new St.Widget({ name: 'animationContainer' });
+    // this.animationContainer.add_style_class_name('hi');
+
     Main.uiGroup.add_child(this.animationContainer);
 
     this._beginAnimation();
-    // this._beginAnimation()
   }
 
   disable() {
@@ -78,17 +84,24 @@ var Animator = class {
           szTarget.add_child(szTargetIcon);
           szTarget.queue_relayout();
           szTarget.queue_redraw();
+          // szTarget.remove_style_class_name('hi');
         }
 
-        /*
-        let draggable = c.first_child._draggable;
-        if (draggable) {
-          draggable.disconnect(draggable._dragBeginId);
-          delete draggable._dragBeginId;
-          draggable.disconnect(draggable._dragEndId);
-          delete draggable._dragEndId;
+        if (!this._dragging) {
+          let draggable = c.first_child._draggable;
+          if (draggable) {
+            if (draggable._dragBeginId) {
+              draggable.disconnect(draggable._dragBeginId);
+              delete draggable._dragBeginId;
+              draggable._dragBeginId = null;
+            }
+            if (draggable._dragEndId) {
+              draggable.disconnect(draggable._dragEndId);
+              delete draggable._dragEndId;
+              draggable._dragEndId = null;
+            }
+          }
         }
-        */
       });
 
       Main.uiGroup.remove_child(this.animationContainer);
@@ -103,7 +116,7 @@ var Animator = class {
       this._timeoutId = null;
     }
     if (this._intervalId == null) {
-      this._intervalId = setInterval(this._animate.bind(this), 40);
+      this._intervalId = setInterval(this._animate.bind(this), 25);
     }
   }
 
@@ -150,20 +163,23 @@ var Animator = class {
     }
   }
 
+  _get_x(obj) {
+    if (obj == null) return 0;
+    if (obj.name != 'dash') return obj.x + this._get_x(obj.get_parent());
+    return obj.x;
+  }
+
   _animate() {
     let pointer = global.get_pointer();
-    pointer[0] -= this.dash.last_child.x;
-    pointer[1] -= this.dash.y;
-
     let iconWidth = this.shrink ? 58 : 64;
 
     this.animationContainer.position = this.dashContainer.position;
     this.animationContainer.size = this.dashContainer.size;
 
     let X = this.dash.last_child.x;
-    let Y = 0;
-
+    let Y = -iconWidth * 0.025;
     if (X == 0) return;
+    pointer[0] -= X;
 
     let pivot = new Point();
     pivot.x = 0.5;
@@ -177,6 +193,16 @@ var Animator = class {
     let topIdx = -1;
     let topY = 0;
     this.dash.last_child.first_child.get_children().forEach((c) => {
+      if (
+        !c.first_child ||
+        !c.first_child.first_child ||
+        !c.first_child.first_child.first_child
+      ) {
+        return;
+      }
+
+      let szTarget = c.first_child.first_child;
+
       let newIcon = false;
       let pos = c.position;
       let dx = pos.x + c.width / 2 - pointer[0];
@@ -188,21 +214,12 @@ var Animator = class {
       let sz = 0;
       let sc = 0;
 
-      if (
-        !c.first_child ||
-        !c.first_child.first_child ||
-        !c.first_child.first_child.first_child
-      ) {
-        return;
-      }
-
       if (d < dst && dd > 0 && this._inDash) {
         let df = dd / dst;
         sz = -10 * df;
         sc = iconScaleUp * df;
       }
 
-      let szTarget = c.first_child.first_child;
       let szTargetIcon = szTarget._icon;
       if (!szTargetIcon) {
         szTargetIcon = szTarget.first_child;
@@ -215,17 +232,20 @@ var Animator = class {
         szTargetIcon.set_fixed_position_set(true);
         let iconWidth = szTargetIcon.width;
         szTarget.remove_child(szTargetIcon);
+        // szTarget.add_style_class_name('hi');
         newIcon = true;
       }
 
       let draggable = c.first_child._draggable;
       if (newIcon && draggable && !draggable._dragBeginId) {
         draggable._dragBeginId = draggable.connect('drag-begin', () => {
+          this._dragging = true;
           if (this._enabled) {
             this.disable();
           }
         });
         draggable._dragEndId = draggable.connect('drag-end', () => {
+          this._dragging = false;
           if (this._enabled) {
             this.enable();
           }

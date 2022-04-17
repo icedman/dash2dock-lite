@@ -191,13 +191,12 @@ const Dash2DockLiteSettingsPane = GObject.registerClass(
       );
       _listBox.append(animateIcons);
 
-      // disable for now ... not ready
-      // const autohideDash = new Dash2DockLiteSettingListBoxRow(
-      //   _('Autohide'),
-      //   _('Autohide the dash panel'),
-      //   SettingsKey.AUTOHIDE_DASH
-      // );
-      // _listBox.append(autohideDash);
+      const autohideDash = new Dash2DockLiteSettingListBoxRow(
+        _('Autohide'),
+        _('Autohide the dash panel'),
+        SettingsKey.AUTOHIDE_DASH
+      );
+      _listBox.append(autohideDash);
 
       const backgroundDark = new Dash2DockLiteSettingListBoxRow(
         _('Dark background'),

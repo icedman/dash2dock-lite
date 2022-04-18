@@ -9,8 +9,9 @@
   margin-bottom: 0px !important;
 }
 
-#dashContainer #dash .dash-item-container > StButton.show-apps > .overview-icon {
-  /*background-color: rgba(0,0,0,0.2) !important;*/
+#dashContainer #dash .dash-item-container > StButton.show-apps > .overview-icon,
+#dashContainer #dash .dash-item-container > StButton:hover.show-apps > .overview-icon {
+  background-color: rgba(0,0,0,0) !important;
   border-radius: 8px !important;
 }
 

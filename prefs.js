@@ -15,6 +15,7 @@ var schema_id = 'org.gnome.shell.extensions.dash2dock-lite';
 
 var SettingsKey = {
   REUSE_DASH: 'reuse-dash',
+  SHOW_APP_BUTTON: 'app-button',
   SHRINK_ICONS: 'shrink-icons',
   ANIMATE_ICONS: 'animate-icons',
   AUTOHIDE_DASH: 'autohide-dash',
@@ -183,6 +184,13 @@ const Dash2DockLiteSettingsPane = GObject.registerClass(
         SettingsKey.SHRINK_ICONS
       );
       _listBox.append(shrinkIcons);
+      
+      const appButtons = new Dash2DockLiteSettingListBoxRow(
+        _('App Button'),
+        _('Show apps and overview button'),
+        SettingsKey.SHOW_APP_BUTTON
+      );
+      _listBox.append(appButtons);
 
       const animateIcons = new Dash2DockLiteSettingListBoxRow(
         _('Animate Icons'),

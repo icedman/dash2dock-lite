@@ -67,6 +67,7 @@ var Animator = class {
       this.animationContainer.get_children().forEach((c) => {
         this.animationContainer.remove_child(c);
       });
+
       this.dash.last_child.first_child.get_children().forEach((c) => {
         if (
           !c.first_child ||
@@ -157,6 +158,7 @@ var Animator = class {
 
   onFocusWindow() {
     this._beginAnimation();
+    this._debounceEndAnimation();
   }
 
   onFullScreenEvent() {
@@ -198,7 +200,11 @@ var Animator = class {
     let idx = 0;
     let topIdx = -1;
     let topY = 0;
-    this.dash.last_child.first_child.get_children().forEach((c) => {
+
+    this.appButton = this.dash.last_child.last_child;
+    // let items = [...this.dash.last_child.first_child.get_children(), this.appButton];
+    let items = this.dash.last_child.first_child.get_children();
+    items.forEach((c) => {
       if (
         !c.first_child ||
         !c.first_child.first_child ||
@@ -208,6 +214,12 @@ var Animator = class {
       }
 
       let szTarget = c.first_child.first_child;
+      if (c === this.appButton) {
+        szTarget = this.appButton.first_child;
+      }
+
+      if (!szTarget) return;
+      // szTarget.add_style_class_name('hi');
 
       let newIcon = false;
       let pos = c.position;
@@ -219,7 +231,7 @@ var Animator = class {
       let dd = dst - d;
       let sz = 0;
       let sc = 0;
-
+      
       if (d < dst && dd > 0 && this._inDash) {
         let df = dd / dst;
         sz = -10 * df;
@@ -243,10 +255,15 @@ var Animator = class {
         if (!szTargetIcon.icon) return;
 
         szTarget._icon = szTargetIcon;
+        szTargetIcon._container = szTarget;
         szTargetIcon.set_fixed_position_set(true);
         let iconWidth = szTargetIcon.width;
-        szTarget.remove_child(szTargetIcon);
-        // szTarget.add_style_class_name('hi');
+        if (c === this.appButton) {
+          // handle differently?
+        } else {
+          szTarget.remove_child(szTargetIcon);
+        }
+
         newIcon = true;
       }
 
@@ -281,7 +298,11 @@ var Animator = class {
       if (newIcon) {
         szTargetIcon.x = pos.x + X + (iconWidth * 0.2) / 2;
         szTargetIcon.y = pos.y + Y + iconWidth * 0.4 + sz;
-        this.animationContainer.add_child(szTargetIcon);
+        if (c === this.appButton) {
+          // handle differently?
+        } else {
+          this.animationContainer.add_child(szTargetIcon);
+        }
       } else {
         let tz = pos.y + Y + iconWidth * 0.4 + sz - szTargetIcon.y;
         szTargetIcon.y = szTargetIcon.y + tz * yAnimFactor;
@@ -296,16 +317,15 @@ var Animator = class {
 
       szTargetIcon._x = pos.x + X + (iconWidth * 0.2) / 2;
       szTargetIcon.x = (szTargetIcon.x * 9 + szTargetIcon._x) / 10;
-
       idx++;
     });
 
-    if (topIdx != -1) {
+    if (topIdx != -1 && c !== this.appButton) {
       let tl = topIdx - 1;
       let tr = topIdx + 1;
       let pz = 0;
 
-      let cc = this.dash.last_child.first_child.get_children()[topIdx];
+      let cc = items[topIdx];
       let pos = cc.position;
       let szTargetIcon = null;
       if (cc && cc.first_child && cc.first_child.first_child) {
@@ -323,9 +343,12 @@ var Animator = class {
 
       if (szTargetIcon)
         for (let i = 0; i < 20; i++) {
-          let cl = this.dash.last_child.first_child.get_children()[tl--];
-          let cr = this.dash.last_child.first_child.get_children()[tr++];
+          let cl = items[tl--];
+          let cr = items[tr++];
 
+          // handle differently?
+          if (cl === this.appButton || cr === this.appButton) continue;
+          
           if (cl && cl.first_child && cl.first_child.first_child) {
             let szTarget = cl.first_child.first_child;
             let szTargetIcon = szTarget._icon;

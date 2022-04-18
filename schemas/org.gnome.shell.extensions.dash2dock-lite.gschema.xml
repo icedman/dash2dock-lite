@@ -6,6 +6,11 @@
         <summary>Reuse existing Dash</summary>
         <description>Reuse existing Dash instead of creating another instance</description>
     </key>
+    <key type="b" name="app-button">
+        <default>false</default>
+        <summary>App Button</summary>
+        <description>Show apps and overview button</description>
+    </key>
     <key type="b" name="shrink-icons">
         <default>true</default>
         <summary>Shrink icons</summary>

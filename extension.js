@@ -134,7 +134,7 @@ class Extension {
     this.bgDark = this._settings.get_boolean(SettingsKey.BG_DARK);
     this.bgOpacity = this._settings.get_double(SettingsKey.BG_OPACITY);
     this.recycleOldDash = this._settings.get_boolean(SettingsKey.REUSE_DASH);
-    this.hideAppsButton = true;
+    this.appsButton = this._settings.get_boolean(SettingsKey.SHOW_APP_BUTTON);
     this.vertical = false;
     this.autohide = true;
     this.autohide = this._settings.get_boolean(SettingsKey.AUTOHIDE_DASH);
@@ -166,6 +166,14 @@ class Extension {
       })
     );
 
+    this._settingsListeners.push(
+      this._settings.connect(`changed::${SettingsKey.SHOW_APP_BUTTON}`, () => {
+        this.appsButton = this._settings.get_boolean(SettingsKey.SHOW_APP_BUTTON);
+        this._updateAppsButton();
+        this._forceRelayout();
+      })
+    );
+    
     this._settingsListeners.push(
       this._settings.connect(`changed::${SettingsKey.SHRINK_ICONS}`, () => {
         this.shrink = this._settings.get_boolean(SettingsKey.SHRINK_ICONS);
@@ -294,18 +302,18 @@ class Extension {
       this.appButtonId = null;
     }
 
-    if (this.hideAppsButton && !disable) {
-      this.dash.showAppsButton.hide();
-    } else {
+    if (this.appsButton && !disable) {
       this.dash.showAppsButton.show();
       this.appButtonId = this.dash.showAppsButton.connect(
-        'notify::checked',
+        'clicked',
         () => {
-          // Main.overview.show();
-          // Main.overview._overview.controls._onShowAppsButtonToggled();
-          // Main.overview._overview.controls._toggleAppsPage();
+            Main.overview.shouldToggleByCornerOrButton();
+            Main.overview.show();
+            Main.overview._overview.controls._toggleAppsPage();
         }
       );
+    } else {
+      this.dash.showAppsButton.hide();
     }
   }
 

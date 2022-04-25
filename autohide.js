@@ -100,6 +100,7 @@ var AutoHide = class {
     }
     // this.dashContainer.add_style_class_name('hi');
     let y = this.dashContainer.position.y;
+    let x = this.dashContainer.position.x;
     let dy = this.target - y;
     if (dy * dy < 16) {
       y = this.target;
@@ -108,6 +109,6 @@ var AutoHide = class {
       dy = dy / 4;
       y += dy;
     }
-    this.dashContainer.set_position(0, y);
+    this.dashContainer.set_position(x, y);
   }
 };

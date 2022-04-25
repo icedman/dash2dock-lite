@@ -28,6 +28,7 @@ class Extension {
 
     this.animator = new Animator();
     this.autohider = new AutoHide();
+    this.primaryMonitor = Main.layoutManager.primaryMonitor;
 
     this._onOverviewShowingId = Main.overview.connect(
       'showing',
@@ -114,9 +115,9 @@ class Extension {
   }
 
   _queryDisplay() {
-    // zero always primary display?
     // todo listen to changes?
-    let box = global.display.get_monitor_geometry(0);
+    let primaryMonitorNumber = global.display.get_primary_monitor();
+    let box = global.display.get_monitor_geometry(primaryMonitorNumber);
     this.sw = box.width;
     this.sh = box.height;
   }
@@ -347,14 +348,14 @@ class Extension {
 
     if (this.vertical) {
       this.dashContainer.vertical = false;
-      this.dashContainer.set_position(0, 0);
+      this.dashContainer.set_position(this.primaryMonitor.x, this.primaryMonitor.y);
       this.dash.last_child.vertical = true;
       this.dash.last_child.first_child.layout_manager.orientation = 1;
       this.dashContainer.set_width(this.dockWidth);
       this.dashContainer.set_height(this.sh);
     } else {
       this.dashContainer.vertical = true;
-      this.dashContainer.set_position(0, this.sh - this.dockHeight);
+      this.dashContainer.set_position(this.primaryMonitor.x, this.primaryMonitor.y + this.sh - this.dockHeight);
       this.dashContainer.set_width(this.sw);
       this.dashContainer.set_height(this.dockHeight);
     }
@@ -387,7 +388,7 @@ class Extension {
       enable: this.autohide && !disable,
       dash: dash,
       container: container,
-      screenHeight: this.sh,
+      screenHeight: this.sh + this.primaryMonitor.y,
     });
 
     this.autohider.animator = this.animator;

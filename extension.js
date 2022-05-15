@@ -377,6 +377,8 @@ class Extension {
       dash: dash,
       container: container,
     });
+
+    this.dashContainer.animator = this.animator;
   }
 
   _updateAutohide(disable) {

@@ -40,13 +40,16 @@ var Animator = class {
     return this._dragging === true;
   }
 
+  isAnimating() {
+    return this._timeoutId != null || this._intervalId != null;
+  }
+
   hasWindowOverlap() {
     return this._overlapped === true;
   }
 
   enable() {
     this.animationContainer = new St.Widget({ name: 'animationContainer' });
-    // this.animationContainer.add_style_class_name('hi');
 
     Main.uiGroup.add_child(this.animationContainer);
 
@@ -157,6 +160,7 @@ var Animator = class {
 
   onFocusWindow() {
     this._beginAnimation();
+    this._debounceEndAnimation();
   }
 
   onFullScreenEvent() {
@@ -175,6 +179,7 @@ var Animator = class {
   }
 
   _animate() {
+    // this.dashContainer.add_style_class_name('hi');
     let pointer = global.get_pointer();
     let iconWidth = this.shrink ? 58 : 64;
 

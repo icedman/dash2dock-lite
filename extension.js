@@ -348,14 +348,20 @@ class Extension {
 
     if (this.vertical) {
       this.dashContainer.vertical = false;
-      this.dashContainer.set_position(this.primaryMonitor.x, this.primaryMonitor.y);
+      this.dashContainer.set_position(
+        this.primaryMonitor.x,
+        this.primaryMonitor.y
+      );
       this.dash.last_child.vertical = true;
       this.dash.last_child.first_child.layout_manager.orientation = 1;
       this.dashContainer.set_width(this.dockWidth);
       this.dashContainer.set_height(this.sh);
     } else {
       this.dashContainer.vertical = true;
-      this.dashContainer.set_position(this.primaryMonitor.x, this.primaryMonitor.y + this.sh - this.dockHeight);
+      this.dashContainer.set_position(
+        this.primaryMonitor.x,
+        this.primaryMonitor.y + this.sh - this.dockHeight
+      );
       this.dashContainer.set_width(this.sw);
       this.dashContainer.set_height(this.dockHeight);
     }

@@ -94,13 +94,15 @@ var AutoHide = class {
   }
 
   _animate() {
-    // temporarilty disable autohide
+    if (!this.dashContainer) return false;
+
+    // temporarily disable autohide
     if (this.animator && this.animator.isDragging()) {
       this.target = this.screenHeight - this.dashContainer.height;
     }
 
     if (this.frameDelay && this.frameDelay-- > 0) {
-      return;
+      return true;
     }
     // this.dashContainer.add_style_class_name('hi');
     let y = this.dashContainer.position.y;
@@ -114,5 +116,6 @@ var AutoHide = class {
       y += dy;
     }
     this.dashContainer.set_position(x, y);
+    return true;
   }
 };

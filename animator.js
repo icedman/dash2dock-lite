@@ -50,9 +50,7 @@ var Animator = class {
 
   enable() {
     this.animationContainer = new St.Widget({ name: 'animationContainer' });
-
     Main.uiGroup.add_child(this.animationContainer);
-
     this._beginAnimation();
   }
 
@@ -134,7 +132,9 @@ var Animator = class {
       this._intervalId = null;
     }
     this._timeoutId = null;
-    // this.dashContainer.remove_style_class_name('hi');
+    if (this.dashContainer.debug) {
+      this.dashContainer.remove_style_class_name('hi');
+    }
   }
 
   _debounceEndAnimation() {
@@ -145,7 +145,10 @@ var Animator = class {
   }
 
   onMotionEvent() {
-    this._animate();
+    // this._animate();
+    if (!this._inDash) {
+      this.onEnterEvent();
+    }
   }
 
   onEnterEvent() {
@@ -179,7 +182,11 @@ var Animator = class {
   }
 
   _animate() {
-    // this.dashContainer.add_style_class_name('hi');
+    if (!this.dashContainer) return;
+
+    if (this.dashContainer.debug) {
+      this.dashContainer.add_style_class_name('hi');
+    }
     let pointer = global.get_pointer();
     let iconWidth = this.shrink ? 58 : 64;
 
@@ -189,7 +196,7 @@ var Animator = class {
 
     let X = this.dash.last_child.x;
     let Y = -iconWidth * 0.08;
-    if (X == 0) return;
+    if (X == 0) return false;
     pointer[0] -= X;
 
     let pivot = new Point();
@@ -356,6 +363,8 @@ var Animator = class {
         this.animationContainer.remove_child(c);
       }
     });
+
+    return true;
   }
 
   show() {

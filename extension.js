@@ -52,6 +52,7 @@ class Extension {
       name: 'dashContainer',
       vertical: true,
     });
+    this.dashContainer.debug = false;
 
     Main.layoutManager.addChrome(this.dashContainer, {
       affectsStruts: this.affectsStruts,
@@ -400,6 +401,7 @@ class Extension {
     });
 
     this.autohider.animator = this.animator;
+    this.dashContainer.autohider = this.autohider;
   }
 
   _onOverviewShowing() {

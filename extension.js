@@ -46,39 +46,32 @@ class Extension {
       .first_child.remove_child(this.dash);
     this.dashContainer.add_child(this.dash);
 
-    // this._updateAppsButton();
-    // this._updateShrink();
-    // this._updateBgDark();
-    // this._updateBgOpacity();
-    // this._updateLayout();
-    // this._updateAnimation();
-    // this._updateAutohide();
-
-    this._addEvents();
-
     this.animator = new Animator();
     this.animator.dashContainer = this.dashContainer;
-    this.animator.enable();
 
     this.listeners = [this.animator];
 
+    // this._updateAppsButton();
+    this._updateShrink();
+    this._updateBgDark();
+    this._updateBgOpacity();
     this._updateLayout();
+    this._updateAnimation();
+    // this._updateAutohide();
+
+    this._addEvents();
   }
 
   disable() {
     this._removeEvents();
     this._disableSettings();
 
-    this.animator.disable();
-    delete this.animator;
-    this.animator = null;
-
     // this._updateAppsButton(true);
-    // this._updateShrink(true);
-    // this._updateBgDark(true);
-    // this._updateBgOpacity(true);
+    this._updateShrink(true);
+    this._updateBgDark(true);
+    this._updateBgOpacity(true);
     this._updateLayout(true);
-    // this._updateAnimation(true);
+    this._updateAnimation(true);
     // this._updateAutohide(true);
 
     this.dashContainer.remove_child(this.dash);
@@ -87,9 +80,11 @@ class Extension {
       .first_child.add_child(this.dash);
 
     Main.layoutManager.removeChrome(this.dashContainer);
-    this.dashContainer.destroy();
-
+    delete this.dashContainer;
     this.dashContainer = null;
+
+    delete this.animator;
+    this.animator = null;
   }
 
   _queryDisplay() {
@@ -141,7 +136,9 @@ class Extension {
       this._settings.connect(`changed::${SettingsKey.SHRINK_ICONS}`, () => {
         this.shrink = this._settings.get_boolean(SettingsKey.SHRINK_ICONS);
         this._updateShrink();
-        this._updateLayout();
+        this.disable();
+        this.enable();
+        this._onEnterEvent();
       })
     );
 
@@ -150,7 +147,8 @@ class Extension {
         this.animateIcons = this._settings.get_boolean(
           SettingsKey.ANIMATE_ICONS
         );
-        this._updateAnimation();
+        this.disable();
+        this.enable();
       })
     );
 
@@ -254,34 +252,54 @@ class Extension {
   }
 
   _onMotionEvent() {
-    this.listeners.forEach((l) => {
-      l._onMotionEvent();
-    });
+    this.listeners
+      .filter((l) => {
+        return l._enabled;
+      })
+      .forEach((l) => {
+        l._onMotionEvent();
+      });
   }
 
   _onEnterEvent() {
     this._updateLayout();
-    this.listeners.forEach((l) => {
-      l._onEnterEvent();
-    });
+    this.listeners
+      .filter((l) => {
+        return l._enabled;
+      })
+      .forEach((l) => {
+        l._onEnterEvent();
+      });
   }
 
   _onLeaveEvent() {
-    this.listeners.forEach((l) => {
-      l._onLeaveEvent();
-    });
+    this.listeners
+      .filter((l) => {
+        return l._enabled;
+      })
+      .forEach((l) => {
+        l._onLeaveEvent();
+      });
   }
 
   _onFocusWindow() {
-    this.listeners.forEach((l) => {
-      l._onFocusWindow();
-    });
+    this.listeners
+      .filter((l) => {
+        return l._enabled;
+      })
+      .forEach((l) => {
+        l._onFocusWindow();
+      });
   }
 
   _onFullScreen() {
-    this.listeners.forEach((l) => {
-      l._onFullScreen();
-    });
+    this.listeners
+      .filter((l) => {
+        return l._enabled;
+      })
+      .forEach((l) => {
+        l._onFullScreen();
+      });
   }
 
   _updateAppsButton(disable) {}
@@ -289,8 +307,10 @@ class Extension {
   _updateShrink(disable) {
     if (!this.dashContainer) return;
     if (this.shrink && !disable) {
+      this.scale = 0.8;
       this.dashContainer.add_style_class_name('shrink');
     } else {
+      this.scale = 1.0;
       this.dashContainer.remove_style_class_name('shrink');
     }
   }
@@ -299,9 +319,9 @@ class Extension {
     if (!this.dashContainer) return;
 
     if (this.bgDark && !disable) {
-      this.dashContainer.add_style_class_name('dark');
+      this.dash.add_style_class_name('dark');
     } else {
-      this.dashContainer.remove_style_class_name('dark');
+      this.dash.remove_style_class_name('dark');
     }
   }
 
@@ -319,12 +339,15 @@ class Extension {
     if (!this.dash) return [];
 
     let icons = this.dash._box.get_children().filter((actor) => {
-      return (
+      if (
         actor.child &&
         actor.child._delegate &&
         actor.child._delegate.icon &&
         !actor.animatingOut
-      );
+      ) {
+        return true;
+      }
+      return false;
     });
 
     // if (this.dash._showAppsIcon) {
@@ -342,7 +365,10 @@ class Extension {
       let icon = bin.first_child;
       c._bin = bin;
       c._label = label;
-      c._icon = icon;
+      c._draggable = draggable;
+      if (icon) {
+        c._icon = icon;
+      }
     });
 
     this.dashContainer._icons = icons;
@@ -368,8 +394,9 @@ class Extension {
 
     let iconChildren = this._findIcons();
 
-    for (let i = 0; i < iconChildren.length; i++) {
-      let icon = iconChildren[i].child._delegate.icon;
+    let iconHook = [...iconChildren, this.dash._showAppsIcon];
+    for (let i = 0; i < iconHook.length; i++) {
+      let icon = iconHook[i].child._delegate.icon;
       if (!icon._setIconSize) {
         icon._setIconSize = icon.setIconSize;
       }
@@ -388,7 +415,7 @@ class Extension {
   }
 
   _updateAnimation(disable) {
-    if (!disable) {
+    if (this.animateIcons && !disable) {
       this.animator.enable();
     } else {
       this.animator.disable();
@@ -404,7 +431,6 @@ class Extension {
     Main.uiGroup
       .find_child_by_name('overview')
       .first_child.add_child(this.dash);
-    this.dashContainer.hide();
 
     log('_onOverviewShowing');
   }
@@ -416,7 +442,6 @@ class Extension {
       .find_child_by_name('overview')
       .first_child.remove_child(this.dash);
     this.dashContainer.add_child(this.dash);
-    this.dashContainer.show();
 
     this._updateLayout();
 

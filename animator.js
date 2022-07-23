@@ -24,25 +24,22 @@ const ANIMATION_POS_COEF = 2;
 const ANIMATION_PULL_COEF = 1.5;
 const ANIMATION_SCALE_COEF = 2.5;
 const ANIM_ICON_RAISE = 0.15;
-const ANIM_ICON_SCALE = 2.0;
+const ANIM_ICON_SCALE = 1.8;
 
 var Animator = class {
   constructor() {}
 
   enable() {
+    if (this._enabled) return;
     this._iconsContainer = new St.Widget({ name: 'iconsContainer' });
     Main.uiGroup.add_child(this._iconsContainer);
-    // this._iconsContainer.hide();
-
-    this._hookDashContainer();
     log('enable animator');
-
     this._enabled = true;
   }
 
   disable() {
+    if (!this._enabled) return;
     this._enabled = false;
-
     this._endAnimation();
 
     if (this._iconsContainer) {
@@ -53,38 +50,10 @@ var Animator = class {
 
     if (this.dashContainer) {
       this._restoreIcons();
-      // if (this.dashContainer.__animateIn) {
-      //   this.dashContainer._animateIn = this.dashContainer.__animateIn;
-      //   this.dashContainer.__animateIn = null;
-      // }
-      // if (this.dashContainer.__animateOut) {
-      //   this.dashContainer._animateOut = this.dashContainer.__animateOut;
-      //   this.dashContainer.__animateOut = null;
-      // }
       this.dashContainer = null;
     }
 
     log('disable animator');
-  }
-
-  _hookDashContainer() {
-    if (this.dashContainer) {
-      return false;
-    }
-
-    // hooks
-    // this.dashContainer.__animateIn = this.dashContainer._animateIn;
-    // this.dashContainer.__animateOut = this.dashContainer._animateOut;
-    // this.dashContainer._animateIn = (time, delay) => {
-    //   this._startAnimation();
-    //   this.dashContainer.__animateIn(time, delay);
-    // };
-    // this.dashContainer._animateOut = (time, delay) => {
-    //   this._startAnimation();
-    //   this.dashContainer.__animateOut(time, delay);
-    // };
-
-    return true;
   }
 
   _animate() {
@@ -93,14 +62,6 @@ var Animator = class {
 
     let existingIcons = this._iconsContainer.get_children();
 
-    // if (!this._iconsContainer.visible) {
-    //   // dashtodock!
-    //   if (this.dashContainer._dockState > 0) {
-    //     this._iconsContainer.show();
-    //   }
-    //   return;
-    // }
-
     let dock_position = 'bottom';
     let ix = 0;
     let iy = 1;
@@ -108,6 +69,8 @@ var Animator = class {
     let pivot = new Point();
     pivot.x = 0.5;
     pivot.y = 1.0;
+
+    let iconSize = this.dash.iconSize;
 
     // dashtodock!
     this.dashContainer._position = 2;
@@ -144,21 +107,22 @@ var Animator = class {
       }
 
       let icon = c._icon;
+      let uiIcon = new St.Widget({
+        name: 'icon',
+        width: iconSize,
+        height: iconSize,
+      });
 
-      let uiIcon = new St.Icon({ name: 'some_icon' });
-      if (icon.icon_name) {
-        uiIcon.icon_name = icon.icon_name;
-      } else if (icon.gicon) {
-        uiIcon.gicon = icon.gicon;
-      }
       uiIcon.pivot_point = pivot;
       uiIcon._bin = bin;
       uiIcon._label = c._label;
 
+      uiIcon.add_style_class_name('hi');
+
       this._iconsContainer.add_child(uiIcon);
 
       // spy dragging events
-      let draggable = bin._draggable;
+      let draggable = c._draggable;
       if (draggable && !draggable._dragBeginId) {
         draggable._dragBeginId = draggable.connect('drag-begin', () => {
           this._dragging = true;
@@ -177,7 +141,6 @@ var Animator = class {
     let nearestIdx = -1;
     let nearestIcon = null;
     let nearestDistance = -1;
-    let iconSize = this.dash.iconSize;
 
     let animateIcons = this._iconsContainer.get_children();
     animateIcons.forEach((c) => {
@@ -195,7 +158,7 @@ var Animator = class {
       }
     });
 
-    animateIcons = [...this._iconsContainer.get_children()];
+    animateIcons = this._iconsContainer.get_children();
 
     // sort
     let cornerPos = this._get_position(this.dashContainer);
@@ -211,13 +174,23 @@ var Animator = class {
       let pos = this._get_position(bin);
 
       iconSize = this.dash.iconSize * this.dashContainer.delegate.scale;
+
       bin.set_size(iconSize, iconSize);
       icon.set_size(iconSize, iconSize);
 
+      if (!icon.first_child && bin.first_child) {
+        bin.first_child.opacity = 50;
+        // let img = new St.Icon({
+        //   name: 'icon',
+        //   gicon: bin.first_child.gicon
+        // });
+        // icon.add_child(img);
+      }
+
       // get nearest
       let bposcenter = [...pos];
-      bposcenter[0] += bin.first_child.size.width / 2;
-      bposcenter[1] += bin.first_child.size.height / 2;
+      bposcenter[0] += iconSize / 2;
+      bposcenter[1] += iconSize / 2;
       let dst = this._get_distance(pointer, bposcenter);
 
       if (
@@ -230,12 +203,6 @@ var Animator = class {
         icon._distance = dst;
         icon._dx = bposcenter[0] - pointer[0];
         icon._dy = bposcenter[1] - pointer[1];
-      }
-
-      if (bin._apps) {
-        bin.first_child.add_style_class_name('invisible');
-      } else {
-        bin.first_child.hide();
       }
 
       icon._target = pos;
@@ -348,14 +315,6 @@ var Animator = class {
     return this.dashContainer.delegate._findIcons();
   }
 
-  _restoreIcons() {
-    let icons = this._findIcons();
-    icons.forEach((c) => {
-      c._icon.show();
-      c._icon.remove_style_class_name('invisible');
-    });
-  }
-
   _get_x(obj) {
     if (obj == null) return 0;
     return obj.get_transformed_position()[0];
@@ -393,7 +352,7 @@ var Animator = class {
     }
 
     if (this.dashContainer) {
-      this.dashContainer.add_style_class_name('hi');
+      // this.dashContainer.add_style_class_name('hi');
     }
   }
 
@@ -447,5 +406,15 @@ var Animator = class {
   _startAnimation() {
     this._beginAnimation();
     this._debounceEndAnimation();
+  }
+  
+  _restoreIcons() {
+    let icons = this._findIcons();
+    icons.forEach((c) => {
+      let bin = c._bin;
+      c._icon.opacity = 255;
+      // c._icon.get_parent().remove_child(c._icon);
+      // c._bin.add_child(c._icon);
+    });
   }
 };

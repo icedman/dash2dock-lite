@@ -1,4 +1,11 @@
+.hi {
+     border: 2px solid magenta !important;
+}
+
 .invisible {
-    /*border:  1px solid magenta;*/
-    color:  rgba(255,0,255,0);
+    border:  2px solid red;
+}
+
+#dash.dark > StWidget.dash-background {
+  background-color: rgb(0,0,0) !important;
 }

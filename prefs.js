@@ -170,12 +170,12 @@ const Dash2DockLiteSettingsPane = GObject.registerClass(
         this._rowActivated(widget, row);
       });
 
-      const reuseDash = new Dash2DockLiteSettingListBoxRow(
-        _('Reuse existing Dash'),
-        _('Reuse existing Dash instead of creating another instance'),
-        SettingsKey.REUSE_DASH
-      );
-      _listBox.append(reuseDash);
+      // const reuseDash = new Dash2DockLiteSettingListBoxRow(
+      //   _('Reuse existing Dash'),
+      //   _('Reuse existing Dash instead of creating another instance'),
+      //   SettingsKey.REUSE_DASH
+      // );
+      // _listBox.append(reuseDash);
 
       const shrinkIcons = new Dash2DockLiteSettingListBoxRow(
         _('Shrink icons'),

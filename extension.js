@@ -16,120 +16,86 @@ const Me = ExtensionUtils.getCurrentExtension();
 const schema_id = Me.imports.prefs.schema_id;
 const SettingsKey = Me.imports.prefs.SettingsKey;
 const Animator = Me.imports.animator.Animator;
-const AutoHide = Me.imports.autohide.AutoHide;
 
 const setTimeout = Me.imports.utils.setTimeout;
 const setInterval = Me.imports.utils.setInterval;
 
 class Extension {
   enable() {
+    this.listeners = [];
+    this.scale = 1.0;
+
     this._enableSettings();
     this._queryDisplay();
-
-    this.animator = new Animator();
-    this.autohider = new AutoHide();
-    this.primaryMonitor = Main.layoutManager.primaryMonitor;
-
-    this._onOverviewShowingId = Main.overview.connect(
-      'showing',
-      this._onOverviewShowing.bind(this)
-    );
-    this._onOverviewHiddenId = Main.overview.connect(
-      'hidden',
-      this._onOverviewHidden.bind(this)
-    );
-
-    if (this.recycleOldDash) {
-      this.originalDash = Main.uiGroup.find_child_by_name('dash');
-      this.dash = this.originalDash;
-    } else {
-      this.dash = new Dash();
-      this.dash.set_name('dash');
-      this.dash.add_style_class_name('overview');
-    }
 
     this.dashContainer = new St.BoxLayout({
       name: 'dashContainer',
       vertical: true,
     });
-    this.dashContainer.debug = false;
-    
-    this.animator.dashContainer = this.dashContainer;
-    this.autohider.dashContainer = this.dashContainer;
+    this.dashContainer.delegate = this;
 
     Main.layoutManager.addChrome(this.dashContainer, {
       affectsStruts: this.affectsStruts,
       trackFullscreen: true,
     });
 
-    if (this.recycleOldDash) {
-      Main.uiGroup
-        .find_child_by_name('overview')
-        .first_child.remove_child(this.dash);
-      Main.overview.dash.height = -1;
-      Main.overview.dash.show();
-    } else {
-      Main.overview.dash.height = 0;
-      Main.overview.dash.hide();
-    }
+    this.dash = Main.overview.dash;
+    this.dashContainer.dash = this.dash;
+    Main.uiGroup
+      .find_child_by_name('overview')
+      .first_child.remove_child(this.dash);
     this.dashContainer.add_child(this.dash);
 
-    this._updateAppsButton();
-    this._updateShrink();
-    this._updateBgDark();
-    this._updateBgOpacity();
-    this._updateLayout();
-    this._updateAnimation();
-    this._updateAutohide();
+    // this._updateAppsButton();
+    // this._updateShrink();
+    // this._updateBgDark();
+    // this._updateBgOpacity();
+    // this._updateLayout();
+    // this._updateAnimation();
+    // this._updateAutohide();
 
     this._addEvents();
+
+    this.animator = new Animator();
+    this.animator.dashContainer = this.dashContainer;
+    this.animator.enable();
+
+    this.listeners = [this.animator];
+
+    this._updateLayout();
   }
 
   disable() {
     this._removeEvents();
     this._disableSettings();
 
-    this._updateAppsButton(true);
-    this._updateShrink(true);
-    this._updateBgDark(true);
-    this._updateBgOpacity(true);
-    this._updateLayout(true);
-    this._updateAnimation(true);
-    this._updateAutohide(true);
+    this.animator.disable();
+    delete this.animator;
+    this.animator = null;
 
-    if (this.recycleOldDash) {
-      this.dashContainer.remove_child(this.dash);
-      Main.uiGroup
-        .find_child_by_name('overview')
-        .first_child.add_child(this.dash);
-    } else {
-      Main.overview.dash.height = -1;
-      Main.overview.dash.show();
-    }
+    // this._updateAppsButton(true);
+    // this._updateShrink(true);
+    // this._updateBgDark(true);
+    // this._updateBgOpacity(true);
+    this._updateLayout(true);
+    // this._updateAnimation(true);
+    // this._updateAutohide(true);
+
+    this.dashContainer.remove_child(this.dash);
+    Main.uiGroup
+      .find_child_by_name('overview')
+      .first_child.add_child(this.dash);
 
     Main.layoutManager.removeChrome(this.dashContainer);
     this.dashContainer.destroy();
+
     this.dashContainer = null;
-
-    Main.overview.disconnect(this._onOverviewShowingId);
-    Main.overview.disconnect(this._onOverviewHiddenId);
-
-    this.animator = null;
-    this.autohider = null;
   }
 
   _queryDisplay() {
-    // todo listen to changes?
-    let primaryMonitorNumber = global.display.get_primary_monitor();
-    let box = global.display.get_monitor_geometry(primaryMonitorNumber);
-    this.sw = box.width;
-    this.sh = box.height;
-  }
-
-  _forceRelayout() {
-    this._updateLayout();
-    this._updateAnimation(true);
-    this._updateAnimation();
+    this.monitor = Main.layoutManager.primaryMonitor;
+    this.sw = this.monitor.width;
+    this.sh = this.monitor.height;
   }
 
   _enableSettings() {
@@ -175,7 +141,7 @@ class Extension {
       this._settings.connect(`changed::${SettingsKey.SHRINK_ICONS}`, () => {
         this.shrink = this._settings.get_boolean(SettingsKey.SHRINK_ICONS);
         this._updateShrink();
-        this._forceRelayout();
+        this._updateLayout();
       })
     );
 
@@ -209,25 +175,48 @@ class Extension {
     this.dashContainer.set_reactive(true);
     this.dashContainer.set_track_hover(true);
 
-    this._motionEventId = this.dashContainer.connect(
-      'motion-event',
-      this._onMotionEvent.bind(this)
+    this._dashContainerEvents = [];
+    this._dashContainerEvents.push(
+      this.dashContainer.connect('motion-event', this._onMotionEvent.bind(this))
     );
-    this._enterEventId = this.dashContainer.connect(
-      'enter-event',
-      this._onEnterEvent.bind(this)
+    this._dashContainerEvents.push(
+      this.dashContainer.connect('enter-event', this._onEnterEvent.bind(this))
     );
-    this._leaveEventId = this.dashContainer.connect(
-      'leave-event',
-      this._onLeaveEvent.bind(this)
+    this._dashContainerEvents.push(
+      this.dashContainer.connect('leave-event', this._onLeaveEvent.bind(this))
     );
-    this._focusWindowId = global.display.connect(
-      'notify::focus-window',
-      this._onFocusWindow.bind(this)
+    this._dashContainerEvents.push(
+      this.dashContainer.connect('destroy', () => {})
     );
-    this.fullScreenId = global.display.connect(
-      'in-fullscreen-changed',
-      this._onFullScreen.bind(this)
+
+    this._layoutManagerEvents = [];
+    this._layoutManagerEvents.push(
+      Main.layoutManager.connect('startup-complete', () => {
+        log('startup-complete');
+        this._updateLayout();
+      })
+    );
+
+    this._displayEvents = [];
+    this._displayEvents.push(
+      global.display.connect(
+        'notify::focus-window',
+        this._onFocusWindow.bind(this)
+      )
+    );
+    this._displayEvents.push(
+      global.display.connect(
+        'in-fullscreen-changed',
+        this._onFullScreen.bind(this)
+      )
+    );
+
+    this._overViewEvents = [];
+    this._overViewEvents.push(
+      Main.overview.connect('showing', this._onOverviewShowing.bind(this))
+    );
+    this._overViewEvents.push(
+      Main.overview.connect('hidden', this._onOverviewHidden.bind(this))
     );
   }
 
@@ -235,88 +224,70 @@ class Extension {
     this.dashContainer.set_reactive(false);
     this.dashContainer.set_track_hover(false);
 
-    if (this._motionEventId) {
-      this.dashContainer.disconnect(this._motionEventId);
-      delete this._motionEventId;
-      this._motionEventId = null;
-    }
+    this._dashContainerEvents.forEach((id) => {
+      if (this.dashContainer) {
+        this.dashContainer.disconnect(id);
+      }
+    });
+    this._dashContainerEvents = [];
 
-    if (this._enterEventId) {
-      this.dashContainer.disconnect(this._enterEventId);
-      delete this._enterEventId;
-      this._enterEventId = null;
+    if (this._overViewEvents) {
+      this._overViewEvents.forEach((id) => {
+        Main.overview.disconnect(id);
+      });
     }
+    this._overViewEvents = [];
 
-    if (this._leaveEventId) {
-      this.dashContainer.disconnect(this._leaveEventId);
-      delete this._leaveEventId;
-      this._leaveEventId = null;
+    if (this._layoutManagerEvents) {
+      this._layoutManagerEvents.forEach((id) => {
+        Main.layoutManager.disconnect(id);
+      });
     }
+    this._layoutManagerEvents = [];
 
-    if (this._focusWindowId) {
-      global.display.disconnect(this._focusWindowId);
-      delete this._focusWindowId;
-      this._focusWindowId = null;
+    if (this._displayEvents) {
+      this._displayEvents.forEach((id) => {
+        global.display.disconnect(id);
+      });
     }
-
-    if (this.fullScreenId) {
-      global.display.disconnect(this.fullScreenId);
-      delete this.fullScreenId;
-      this.fullScreenId = null;
-    }
+    this._displayEvents = [];
   }
 
   _onMotionEvent() {
-    if (this.animateIcons) this.animator.onMotionEvent();
-    if (this.autohide) this.autohider.onMotionEvent();
+    this.listeners.forEach((l) => {
+      l._onMotionEvent();
+    });
   }
 
   _onEnterEvent() {
-    this._queryDisplay();
-    if (this.animateIcons) this.animator.onEnterEvent();
-    if (this.autohide) this.autohider.onEnterEvent();
+    this._updateLayout();
+    this.listeners.forEach((l) => {
+      l._onEnterEvent();
+    });
   }
 
   _onLeaveEvent() {
-    if (this.animateIcons) this.animator.onLeaveEvent();
-    if (this.autohide) this.autohider.onLeaveEvent();
+    this.listeners.forEach((l) => {
+      l._onLeaveEvent();
+    });
   }
 
   _onFocusWindow() {
-    if (this.animateIcons) this.animator.onFocusWindow();
+    this.listeners.forEach((l) => {
+      l._onFocusWindow();
+    });
   }
 
   _onFullScreen() {
-    if (this.animateIcons) this.animator.onFullScreenEvent();
+    this.listeners.forEach((l) => {
+      l._onFullScreen();
+    });
   }
 
-  _updateAppsButton(disable) {
-    if (!this.dash) return;
-
-    if (this.appButtonId && disable) {
-      this.dash.showAppsButton.disconnect(this.appButtonId);
-      delete this.appButtonId;
-      this.appButtonId = null;
-    }
-
-    if (this.hideAppsButton && !disable) {
-      this.dash.showAppsButton.hide();
-    } else {
-      this.dash.showAppsButton.show();
-      this.appButtonId = this.dash.showAppsButton.connect(
-        'notify::checked',
-        () => {
-          // Main.overview.show();
-          // Main.overview._overview.controls._onShowAppsButtonToggled();
-          // Main.overview._overview.controls._toggleAppsPage();
-        }
-      );
-    }
-  }
+  _updateAppsButton(disable) {}
 
   _updateShrink(disable) {
     if (!this.dashContainer) return;
-
     if (this.shrink && !disable) {
       this.dashContainer.add_style_class_name('shrink');
     } else {
@@ -344,83 +315,112 @@ class Extension {
     }
   }
 
+  _findIcons() {
+    if (!this.dash) return [];
+
+    let icons = this.dash._box.get_children().filter((actor) => {
+      return (
+        actor.child &&
+        actor.child._delegate &&
+        actor.child._delegate.icon &&
+        !actor.animatingOut
+      );
+    });
+
+    // if (this.dash._showAppsIcon) {
+    //   icons.push(this.dash._showAppsIcon);
+    // }
+
+    icons.forEach((c) => {
+      let label = c.label;
+      let appwell = c.first_child;
+      let draggable = appwell._draggable;
+      let widget = appwell.first_child;
+      let icongrid = widget.first_child;
+      let boxlayout = icongrid.first_child;
+      let bin = boxlayout.first_child;
+      let icon = bin.first_child;
+      c._bin = bin;
+      c._label = label;
+      c._icon = icon;
+    });
+
+    this.dashContainer._icons = icons;
+    return icons;
+  }
+
   _updateLayout(disable) {
-    if (!this.dashContainer) return;
+    if (disable || !this.dashContainer) return;
 
-    this.dockWidth = this.shrink && !disable ? 80 : 110;
-    this.dockHeight = this.shrink && !disable ? 80 : 110;
+    this._queryDisplay();
 
-    if (this.vertical) {
-      this.dashContainer.vertical = false;
-      this.dashContainer.set_position(
-        this.primaryMonitor.x,
-        this.primaryMonitor.y
-      );
-      this.dash.last_child.vertical = true;
-      this.dash.last_child.first_child.layout_manager.orientation = 1;
-      this.dashContainer.set_width(this.dockWidth);
-      this.dashContainer.set_height(this.sh);
-    } else {
-      this.dashContainer.vertical = true;
-      this.dashContainer.set_position(
-        this.primaryMonitor.x,
-        this.primaryMonitor.y + this.sh - this.dockHeight
-      );
-      this.dashContainer.set_width(this.sw);
-      this.dashContainer.set_height(this.dockHeight);
+    let scaleFactor = St.ThemeContext.get_for_stage(global.stage).scale_factor;
+    let iconSize = 64; // << todo
+
+    let scale = this.scale;
+    let dockHeight = iconSize * 2 * scale;
+
+    this.dashContainer.set_size(this.sw, dockHeight);
+    this.dashContainer.set_position(
+      this.monitor.x,
+      this.monitor.y + this.sh - dockHeight - iconSize * (1 - scale)
+    );
+
+    let iconChildren = this._findIcons();
+
+    for (let i = 0; i < iconChildren.length; i++) {
+      let icon = iconChildren[i].child._delegate.icon;
+      if (!icon._setIconSize) {
+        icon._setIconSize = icon.setIconSize;
+      }
+
+      icon._scale = scale;
+      icon.setIconSize = ((sz) => {
+        sz *= icon._scale;
+        icon._setIconSize(sz);
+      }).bind(icon);
     }
 
-    if (this.vertical && !disable) {
-      this.dashContainer.add_style_class_name('vertical');
-    } else {
-      this.dashContainer.remove_style_class_name('vertical');
-    }
+    this.dash._maxWidth = this.sw;
+    this.dash._maxHeight = this.sh;
+    this.dash.iconSize--;
+    this.dash._adjustIconSize();
   }
 
   _updateAnimation(disable) {
-    let container = this.dashContainer;
-    let dash = this.dash;
-
-    this.animator.update({
-      shrink: this.shrink,
-      enable: this.animateIcons && !disable,
-      dash: dash,
-      container: container,
-    });
-
-    this.dashContainer.animator = this.animator;
+    if (!disable) {
+      this.animator.enable();
+    } else {
+      this.animator.disable();
+    }
   }
 
-  _updateAutohide(disable) {
-    let container = this.dashContainer;
-    let dash = this.dash;
-
-    this.autohider.update({
-      shrink: this.shrink,
-      enable: this.autohide && !disable,
-      dash: dash,
-      container: container,
-      screenHeight: this.sh + this.primaryMonitor.y,
-    });
-
-    this.autohider.animator = this.animator;
-    this.dashContainer.autohider = this.autohider;
-  }
+  _updateAutohide(disable) {}
 
   _onOverviewShowing() {
     this._inOverview = true;
-    this.dashContainer.height = 0;
-    this.animator.hide();
-    this.dash.hide();
+
+    this.dashContainer.remove_child(this.dash);
+    Main.uiGroup
+      .find_child_by_name('overview')
+      .first_child.add_child(this.dash);
+    this.dashContainer.hide();
+
+    log('_onOverviewShowing');
   }
 
   _onOverviewHidden() {
     this._inOverview = false;
-    this.animator.show();
-    this.dash.show();
-    this.dashContainer.height = this.sh;
-    this._forceRelayout();
-    if (this.autohide) this.autohider.hide();
+
+    Main.uiGroup
+      .find_child_by_name('overview')
+      .first_child.remove_child(this.dash);
+    this.dashContainer.add_child(this.dash);
+    this.dashContainer.show();
+
+    this._updateLayout();
+
+    log('_onOverviewHidden');
   }
 }
 

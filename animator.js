@@ -1,4 +1,7 @@
-const Clutter = imports.gi.Clutter;
+/*
+  License: GPL v3
+*/
+
 const Main = imports.ui.main;
 const Dash = imports.ui.dash.Dash;
 const Layout = imports.ui.layout;
@@ -10,110 +13,371 @@ const Point = imports.gi.Graphene.Point;
 
 const ExtensionUtils = imports.misc.extensionUtils;
 const Me = ExtensionUtils.getCurrentExtension();
+
 const setTimeout = Me.imports.utils.setTimeout;
 const setInterval = Me.imports.utils.setInterval;
 const clearInterval = Me.imports.utils.clearInterval;
+const clearTimeout = Me.imports.utils.clearTimeout;
 
-const iconScaleUp = 1.2;
-const iconPadCoef = 0;
-const xAnimFactor = 0.1;
-const yAnimFactor = 0.2;
-const scaleAnimFactor = 0.1;
-const padReduceFactor = 0.94;
+const ANIMATION_INTERVAL = 25;
+const ANIMATION_POS_COEF = 2;
+const ANIMATION_PULL_COEF = 1.5;
+const ANIMATION_SCALE_COEF = 2.5;
+const ANIM_ICON_RAISE = 0.15;
+const ANIM_ICON_SCALE = 2.0;
 
 var Animator = class {
-  update(params) {
-    this.shrink = params.shrink;
-    this.dash = params.dash;
-    this.dashContainer = params.container;
-    this._enabled = params.enable;
-
-    if (params.enable) {
-      this.enable();
-      this.frameDelay = 100;
-    } else {
-      this.disable();
-    }
-  }
-
-  isDragging() {
-    return this._dragging === true;
-  }
-
-  isAnimating() {
-    return this._timeoutId != null || this._intervalId != null;
-  }
-
-  hasWindowOverlap() {
-    return this._overlapped === true;
-  }
+  constructor() {}
 
   enable() {
-    this.animationContainer = new St.Widget({ name: 'animationContainer' });
-    Main.uiGroup.add_child(this.animationContainer);
-    this._beginAnimation();
+    this._iconsContainer = new St.Widget({ name: 'iconsContainer' });
+    Main.uiGroup.add_child(this._iconsContainer);
+    // this._iconsContainer.hide();
+
+    this._hookDashContainer();
+    log('enable animator');
+
+    this._enabled = true;
   }
 
   disable() {
-    if (this._intervalId) {
-      clearInterval(this._intervalId);
-      this._intervalId = null;
-    }
-    if (this._timeoutId) {
-      clearTimeout(this._timeoutId);
-      this._timeoutId = null;
+    this._enabled = false;
+
+    this._endAnimation();
+
+    if (this._iconsContainer) {
+      Main.uiGroup.remove_child(this._iconsContainer);
+      delete this._iconsContainer;
+      this._iconsContainer = null;
     }
 
-    if (this.animationContainer) {
-      this.animationContainer.get_children().forEach((c) => {
-        this.animationContainer.remove_child(c);
-      });
-      this.dash.last_child.first_child.get_children().forEach((c) => {
-        if (
-          !c.first_child ||
-          !c.first_child.first_child ||
-          !c.first_child.first_child.first_child
-        ) {
+    if (this.dashContainer) {
+      this._restoreIcons();
+      // if (this.dashContainer.__animateIn) {
+      //   this.dashContainer._animateIn = this.dashContainer.__animateIn;
+      //   this.dashContainer.__animateIn = null;
+      // }
+      // if (this.dashContainer.__animateOut) {
+      //   this.dashContainer._animateOut = this.dashContainer.__animateOut;
+      //   this.dashContainer.__animateOut = null;
+      // }
+      this.dashContainer = null;
+    }
+
+    log('disable animator');
+  }
+
+  _hookDashContainer() {
+    if (this.dashContainer) {
+      return false;
+    }
+
+    // hooks
+    // this.dashContainer.__animateIn = this.dashContainer._animateIn;
+    // this.dashContainer.__animateOut = this.dashContainer._animateOut;
+    // this.dashContainer._animateIn = (time, delay) => {
+    //   this._startAnimation();
+    //   this.dashContainer.__animateIn(time, delay);
+    // };
+    // this.dashContainer._animateOut = (time, delay) => {
+    //   this._startAnimation();
+    //   this.dashContainer.__animateOut(time, delay);
+    // };
+
+    return true;
+  }
+
+  _animate() {
+    if (!this._enabled || !this._iconsContainer || !this.dashContainer) return;
+    this.dash = this.dashContainer.dash;
+
+    let existingIcons = this._iconsContainer.get_children();
+
+    // if (!this._iconsContainer.visible) {
+    //   // dashtodock!
+    //   if (this.dashContainer._dockState > 0) {
+    //     this._iconsContainer.show();
+    //   }
+    //   return;
+    // }
+
+    let dock_position = 'bottom';
+    let ix = 0;
+    let iy = 1;
+
+    let pivot = new Point();
+    pivot.x = 0.5;
+    pivot.y = 1.0;
+
+    // dashtodock!
+    this.dashContainer._position = 2;
+
+    switch (this.dashContainer._position) {
+      case 1:
+        dock_position = 'right';
+        ix = 1;
+        iy = 0;
+        pivot.x = 1.0;
+        pivot.y = 0.5;
+        break;
+      case 2:
+        dock_position = 'bottom';
+        break;
+      case 3:
+        dock_position = 'left';
+        ix = 1;
+        iy = 0;
+        pivot.x = 0.0;
+        pivot.y = 0.5;
+        break;
+    }
+
+    let icons = this._findIcons();
+    icons.forEach((c) => {
+      let bin = c._bin;
+      if (!bin) return;
+
+      for (let i = 0; i < existingIcons.length; i++) {
+        if (existingIcons[i]._bin == bin) {
           return;
         }
+      }
 
-        let szTarget = c.first_child.first_child;
-        let szTargetIcon = szTarget._icon;
+      let icon = c._icon;
 
-        if (szTargetIcon) {
-          szTargetIcon.set_fixed_position_set(false);
-          szTarget._icon = null;
-          szTarget.width = -1;
-          szTarget.height = -1;
-          szTargetIcon.scale_x = 1;
-          szTargetIcon.scale_y = 1;
-          szTarget.add_child(szTargetIcon);
-          szTarget.queue_relayout();
-          szTarget.queue_redraw();
-          // szTarget.remove_style_class_name('hi');
+      let uiIcon = new St.Icon({ name: 'some_icon' });
+      if (icon.icon_name) {
+        uiIcon.icon_name = icon.icon_name;
+      } else if (icon.gicon) {
+        uiIcon.gicon = icon.gicon;
+      }
+      uiIcon.pivot_point = pivot;
+      uiIcon._bin = bin;
+      uiIcon._label = c._label;
+
+      this._iconsContainer.add_child(uiIcon);
+
+      // spy dragging events
+      let draggable = bin._draggable;
+      if (draggable && !draggable._dragBeginId) {
+        draggable._dragBeginId = draggable.connect('drag-begin', () => {
+          this._dragging = true;
+          this.disable();
+        });
+        draggable._dragEndId = draggable.connect('drag-end', () => {
+          this._dragging = false;
+          this.disable();
+          this.enable();
+        });
+      }
+    });
+
+    let pointer = global.get_pointer();
+
+    let nearestIdx = -1;
+    let nearestIcon = null;
+    let nearestDistance = -1;
+    let iconSize = this.dash.iconSize;
+
+    let animateIcons = this._iconsContainer.get_children();
+    animateIcons.forEach((c) => {
+      let orphan = true;
+      for (let i = 0; i < icons.length; i++) {
+        if (icons[i]._bin == c._bin) {
+          orphan = false;
+          break;
         }
+      }
 
-        if (!this._dragging) {
-          let draggable = c.first_child._draggable;
-          if (draggable) {
-            if (draggable._dragBeginId) {
-              draggable.disconnect(draggable._dragBeginId);
-              delete draggable._dragBeginId;
-              draggable._dragBeginId = null;
-            }
-            if (draggable._dragEndId) {
-              draggable.disconnect(draggable._dragEndId);
-              delete draggable._dragEndId;
-              draggable._dragEndId = null;
-            }
+      if (orphan) {
+        this._iconsContainer.remove_child(c);
+        return;
+      }
+    });
+
+    animateIcons = [...this._iconsContainer.get_children()];
+
+    // sort
+    let cornerPos = this._get_position(this.dashContainer);
+    animateIcons.sort((a, b) => {
+      let dstA = this._get_distance(cornerPos, this._get_position(a));
+      let dstB = this._get_distance(cornerPos, this._get_position(b));
+      return dstA > dstB ? 1 : -1;
+    });
+
+    let idx = 0;
+    animateIcons.forEach((icon) => {
+      let bin = icon._bin;
+      let pos = this._get_position(bin);
+
+      iconSize = this.dash.iconSize * this.dashContainer.delegate.scale;
+      bin.set_size(iconSize, iconSize);
+      icon.set_size(iconSize, iconSize);
+
+      // get nearest
+      let bposcenter = [...pos];
+      bposcenter[0] += bin.first_child.size.width / 2;
+      bposcenter[1] += bin.first_child.size.height / 2;
+      let dst = this._get_distance(pointer, bposcenter);
+
+      if (
+        (nearestDistance == -1 || nearestDistance > dst) &&
+        dst < iconSize * 0.8
+      ) {
+        nearestDistance = dst;
+        nearestIcon = icon;
+        nearestIdx = idx;
+        icon._distance = dst;
+        icon._dx = bposcenter[0] - pointer[0];
+        icon._dy = bposcenter[1] - pointer[1];
+      }
+
+      if (bin._apps) {
+        bin.first_child.add_style_class_name('invisible');
+      } else {
+        bin.first_child.hide();
+      }
+
+      icon._target = pos;
+      icon._targetScale = 1;
+
+      idx++;
+    });
+
+    // set animation behavior here
+    if (nearestIcon && nearestDistance < iconSize * 2) {
+      nearestIcon._target[iy] -= iconSize * ANIM_ICON_RAISE;
+      nearestIcon._targetScale = ANIM_ICON_SCALE;
+
+      let offset = nearestIcon._dx / 4;
+      let offsetY = (offset < 0 ? -offset : offset) / 2;
+      nearestIcon._target[ix] += offset;
+      nearestIcon._target[iy] += offsetY;
+
+      let prevLeft = nearestIcon;
+      let prevRight = nearestIcon;
+      let sz = nearestIcon._targetScale;
+      let pull_coef = ANIMATION_PULL_COEF;
+
+      for (let i = 1; i < 80; i++) {
+        sz *= 0.8;
+
+        let left = null;
+        let right = null;
+        if (nearestIdx - i >= 0) {
+          left = animateIcons[nearestIdx - i];
+          left._target[ix] =
+            (left._target[ix] + prevLeft._target[ix] * pull_coef) /
+            (pull_coef + 1);
+          left._target[ix] -= iconSize * (sz + 0.2);
+          if (sz > 1) {
+            left._targetScale = sz;
           }
+          prevLeft = left;
         }
-      });
+        if (nearestIdx + i < animateIcons.length) {
+          right = animateIcons[nearestIdx + i];
+          right._target[ix] =
+            (right._target[ix] + prevRight._target[ix] * pull_coef) /
+            (pull_coef + 1);
+          right._target[ix] += iconSize * (sz + 0.2);
+          if (sz > 1) {
+            right._targetScale = sz;
+          }
+          prevRight = right;
+        }
 
-      Main.uiGroup.remove_child(this.animationContainer);
-      delete this.animationContainer;
-      this.animationContainer = null;
+        if (!left && !right) break;
+
+        pull_coef *= 0.9;
+      }
     }
+
+    let didAnimate = false;
+
+    // animate to target scale and position
+    animateIcons.forEach((icon) => {
+      let pos = icon._target;
+      let scale = icon._targetScale;
+      let fromScale = icon.get_scale()[0];
+
+      icon.set_scale(1, 1);
+      let from = this._get_position(icon);
+      let dst = this._get_distance(from, icon._target);
+
+      scale =
+        (fromScale * ANIMATION_SCALE_COEF + scale) / (ANIMATION_SCALE_COEF + 1);
+
+      if (dst > iconSize * 0.01 && dst < iconSize * 3) {
+        pos[0] =
+          (from[0] * ANIMATION_POS_COEF + pos[0]) / (ANIMATION_POS_COEF + 1);
+        pos[1] =
+          (from[1] * ANIMATION_POS_COEF + pos[1]) / (ANIMATION_POS_COEF + 1);
+        didAnimate = true;
+      }
+
+      if (!isNaN(scale)) {
+        icon.set_scale(scale, scale);
+      }
+
+      if (!isNaN(pos[0]) && !isNaN(pos[1])) {
+        // why does NaN happen?
+        icon.set_position(pos[0], pos[1]);
+
+        switch (dock_position) {
+          case 'left':
+            icon._label.x = pos[0] + iconSize * scale * 0.75;
+            break;
+          case 'right':
+            icon._label.x = pos[0] - iconSize * scale * 0.75;
+            icon._label.x -= icon._label.width / 1.8;
+            break;
+          case 'bottom':
+            icon._label.y = pos[1] - iconSize * scale * 0.75;
+            break;
+        }
+      }
+    });
+
+    if (didAnimate) {
+      this._debounceEndAnimation();
+    }
+  }
+
+  _findIcons() {
+    return this.dashContainer.delegate._findIcons();
+  }
+
+  _restoreIcons() {
+    let icons = this._findIcons();
+    icons.forEach((c) => {
+      c._icon.show();
+      c._icon.remove_style_class_name('invisible');
+    });
+  }
+
+  _get_x(obj) {
+    if (obj == null) return 0;
+    return obj.get_transformed_position()[0];
+  }
+
+  _get_y(obj) {
+    if (obj == null) return 0;
+    return obj.get_transformed_position()[1];
+  }
+
+  _get_position(obj) {
+    return [this._get_x(obj), this._get_y(obj)];
+  }
+
+  _get_distance_sqr(pos1, pos2) {
+    let a = pos1[0] - pos2[0];
+    let b = pos1[1] - pos2[1];
+    return a * a + b * b;
+  }
+
+  _get_distance(pos1, pos2) {
+    return Math.sqrt(this._get_distance_sqr(pos1, pos2));
   }
 
   _beginAnimation() {
@@ -122,7 +386,14 @@ var Animator = class {
       this._timeoutId = null;
     }
     if (this._intervalId == null) {
-      this._intervalId = setInterval(this._animate.bind(this), 25);
+      this._intervalId = setInterval(
+        this._animate.bind(this),
+        ANIMATION_INTERVAL
+      );
+    }
+
+    if (this.dashContainer) {
+      this.dashContainer.add_style_class_name('hi');
     }
   }
 
@@ -132,7 +403,8 @@ var Animator = class {
       this._intervalId = null;
     }
     this._timeoutId = null;
-    if (this.dashContainer.debug) {
+
+    if (this.dashContainer) {
       this.dashContainer.remove_style_class_name('hi');
     }
   }
@@ -144,238 +416,36 @@ var Animator = class {
     this._timeoutId = setTimeout(this._endAnimation.bind(this), 1500);
   }
 
-  onMotionEvent() {
-    // this._animate();
-    if (!this._inDash) {
-      this.onEnterEvent();
-    }
+  _onMotionEvent() {
+    this._onEnterEvent();
   }
 
-  onEnterEvent() {
+  _onEnterEvent() {
     this._inDash = true;
-    this._beginAnimation();
+    this._startAnimation();
   }
 
-  onLeaveEvent() {
+  _onLeaveEvent() {
     this._inDash = false;
     this._debounceEndAnimation();
   }
 
-  onFocusWindow() {
-    this._beginAnimation();
-    this._debounceEndAnimation();
+  _onFocusWindow() {
+    this._startAnimation();
   }
 
-  onFullScreenEvent() {
+  _onFullScreen() {
+    if (!this.dashContainer || !this._iconsContainer) return;
     let primary = Main.layoutManager.primaryMonitor;
     if (!primary.inFullscreen) {
-      this.show();
+      this._iconsContainer.show();
     } else {
-      this.hide();
+      this._iconsContainer.hide();
     }
   }
 
-  _get_x(obj) {
-    if (obj == null) return 0;
-    if (obj.name != 'dash') return obj.x + this._get_x(obj.get_parent());
-    return obj.x;
-  }
-
-  _animate() {
-    if (!this.dashContainer) return;
-
-    if (this.dashContainer.debug) {
-      this.dashContainer.add_style_class_name('hi');
-    }
-    let pointer = global.get_pointer();
-    let iconWidth = this.shrink ? 58 : 64;
-
-    this.animationContainer.position = this.dashContainer.position;
-    this.animationContainer.size = this.dashContainer.size;
-    this._overlapped = false;
-
-    let X = this.dash.last_child.x;
-    let Y = -iconWidth * 0.08;
-    if (X == 0) return false;
-    pointer[0] -= X;
-
-    let pivot = new Point();
-    pivot.x = 0.5;
-    pivot.y = 1.0;
-
-    this.animationContainer.get_children().forEach((c) => {
-      c._orphan = true;
-    });
-
-    let idx = 0;
-    let topIdx = -1;
-    let topY = 0;
-    this.dash.last_child.first_child.get_children().forEach((c) => {
-      if (
-        !c.first_child ||
-        !c.first_child.first_child ||
-        !c.first_child.first_child.first_child
-      ) {
-        return;
-      }
-
-      let szTarget = c.first_child.first_child;
-
-      let newIcon = false;
-      let pos = c.position;
-      let dx = pos.x + c.width / 2 - pointer[0];
-      let dy = pos.y + c.height / 2 - pointer[1];
-      let d = Math.sqrt(dx * dx);
-      let dst = 150;
-      let dstx = 500;
-      let dd = dst - d;
-      let sz = 0;
-      let sc = 0;
-
-      if (d < dst && dd > 0 && this._inDash) {
-        let df = dd / dst;
-        sz = -10 * df;
-        sc = iconScaleUp * df;
-      }
-
-      let szDot = szTarget.first_child;
-      if (szDot.icon) {
-        szDot = szTarget.last_child;
-      }
-      if (szDot) {
-        szDot.translation_y = this.shrink ? -8 : 0;
-      }
-
-      let szTargetIcon = szTarget._icon;
-      if (!szTargetIcon) {
-        szTargetIcon = szTarget.first_child;
-        if (!szTargetIcon.icon) {
-          szTargetIcon = szTarget.last_child;
-        }
-        if (!szTargetIcon.icon) return;
-
-        szTarget._icon = szTargetIcon;
-        szTargetIcon.set_fixed_position_set(true);
-        let iconWidth = szTargetIcon.width;
-        szTarget.remove_child(szTargetIcon);
-        // szTarget.add_style_class_name('hi');
-        newIcon = true;
-      }
-
-      let draggable = c.first_child._draggable;
-      if (newIcon && draggable && !draggable._dragBeginId) {
-        draggable._dragBeginId = draggable.connect('drag-begin', () => {
-          this._dragging = true;
-          if (this._enabled) {
-            this.disable();
-          }
-        });
-        draggable._dragEndId = draggable.connect('drag-end', () => {
-          this._dragging = false;
-          if (this._enabled) {
-            this.enable();
-          }
-        });
-      }
-
-      szTarget.width = iconWidth;
-      szTargetIcon.icon.width = iconWidth * 0.8;
-      szTargetIcon.icon.height = iconWidth * 0.8;
-      szTargetIcon._orphan = false;
-
-      let scc = 1 + sc - szTargetIcon.scale_x;
-      szTargetIcon.scale_x = szTargetIcon.scale_x + scc * scaleAnimFactor;
-      szTargetIcon.scale_y = szTargetIcon.scale_y + scc * scaleAnimFactor;
-      // szTargetIcon.scale_z = szTargetIcon.scale_y;
-
-      szTargetIcon.pivot_point = pivot;
-
-      if (newIcon) {
-        szTargetIcon.x = pos.x + X + (iconWidth * 0.2) / 2;
-        szTargetIcon.y = pos.y + Y + iconWidth * 0.4 + sz;
-        this.animationContainer.add_child(szTargetIcon);
-      } else {
-        let tz = pos.y + Y + iconWidth * 0.4 + sz - szTargetIcon.y;
-        szTargetIcon.y = szTargetIcon.y + tz * yAnimFactor;
-        c.label.y =
-          szTargetIcon.y + this.animationContainer.y - iconWidth * 1.4;
-
-        if (sz != 0 && (szTargetIcon.y < topY || topY == 0)) {
-          topY = szTargetIcon.y;
-          topIdx = idx;
-        }
-      }
-
-      szTargetIcon._x = pos.x + X + (iconWidth * 0.2) / 2;
-      szTargetIcon.x = (szTargetIcon.x * 9 + szTargetIcon._x) / 10;
-
-      idx++;
-    });
-
-    if (topIdx != -1) {
-      let tl = topIdx - 1;
-      let tr = topIdx + 1;
-      let pz = 0;
-
-      let cc = this.dash.last_child.first_child.get_children()[topIdx];
-      let pos = cc.position;
-      let szTargetIcon = null;
-      if (cc && cc.first_child && cc.first_child.first_child) {
-        let szTarget = cc.first_child.first_child;
-        szTargetIcon = szTarget._icon;
-        pz = ((pos.x + iconWidth / 2 - pointer[0]) / iconWidth) * 40;
-        if (pz < iconWidth / 2 && pz > -iconWidth / 2) {
-          let tx = szTargetIcon._x + pz;
-          szTargetIcon.x += (tx - szTargetIcon.x) * xAnimFactor;
-        }
-      }
-
-      let pr = szTargetIcon;
-      let pl = szTargetIcon;
-
-      if (szTargetIcon)
-        for (let i = 0; i < 20; i++) {
-          let cl = this.dash.last_child.first_child.get_children()[tl--];
-          let cr = this.dash.last_child.first_child.get_children()[tr++];
-
-          if (cl && cl.first_child && cl.first_child.first_child) {
-            let szTarget = cl.first_child.first_child;
-            let szTargetIcon = szTarget._icon;
-            let tz = pl.x - iconWidth * szTargetIcon.scale_x * 1.1;
-            szTargetIcon.x += (tz - szTargetIcon.x) * xAnimFactor;
-            pl = szTargetIcon;
-          }
-
-          if (cr && cr.first_child && cr.first_child.first_child) {
-            let szTarget = cr.first_child.first_child;
-            let szTargetIcon = szTarget._icon;
-            let tz = pr.x + iconWidth * szTargetIcon.scale_x * 1.1;
-            szTargetIcon.x += (tz - szTargetIcon.x) * xAnimFactor;
-            pr = szTargetIcon;
-          }
-
-          if (!cl && !cr) break;
-        }
-    }
-
-    this.animationContainer.get_children().forEach((c) => {
-      if (c._orphan) {
-        this.animationContainer.remove_child(c);
-      }
-    });
-
-    return true;
-  }
-
-  show() {
-    if (this.animationContainer) {
-      this.animationContainer.show();
-    }
-  }
-
-  hide() {
-    if (this.animationContainer) {
-      this.animationContainer.hide();
-    }
+  _startAnimation() {
+    this._beginAnimation();
+    this._debounceEndAnimation();
   }
 };

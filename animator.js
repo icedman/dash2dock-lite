@@ -117,7 +117,7 @@ var Animator = class {
       uiIcon._bin = bin;
       uiIcon._label = c._label;
 
-      uiIcon.add_style_class_name('hi');
+      // uiIcon.add_style_class_name('hi');
 
       this._iconsContainer.add_child(uiIcon);
 
@@ -179,12 +179,13 @@ var Animator = class {
       icon.set_size(iconSize, iconSize);
 
       if (!icon.first_child && bin.first_child) {
-        bin.first_child.opacity = 50;
-        // let img = new St.Icon({
-        //   name: 'icon',
-        //   gicon: bin.first_child.gicon
-        // });
-        // icon.add_child(img);
+        bin.first_child.opacity = 0;
+        let img = new St.Icon({
+          name: 'icon',
+          gicon: bin.first_child.gicon,
+        });
+        img.set_icon_size(iconSize);
+        icon.add_child(img);
       }
 
       // get nearest

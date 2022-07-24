@@ -6,6 +6,12 @@
     border:  2px solid red;
 }
 
+
+#dash > StWidget.dash-background {
+  padding-top: 4px !important;
+  padding-bottom: 4px !important;
+}
+
 #dash.dark > StWidget.dash-background {
   background-color: rgb(0,0,0) !important;
 }

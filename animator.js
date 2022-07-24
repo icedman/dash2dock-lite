@@ -27,13 +27,15 @@ const ANIM_ICON_RAISE = 0.15;
 const ANIM_ICON_SCALE = 1.8;
 
 var Animator = class {
-  constructor() {}
+  constructor() {
+    this._enabled = false;
+  }
 
   enable() {
     if (this._enabled) return;
     this._iconsContainer = new St.Widget({ name: 'iconsContainer' });
     Main.uiGroup.add_child(this._iconsContainer);
-    log('enable animator');
+    // log('enable animator');
     this._enabled = true;
   }
 
@@ -50,10 +52,9 @@ var Animator = class {
 
     if (this.dashContainer) {
       this._restoreIcons();
-      this.dashContainer = null;
     }
 
-    log('disable animator');
+    // log('disable animator');
   }
 
   _animate() {
@@ -175,11 +176,11 @@ var Animator = class {
 
       iconSize = this.dash.iconSize * this.dashContainer.delegate.scale;
 
+      bin.first_child.opacity = 0;
       bin.set_size(iconSize, iconSize);
       icon.set_size(iconSize, iconSize);
 
       if (!icon.first_child && bin.first_child) {
-        bin.first_child.opacity = 0;
         let img = new St.Icon({
           name: 'icon',
           gicon: bin.first_child.gicon,
@@ -417,5 +418,9 @@ var Animator = class {
       // c._icon.get_parent().remove_child(c._icon);
       // c._bin.add_child(c._icon);
     });
+  }
+
+  isDragging() {
+    return this._dragging;
   }
 };

@@ -16,6 +16,7 @@ const Me = ExtensionUtils.getCurrentExtension();
 const schema_id = Me.imports.prefs.schema_id;
 const SettingsKey = Me.imports.prefs.SettingsKey;
 const Animator = Me.imports.animator.Animator;
+const AutoHide = Me.imports.autohide.AutoHide;
 
 const setTimeout = Me.imports.utils.setTimeout;
 const setInterval = Me.imports.utils.setInterval;
@@ -39,25 +40,37 @@ class Extension {
       trackFullscreen: true,
     });
 
+    // todo
+    this.reuseExistingDash = true;
+    if (this.reuseExistingDash) {
+      this.dash = Main.overview.dash;
+    } else {
+      this.dash = new Dash();
+      this.dash.set_name('dash');
+      this.dash.add_style_class_name('overview');
+    }
+
     this.dash = Main.overview.dash;
     this.dashContainer.dash = this.dash;
-    Main.uiGroup
-      .find_child_by_name('overview')
-      .first_child.remove_child(this.dash);
+    if (this.dash.get_parent()) {
+      this.dash.get_parent().remove_child(this.dash);
+    }
     this.dashContainer.add_child(this.dash);
 
     this.animator = new Animator();
     this.animator.dashContainer = this.dashContainer;
 
-    this.listeners = [this.animator];
+    this.autohider = new AutoHide();
+    this.autohider.dashContainer = this.dashContainer;
 
-    // this._updateAppsButton();
+    this.listeners = [this.animator, this.autohider];
+
     this._updateShrink();
     this._updateBgDark();
     this._updateBgOpacity();
     this._updateLayout();
     this._updateAnimation();
-    // this._updateAutohide();
+    this._updateAutohide();
 
     this._addEvents();
   }
@@ -66,18 +79,19 @@ class Extension {
     this._removeEvents();
     this._disableSettings();
 
-    // this._updateAppsButton(true);
     this._updateShrink(true);
     this._updateBgDark(true);
     this._updateBgOpacity(true);
     this._updateLayout(true);
     this._updateAnimation(true);
-    // this._updateAutohide(true);
+    this._updateAutohide(true);
 
     this.dashContainer.remove_child(this.dash);
-    Main.uiGroup
-      .find_child_by_name('overview')
-      .first_child.add_child(this.dash);
+    if (this.reuseExistingDash) {
+      Main.uiGroup
+        .find_child_by_name('overview')
+        .first_child.add_child(this.dash);
+    }
 
     Main.layoutManager.removeChrome(this.dashContainer);
     delete this.dashContainer;
@@ -99,7 +113,7 @@ class Extension {
     this.animateIcons = this._settings.get_boolean(SettingsKey.ANIMATE_ICONS);
     this.bgDark = this._settings.get_boolean(SettingsKey.BG_DARK);
     this.bgOpacity = this._settings.get_double(SettingsKey.BG_OPACITY);
-    this.recycleOldDash = this._settings.get_boolean(SettingsKey.REUSE_DASH);
+    this.reuseExistingDash = this._settings.get_boolean(SettingsKey.REUSE_DASH);
     this.hideAppsButton = true;
     this.vertical = false;
     this.autohide = true;
@@ -110,7 +124,7 @@ class Extension {
 
     this._settingsListeners.push(
       this._settings.connect(`changed::${SettingsKey.REUSE_DASH}`, () => {
-        this.recycleOldDash = this._settings.get_boolean(
+        this.reuseExistingDash = this._settings.get_boolean(
           SettingsKey.REUSE_DASH
         );
         this.disable();
@@ -147,8 +161,7 @@ class Extension {
         this.animateIcons = this._settings.get_boolean(
           SettingsKey.ANIMATE_ICONS
         );
-        this.disable();
-        this.enable();
+        this._updateAnimation();
       })
     );
 
@@ -190,8 +203,8 @@ class Extension {
     this._layoutManagerEvents = [];
     this._layoutManagerEvents.push(
       Main.layoutManager.connect('startup-complete', () => {
-        log('startup-complete');
-        this._updateLayout();
+        // log('startup-complete');
+        this._onEnterEvent();
       })
     );
 
@@ -257,7 +270,7 @@ class Extension {
         return l._enabled;
       })
       .forEach((l) => {
-        l._onMotionEvent();
+        if (l._onMotionEvent) l._onMotionEvent();
       });
   }
 
@@ -268,7 +281,7 @@ class Extension {
         return l._enabled;
       })
       .forEach((l) => {
-        l._onEnterEvent();
+        if (l._onEnterEvent) l._onEnterEvent();
       });
   }
 
@@ -278,7 +291,7 @@ class Extension {
         return l._enabled;
       })
       .forEach((l) => {
-        l._onLeaveEvent();
+        if (l._onLeaveEvent) l._onLeaveEvent();
       });
   }
 
@@ -288,7 +301,7 @@ class Extension {
         return l._enabled;
       })
       .forEach((l) => {
-        l._onFocusWindow();
+        if (l._onFocusWindow) l._onFocusWindow();
       });
   }
 
@@ -298,11 +311,9 @@ class Extension {
         return l._enabled;
       })
       .forEach((l) => {
-        l._onFullScreen();
+        if (l._onFullScreen) l._onFullScreen();
       });
   }
-
-  _updateAppsButton(disable) {}
 
   _updateShrink(disable) {
     if (!this.dashContainer) return;
@@ -389,7 +400,7 @@ class Extension {
     this.dashContainer.set_size(this.sw, dockHeight);
     this.dashContainer.set_position(
       this.monitor.x,
-      this.monitor.y + this.sh - dockHeight - iconSize * (1 - scale)
+      this.monitor.y + this.sh - dockHeight
     );
 
     let iconChildren = this._findIcons();
@@ -422,30 +433,50 @@ class Extension {
     }
   }
 
-  _updateAutohide(disable) {}
+  _updateAutohide(disable) {
+    let container = this.dashContainer;
+    let dash = this.dash;
+
+    this.autohider.update({
+      shrink: this.shrink,
+      enable: this.autohide && !disable,
+      dash: dash,
+      container: container,
+      screenHeight: this.sh + this.monitor.y,
+    });
+
+    this.autohider.animator = this.animator;
+    this.dashContainer.autohider = this.autohider;
+  }
 
   _onOverviewShowing() {
     this._inOverview = true;
 
-    this.dashContainer.remove_child(this.dash);
-    Main.uiGroup
-      .find_child_by_name('overview')
-      .first_child.add_child(this.dash);
+    if (this.reuseExistingDash) {
+      this.dashContainer.remove_child(this.dash);
+      Main.uiGroup
+        .find_child_by_name('overview')
+        .first_child.add_child(this.dash);
+    }
 
-    log('_onOverviewShowing');
+    this._onEnterEvent();
+
+    // log('_onOverviewShowing');
   }
 
   _onOverviewHidden() {
     this._inOverview = false;
 
-    Main.uiGroup
-      .find_child_by_name('overview')
-      .first_child.remove_child(this.dash);
-    this.dashContainer.add_child(this.dash);
+    if (this.reuseExistingDash) {
+      Main.uiGroup
+        .find_child_by_name('overview')
+        .first_child.remove_child(this.dash);
+      this.dashContainer.add_child(this.dash);
+    }
 
-    this._updateLayout();
+    // this._onEnterEvent();
 
-    log('_onOverviewHidden');
+    // log('_onOverviewHidden');
   }
 }
 

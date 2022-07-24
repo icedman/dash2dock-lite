@@ -13,7 +13,13 @@ const setTimeout = Me.imports.utils.setTimeout;
 const setInterval = Me.imports.utils.setInterval;
 const clearInterval = Me.imports.utils.clearInterval;
 
+const HIDE_ANIMATION_INTERVAL = 25;
+
 var AutoHide = class {
+  constructor() {
+    this._enabled = false;
+  }
+
   update(params) {
     this.shrink = params.shrink;
     this.dash = params.dash;
@@ -29,7 +35,10 @@ var AutoHide = class {
   }
 
   enable() {
-    this.hide();
+    this.checkHide();
+
+    // log('enable autohide');
+    this._enabled = true;
   }
 
   disable() {
@@ -43,6 +52,9 @@ var AutoHide = class {
     }
 
     this.show();
+
+    this._enabled = false;
+    // log('disable autohide');
   }
 
   isAnimating() {
@@ -52,7 +64,7 @@ var AutoHide = class {
   _beginAnimation(t) {
     this.target = t;
     if (this._intervalId == null) {
-      this._intervalId = setInterval(this._animate.bind(this), 25);
+      this._intervalId = setInterval(this._animate.bind(this), HIDE_ANIMATION_INTERVAL);
     }
   }
 
@@ -61,31 +73,27 @@ var AutoHide = class {
       clearInterval(this._intervalId);
       this._intervalId = null;
     }
-    // this.dashContainer.remove_style_class_name('hi');
   }
 
-  _debounce(func, delay) {
-    if (this._timeoutId) {
-      clearInterval(this._timeoutId);
-    }
-    this._timeoutId = setTimeout(func.bind(this), delay);
-  }
+  _onMotionEvent() {}
 
-  onMotionEvent() {}
-
-  onEnterEvent() {
+  _onEnterEvent() {
     this._inDash = true;
     this.show();
   }
 
-  onLeaveEvent() {
+  _onLeaveEvent() {
     this._inDash = false;
-    this.hide();
+    this.checkHide();
   }
 
   show() {
     this.frameDelay = 0;
     this._beginAnimation(this.screenHeight - this.dashContainer.height);
+  }
+
+  checkHide() {
+    this.hide();
   }
 
   hide() {

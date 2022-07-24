@@ -185,7 +185,7 @@ const Dash2DockLiteSettingsPane = GObject.registerClass(
       _listBox.append(shrinkIcons);
 
       const animateIcons = new Dash2DockLiteSettingListBoxRow(
-        _('Animate Icons'),
+        _('Animate icons'),
         _('Animate dash icons on hover'),
         SettingsKey.ANIMATE_ICONS
       );

@@ -174,7 +174,7 @@ var Animator = class {
       let bin = icon._bin;
       let pos = this._get_position(bin);
 
-      iconSize = this.dash.iconSize * this.dashContainer.delegate.scale;
+      iconSize = this.dash.iconSize * this.dashContainer.delegate._computed_scale();
 
       bin.first_child.opacity = 0;
       bin.set_size(iconSize, iconSize);

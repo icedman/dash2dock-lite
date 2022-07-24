@@ -23,8 +23,9 @@ const setInterval = Me.imports.utils.setInterval;
 
 class Extension {
   enable() {
+    this.scale = 1;
+    this.baseScale = 1.0;
     this.listeners = [];
-    this.scale = 1.0;
 
     this._enableSettings();
     this._queryDisplay();
@@ -143,6 +144,13 @@ class Extension {
       this._settings.connect(`changed::${SettingsKey.BG_OPACITY}`, () => {
         this.bgOpacity = this._settings.get_double(SettingsKey.BG_OPACITY);
         this._updateBgOpacity();
+      })
+    );
+
+    this._settingsListeners.push(
+      this._settings.connect(`changed::${SettingsKey.SCALE_ICONS}`, () => {
+        this.scale = this._settings.get_double(SettingsKey.SCALE_ICONS);
+        log(this.scale);
       })
     );
 
@@ -318,10 +326,8 @@ class Extension {
   _updateShrink(disable) {
     if (!this.dashContainer) return;
     if (this.shrink && !disable) {
-      this.scale = 0.8;
       this.dashContainer.add_style_class_name('shrink');
     } else {
-      this.scale = 1.0;
       this.dashContainer.remove_style_class_name('shrink');
     }
   }
@@ -400,7 +406,7 @@ class Extension {
       // dash might not yet be ready
     }
 
-    let scale = this.scale;
+    let scale = this._computed_scale();
     let dockHeight = iconSize * 2 * scale;
 
     this.dashContainer.set_size(this.sw, dockHeight);
@@ -479,10 +485,16 @@ class Extension {
         .first_child.remove_child(this.dash);
       this.dashContainer.add_child(this.dash);
     }
-
     // this._onEnterEvent();
-
     // log('_onOverviewHidden');
+  }
+
+  _computed_scale() {
+    let scale = 1;
+    if (this.shrink) {
+      scale *= 0.8;
+    }
+    return scale;
   }
 }
 

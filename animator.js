@@ -124,12 +124,12 @@ var Animator = class {
 
       // spy dragging events
       let draggable = c._draggable;
-      if (draggable && !draggable._dragBeginId) {
-        draggable._dragBeginId = draggable.connect('drag-begin', () => {
+      if (draggable && !bin._dragBeginId) {
+        bin._dragBeginId = draggable.connect('drag-begin', () => {
           this._dragging = true;
           this.disable();
         });
-        draggable._dragEndId = draggable.connect('drag-end', () => {
+        bin._dragEndId = draggable.connect('drag-end', () => {
           this._dragging = false;
           this.disable();
           this.enable();
@@ -415,8 +415,17 @@ var Animator = class {
     icons.forEach((c) => {
       let bin = c._bin;
       c._icon.opacity = 255;
-      // c._icon.get_parent().remove_child(c._icon);
-      // c._bin.add_child(c._icon);
+      if (!this._dragging) {
+        if (bin._dragBeginId) {
+          bin._draggable.disconnect(bin._dragBeginId);
+        }
+        if (bin._dragEndId) {
+          bin._draggable.disconnect(bin._dragEndId);
+        }
+        bin._draggable = null;
+        bin._dragBeginId = null;
+        bin._dragEndId = null;
+      }
     });
   }
 

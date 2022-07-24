@@ -392,7 +392,13 @@ class Extension {
     this._queryDisplay();
 
     let scaleFactor = St.ThemeContext.get_for_stage(global.stage).scale_factor;
-    let iconSize = 64; // << todo
+    let iconSize = 64;
+
+    try {
+      this.dash._box.first_child.first_child._delegate.icon.height;
+    } catch(err) {
+      // dash might not yet be ready
+    }
 
     let scale = this.scale;
     let dockHeight = iconSize * 2 * scale;

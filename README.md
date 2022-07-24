@@ -41,6 +41,13 @@ Using the AUR (Arch User Repository):
 $ git clone https://aur.archlinux.org/gnome-shell-extension-dash2dock-lite.git
 $ makepkg -si
 ```
+## Alternative
+
+Checkout Dash Animator. It adds animation to Dash-to-Dock.
+
+```bash
+$ git clone https://github.com/icedman/dash-animator.git
+```
 
 ## License
 

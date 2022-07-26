@@ -64,7 +64,10 @@ var AutoHide = class {
   _beginAnimation(t) {
     this.target = t;
     if (this._intervalId == null) {
-      this._intervalId = setInterval(this._animate.bind(this), HIDE_ANIMATION_INTERVAL);
+      this._intervalId = setInterval(
+        this._animate.bind(this),
+        HIDE_ANIMATION_INTERVAL
+      );
     }
   }
 

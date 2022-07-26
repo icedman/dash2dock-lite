@@ -402,7 +402,7 @@ class Extension {
 
     try {
       this.dash._box.first_child.first_child._delegate.icon.height;
-    } catch(err) {
+    } catch (err) {
       // dash might not yet be ready
     }
 

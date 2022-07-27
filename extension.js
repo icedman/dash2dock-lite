@@ -413,7 +413,7 @@ class Extension {
 
     this._queryDisplay();
 
-    let scaleFactor = St.ThemeContext.get_for_stage(global.stage).scale_factor;
+    this.scaleFactor = St.ThemeContext.get_for_stage(global.stage).scale_factor;
     let iconSize = 64;
 
     try {
@@ -425,10 +425,10 @@ class Extension {
     let scale = this.scale;
     let dockHeight = iconSize * 2 * scale;
 
-    this.dashContainer.set_size(this.sw, dockHeight);
+    this.dashContainer.set_size(this.sw, dockHeight  * this.scaleFactor);
     this.dashContainer.set_position(
       this.monitor.x,
-      this.monitor.y + this.sh - dockHeight
+      this.monitor.y + this.sh - dockHeight  * this.scaleFactor
     );
 
     let iconChildren = this._findIcons();

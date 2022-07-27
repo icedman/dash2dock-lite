@@ -294,18 +294,7 @@ var Animator = class {
 
         // todo find appsButton._label
         if (icon._label) {
-          switch (dock_position) {
-            case 'left':
-              icon._label.x = pos[0] + iconSize * scale * 0.75;
-              break;
-            case 'right':
-              icon._label.x = pos[0] - iconSize * scale * 0.75;
-              icon._label.x -= icon._label.width / 1.8;
-              break;
-            case 'bottom':
-              icon._label.y = pos[1] - iconSize * scale * 0.75;
-              break;
-          }
+            icon._label.y = pos[1] - iconSize * scale * 0.75 * this.dashContainer.delegate.scaleFactor;
         }
       }
     });

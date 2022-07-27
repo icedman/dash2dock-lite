@@ -21,12 +21,13 @@ const clearTimeout = Me.imports.utils.clearTimeout;
 
 const ANIM_INTERVAL = 32;
 const ANIM_POS_COEF = 2;
-const ANIM_PULL_COEF = 1.5;
+const ANIM_PULL_COEF = 1.8;
 const ANIM_SCALE_COEF = 2.5;
 const ANIM_ON_LEAVE_COEF = 1.4;
 const ANIM_ICON_RAISE = 0.15;
 const ANIM_ICON_SCALE = 1.8;
 const ANIM_ICON_HIT_AREA = 1.15;
+const ANIM_ICON_QUALITY = 2.0;
 
 var Animator = class {
   constructor() {
@@ -75,29 +76,6 @@ var Animator = class {
 
     let iconSize = this.dash.iconSize;
 
-    // dashtodock!
-    this.dashContainer._position = 2;
-
-    switch (this.dashContainer._position) {
-      case 1:
-        dock_position = 'right';
-        ix = 1;
-        iy = 0;
-        pivot.x = 1.0;
-        pivot.y = 0.5;
-        break;
-      case 2:
-        dock_position = 'bottom';
-        break;
-      case 3:
-        dock_position = 'left';
-        ix = 1;
-        iy = 0;
-        pivot.x = 0.0;
-        pivot.y = 0.5;
-        break;
-    }
-
     let icons = this._findIcons();
     icons.forEach((c) => {
       let bin = c._bin;
@@ -133,7 +111,6 @@ var Animator = class {
         });
         draggable._dragEndId = draggable.connect('drag-end', () => {
           this._dragging = false;
-          this.disable();
           this.enable();
         });
       }
@@ -187,7 +164,8 @@ var Animator = class {
           name: 'icon',
           gicon: bin.first_child.gicon,
         });
-        img.set_icon_size(iconSize);
+        img.set_icon_size(iconSize * ANIM_ICON_QUALITY);
+        img.set_scale(1 / ANIM_ICON_QUALITY, 1 / ANIM_ICON_QUALITY);
         icon.add_child(img);
       }
 
@@ -283,14 +261,11 @@ var Animator = class {
         _pos_coef *= ANIM_ON_LEAVE_COEF;
       }
 
-      scale =
-        (fromScale * _scale_coef + scale) / (_scale_coef + 1);
+      scale = (fromScale * _scale_coef + scale) / (_scale_coef + 1);
 
       if (dst > iconSize * 0.01 && dst < iconSize * 3) {
-        pos[0] =
-          (from[0] * _pos_coef + pos[0]) / (_pos_coef + 1);
-        pos[1] =
-          (from[1] * _pos_coef + pos[1]) / (_pos_coef + 1);
+        pos[0] = (from[0] * _pos_coef + pos[0]) / (_pos_coef + 1);
+        pos[1] = (from[1] * _pos_coef + pos[1]) / (_pos_coef + 1);
         didAnimate = true;
       }
 
@@ -356,10 +331,7 @@ var Animator = class {
       this._timeoutId = null;
     }
     if (this._intervalId == null) {
-      this._intervalId = setInterval(
-        this._animate.bind(this),
-        ANIM_INTERVAL
-      );
+      this._intervalId = setInterval(this._animate.bind(this), ANIM_INTERVAL);
     }
 
     if (this.dashContainer) {
@@ -427,9 +399,5 @@ var Animator = class {
       // c._icon.get_parent().remove_child(c._icon);
       // c._bin.add_child(c._icon);
     });
-  }
-
-  isDragging() {
-    return this._dragging;
   }
 };

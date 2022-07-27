@@ -112,9 +112,16 @@ var AutoHide = class {
   _animate() {
     if (!this.dashContainer) return false;
 
+    let y = this.dashContainer.position.y;
+    let x = this.dashContainer.position.x;
+
     // temporarily disable autohide
-    if (this.animator && this.animator.isDragging()) {
-      this.target = this.screenHeight - this.dashContainer.height;
+    if (this.animator && this.animator._enabled && this.animator._dragging) {
+      y = this.screenHeight - this.dashContainer.height;
+      this.dashContainer.set_position(x, y);
+      this._endAnimation();
+      this.animator._endAnimation();
+      return true;
     }
 
     if (this.frameDelay && this.frameDelay-- > 0) {
@@ -123,10 +130,8 @@ var AutoHide = class {
 
     // this.dashContainer.add_style_class_name('hi');
 
-    let y = this.dashContainer.position.y;
-    let x = this.dashContainer.position.x;
     let dy = this.target - y;
-    if (dy * dy < 16) {
+    if (dy * dy < 16 || this.animator._dragging) {
       y = this.target;
       this._endAnimation();
     } else {
@@ -138,6 +143,7 @@ var AutoHide = class {
         this.animator._beginAnimation();
       }
     }
+
     this.dashContainer.set_position(x, y);
     return true;
   }

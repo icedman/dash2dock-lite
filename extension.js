@@ -350,12 +350,7 @@ class Extension {
     if (!this.dash) return [];
 
     let icons = this.dash._box.get_children().filter((actor) => {
-      if (
-        actor.child &&
-        actor.child._delegate &&
-        actor.child._delegate.icon &&
-        !actor.animatingOut
-      ) {
+      if (actor.child && actor.child._delegate && actor.child._delegate.icon) {
         return true;
       }
       return false;
@@ -374,6 +369,7 @@ class Extension {
       let boxlayout = icongrid.first_child;
       let bin = boxlayout.first_child;
       let icon = bin.first_child;
+
       c._bin = bin;
       c._label = label;
       c._draggable = draggable;

@@ -35,7 +35,7 @@ var AutoHide = class {
   }
 
   enable() {
-    this.checkHide();
+    this._checkHide();
 
     // log('enable autohide');
     this._enabled = true;
@@ -87,16 +87,12 @@ var AutoHide = class {
 
   _onLeaveEvent() {
     this._inDash = false;
-    this.checkHide();
+    this._checkHide();
   }
 
   show() {
     this.frameDelay = 0;
     this._beginAnimation(this.screenHeight - this.dashContainer.height);
-  }
-
-  checkHide() {
-    this.hide();
   }
 
   hide() {
@@ -128,5 +124,29 @@ var AutoHide = class {
     }
     this.dashContainer.set_position(x, y);
     return true;
+  }
+
+  _checkOverlap() {
+    /*
+    get_window_actors
+    get_monitor vs current monitor (primary)
+    get_workspace vs current workspace
+    showing_on_its_workspace
+    track position-changed
+    track size-changed
+    track focus
+    */
+  }
+
+  _track(window) {
+
+  }
+
+  _untrack(window) {
+    
+  }
+
+  _checkHide() {
+    this.hide();
   }
 };

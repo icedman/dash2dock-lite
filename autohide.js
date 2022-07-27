@@ -13,7 +13,8 @@ const setTimeout = Me.imports.utils.setTimeout;
 const setInterval = Me.imports.utils.setInterval;
 const clearInterval = Me.imports.utils.clearInterval;
 
-const HIDE_ANIMATION_INTERVAL = 25;
+const HIDE_ANIMATION_INTERVAL = 32;
+const DEBOUNCE_HIDE_TIMEOUT = 120;
 
 // some codes lifted from dash-to-dock intellihide
 const handledWindowTypes = [
@@ -218,7 +219,7 @@ var AutoHide = class {
     this._timeoutId = setTimeout(() => {
       this._timeoutId = null;
       this._checkHide();
-    }, 500);
+    }, DEBOUNCE_HIDE_TIMEOUT);
   }
 
   _checkHide() {

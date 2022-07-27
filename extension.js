@@ -203,8 +203,11 @@ class Extension {
     this._layoutManagerEvents = [];
     this._layoutManagerEvents.push(
       Main.layoutManager.connect('startup-complete', () => {
-        // log('startup-complete');
-        this._onEnterEvent();
+        this.animator.enable();
+        this.animator._beginAnimation();
+        this.oneShotStartupCompleteId = setTimeout(() => {
+          this._updateAnimation();
+        }, 1500);
       })
     );
 
@@ -234,6 +237,11 @@ class Extension {
   _removeEvents() {
     this.dashContainer.set_reactive(false);
     this.dashContainer.set_track_hover(false);
+
+    if (this.oneShotStartupCompleteId) {
+      clearInterval(this.oneShotStartupCompleteId);
+      this.oneShotStartupCompleteId = null;
+    }
 
     this._dashContainerEvents.forEach((id) => {
       if (this.dashContainer) {
@@ -373,6 +381,7 @@ class Extension {
       c._bin = bin;
       c._label = label;
       c._draggable = draggable;
+      c._appwell = appwell;
       if (icon) {
         c._icon = icon;
       }
@@ -456,8 +465,8 @@ class Extension {
         .first_child.add_child(this.dash);
     }
 
+    this.dashContainer.hide();
     this._onEnterEvent();
-
     // log('_onOverviewShowing');
   }
 
@@ -471,7 +480,8 @@ class Extension {
       this.dashContainer.add_child(this.dash);
     }
 
-    // this._onEnterEvent();
+    this.dashContainer.show();
+    this._onEnterEvent();
 
     // log('_onOverviewHidden');
   }

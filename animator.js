@@ -61,7 +61,7 @@ var Animator = class {
   }
 
   _animate() {
-    if (!this._enabled || !this._iconsContainer || !this.dashContainer) return;
+    if (!this._iconsContainer || !this.dashContainer) return;
     this.dash = this.dashContainer.dash;
 
     let existingIcons = this._iconsContainer.get_children();
@@ -96,9 +96,21 @@ var Animator = class {
 
       uiIcon.pivot_point = pivot;
       uiIcon._bin = bin;
+      uiIcon._appwell = c._appwell;
       uiIcon._label = c._label;
 
       // uiIcon.add_style_class_name('hi');
+      // let uiBtn = new St.Button({
+      //   name: 'button',
+      //   width: iconSize,
+      //   height: iconSize,
+      // });
+      // uiIcon.add_child(uiBtn);
+      // uiBtn.connect('clicked', (arg) => {
+      //   if (uiIcon._appwell) {
+      //     uiIcon._appwell.emit('clicked', arg);
+      //   }
+      // });
 
       this._iconsContainer.add_child(uiIcon);
 

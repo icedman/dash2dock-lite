@@ -17,39 +17,20 @@ const HIDE_ANIMATION_INTERVAL = 25;
 
 // some codes lifted from dash-to-dock intellihide
 const handledWindowTypes = [
-    Meta.WindowType.NORMAL,
-    // Meta.WindowType.DOCK,
-    Meta.WindowType.DIALOG,
-    Meta.WindowType.MODAL_DIALOG,
-    // Meta.WindowType.TOOLBAR,
-    // Meta.WindowType.MENU,
-    Meta.WindowType.UTILITY,
-    // Meta.WindowType.SPLASHSCREEN
+  Meta.WindowType.NORMAL,
+  // Meta.WindowType.DOCK,
+  Meta.WindowType.DIALOG,
+  Meta.WindowType.MODAL_DIALOG,
+  // Meta.WindowType.TOOLBAR,
+  // Meta.WindowType.MENU,
+  Meta.WindowType.UTILITY,
+  // Meta.WindowType.SPLASHSCREEN
 ];
 
 var AutoHide = class {
-  constructor() {
-    this._enabled = false;
-    this._tracked = [];
-  }
-
-  update(params) {
-    this.shrink = params.shrink;
-    this.dash = params.dash;
-    this.dashContainer = params.container;
-    this.screenHeight = params.screenHeight;
-    this._enabled = params.enable;
-
-    if (params.enable) {
-      this.enable();
-    } else {
-      this.disable();
-    }
-  }
+  constructor() {}
 
   enable() {
-    this._checkHide();
-
     // log('enable autohide');
     this._enabled = true;
   }
@@ -68,15 +49,8 @@ var AutoHide = class {
 
     this._enabled = false;
 
-    let actors = global.get_window_actors();
-    actors.forEach((a) => {
-      let window = a.get_meta_window();
-      if (window._tracked) {
-        this._untrack(window);
-      }
-    })
+    this._untrack(this._currentTracked);
 
-    this._tracked = [];
     // log('disable autohide');
   }
 
@@ -98,6 +72,7 @@ var AutoHide = class {
     if (this._intervalId) {
       clearInterval(this._intervalId);
       this._intervalId = null;
+      this.dashContainer.remove_style_class_name('hi');
     }
   }
 
@@ -110,27 +85,27 @@ var AutoHide = class {
 
   _onLeaveEvent() {
     this._inDash = false;
-    this._checkHide();
+    this._debounceCheckHide();
   }
 
   _onFocusWindow() {
-    this._checkHide();
+    this._debounceCheckHide();
   }
+
+  _onFullScreen() {}
 
   show() {
     this.frameDelay = 0;
-    this._beginAnimation(this.screenHeight - this.dashContainer.height);
-    if (this.animator && this.animator._enabled) {
-      this.animator._beginAnimation();
-    }
+    this._beginAnimation(
+      this.dashContainer.delegate.sh - this.dashContainer.height
+    );
   }
 
   hide() {
     this.frameDelay = 10;
-    this._beginAnimation(this.screenHeight - this.dashContainer.height / 8);
-    if (this.animator && this.animator._enabled) {
-      this.animator._beginAnimation();
-    }
+    this._beginAnimation(
+      this.dashContainer.delegate.sh - this.dashContainer.height / 8
+    );
   }
 
   _animate() {
@@ -144,7 +119,9 @@ var AutoHide = class {
     if (this.frameDelay && this.frameDelay-- > 0) {
       return true;
     }
+
     // this.dashContainer.add_style_class_name('hi');
+
     let y = this.dashContainer.position.y;
     let x = this.dashContainer.position.x;
     let dy = this.target - y;
@@ -154,28 +131,56 @@ var AutoHide = class {
     } else {
       dy = dy / 4;
       y += dy;
+
+      // animate the icons if needed
+      if (this.animator && this.animator._enabled) {
+        this.animator._beginAnimation();
+      }
     }
     this.dashContainer.set_position(x, y);
     return true;
   }
 
   _track(window) {
-      if (!window._tracked) {
-        window._onPositionChanged = window.connect('position-changed', this._debounceCheckHide.bind(this));
-        // window._onSizeChanged = window.connect('size-changed', this._checkHide.bind(this));
-        window._tracked = true;
-      }
+    if (window == this._currentTracked) return;
+
+    this._untrack(this._currentTracked);
+    if (!window._tracked) {
+      window._onPositionChanged = window.connect(
+        'position-changed',
+        this._debounceCheckHide.bind(this)
+      );
+      window._onSizeChanged = window.connect(
+        'size-changed',
+        this._debounceCheckHide.bind(this)
+      );
+      window._tracked = true;
+      this._currentTracked = window;
+    }
   }
 
   _untrack(window) {
-     if (window._tracked) {
+    try {
+      if (window && window._tracked) {
         window.disconnect(window._onPositionChanged);
         window.disconnect(window._onSizeChanged);
         window._tracked = false;
       }
+    } catch (err) {
+      // may have been destroyed already
+    }
   }
 
   _checkOverlap() {
+    let pointer = global.get_pointer();
+    let dash_position = this.animator._get_position(this.dashContainer);
+
+    // log('---');
+    // log(pointer[1]);
+    // log(dash_position[1]);
+
+    if (pointer[1] > dash_position[1]) return false;
+
     let monitor = Main.layoutManager.primaryMonitor;
     let actors = global.get_window_actors();
     let windows = actors.map((a) => a.get_meta_window());
@@ -183,15 +188,19 @@ var AutoHide = class {
     windows = windows.filter((w) => w.can_close());
 
     let workspace = global.workspace_manager.get_active_workspace_index();
-    windows = windows.filter((w) => workspace == w.get_workspace().index() && w.showing_on_its_workspace());
+    windows = windows.filter(
+      (w) =>
+        workspace == w.get_workspace().index() && w.showing_on_its_workspace()
+    );
     windows = windows.filter((w) => w.get_window_type() in handledWindowTypes);
 
     windows.forEach((w) => this._track(w));
 
+    // log(windows.length);
+
     let isOverlapped = false;
     windows.forEach((w) => {
       let frame = w.get_frame_rect();
-      let dash_position = this.animator._get_position(this.dashContainer);
       if (frame.y + frame.height >= dash_position[1]) {
         isOverlapped = true;
       }
@@ -206,7 +215,10 @@ var AutoHide = class {
     if (this._timeoutId) {
       clearInterval(this._timeoutId);
     }
-    this._timeoutId = setTimeout(this._checkHide.bind(this), 500);
+    this._timeoutId = setTimeout(() => {
+      this._timeoutId = null;
+      this._checkHide();
+    }, 500);
   }
 
   _checkHide() {

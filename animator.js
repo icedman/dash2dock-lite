@@ -409,7 +409,7 @@ var Animator = class {
     this._beginAnimation();
     this._debounceEndAnimation();
   }
-  
+
   _restoreIcons() {
     let icons = this._findIcons();
     icons.forEach((c) => {

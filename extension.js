@@ -117,7 +117,6 @@ class Extension {
     this.reuseExistingDash = this._settings.get_boolean(SettingsKey.REUSE_DASH);
     this.hideAppsButton = true;
     this.vertical = false;
-    this.autohide = true;
     this.autohide = this._settings.get_boolean(SettingsKey.AUTOHIDE_DASH);
     this.affectsStruts = !this.autohide;
 
@@ -397,7 +396,7 @@ class Extension {
 
     try {
       this.dash._box.first_child.first_child._delegate.icon.height;
-    } catch(err) {
+    } catch (err) {
       // dash might not yet be ready
     }
 
@@ -441,19 +440,14 @@ class Extension {
   }
 
   _updateAutohide(disable) {
-    let container = this.dashContainer;
-    let dash = this.dash;
-
-    this.autohider.update({
-      shrink: this.shrink,
-      enable: this.autohide && !disable,
-      dash: dash,
-      container: container,
-      screenHeight: this.sh + this.monitor.y,
-    });
-
     this.autohider.animator = this.animator;
     this.dashContainer.autohider = this.autohider;
+
+    if (this.autohide && !disable) {
+      this.autohider.enable();
+    } else {
+      this.autohider.disable();
+    }
   }
 
   _onOverviewShowing() {

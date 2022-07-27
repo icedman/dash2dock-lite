@@ -174,7 +174,10 @@ var Animator = class {
       if (!icon.first_child && bin.first_child) {
         let img = new St.Icon({
           name: 'icon',
-          gicon: bin.first_child.gicon,
+          icon_name: bin.first_child.icon_name
+            ? bin.first_child.icon_name
+            : null,
+          gicon: bin.first_child.gicon ? bin.first_child.gicon : null,
         });
         img.set_icon_size(iconSize * ANIM_ICON_QUALITY);
         img.set_scale(1 / ANIM_ICON_QUALITY, 1 / ANIM_ICON_QUALITY);
@@ -289,17 +292,20 @@ var Animator = class {
         // why does NaN happen?
         icon.set_position(pos[0], pos[1]);
 
-        switch (dock_position) {
-          case 'left':
-            icon._label.x = pos[0] + iconSize * scale * 0.75;
-            break;
-          case 'right':
-            icon._label.x = pos[0] - iconSize * scale * 0.75;
-            icon._label.x -= icon._label.width / 1.8;
-            break;
-          case 'bottom':
-            icon._label.y = pos[1] - iconSize * scale * 0.75;
-            break;
+        // todo find appsButton._label
+        if (icon._label) {
+          switch (dock_position) {
+            case 'left':
+              icon._label.x = pos[0] + iconSize * scale * 0.75;
+              break;
+            case 'right':
+              icon._label.x = pos[0] - iconSize * scale * 0.75;
+              icon._label.x -= icon._label.width / 1.8;
+              break;
+            case 'bottom':
+              icon._label.y = pos[1] - iconSize * scale * 0.75;
+              break;
+          }
         }
       }
     });

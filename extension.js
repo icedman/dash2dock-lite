@@ -100,6 +100,13 @@ class Extension {
 
     delete this.animator;
     this.animator = null;
+
+    if (this.dash.showAppsButton && this.dash.showAppsButton._checkEventId) {
+      this.dash.showAppsButton.disconnect(
+        this.dash.showAppsButton._checkEventId
+      );
+      this.dash.showAppsButton._checkEventId = null;
+    }
   }
 
   _queryDisplay() {
@@ -357,16 +364,26 @@ class Extension {
   _findIcons() {
     if (!this.dash) return [];
 
+    // hook on showApps
+    if (this.dash.showAppsButton && !this.dash.showAppsButton._checkEventId) {
+      this.dash.showAppsButton._checkEventId = this.dash.showAppsButton.connect(
+        'notify::checked',
+        () => {
+          if (!Main.overview.visible) {
+            Main.uiGroup
+              .find_child_by_name('overview')
+              ._controls._toggleAppsPage();
+          }
+        }
+      );
+    }
+
     let icons = this.dash._box.get_children().filter((actor) => {
       if (actor.child && actor.child._delegate && actor.child._delegate.icon) {
         return true;
       }
       return false;
     });
-
-    // if (this.dash._showAppsIcon) {
-    //   icons.push(this.dash._showAppsIcon);
-    // }
 
     icons.forEach((c) => {
       let label = c.label;

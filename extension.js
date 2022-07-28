@@ -210,10 +210,10 @@ class Extension {
     this._layoutManagerEvents = [];
     this._layoutManagerEvents.push(
       Main.layoutManager.connect('startup-complete', () => {
-        this.animator.enable();
-        this.animator._beginAnimation();
+        this._updateLayout();
         this.oneShotStartupCompleteId = setTimeout(() => {
-          this._updateAnimation();
+          this._updateLayout();
+          this.oneShotStartupCompleteId = null;
         }, 1500);
       })
     );
@@ -425,10 +425,10 @@ class Extension {
     let scale = this.scale;
     let dockHeight = iconSize * 2 * scale;
 
-    this.dashContainer.set_size(this.sw, dockHeight  * this.scaleFactor);
+    this.dashContainer.set_size(this.sw, dockHeight * this.scaleFactor);
     this.dashContainer.set_position(
       this.monitor.x,
-      this.monitor.y + this.sh - dockHeight  * this.scaleFactor
+      this.monitor.y + this.sh - dockHeight * this.scaleFactor
     );
 
     let iconChildren = this._findIcons();

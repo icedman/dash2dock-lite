@@ -70,9 +70,11 @@ var Animator = class {
     let ix = 0;
     let iy = 1;
 
+    let scaleFactor = St.ThemeContext.get_for_stage(global.stage).scale_factor;
+
     let pivot = new Point();
-    pivot.x = 0.5;
-    pivot.y = 1.0;
+    pivot.x = 0.5 * scaleFactor;
+    pivot.y = 1.0 * scaleFactor;
 
     let iconSize = this.dash.iconSize;
 
@@ -168,7 +170,7 @@ var Animator = class {
       iconSize = this.dash.iconSize * this.dashContainer.delegate.scale;
 
       bin.first_child.opacity = 0;
-      bin.set_size(iconSize, iconSize);
+      // bin.set_size(iconSize, iconSize);
       icon.set_size(iconSize, iconSize);
 
       if (!icon.first_child && bin.first_child) {
@@ -186,13 +188,13 @@ var Animator = class {
 
       // get nearest
       let bposcenter = [...pos];
-      bposcenter[0] += iconSize / 2;
-      bposcenter[1] += iconSize / 2;
+      bposcenter[0] += (iconSize * scaleFactor) / 2;
+      bposcenter[1] += (iconSize * scaleFactor) / 2;
       let dst = this._get_distance(pointer, bposcenter);
 
       if (
         (nearestDistance == -1 || nearestDistance > dst) &&
-        dst < iconSize * ANIM_ICON_HIT_AREA
+        dst < iconSize * ANIM_ICON_HIT_AREA * scaleFactor
       ) {
         nearestDistance = dst;
         nearestIcon = icon;
@@ -210,7 +212,7 @@ var Animator = class {
 
     // set animation behavior here
     if (nearestIcon && nearestDistance < iconSize * 2) {
-      nearestIcon._target[iy] -= iconSize * ANIM_ICON_RAISE;
+      nearestIcon._target[iy] -= iconSize * ANIM_ICON_RAISE * scaleFactor;
       nearestIcon._targetScale = ANIM_ICON_SCALE;
 
       let offset = nearestIcon._dx / 4;
@@ -233,7 +235,7 @@ var Animator = class {
           left._target[ix] =
             (left._target[ix] + prevLeft._target[ix] * pull_coef) /
             (pull_coef + 1);
-          left._target[ix] -= iconSize * (sz + 0.2);
+          left._target[ix] -= iconSize * (sz + 0.2) * scaleFactor;
           if (sz > 1) {
             left._targetScale = sz;
           }
@@ -244,7 +246,7 @@ var Animator = class {
           right._target[ix] =
             (right._target[ix] + prevRight._target[ix] * pull_coef) /
             (pull_coef + 1);
-          right._target[ix] += iconSize * (sz + 0.2);
+          right._target[ix] += iconSize * (sz + 0.2) * scaleFactor;
           if (sz > 1) {
             right._targetScale = sz;
           }
@@ -294,7 +296,7 @@ var Animator = class {
 
         // todo find appsButton._label
         if (icon._label) {
-            icon._label.y = pos[1] - iconSize * scale * 0.75 * this.dashContainer.delegate.scaleFactor;
+          icon._label.y = pos[1] - iconSize * scale * 0.75 * scaleFactor;
         }
       }
     });

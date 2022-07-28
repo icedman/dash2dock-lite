@@ -12,7 +12,7 @@
         <description>Shrink dash icons</description>
     </key>
     <key type="d" name="scale-icons">
-        <default>0.5</default>
+        <default>0.0</default>
         <summary>Scale icons</summary>
         <description>Rescale dash icons</description>
     </key>

@@ -16,6 +16,7 @@ var schema_id = 'org.gnome.shell.extensions.dash2dock-lite';
 var SettingsKey = {
   REUSE_DASH: 'reuse-dash',
   SHRINK_ICONS: 'shrink-icons',
+  SCALE_ICONS: 'scale-icons',
   ANIMATE_ICONS: 'animate-icons',
   AUTOHIDE_DASH: 'autohide-dash',
   BG_OPACITY: 'background-opacity',
@@ -183,6 +184,14 @@ const Dash2DockLiteSettingsPane = GObject.registerClass(
         SettingsKey.SHRINK_ICONS
       );
       _listBox.append(shrinkIcons);
+
+      const scaleIcons = new Dash2DockLiteSettingListBoxRow(
+        _('Scale icons'),
+        _('Rescale dash icons'),
+        SettingsKey.SCALE_ICONS,
+        'scale'
+      );
+      _listBox.append(scaleIcons);
 
       const animateIcons = new Dash2DockLiteSettingListBoxRow(
         _('Animate icons'),

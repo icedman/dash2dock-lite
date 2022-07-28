@@ -25,6 +25,7 @@ class Extension {
   enable() {
     this.listeners = [];
     this.scale = 1.0;
+    this.rescale = 0.5;
 
     this._enableSettings();
     this._queryDisplay();
@@ -118,6 +119,7 @@ class Extension {
   _enableSettings() {
     this._settings = ExtensionUtils.getSettings(schema_id);
     this.shrink = this._settings.get_boolean(SettingsKey.SHRINK_ICONS);
+    this.rescale = this._settings.get_double(SettingsKey.SCALE_ICONS);
     this.animateIcons = this._settings.get_boolean(SettingsKey.ANIMATE_ICONS);
     this.bgDark = this._settings.get_boolean(SettingsKey.BG_DARK);
     this.bgOpacity = this._settings.get_double(SettingsKey.BG_OPACITY);
@@ -150,6 +152,16 @@ class Extension {
       this._settings.connect(`changed::${SettingsKey.BG_OPACITY}`, () => {
         this.bgOpacity = this._settings.get_double(SettingsKey.BG_OPACITY);
         this._updateBgOpacity();
+      })
+    );
+
+    this._settingsListeners.push(
+      this._settings.connect(`changed::${SettingsKey.SCALE_ICONS}`, () => {
+        this.rescale = this._settings.get_double(SettingsKey.SCALE_ICONS);
+        this._updateShrink();
+        this.disable();
+        this.enable();
+        this._onEnterEvent();
       })
     );
 
@@ -213,8 +225,11 @@ class Extension {
         this._updateLayout();
         this.oneShotStartupCompleteId = setTimeout(() => {
           this._updateLayout();
-          this.oneShotStartupCompleteId = null;
-        }, 1500);
+          this.oneShotStartupCompleteId = setTimeout(() => {
+            this._updateLayout();
+            this.oneShotStartupCompleteId = null;
+          }, 500);
+        }, 500);
       })
     );
 
@@ -332,13 +347,20 @@ class Extension {
 
   _updateShrink(disable) {
     if (!this.dashContainer) return;
+
+    let rescale_modifier = 0.8 + 1.4 * this.rescale;
+    if (this.rescale == 0) {
+      rescale_modifier = 1;
+    }
     if (this.shrink && !disable) {
-      this.scale = 0.8;
+      this.scale = 0.8 * rescale_modifier;
       this.dashContainer.add_style_class_name('shrink');
     } else {
-      this.scale = 1.0;
+      this.scale = 1.0 * rescale_modifier;
       this.dashContainer.remove_style_class_name('shrink');
     }
+
+    this._updateLayout();
   }
 
   _updateBgDark(disable) {

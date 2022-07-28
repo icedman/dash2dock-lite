@@ -13,7 +13,7 @@ const setTimeout = Me.imports.utils.setTimeout;
 const setInterval = Me.imports.utils.setInterval;
 const clearInterval = Me.imports.utils.clearInterval;
 
-const HIDE_ANIMATION_INTERVAL = 32;
+const HIDE_ANIMATION_INTERVAL = 25;
 const DEBOUNCE_HIDE_TIMEOUT = 120;
 
 // some codes lifted from dash-to-dock intellihide

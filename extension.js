@@ -505,7 +505,13 @@ class Extension {
     }
 
     this.dashContainer.hide();
-    this._onEnterEvent();
+    if (this.animator && this.animator._enabled) {
+      this.animator._beginAnimation();
+      if (this.animator._iconsContainer) {
+        this.animator._iconsContainer.hide();
+      }
+    }
+    // this._onEnterEvent();
     // log('_onOverviewShowing');
   }
 

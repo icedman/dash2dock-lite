@@ -66,6 +66,7 @@ var Animator = class {
 
     let existingIcons = this._iconsContainer.get_children();
 
+    let validPosition = true;
     let dock_position = 'bottom';
     let ix = 0;
     let iy = 1;
@@ -207,6 +208,10 @@ var Animator = class {
       icon._target = pos;
       icon._targetScale = 1;
 
+      if (pos[1] < this.dashContainer.delegate.sh / 2) {
+        validPosition = false;
+      }
+
       idx++;
     });
 
@@ -300,6 +305,10 @@ var Animator = class {
         }
       }
     });
+
+    if (validPosition) {
+      this._iconsContainer.show();
+    }
 
     if (didAnimate) {
       this._debounceEndAnimation();

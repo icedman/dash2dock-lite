@@ -73,6 +73,7 @@ class Extension {
     this._updateLayout();
     this._updateAnimation();
     this._updateAutohide();
+    this._updateTopBar();
 
     this._addEvents();
   }
@@ -87,6 +88,7 @@ class Extension {
     this._updateLayout(true);
     this._updateAnimation(true);
     this._updateAutohide(true);
+    this._updateTopBar(true);
 
     this.dashContainer.remove_child(this.dash);
     if (this.reuseExistingDash) {
@@ -123,6 +125,7 @@ class Extension {
     this.animateIcons = this._settings.get_boolean(SettingsKey.ANIMATE_ICONS);
     this.bgDark = this._settings.get_boolean(SettingsKey.BG_DARK);
     this.bgOpacity = this._settings.get_double(SettingsKey.BG_OPACITY);
+    this.translucentTopBar = this._settings.get_boolean(SettingsKey.TRANSLUCENT_TOPBAR);
     this.reuseExistingDash = this._settings.get_boolean(SettingsKey.REUSE_DASH);
     this.hideAppsButton = true;
     this.vertical = false;
@@ -189,6 +192,13 @@ class Extension {
         this.autohide = this._settings.get_boolean(SettingsKey.AUTOHIDE_DASH);
         this.disable();
         this.enable();
+      })
+    );
+
+    this._settingsListeners.push(
+      this._settings.connect(`changed::${SettingsKey.TRANSLUCENT_TOPBAR}`, () => {
+        this.translucentTopBar = this._settings.get_boolean(SettingsKey.TRANSLUCENT_TOPBAR);
+        this._updateTopBar();
       })
     );
   }
@@ -370,6 +380,17 @@ class Extension {
       this.dash.add_style_class_name('dark');
     } else {
       this.dash.remove_style_class_name('dark');
+    }
+  }
+
+  _updateTopBar(disable) {
+    if (!this.dashContainer) return;
+    
+    let panelBox = Main.uiGroup.find_child_by_name("panelBox");
+    if (panelBox && this.translucentTopBar && !disable) {
+      panelBox.add_style_class_name('translucent');
+    } else {
+      panelBox.remove_style_class_name('translucent');
     }
   }
 

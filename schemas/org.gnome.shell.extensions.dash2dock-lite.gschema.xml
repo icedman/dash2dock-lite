@@ -36,5 +36,10 @@
         <summary>Background opacity</summary>
         <description>Set dash background opacity</description>
     </key>
+    <key type="b" name="translucent-topbar">
+        <default>true</default>
+        <summary>Translucent topbar</summary>
+        <description>Make top bar translucent</description>
+    </key>
   </schema>
 </schemalist>

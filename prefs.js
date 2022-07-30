@@ -21,6 +21,7 @@ var SettingsKey = {
   AUTOHIDE_DASH: 'autohide-dash',
   BG_OPACITY: 'background-opacity',
   BG_DARK: 'background-dark',
+  TRANSLUCENT_TOPBAR: 'translucent-topbar',
 };
 
 const Dash2DockLiteSettingListBoxRow = GObject.registerClass(
@@ -221,6 +222,13 @@ const Dash2DockLiteSettingsPane = GObject.registerClass(
         'scale'
       );
       _listBox.append(backgroundOpacity);
+
+      const translucentTopBar = new Dash2DockLiteSettingListBoxRow(
+        _('Translucent topbar'),
+        _('Make top bar translucent'),
+        SettingsKey.TRANSLUCENT_TOPBAR
+      );
+      _listBox.append(translucentTopBar);
     }
 
     _rowActivated(widget, row) {

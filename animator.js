@@ -176,7 +176,7 @@ var Animator = class {
 
         let btn = new St.Button({
           width: iconSize,
-          height: iconSize / 3,
+          height: iconSize / 2,
         });
         icon.add_child(btn);
         btn.connect('clicked', (arg) => {

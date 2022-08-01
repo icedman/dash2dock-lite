@@ -125,7 +125,9 @@ class Extension {
     this.animateIcons = this._settings.get_boolean(SettingsKey.ANIMATE_ICONS);
     this.bgDark = this._settings.get_boolean(SettingsKey.BG_DARK);
     this.bgOpacity = this._settings.get_double(SettingsKey.BG_OPACITY);
-    this.translucentTopBar = this._settings.get_boolean(SettingsKey.TRANSLUCENT_TOPBAR);
+    this.translucentTopBar = this._settings.get_boolean(
+      SettingsKey.TRANSLUCENT_TOPBAR
+    );
     this.reuseExistingDash = this._settings.get_boolean(SettingsKey.REUSE_DASH);
     this.hideAppsButton = true;
     this.vertical = false;
@@ -196,10 +198,15 @@ class Extension {
     );
 
     this._settingsListeners.push(
-      this._settings.connect(`changed::${SettingsKey.TRANSLUCENT_TOPBAR}`, () => {
-        this.translucentTopBar = this._settings.get_boolean(SettingsKey.TRANSLUCENT_TOPBAR);
-        this._updateTopBar();
-      })
+      this._settings.connect(
+        `changed::${SettingsKey.TRANSLUCENT_TOPBAR}`,
+        () => {
+          this.translucentTopBar = this._settings.get_boolean(
+            SettingsKey.TRANSLUCENT_TOPBAR
+          );
+          this._updateTopBar();
+        }
+      )
     );
   }
 
@@ -227,6 +234,11 @@ class Extension {
     );
     this._dashContainerEvents.push(
       this.dashContainer.connect('destroy', () => {})
+    );
+
+    this._sessionModeEvents = [];
+    this._sessionModeEvents.push(
+      Main.sessionMode.connect('updated', () => this._onSessionUpdated())
     );
 
     this._layoutManagerEvents = [];
@@ -281,6 +293,11 @@ class Extension {
       }
     });
     this._dashContainerEvents = [];
+
+    this._sessionModeEvents.forEach((id) => {
+      Main.sessionMode.disconnect(id);
+    });
+    this._sessionModeEvents = [];
 
     if (this._overViewEvents) {
       this._overViewEvents.forEach((id) => {
@@ -385,8 +402,8 @@ class Extension {
 
   _updateTopBar(disable) {
     if (!this.dashContainer) return;
-    
-    let panelBox = Main.uiGroup.find_child_by_name("panelBox");
+
+    let panelBox = Main.uiGroup.find_child_by_name('panelBox');
     if (panelBox && this.translucentTopBar && !disable) {
       panelBox.add_style_class_name('translucent');
     } else {
@@ -550,6 +567,11 @@ class Extension {
     this._onEnterEvent();
 
     // log('_onOverviewHidden');
+  }
+
+  _onSessionUpdated() {
+    this._updateLayout();
+    this.autohider._checkHide();
   }
 }
 

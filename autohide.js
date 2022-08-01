@@ -34,6 +34,15 @@ var AutoHide = class {
   enable() {
     // log('enable autohide');
     this._enabled = true;
+
+    this._checkHide();
+    this.oneShotStartupCompleteId = setTimeout(() => {
+      this._checkHide();
+      this.oneShotStartupCompleteId = setTimeout(() => {
+        this._checkHide();
+        this.oneShotStartupCompleteId = null;
+      }, 500);
+    }, 500);
   }
 
   disable() {
@@ -44,6 +53,11 @@ var AutoHide = class {
     if (this._timeoutId) {
       clearTimeout(this._timeoutId);
       this._timeoutId = null;
+    }
+
+    if (this.oneShotStartupCompleteId) {
+      clearInterval(this.oneShotStartupCompleteId);
+      this.oneShotStartupCompleteId = null;
     }
 
     this.show();

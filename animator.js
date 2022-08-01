@@ -91,6 +91,7 @@ var Animator = class {
       }
 
       let icon = c._icon;
+
       let uiIcon = new St.Widget({
         name: 'icon',
         width: iconSize,
@@ -101,19 +102,6 @@ var Animator = class {
       uiIcon._bin = bin;
       uiIcon._appwell = c._appwell;
       uiIcon._label = c._label;
-
-      // uiIcon.add_style_class_name('hi');
-      // let uiBtn = new St.Button({
-      //   name: 'button',
-      //   width: iconSize,
-      //   height: iconSize,
-      // });
-      // uiIcon.add_child(uiBtn);
-      // uiBtn.connect('clicked', (arg) => {
-      //   if (uiIcon._appwell) {
-      //     uiIcon._appwell.emit('clicked', arg);
-      //   }
-      // });
 
       this._iconsContainer.add_child(uiIcon);
 
@@ -185,6 +173,18 @@ var Animator = class {
         img.set_icon_size(iconSize * ANIM_ICON_QUALITY);
         img.set_scale(1 / ANIM_ICON_QUALITY, 1 / ANIM_ICON_QUALITY);
         icon.add_child(img);
+
+        let btn = new St.Button({
+          width: iconSize,
+          height: iconSize / 3,
+        });
+        icon.add_child(btn);
+        btn.connect('clicked', (arg) => {
+          if (icon._appwell) {
+            icon._appwell.emit('clicked', arg);
+          }
+        });
+        // btn.add_style_class_name('hi');
       }
 
       // get nearest

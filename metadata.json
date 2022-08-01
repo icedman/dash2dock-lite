@@ -11,5 +11,5 @@
   "uuid": "dash2dock-lite@icedman.github.com",
   "schema-id": "org.gnome.shell.extensions.dash2dock-lite",
   "gettext-domain": "dash2dock-lite",
-  "version": 7
+  "version": 9
 }

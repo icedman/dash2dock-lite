@@ -301,7 +301,7 @@ var Animator = class {
 
         // todo find appsButton._label
         if (icon._label) {
-          icon._label.y = pos[1] - iconSize * scale * 0.75 * scaleFactor;
+          icon._label.y = pos[1] - (iconSize * scale * 0.95 * scaleFactor);
         }
       }
     });

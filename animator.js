@@ -19,7 +19,7 @@ const setInterval = Me.imports.utils.setInterval;
 const clearInterval = Me.imports.utils.clearInterval;
 const clearTimeout = Me.imports.utils.clearTimeout;
 
-const ANIM_INTERVAL = 32;
+const ANIM_INTERVAL = 25;
 const ANIM_POS_COEF = 2;
 const ANIM_PULL_COEF = 1.8;
 const ANIM_SCALE_COEF = 2.5;

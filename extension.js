@@ -123,6 +123,7 @@ class Extension {
     this.shrink = this._settings.get_boolean(SettingsKey.SHRINK_ICONS);
     this.rescale = this._settings.get_double(SettingsKey.SCALE_ICONS);
     this.animateIcons = this._settings.get_boolean(SettingsKey.ANIMATE_ICONS);
+    this.pressureSense = this._settings.get_boolean(SettingsKey.PRESSURE_SENSE);
     this.bgDark = this._settings.get_boolean(SettingsKey.BG_DARK);
     this.bgOpacity = this._settings.get_double(SettingsKey.BG_OPACITY);
     this.translucentTopBar = this._settings.get_boolean(
@@ -192,6 +193,14 @@ class Extension {
     this._settingsListeners.push(
       this._settings.connect(`changed::${SettingsKey.AUTOHIDE_DASH}`, () => {
         this.autohide = this._settings.get_boolean(SettingsKey.AUTOHIDE_DASH);
+        this.disable();
+        this.enable();
+      })
+    );
+
+    this._settingsListeners.push(
+      this._settings.connect(`changed::${SettingsKey.PRESSURE_SENSE}`, () => {
+        this.pressureSense = this._settings.get_boolean(SettingsKey.PRESSURE_SENSE);
         this.disable();
         this.enable();
       })
@@ -340,7 +349,7 @@ class Extension {
         if (l._onEnterEvent) l._onEnterEvent();
       });
 
-    this._updateLayout(); // << this causes autohider to quickly show
+    this._updateLayout();
   }
 
   _onLeaveEvent() {

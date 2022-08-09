@@ -339,7 +339,7 @@ class Extension {
       .forEach((l) => {
         if (l._onEnterEvent) l._onEnterEvent();
       });
-      
+
     this._updateLayout(); // << this causes autohider to quickly show
   }
 
@@ -495,6 +495,7 @@ class Extension {
         this.monitor.y + this.sh - dockHeight * this.scaleFactor
       );
       this.dashContainer._fixedPosition = this.animator._get_position(this.dashContainer);
+      this.dashContainer._dockHeight = dockHeight * this.scaleFactor;
     }
 
     let iconChildren = this._findIcons();

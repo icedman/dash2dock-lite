@@ -34,6 +34,7 @@ var AutoHide = class {
   enable() {
     // log('enable autohide');
     this._enabled = true;
+    this._dwell = 0;
 
     this._checkHide();
     this.oneShotStartupCompleteId = setTimeout(() => {
@@ -91,17 +92,33 @@ var AutoHide = class {
     }
   }
 
-  _onMotionEvent() {}
+  _onMotionEvent() {
+    if (this._inDash) {
+      // log(this._dwell);
+      let pointer = global.get_pointer();
+      if (pointer[1] + 4 < this.dashContainer._fixedPosition[1] + this.dashContainer._dockHeight) {
+        this._dwell = 0;
+        // log(`${pointer[1] + 4} ${this.dashContainer._fixedPosition[1] + this.dashContainer._dockHeight}`)
+        return;
+      }
+      this._dwell++;
+      if (this._dwell > 12) {
+        this.show();
+      }
+    }
+  }
 
   _onEnterEvent() {
     this._inDash = true;
-    this.show(); 
-    // to do check dwell
+    this._dwell = 0;
   }
 
   _onLeaveEvent() {
-    this._inDash = false;
-    this._debounceCheckHide();
+    if (this._shown) {
+      this._inDash = false;
+      this._dwell = 0;
+      this._debounceCheckHide();
+    }
   }
 
   _onFocusWindow() {

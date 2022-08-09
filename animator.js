@@ -185,6 +185,16 @@ var Animator = class {
           }
         });
         // btn.add_style_class_name('hi');
+        icon._btn = btn;
+      }
+
+      if (this.dashContainer.delegate.autohider &&
+        this.dashContainer.delegate.autohider._enabled &&
+        !this.dashContainer.delegate.autohider._shown
+        ) {
+        icon._btn.hide();
+      } else {
+        icon._btn.show();
       }
 
       // get nearest

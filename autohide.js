@@ -93,24 +93,25 @@ var AutoHide = class {
   }
 
   _onMotionEvent() {
-    if (this._inDash) {
-      // log(this._dwell);
-      let pointer = global.get_pointer();
-      if (pointer[1] + 4 < this.dashContainer._fixedPosition[1] + this.dashContainer._dockHeight) {
-        this._dwell = 0;
-        // log(`${pointer[1] + 4} ${this.dashContainer._fixedPosition[1] + this.dashContainer._dockHeight}`)
-        return;
-      }
-      this._dwell++;
-      if (this._dwell > 12) {
-        this.show();
-      }
-    }
+    // if (this._inDash) {
+    //   // log(this._dwell);
+    //   let pointer = global.get_pointer();
+    //   if (pointer[1] + 4 < this.dashContainer._fixedPosition[1] + this.dashContainer._dockHeight) {
+    //     this._dwell = 0;
+    //     log(`${pointer[1] + 4} ${this.dashContainer._fixedPosition[1]} ${this.dashContainer._dockHeight}`)
+    //     return;
+    //   }
+    //   this._dwell++;
+    //   if (this._dwell > 12) {
+    //     this.show();
+    //   }
+    // }
   }
 
   _onEnterEvent() {
     this._inDash = true;
     this._dwell = 0;
+    this.show();
   }
 
   _onLeaveEvent() {

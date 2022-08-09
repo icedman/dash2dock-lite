@@ -14,13 +14,19 @@
 
 ![Screen Shot](.github/images/thumbnail-dash2dock-lite.png)
 
+### Features
+
+* Dash docked at the desktop
+* Animated dock icons
+* Resize icons
+* Autohide/intellihide
+* Translucent top panel
+
 ### Prerequisites
 
 Requirements:
 
 * GNOME Shell (version 40+)
-
-
 
 ### Installation
 

@@ -332,7 +332,6 @@ class Extension {
   }
 
   _onEnterEvent() {
-    this._updateLayout();
     this.listeners
       .filter((l) => {
         return l._enabled;
@@ -340,6 +339,8 @@ class Extension {
       .forEach((l) => {
         if (l._onEnterEvent) l._onEnterEvent();
       });
+      
+    this._updateLayout(); // << this causes autohider to quickly show
   }
 
   _onLeaveEvent() {
@@ -486,10 +487,15 @@ class Extension {
     let dockHeight = iconSize * 2 * scale;
 
     this.dashContainer.set_size(this.sw, dockHeight * this.scaleFactor);
-    this.dashContainer.set_position(
-      this.monitor.x,
-      this.monitor.y + this.sh - dockHeight * this.scaleFactor
-    );
+    if (this.autohider._enabled && !this.autohider._shown) {
+      // remain hidden
+    } else {
+      this.dashContainer.set_position(
+        this.monitor.x,
+        this.monitor.y + this.sh - dockHeight * this.scaleFactor
+      );
+      this.dashContainer._fixedPosition = this.animator._get_position(this.dashContainer);
+    }
 
     let iconChildren = this._findIcons();
 

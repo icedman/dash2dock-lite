@@ -95,7 +95,8 @@ var AutoHide = class {
 
   _onEnterEvent() {
     this._inDash = true;
-    this.show();
+    this.show(); 
+    // to do check dwell
   }
 
   _onLeaveEvent() {
@@ -111,6 +112,7 @@ var AutoHide = class {
 
   show() {
     this.frameDelay = 0;
+    this._shown = true;
     this._beginAnimation(
       this.dashContainer.delegate.sh - this.dashContainer.height
     );
@@ -118,6 +120,7 @@ var AutoHide = class {
 
   hide() {
     this.frameDelay = 10;
+    this._shown = false;
     this._beginAnimation(
       this.dashContainer.delegate.sh - this.dashContainer.height / 8
     );
@@ -143,7 +146,8 @@ var AutoHide = class {
     }
 
     // this.dashContainer.add_style_class_name('hi');
-
+    this._animating = false;
+      
     let dy = this.target - y;
     if (dy * dy < 16 || this.animator._dragging) {
       y = this.target;
@@ -151,6 +155,8 @@ var AutoHide = class {
     } else {
       dy = dy / 4;
       y += dy;
+
+      this._animating = true;
 
       // animate the icons if needed
       if (this.animator && this.animator._enabled) {
@@ -194,7 +200,8 @@ var AutoHide = class {
 
   _checkOverlap() {
     let pointer = global.get_pointer();
-    let dash_position = this.animator._get_position(this.dashContainer);
+    let dash_position = this.dashContainer._fixedPosition;
+    // this.animator._get_position(this.dashContainer);
 
     // log('---');
     // log(pointer[1]);
@@ -217,8 +224,6 @@ var AutoHide = class {
 
     windows.forEach((w) => this._track(w));
 
-    // log(windows.length);
-
     let isOverlapped = false;
     windows.forEach((w) => {
       let frame = w.get_frame_rect();
@@ -228,7 +233,6 @@ var AutoHide = class {
     });
 
     this.windows = windows;
-
     return isOverlapped;
   }
 

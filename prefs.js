@@ -19,6 +19,7 @@ var SettingsKey = {
   SCALE_ICONS: 'scale-icons',
   ANIMATE_ICONS: 'animate-icons',
   AUTOHIDE_DASH: 'autohide-dash',
+  PRESSURE_SENSE: 'pressure-sense',
   BG_OPACITY: 'background-opacity',
   BG_DARK: 'background-dark',
   TRANSLUCENT_TOPBAR: 'translucent-topbar',
@@ -207,6 +208,13 @@ const Dash2DockLiteSettingsPane = GObject.registerClass(
         SettingsKey.AUTOHIDE_DASH
       );
       _listBox.append(autohideDash);
+
+      const pressureSense = new Dash2DockLiteSettingListBoxRow(
+        _('Pressure sense'),
+        _('Move pointer down to force dash visibility'),
+        SettingsKey.PRESSURE_SENSE
+      );
+      _listBox.append(pressureSense);
 
       const backgroundDark = new Dash2DockLiteSettingListBoxRow(
         _('Dark background'),

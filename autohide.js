@@ -93,30 +93,30 @@ var AutoHide = class {
   }
 
   _onMotionEvent() {
-    // if (this._inDash) {
-    //   // log(this._dwell);
-    //   let pointer = global.get_pointer();
-    //   if (pointer[1] + 4 < this.dashContainer._fixedPosition[1] + this.dashContainer._dockHeight) {
-    //     this._dwell = 0;
-    //     log(`${pointer[1] + 4} ${this.dashContainer._fixedPosition[1]} ${this.dashContainer._dockHeight}`)
-    //     return;
-    //   }
-    //   this._dwell++;
-    //   if (this._dwell > 12) {
-    //     this.show();
-    //   }
-    // }
+    if (this.dashContainer.delegate.pressureSense && !this._shown) {
+      let monitor = this.dashContainer.delegate.monitor;
+      let sw = this.dashContainer.delegate.sw;
+      let sh = this.dashContainer.delegate.sh;
+
+      let pointer = global.get_pointer();
+      if (pointer[1] + 4 > monitor.y + sh) {
+        this._dwell++;
+      }
+
+      if (this._dwell > 12) {
+        this.show();
+      }
+    }
   }
 
   _onEnterEvent() {
-    this._inDash = true;
-    this._dwell = 0;
-    this.show();
+    if (!this.dashContainer.delegate.pressureSense) {
+      this.show();
+    }
   }
 
   _onLeaveEvent() {
     if (this._shown) {
-      this._inDash = false;
       this._dwell = 0;
       this._debounceCheckHide();
     }

@@ -34,11 +34,15 @@ var AutoHide = class {
   enable() {
     // log('enable autohide');
     this._enabled = true;
+    this._shown = true;
     this._dwell = 0;
 
-    this._checkHide();
+    this._debounceCheckHide();
     this.oneShotStartupCompleteId = setTimeout(() => {
-      this._checkHide();
+      if (isNaN(this.dashContainer._fixedPosition)) {
+        this._checkHide();
+        this.dashContainer.delegate._updateLayout();
+      }
       this.oneShotStartupCompleteId = setTimeout(() => {
         this._checkHide();
         this.oneShotStartupCompleteId = null;
@@ -252,6 +256,10 @@ var AutoHide = class {
     });
 
     this.windows = windows;
+
+    log(dash_position[1]);
+    log(isOverlapped);
+    log(windows);
     return isOverlapped;
   }
 

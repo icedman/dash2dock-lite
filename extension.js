@@ -587,7 +587,7 @@ class Extension {
 
   _onSessionUpdated() {
     this._updateLayout();
-    this.autohider._checkHide();
+    this.autohider._debounceCheckHide();
   }
 }
 

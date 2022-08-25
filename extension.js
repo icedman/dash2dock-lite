@@ -200,7 +200,9 @@ class Extension {
 
     this._settingsListeners.push(
       this._settings.connect(`changed::${SettingsKey.PRESSURE_SENSE}`, () => {
-        this.pressureSense = this._settings.get_boolean(SettingsKey.PRESSURE_SENSE);
+        this.pressureSense = this._settings.get_boolean(
+          SettingsKey.PRESSURE_SENSE
+        );
         this.disable();
         this.enable();
       })
@@ -474,6 +476,28 @@ class Extension {
       }
     });
 
+    try {
+      // this.dash._showAppsIcon;
+      let apps = Main.overview.dash.last_child.last_child;
+      if (apps) {
+        let widget = apps.child;
+        if (widget) {
+          let icongrid = widget.first_child;
+          let boxlayout = icongrid.first_child;
+          let bin = boxlayout.first_child;
+          let icon = bin.first_child;
+          let c = {};
+          c.child = widget;
+          c._bin = bin;
+          c._icon = icon;
+          c._label = widget._delegate.label;
+          icons.push(c);
+        }
+      }
+    } catch (err) {
+      // could happen if ShowApps is hidden
+    }
+
     this.dashContainer._icons = icons;
     return icons;
   }
@@ -503,14 +527,17 @@ class Extension {
         this.monitor.x,
         this.monitor.y + this.sh - dockHeight * this.scaleFactor
       );
-      this.dashContainer._fixedPosition = this.animator._get_position(this.dashContainer);
+      this.dashContainer._fixedPosition = this.animator._get_position(
+        this.dashContainer
+      );
       this.dashContainer._dockHeight = dockHeight * this.scaleFactor;
     }
 
     let iconChildren = this._findIcons();
 
-    let iconHook = [...iconChildren, this.dash._showAppsIcon];
+    let iconHook = [...iconChildren]; // this.dash._showAppsIcon;
     for (let i = 0; i < iconHook.length; i++) {
+      if (!iconHook[i].child) continue;
       let icon = iconHook[i].child._delegate.icon;
       if (!icon._setIconSize) {
         icon._setIconSize = icon.setIconSize;

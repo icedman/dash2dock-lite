@@ -19,19 +19,20 @@ const setInterval = Me.imports.utils.setInterval;
 const clearInterval = Me.imports.utils.clearInterval;
 const clearTimeout = Me.imports.utils.clearTimeout;
 
-const ANIM_INTERVAL = 25;
+const ANIM_INTERVAL = 15;
 const ANIM_POS_COEF = 2;
 const ANIM_PULL_COEF = 1.8;
 const ANIM_SCALE_COEF = 2.5;
 const ANIM_ON_LEAVE_COEF = 1.4;
 const ANIM_ICON_RAISE = 0.15;
 const ANIM_ICON_SCALE = 1.8;
-const ANIM_ICON_HIT_AREA = 1.15;
+const ANIM_ICON_HIT_AREA = 1.25;
 const ANIM_ICON_QUALITY = 2.0;
 
 var Animator = class {
   constructor() {
     this._enabled = false;
+    this.animationInterval = ANIM_INTERVAL;
   }
 
   enable() {
@@ -40,12 +41,19 @@ var Animator = class {
     Main.uiGroup.add_child(this._iconsContainer);
     // log('enable animator');
     this._enabled = true;
+    this._dragging = false;
+    this._oneShotId = null;
   }
 
   disable() {
     if (!this._enabled) return;
     this._enabled = false;
     this._endAnimation();
+
+    if (this._oneShotId) {
+      clearInterval(this._oneShotId);
+      this._oneShotId = null;
+    }
 
     if (this._iconsContainer) {
       Main.uiGroup.remove_child(this._iconsContainer);
@@ -114,7 +122,7 @@ var Animator = class {
         });
         draggable._dragEndId = draggable.connect('drag-end', () => {
           this._dragging = false;
-          this.enable();
+          this._oneShotId = setTimeout(this.enable.bind(this), 750);
         });
       }
     });
@@ -188,10 +196,11 @@ var Animator = class {
         icon._btn = btn;
       }
 
-      if (this.dashContainer.delegate.autohider &&
+      if (
+        this.dashContainer.delegate.autohider &&
         this.dashContainer.delegate.autohider._enabled &&
         !this.dashContainer.delegate.autohider._shown
-        ) {
+      ) {
         icon._btn.hide();
       } else {
         icon._btn.show();
@@ -311,7 +320,7 @@ var Animator = class {
 
         // todo find appsButton._label
         if (icon._label) {
-          icon._label.y = pos[1] - (iconSize * scale * 0.95 * scaleFactor);
+          icon._label.y = pos[1] - iconSize * scale * 0.95 * scaleFactor;
         }
       }
     });
@@ -359,7 +368,10 @@ var Animator = class {
       this._timeoutId = null;
     }
     if (this._intervalId == null) {
-      this._intervalId = setInterval(this._animate.bind(this), ANIM_INTERVAL);
+      this._intervalId = setInterval(
+        this._animate.bind(this),
+        this.animationInterval
+      );
     }
 
     if (this.dashContainer) {

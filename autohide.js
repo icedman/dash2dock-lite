@@ -13,7 +13,7 @@ const setTimeout = Me.imports.utils.setTimeout;
 const setInterval = Me.imports.utils.setInterval;
 const clearInterval = Me.imports.utils.clearInterval;
 
-const HIDE_ANIMATION_INTERVAL = 25;
+const HIDE_ANIMATION_INTERVAL = 15;
 const DEBOUNCE_HIDE_TIMEOUT = 120;
 
 // some codes lifted from dash-to-dock intellihide
@@ -29,7 +29,9 @@ const handledWindowTypes = [
 ];
 
 var AutoHide = class {
-  constructor() {}
+  constructor() {
+    this.animationInterval = HIDE_ANIMATION_INTERVAL;
+  }
 
   enable() {
     // log('enable autohide');
@@ -83,7 +85,7 @@ var AutoHide = class {
     if (this._intervalId == null) {
       this._intervalId = setInterval(
         this._animate.bind(this),
-        HIDE_ANIMATION_INTERVAL
+        this.animationInterval
       );
     }
   }
@@ -130,8 +132,7 @@ var AutoHide = class {
     this._debounceCheckHide();
   }
 
-  _onFullScreen() {
-  }
+  _onFullScreen() {}
 
   show() {
     this.frameDelay = 0;
@@ -170,7 +171,7 @@ var AutoHide = class {
 
     // this.dashContainer.add_style_class_name('hi');
     this._animating = false;
-      
+
     let dy = this.target - y;
     if (dy * dy < 16 || this.animator._dragging) {
       y = this.target;
@@ -257,9 +258,9 @@ var AutoHide = class {
 
     this.windows = windows;
 
-    log(dash_position[1]);
-    log(isOverlapped);
-    log(windows);
+    // log(dash_position[1]);
+    // log(isOverlapped);
+    // log(windows);
     return isOverlapped;
   }
 

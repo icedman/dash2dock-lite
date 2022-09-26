@@ -535,7 +535,7 @@ class Extension {
 
     let iconChildren = this._findIcons();
 
-    let iconHook = [...iconChildren]; // this.dash._showAppsIcon;
+    let iconHook = [...iconChildren, this.dash._showAppsIcon];
     for (let i = 0; i < iconHook.length; i++) {
       if (!iconHook[i].child) continue;
       let icon = iconHook[i].child._delegate.icon;

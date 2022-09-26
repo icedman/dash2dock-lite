@@ -15,6 +15,7 @@ const clearInterval = Me.imports.utils.clearInterval;
 
 const HIDE_ANIMATION_INTERVAL = 15;
 const DEBOUNCE_HIDE_TIMEOUT = 120;
+const PRESSURE_SENSE_DISTANCE = 20;
 
 // some codes lifted from dash-to-dock intellihide
 const handledWindowTypes = [
@@ -103,15 +104,29 @@ var AutoHide = class {
       let monitor = this.dashContainer.delegate.monitor;
       let sw = this.dashContainer.delegate.sw;
       let sh = this.dashContainer.delegate.sh;
+      let scale = St.ThemeContext.get_for_stage(global.stage).scale_factor;
+      let area = scale * (PRESSURE_SENSE_DISTANCE * PRESSURE_SENSE_DISTANCE);
+      let dx = 0;
 
       let pointer = global.get_pointer();
-      if (pointer[1] + 4 > monitor.y + sh) {
-        this._dwell++;
+
+      if (this.last_pointer) {
+        dx = pointer[0] - this.last_pointer[0];
+        dx = dx * dx;
       }
+      if (dx < area && pointer[1] + 4 > monitor.y + sh) {
+        this._dwell++;
+      } else {
+        this._dwell = 0;
+      }
+
+      log(`${dx} ${area}`);
 
       if (this._dwell > 12) {
         this.show();
       }
+
+      this.last_pointer = pointer;
     }
   }
 

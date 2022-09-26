@@ -28,6 +28,7 @@ const ANIM_ICON_RAISE = 0.15;
 const ANIM_ICON_SCALE = 1.8;
 const ANIM_ICON_HIT_AREA = 1.25;
 const ANIM_ICON_QUALITY = 2.0;
+const REENABLE_DELAY = 750;
 
 var Animator = class {
   constructor() {
@@ -122,7 +123,7 @@ var Animator = class {
         });
         draggable._dragEndId = draggable.connect('drag-end', () => {
           this._dragging = false;
-          this._oneShotId = setTimeout(this.enable.bind(this), 750);
+          this._oneShotId = setTimeout(this.enable.bind(this), REENABLE_DELAY);
         });
       }
     });
@@ -413,6 +414,7 @@ var Animator = class {
   }
 
   _onFocusWindow() {
+    this._endAnimation();
     this._startAnimation();
   }
 
@@ -420,8 +422,13 @@ var Animator = class {
     if (!this.dashContainer || !this._iconsContainer) return;
     let primary = Main.layoutManager.primaryMonitor;
     if (!primary.inFullscreen) {
+      // this._dragging = true;
+      // this._oneShotId = setTimeout(this.enable.bind(this), REENABLE_DELAY);
       this._iconsContainer.show();
     } else {
+      // disable like when we're dragging
+      // this._dragging = false;
+      // this.disable();
       this._iconsContainer.hide();
     }
   }

@@ -83,10 +83,36 @@ var Animator = class {
     let scaleFactor = St.ThemeContext.get_for_stage(global.stage).scale_factor;
 
     let pivot = new Point();
-    pivot.x = 0.5 * scaleFactor;
-    pivot.y = 1.0 * scaleFactor;
+    pivot.x = 0.5;
+    pivot.y = 1.0;
 
     let iconSize = this.dash.iconSize;
+
+    switch (this.dashContainer._position) {
+      case 1:
+        dock_position = 'right';
+        ix = 1;
+        iy = 0;
+        pivot.x = 1.0;
+        pivot.y = 0.5;
+        break;
+      case 2:
+        dock_position = 'bottom';
+        break;
+      case 3:
+        dock_position = 'left';
+        ix = 1;
+        iy = 0;
+        pivot.x = 0.0;
+        pivot.y = 0.5;
+        break;
+      default:
+        // center
+        break;
+    }
+
+    pivot.x *= scaleFactor;
+    pivot.y *= scaleFactor;
 
     let icons = this._findIcons();
     icons.forEach((c) => {
@@ -308,6 +334,13 @@ var Animator = class {
       if (dst > iconSize * 0.01 && dst < iconSize * 3) {
         pos[0] = (from[0] * _pos_coef + pos[0]) / (_pos_coef + 1);
         pos[1] = (from[1] * _pos_coef + pos[1]) / (_pos_coef + 1);
+
+        if (dock_position == 'bottom') {
+          if (pos[0] < 0) {
+            pos[0] = 0;
+          }
+        }
+
         didAnimate = true;
       }
 
@@ -321,7 +354,20 @@ var Animator = class {
 
         // todo find appsButton._label
         if (icon._label) {
-          icon._label.y = pos[1] - iconSize * scale * 0.95 * scaleFactor;
+          // icon._label.y = pos[1] - iconSize * scale * 0.95 * scaleFactor;
+
+          switch (dock_position) {
+            case 'left':
+              icon._label.x = pos[0] + iconSize * scale * 1.1 * scaleFactor;
+              break;
+            case 'right':
+              icon._label.x = pos[0] - iconSize * scale * 1.1 * scaleFactor;
+              icon._label.x -= icon._label.width / 1.8;
+              break;
+            case 'bottom':
+              icon._label.y = pos[1] - iconSize * scale * 1.1 * scaleFactor;
+              break;
+          }
         }
       }
     });

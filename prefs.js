@@ -152,8 +152,8 @@ const Dash2DockLiteSettingListBoxRow = GObject.registerClass(
   }
 );
 
-const Dash2DockLiteSettingsPane = GObject.registerClass(
-  class Dash2DockLiteSettingsPane extends Gtk.Frame {
+const Dash2DockLiteGeneralPane = GObject.registerClass(
+  class Dash2DockLiteGeneralPane extends Gtk.Frame {
     _init() {
       super._init({
         margin_top: 36,
@@ -173,27 +173,12 @@ const Dash2DockLiteSettingsPane = GObject.registerClass(
         this._rowActivated(widget, row);
       });
 
-      // const reuseDash = new Dash2DockLiteSettingListBoxRow(
-      //   _('Reuse existing Dash'),
-      //   _('Reuse existing Dash instead of creating another instance'),
-      //   SettingsKey.REUSE_DASH
-      // );
-      // _listBox.append(reuseDash);
-
       const shrinkIcons = new Dash2DockLiteSettingListBoxRow(
         _('Shrink icons'),
         _('Shrink dash icons'),
         SettingsKey.SHRINK_ICONS
       );
       _listBox.append(shrinkIcons);
-
-      const scaleIcons = new Dash2DockLiteSettingListBoxRow(
-        _('Scale icons'),
-        _('Rescale dash icons'),
-        SettingsKey.SCALE_ICONS,
-        'scale'
-      );
-      _listBox.append(scaleIcons);
 
       const animateIcons = new Dash2DockLiteSettingListBoxRow(
         _('Animate icons'),
@@ -215,6 +200,44 @@ const Dash2DockLiteSettingsPane = GObject.registerClass(
         SettingsKey.PRESSURE_SENSE
       );
       _listBox.append(pressureSense);
+    }
+
+    _rowActivated(widget, row) {
+      if (row.rowType === 'switch' || row.rowType === undefined)
+        row.control.set_active(!row.control.get_active());
+      else if (row.rowType === 'combobox') row.control.popup();
+    }
+  }
+);
+
+const Dash2DockLiteAppearancePane = GObject.registerClass(
+  class Dash2DockLiteAppearancePane extends Gtk.Frame {
+    _init() {
+      super._init({
+        margin_top: 36,
+        margin_bottom: 36,
+        margin_start: 36,
+        margin_end: 36,
+      });
+
+      const _listBox = new Gtk.ListBox({
+        selection_mode: Gtk.SelectionMode.NONE,
+        valign: Gtk.Align.START,
+        show_separators: true,
+      });
+      this.set_child(_listBox);
+
+      _listBox.connect('row-activated', (widget, row) => {
+        this._rowActivated(widget, row);
+      });
+      
+      const scaleIcons = new Dash2DockLiteSettingListBoxRow(
+        _('Scale icons'),
+        _('Rescale dash icons'),
+        SettingsKey.SCALE_ICONS,
+        'scale'
+      );
+      _listBox.append(scaleIcons);
 
       const backgroundDark = new Dash2DockLiteSettingListBoxRow(
         _('Dark background'),
@@ -252,8 +275,8 @@ const Dash2DockLiteSettingsWidget = GObject.registerClass(
     _init() {
       super._init();
 
-      const _settingsPane = new Dash2DockLiteSettingsPane();
-      this.append_page(_settingsPane, new Gtk.Label({ label: _('General') }));
+      this.append_page(new Dash2DockLiteGeneralPane(), new Gtk.Label({ label: _('General') }));
+      this.append_page(new Dash2DockLiteAppearancePane(), new Gtk.Label({ label: _('Appearance') }));
     }
   }
 );

@@ -164,10 +164,7 @@ class Extension {
     this._settingsListeners.push(
       this._settings.connect(`changed::${SettingsKey.SCALE_ICONS}`, () => {
         this.rescale = this._settings.get_double(SettingsKey.SCALE_ICONS);
-        this._updateShrink();
-        this.disable();
-        this.enable();
-        this._onEnterEvent();
+        this._debounceUpdateScale();
       })
     );
 
@@ -293,6 +290,11 @@ class Extension {
     this.dashContainer.set_reactive(false);
     this.dashContainer.set_track_hover(false);
 
+    if (this._timeoutId) {
+      clearInterval(this._timeoutId);
+      this._timeoutId = null;
+    }
+
     if (this.oneShotStartupCompleteId) {
       clearInterval(this.oneShotStartupCompleteId);
       this.oneShotStartupCompleteId = null;
@@ -382,6 +384,20 @@ class Extension {
       .forEach((l) => {
         if (l._onFullScreen) l._onFullScreen();
       });
+  }
+
+  _updateScale() {
+    this._updateShrink();
+    this.disable();
+    this.enable();
+    this._onEnterEvent();
+  }
+
+  _debounceUpdateScale() {
+    if (this._timeoutId) {
+      clearInterval(this._timeoutId);
+    }
+    this._timeoutId = setTimeout(this._updateScale.bind(this), 250);
   }
 
   _updateShrink(disable) {
@@ -481,7 +497,7 @@ class Extension {
       let apps = Main.overview.dash.last_child.last_child;
       if (apps) {
         let widget = apps.child;
-        if (widget) {
+        if (widget && widget.width > 0) {
           let icongrid = widget.first_child;
           let boxlayout = icongrid.first_child;
           let bin = boxlayout.first_child;
@@ -517,7 +533,7 @@ class Extension {
     }
 
     let scale = this.scale;
-    let dockHeight = iconSize * 2 * scale;
+    let dockHeight = iconSize * (this.shrink ? 1.8 : 1.6) * scale;
 
     this.dashContainer.set_size(this.sw, dockHeight * this.scaleFactor);
     if (this.autohider._enabled && !this.autohider._shown) {

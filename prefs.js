@@ -230,7 +230,7 @@ const Dash2DockLiteAppearancePane = GObject.registerClass(
       _listBox.connect('row-activated', (widget, row) => {
         this._rowActivated(widget, row);
       });
-      
+
       const scaleIcons = new Dash2DockLiteSettingListBoxRow(
         _('Scale icons'),
         _('Rescale dash icons'),
@@ -274,9 +274,14 @@ const Dash2DockLiteSettingsWidget = GObject.registerClass(
   class Dash2DockLiteSettingsWidget extends Gtk.Notebook {
     _init() {
       super._init();
-
-      this.append_page(new Dash2DockLiteGeneralPane(), new Gtk.Label({ label: _('General') }));
-      this.append_page(new Dash2DockLiteAppearancePane(), new Gtk.Label({ label: _('Appearance') }));
+      this.append_page(
+        new Dash2DockLiteGeneralPane(),
+        new Gtk.Label({ label: _('General') })
+      );
+      this.append_page(
+        new Dash2DockLiteAppearancePane(),
+        new Gtk.Label({ label: _('Appearance') })
+      );
     }
   }
 );

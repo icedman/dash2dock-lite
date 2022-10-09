@@ -1,9 +1,7 @@
+/* reminder: minimize styling overrides! */
+
 .hi {
      border: 2px solid magenta !important;
-}
-
-.invisible {
-    border:  2px solid red;
 }
 
 #dash > StWidget.dash-background {
@@ -21,4 +19,9 @@
 
 #panelBox.translucent #panel {
   background: rgba(0,0,0,0.5);
+}
+
+/* adjust dot position - works for bottom layout only */
+StWidget.app-well-app-running-dot:insensitive {
+  margin-bottom: 5px !important;
 }

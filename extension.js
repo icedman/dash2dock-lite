@@ -482,7 +482,7 @@ class Extension {
       let boxlayout = icongrid.first_child;
       let bin = boxlayout.first_child;
       let icon = bin.first_child;
-
+      
       c._bin = bin;
       c._label = label;
       c._draggable = draggable;

@@ -1,7 +1,7 @@
 // -*- mode: js2; indent-tabs-mode: nil; js2-basic-offset: 4 -*-
 /* exported init buildPrefsWidget */
 
-// loosely based on https://gitlab.gnome.org/GNOME/gnome-shell-extensions/-/blob/master/extensions/auto-move-windows/prefs.js
+// loosely based on https://gitlab.gnome.org/GNOME/gnome-shell-extensions/-/tree/main/extensions/auto-move-windows
 
 const { Gio, GLib, GObject, Gtk, Pango } = imports.gi;
 

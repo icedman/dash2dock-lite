@@ -28,7 +28,8 @@ const ANIM_ICON_RAISE = 0.15;
 const ANIM_ICON_SCALE = 1.8;
 const ANIM_ICON_HIT_AREA = 1.25;
 const ANIM_ICON_QUALITY = 2.0;
-const REENABLE_DELAY = 750;
+const ANIM_REENABLE_DELAY = 750;
+const ANIM_DEBOUNCE_END_DELAY = 1500;
 
 var Animator = class {
   constructor() {
@@ -159,7 +160,10 @@ var Animator = class {
         });
         draggable._dragEndId = draggable.connect('drag-end', () => {
           this._dragging = false;
-          this._oneShotId = setTimeout(this.enable.bind(this), REENABLE_DELAY);
+          this._oneShotId = setTimeout(
+            this.enable.bind(this),
+            ANIM_REENABLE_DELAY
+          );
         });
       }
     });
@@ -205,11 +209,11 @@ var Animator = class {
 
     // sort
     let cornerPos = this._get_position(this.dashContainer);
-    animateIcons.sort((a, b) => {
-      let dstA = this._get_distance(cornerPos, this._get_position(a));
-      let dstB = this._get_distance(cornerPos, this._get_position(b));
-      return dstA > dstB ? 1 : -1;
-    });
+    // animateIcons.sort((a, b) => {
+    //   let dstA = this._get_distance(cornerPos, this._get_position(a));
+    //   let dstB = this._get_distance(cornerPos, this._get_position(b));
+    //   return dstA > dstB ? 1 : -1;
+    // });
 
     let idx = 0;
     animateIcons.forEach((icon) => {
@@ -360,9 +364,9 @@ var Animator = class {
         pos[1] = (from[1] * _pos_coef + pos[1]) / (_pos_coef + 1);
 
         if (dock_position == 'bottom') {
-          if (pos[0] < 0) {
-            pos[0] = 0;
-          }
+          // if (pos[0] < 0) {
+          //   pos[0] = 0;
+          // }
         }
 
         didAnimate = true;
@@ -471,7 +475,10 @@ var Animator = class {
     if (this._timeoutId) {
       clearInterval(this._timeoutId);
     }
-    this._timeoutId = setTimeout(this._endAnimation.bind(this), 1500);
+    this._timeoutId = setTimeout(
+      this._endAnimation.bind(this),
+      ANIM_DEBOUNCE_END_DELAY
+    );
   }
 
   _onMotionEvent() {
@@ -498,7 +505,7 @@ var Animator = class {
     let primary = Main.layoutManager.primaryMonitor;
     if (!primary.inFullscreen) {
       // this._dragging = true;
-      // this._oneShotId = setTimeout(this.enable.bind(this), REENABLE_DELAY);
+      // this._oneShotId = setTimeout(this.enable.bind(this), ANIM_REENABLE_DELAY);
       this._iconsContainer.show();
     } else {
       // disable like when we're dragging

@@ -232,7 +232,6 @@ class Extension {
           SettingsKey.SHOW_TRASH_ICON
         );
         this._updateTrashIcon();
-        // force relayout
         this._updateLayout();
         this._onEnterEvent();
       })
@@ -306,6 +305,11 @@ class Extension {
       Main.overview.connect('hidden', this._onOverviewHidden.bind(this))
     );
 
+    this._appFavoriteEvents = [];
+    // this._appFavoriteEvents.push(
+    //   Fav.getAppFavorites().connect('changed', this._onEnterEvent.bind(this))
+    // );
+
     this._intervals = [];
     this._intervals.push(
       setInterval(this._onCheckServices.bind(this), SERVICE_CHECK_INTERVAL)
@@ -349,6 +353,13 @@ class Extension {
       });
     }
     this._overViewEvents = [];
+
+    if (this._appFavoriteEvents) {
+      this._appFavoriteEvents.forEach((id) => {
+        Fav.getAppFavorites().disconnect(id);
+      });
+    }
+    this._appFavoriteEvents = [];
 
     if (this._layoutManagerEvents) {
       this._layoutManagerEvents.forEach((id) => {

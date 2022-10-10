@@ -209,11 +209,11 @@ var Animator = class {
 
     // sort
     let cornerPos = this._get_position(this.dashContainer);
-    // animateIcons.sort((a, b) => {
-    //   let dstA = this._get_distance(cornerPos, this._get_position(a));
-    //   let dstB = this._get_distance(cornerPos, this._get_position(b));
-    //   return dstA > dstB ? 1 : -1;
-    // });
+    animateIcons.sort((a, b) => {
+      let dstA = this._get_distance(cornerPos, this._get_position(a._bin));
+      let dstB = this._get_distance(cornerPos, this._get_position(b._bin));
+      return dstA > dstB ? 1 : -1;
+    });
 
     let idx = 0;
     animateIcons.forEach((icon) => {

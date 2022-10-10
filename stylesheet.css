@@ -25,3 +25,12 @@
 StWidget.app-well-app-running-dot:insensitive {
   margin-bottom: 5px !important;
 }
+
+/*
+#iconsContainer StIcon {
+  border: 2px solid red !important;
+  filter: grayscale(50%);
+  // no filters in gjs?
+}
+*/
+

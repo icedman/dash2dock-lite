@@ -4,11 +4,13 @@
 
 const Main = imports.ui.main;
 const Dash = imports.ui.dash.Dash;
+const Fav = imports.ui.appFavorites;
 const Layout = imports.ui.layout;
 const Shell = imports.gi.Shell;
 const Meta = imports.gi.Meta;
 const St = imports.gi.St;
 const GLib = imports.gi.GLib;
+const Gio = imports.gi.Gio;
 const Point = imports.gi.Graphene.Point;
 
 const ExtensionUtils = imports.misc.extensionUtils;
@@ -20,6 +22,8 @@ const AutoHide = Me.imports.autohide.AutoHide;
 
 const setTimeout = Me.imports.utils.setTimeout;
 const setInterval = Me.imports.utils.setInterval;
+
+const SERVICE_CHECK_INTERVAL = 4500;
 
 class Extension {
   enable() {
@@ -66,6 +70,8 @@ class Extension {
     this.autohider.dashContainer = this.dashContainer;
 
     this.listeners = [this.animator, this.autohider];
+
+    this._updateTrashIcon();
 
     this._updateShrink();
     this._updateBgDark();
@@ -128,6 +134,9 @@ class Extension {
     this.bgOpacity = this._settings.get_double(SettingsKey.BG_OPACITY);
     this.translucentTopBar = this._settings.get_boolean(
       SettingsKey.TRANSLUCENT_TOPBAR
+    );
+    this.showTrashIcon = this._settings.get_boolean(
+      SettingsKey.SHOW_TRASH_ICON
     );
     this.reuseExistingDash = this._settings.get_boolean(SettingsKey.REUSE_DASH);
     this.hideAppsButton = true;
@@ -216,6 +225,18 @@ class Extension {
         }
       )
     );
+
+    this._settingsListeners.push(
+      this._settings.connect(`changed::${SettingsKey.SHOW_TRASH_ICON}`, () => {
+        this.showTrashIcon = this._settings.get_boolean(
+          SettingsKey.SHOW_TRASH_ICON
+        );
+        this._updateTrashIcon();
+        // force relayout
+        this._updateLayout();
+        this._onEnterEvent();
+      })
+    );
   }
 
   _disableSettings() {
@@ -284,6 +305,11 @@ class Extension {
     this._overViewEvents.push(
       Main.overview.connect('hidden', this._onOverviewHidden.bind(this))
     );
+
+    this._intervals = [];
+    this._intervals.push(
+      setInterval(this._onCheckServices.bind(this), SERVICE_CHECK_INTERVAL)
+    );
   }
 
   _removeEvents() {
@@ -294,10 +320,15 @@ class Extension {
       clearInterval(this._timeoutId);
       this._timeoutId = null;
     }
-
     if (this.oneShotStartupCompleteId) {
       clearInterval(this.oneShotStartupCompleteId);
       this.oneShotStartupCompleteId = null;
+    }
+    if (this._intervals) {
+      this._intervals.forEach((id) => {
+        clearInterval(id);
+      });
+      this._intervals = [];
     }
 
     this._dashContainerEvents.forEach((id) => {
@@ -374,6 +405,8 @@ class Extension {
       .forEach((l) => {
         if (l._onFocusWindow) l._onFocusWindow();
       });
+
+    this._onCheckServices();
   }
 
   _onFullScreen() {
@@ -482,7 +515,7 @@ class Extension {
       let boxlayout = icongrid.first_child;
       let bin = boxlayout.first_child;
       let icon = bin.first_child;
-      
+
       c._bin = bin;
       c._label = label;
       c._draggable = draggable;
@@ -497,7 +530,7 @@ class Extension {
       let apps = Main.overview.dash.last_child.last_child;
       if (apps) {
         let widget = apps.child;
-        if (widget && widget.width > 0) {
+        if (widget && widget.width > 0 && widget.get_parent().visible) {
           let icongrid = widget.first_child;
           let boxlayout = icongrid.first_child;
           let bin = boxlayout.first_child;
@@ -591,6 +624,30 @@ class Extension {
     }
   }
 
+  _updateTrashIcon() {
+    var fn = Gio.File.new_for_path(
+      '.local/share/applications/trash-dash2dock-lite.desktop'
+    );
+    if (this.showTrashIcon) {
+      if (!fn.query_exists(null)) {
+        var content =
+          '[Desktop Entry]\nVersion=1.0\nTerminal=false\nType=Application\nName=Trash\nExec=xdg-open trash:///\nIcon=user-trash\nStartupWMClass=trash-dash2dock-lite\nActions=trash\n\n[Desktop Action trash]\nName=Empty Trash\nExec=/usr/local/bin/empty-trash.sh\n';
+        const [, etag] = fn.replace_contents(
+          content,
+          null,
+          false,
+          Gio.FileCreateFlags.REPLACE_DESTINATION,
+          null
+        );
+        Main.notify('Preparing the trash icon...');
+      }
+      Fav.getAppFavorites().addFavorite('trash-dash2dock-lite.desktop');
+    } else {
+      Fav.getAppFavorites().removeFavorite('trash-dash2dock-lite.desktop');
+    }
+    fn = null;
+  }
+
   _onOverviewShowing() {
     this._inOverview = true;
 
@@ -631,6 +688,26 @@ class Extension {
   _onSessionUpdated() {
     this._updateLayout();
     this.autohider._debounceCheckHide();
+  }
+
+  _onCheckServices() {
+    if (this.showTrashIcon) {
+      Fav.getAppFavorites().addFavorite('trash-dash2dock-lite.desktop');
+      if (!this.fnTrashDir) {
+        this.fnTrashDir = Gio.File.new_for_uri('trash:///');
+      }
+      var prevTrash = this.trashFull;
+      var iter = this.fnTrashDir.enumerate_children(
+        'standard::*',
+        Gio.FileQueryInfoFlags.NONE,
+        null
+      );
+      this.trashFull = iter.next_file(null) != null;
+      iter = null;
+      // if (prevTrash != this.trashFull) {
+      //   log(`trash ${this.trashFull}`);
+      // }
+    }
   }
 }
 

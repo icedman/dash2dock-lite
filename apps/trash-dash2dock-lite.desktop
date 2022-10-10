@@ -1,0 +1,13 @@
+[Desktop Entry]
+Version=1.0
+Terminal=false
+Type=Application
+Name=Trash
+Exec=xdg-open trash:///
+Icon=user-trash
+StartupWMClass=trash-dash2dock-lite
+Actions=trash
+
+[Desktop Action trash]
+Name=Empty Trash
+Exec=/usr/local/bin/empty-trash.sh

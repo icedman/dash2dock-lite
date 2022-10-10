@@ -46,5 +46,10 @@
         <summary>Translucent topbar</summary>
         <description>Make top bar translucent</description>
     </key>
+    <key type="b" name="trash-icon">
+        <default>false</default>
+        <summary>Show trash icon</summary>
+        <description>Show a dynamic trash icon</description>
+    </key>
   </schema>
 </schemalist>

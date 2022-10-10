@@ -55,6 +55,23 @@ Checkout Dash Animator. It adds animation to Dash-to-Dock.
 $ git clone https://github.com/icedman/dash-animator.git
 ```
 
+## Dynamic Icons
+
+Dynamic trash icon is supported (beta). The first time this is enabled, a GNOME shell restart is required.
+
+The trash icon has an action "Empty Trash" which requires a script */usr/local/bin/empty-trash.sh* with the content:
+
+```sh
+#!/usr/bin/sh
+rm -rf ~/.local/share/Trash/*
+```
+
+Make sure that the script is executable:
+
+```sh
+chmod +x /usr/local/bin/empty-trash.sh
+```
+
 ## License
 
 Distributed under the GPL 3.0 License. See [LICENSE](https://github.com/icedman/dash2dock-lite/blob/main/LICENSE.md) for more information.

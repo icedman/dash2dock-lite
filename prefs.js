@@ -23,6 +23,7 @@ var SettingsKey = {
   BG_OPACITY: 'background-opacity',
   BG_DARK: 'background-dark',
   TRANSLUCENT_TOPBAR: 'translucent-topbar',
+  SHOW_TRASH_ICON: 'trash-icon',
 };
 
 const Dash2DockLiteSettingListBoxRow = GObject.registerClass(
@@ -270,6 +271,45 @@ const Dash2DockLiteAppearancePane = GObject.registerClass(
   }
 );
 
+const Dash2DockLiteExtraPane = GObject.registerClass(
+  class Dash2DockLiteExtraPane extends Gtk.Frame {
+    _init() {
+      super._init({
+        margin_top: 36,
+        margin_bottom: 36,
+        margin_start: 36,
+        margin_end: 36,
+      });
+
+      const _listBox = new Gtk.ListBox({
+        selection_mode: Gtk.SelectionMode.NONE,
+        valign: Gtk.Align.START,
+        show_separators: true,
+      });
+      this.set_child(_listBox);
+
+      _listBox.connect('row-activated', (widget, row) => {
+        this._rowActivated(widget, row);
+      });
+
+      const trashIcon = new Dash2DockLiteSettingListBoxRow(
+        _('Show trash icon [beta]'),
+        _(
+          'Show a dynamic trash icon. This requires animation enabled.\nMake sure the script /usr/local/bin/empty-trash.sh exists.\nRead http://github.com/icedman/dash2dock-lite'
+        ),
+        SettingsKey.SHOW_TRASH_ICON
+      );
+      _listBox.append(trashIcon);
+    }
+
+    _rowActivated(widget, row) {
+      if (row.rowType === 'switch' || row.rowType === undefined)
+        row.control.set_active(!row.control.get_active());
+      else if (row.rowType === 'combobox') row.control.popup();
+    }
+  }
+);
+
 const Dash2DockLiteSettingsWidget = GObject.registerClass(
   class Dash2DockLiteSettingsWidget extends Gtk.Notebook {
     _init() {
@@ -281,6 +321,10 @@ const Dash2DockLiteSettingsWidget = GObject.registerClass(
       this.append_page(
         new Dash2DockLiteAppearancePane(),
         new Gtk.Label({ label: _('Appearance') })
+      );
+      this.append_page(
+        new Dash2DockLiteExtraPane(),
+        new Gtk.Label({ label: _('Services') })
       );
     }
   }

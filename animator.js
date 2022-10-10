@@ -73,6 +73,9 @@ var Animator = class {
     if (!this._iconsContainer || !this.dashContainer) return;
     this.dash = this.dashContainer.dash;
 
+    this._iconsContainer.width = 1;
+    this._iconsContainer.height = 1;
+
     let existingIcons = this._iconsContainer.get_children();
 
     let validPosition = true;
@@ -169,6 +172,21 @@ var Animator = class {
 
     let animateIcons = this._iconsContainer.get_children();
     animateIcons.forEach((c) => {
+      // manipulate icons
+      // the trash
+      if (
+        c.first_child &&
+        c.first_child.icon_name &&
+        c.first_child.icon_name.startsWith('user-trash')
+      ) {
+        var new_icon = this.dashContainer.delegate.trashFull
+          ? 'user-trash-full'
+          : 'user-trash';
+        if (new_icon != c.first_child.icon_name) {
+          c.first_child.icon_name = new_icon;
+        }
+      }
+
       let orphan = true;
       for (let i = 0; i < icons.length; i++) {
         if (icons[i]._bin == c._bin) {
@@ -226,7 +244,6 @@ var Animator = class {
             icon._appwell.emit('clicked', arg);
           }
         });
-        // btn.add_style_class_name('hi');
         icon._btn = btn;
       }
 

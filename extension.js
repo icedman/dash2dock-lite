@@ -132,7 +132,9 @@ class Extension {
     this.shrink = this._settings.get_boolean(settingsKeys.SHRINK_ICONS);
     this.rescale = this._settings.get_double(settingsKeys.SCALE_ICONS);
     this.animateIcons = this._settings.get_boolean(settingsKeys.ANIMATE_ICONS);
-    this.pressureSense = this._settings.get_boolean(settingsKeys.PRESSURE_SENSE);
+    this.pressureSense = this._settings.get_boolean(
+      settingsKeys.PRESSURE_SENSE
+    );
     this.bgDark = this._settings.get_boolean(settingsKeys.BG_DARK);
     this.bgOpacity = this._settings.get_double(settingsKeys.BG_OPACITY);
     this.translucentTopBar = this._settings.get_boolean(
@@ -141,7 +143,9 @@ class Extension {
     this.showTrashIcon = this._settings.get_boolean(
       settingsKeys.SHOW_TRASH_ICON
     );
-    this.reuseExistingDash = this._settings.get_boolean(settingsKeys.REUSE_DASH);
+    this.reuseExistingDash = this._settings.get_boolean(
+      settingsKeys.REUSE_DASH
+    );
     this.hideAppsButton = true;
     this.vertical = false;
     this.autohide = this._settings.get_boolean(settingsKeys.AUTOHIDE_DASH);
@@ -690,6 +694,7 @@ class Extension {
   }
 
   _onCheckServices() {
+    if (!this.services) return; // todo why does this happen?
     if (this.showTrashIcon) {
       Fav.getAppFavorites().addFavorite('trash-dash2dock-lite.desktop');
       this.services.checkTrash();

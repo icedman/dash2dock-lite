@@ -1,4 +1,3 @@
-
 var schemaId = 'org.gnome.shell.extensions.dash2dock-lite';
 
 var settingsKeys = {

@@ -283,7 +283,7 @@ const Dash2DockLiteExtraPane = GObject.registerClass(
       const trashIcon = new Dash2DockLiteSettingListBoxRow(
         _('Dynamic trash icon [beta]'),
         _(
-          'Show a dynamic trash icon. This requires animation enabled.\nMake sure the script /usr/local/bin/empty-trash.sh exists.\nRead http://github.com/icedman/dash2dock-lite'
+          'Show a dynamic trash icon. This requires animation enabled.\n"Empty Trash" action runs {EXTENSION_PATH}/apps/empty-trash.sh.\nRead http://github.com/icedman/dash2dock-lite'
         ),
         settingsKeys.SHOW_TRASH_ICON
       );

@@ -59,17 +59,17 @@ $ git clone https://github.com/icedman/dash-animator.git
 
 Dynamic trash icon is supported (beta). The first time this is enabled, a GNOME shell restart is required.
 
-The trash icon has an action "Empty Trash" which requires a script */usr/local/bin/empty-trash.sh* with the content:
+The trash icon has an action "Empty Trash" which requires a script *{EXTENSION_PATH}/apps/empty-trash.sh* with the content:
 
 ```sh
 #!/usr/bin/sh
 rm -rf ~/.local/share/Trash/*
 ```
 
-Make sure that the script is executable:
+Modify the script to match your system if necessary. And make sure that the script is executable:
 
 ```sh
-chmod +x /usr/local/bin/empty-trash.sh
+chmod +x {EXTENSION_PATH}/apps/empty-trash.sh
 ```
 
 ## License

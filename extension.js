@@ -1,29 +1,25 @@
-/*
-  License: GPL v3
-*/
+'use strict';
+
+const { St, Shell, Gio, Gtk, Meta, Clutter } = imports.gi;
 
 const Main = imports.ui.main;
 const Dash = imports.ui.dash.Dash;
 const Fav = imports.ui.appFavorites;
 const Layout = imports.ui.layout;
-const Shell = imports.gi.Shell;
-const Meta = imports.gi.Meta;
-const St = imports.gi.St;
-const GLib = imports.gi.GLib;
-const Gio = imports.gi.Gio;
 const Point = imports.gi.Graphene.Point;
 
 const ExtensionUtils = imports.misc.extensionUtils;
 const Me = ExtensionUtils.getCurrentExtension();
-const schema_id = Me.imports.prefs.schema_id;
-const SettingsKey = Me.imports.prefs.SettingsKey;
+
+const { schemaId, settingsKeys } = Me.imports.preferences.keys;
 const Animator = Me.imports.animator.Animator;
 const AutoHide = Me.imports.autohide.AutoHide;
+const Services = Me.imports.services.Services;
 
 const setTimeout = Me.imports.utils.setTimeout;
 const setInterval = Me.imports.utils.setInterval;
 
-const SERVICE_CHECK_INTERVAL = 4500;
+const SERVICES_UPDATE_INTERVAL = 4500;
 
 class Extension {
   enable() {
@@ -71,8 +67,6 @@ class Extension {
 
     this.listeners = [this.animator, this.autohider];
 
-    this._updateTrashIcon();
-
     this._updateShrink();
     this._updateBgDark();
     this._updateBgOpacity();
@@ -80,6 +74,11 @@ class Extension {
     this._updateAnimation();
     this._updateAutohide();
     this._updateTopBar();
+
+    this.services = new Services();
+    this.services.enable();
+    this.animator.services = this.services;
+    this._updateTrashIcon();
 
     this._addEvents();
   }
@@ -116,6 +115,10 @@ class Extension {
       );
       this.dash.showAppsButton._checkEventId = null;
     }
+
+    this.services.disable();
+    delete this.services;
+    this.services = null;
   }
 
   _queryDisplay() {
@@ -125,31 +128,31 @@ class Extension {
   }
 
   _enableSettings() {
-    this._settings = ExtensionUtils.getSettings(schema_id);
-    this.shrink = this._settings.get_boolean(SettingsKey.SHRINK_ICONS);
-    this.rescale = this._settings.get_double(SettingsKey.SCALE_ICONS);
-    this.animateIcons = this._settings.get_boolean(SettingsKey.ANIMATE_ICONS);
-    this.pressureSense = this._settings.get_boolean(SettingsKey.PRESSURE_SENSE);
-    this.bgDark = this._settings.get_boolean(SettingsKey.BG_DARK);
-    this.bgOpacity = this._settings.get_double(SettingsKey.BG_OPACITY);
+    this._settings = ExtensionUtils.getSettings(schemaId);
+    this.shrink = this._settings.get_boolean(settingsKeys.SHRINK_ICONS);
+    this.rescale = this._settings.get_double(settingsKeys.SCALE_ICONS);
+    this.animateIcons = this._settings.get_boolean(settingsKeys.ANIMATE_ICONS);
+    this.pressureSense = this._settings.get_boolean(settingsKeys.PRESSURE_SENSE);
+    this.bgDark = this._settings.get_boolean(settingsKeys.BG_DARK);
+    this.bgOpacity = this._settings.get_double(settingsKeys.BG_OPACITY);
     this.translucentTopBar = this._settings.get_boolean(
-      SettingsKey.TRANSLUCENT_TOPBAR
+      settingsKeys.TRANSLUCENT_TOPBAR
     );
     this.showTrashIcon = this._settings.get_boolean(
-      SettingsKey.SHOW_TRASH_ICON
+      settingsKeys.SHOW_TRASH_ICON
     );
-    this.reuseExistingDash = this._settings.get_boolean(SettingsKey.REUSE_DASH);
+    this.reuseExistingDash = this._settings.get_boolean(settingsKeys.REUSE_DASH);
     this.hideAppsButton = true;
     this.vertical = false;
-    this.autohide = this._settings.get_boolean(SettingsKey.AUTOHIDE_DASH);
+    this.autohide = this._settings.get_boolean(settingsKeys.AUTOHIDE_DASH);
     this.affectsStruts = !this.autohide;
 
     this._settingsListeners = [];
 
     this._settingsListeners.push(
-      this._settings.connect(`changed::${SettingsKey.REUSE_DASH}`, () => {
+      this._settings.connect(`changed::${settingsKeys.REUSE_DASH}`, () => {
         this.reuseExistingDash = this._settings.get_boolean(
-          SettingsKey.REUSE_DASH
+          settingsKeys.REUSE_DASH
         );
         this.disable();
         this.enable();
@@ -157,29 +160,29 @@ class Extension {
     );
 
     this._settingsListeners.push(
-      this._settings.connect(`changed::${SettingsKey.BG_DARK}`, () => {
-        this.bgDark = this._settings.get_boolean(SettingsKey.BG_DARK);
+      this._settings.connect(`changed::${settingsKeys.BG_DARK}`, () => {
+        this.bgDark = this._settings.get_boolean(settingsKeys.BG_DARK);
         this._updateBgDark();
       })
     );
 
     this._settingsListeners.push(
-      this._settings.connect(`changed::${SettingsKey.BG_OPACITY}`, () => {
-        this.bgOpacity = this._settings.get_double(SettingsKey.BG_OPACITY);
+      this._settings.connect(`changed::${settingsKeys.BG_OPACITY}`, () => {
+        this.bgOpacity = this._settings.get_double(settingsKeys.BG_OPACITY);
         this._updateBgOpacity();
       })
     );
 
     this._settingsListeners.push(
-      this._settings.connect(`changed::${SettingsKey.SCALE_ICONS}`, () => {
-        this.rescale = this._settings.get_double(SettingsKey.SCALE_ICONS);
+      this._settings.connect(`changed::${settingsKeys.SCALE_ICONS}`, () => {
+        this.rescale = this._settings.get_double(settingsKeys.SCALE_ICONS);
         this._debounceUpdateScale();
       })
     );
 
     this._settingsListeners.push(
-      this._settings.connect(`changed::${SettingsKey.SHRINK_ICONS}`, () => {
-        this.shrink = this._settings.get_boolean(SettingsKey.SHRINK_ICONS);
+      this._settings.connect(`changed::${settingsKeys.SHRINK_ICONS}`, () => {
+        this.shrink = this._settings.get_boolean(settingsKeys.SHRINK_ICONS);
         this._updateShrink();
         this.disable();
         this.enable();
@@ -188,26 +191,26 @@ class Extension {
     );
 
     this._settingsListeners.push(
-      this._settings.connect(`changed::${SettingsKey.ANIMATE_ICONS}`, () => {
+      this._settings.connect(`changed::${settingsKeys.ANIMATE_ICONS}`, () => {
         this.animateIcons = this._settings.get_boolean(
-          SettingsKey.ANIMATE_ICONS
+          settingsKeys.ANIMATE_ICONS
         );
         this._updateAnimation();
       })
     );
 
     this._settingsListeners.push(
-      this._settings.connect(`changed::${SettingsKey.AUTOHIDE_DASH}`, () => {
-        this.autohide = this._settings.get_boolean(SettingsKey.AUTOHIDE_DASH);
+      this._settings.connect(`changed::${settingsKeys.AUTOHIDE_DASH}`, () => {
+        this.autohide = this._settings.get_boolean(settingsKeys.AUTOHIDE_DASH);
         this.disable();
         this.enable();
       })
     );
 
     this._settingsListeners.push(
-      this._settings.connect(`changed::${SettingsKey.PRESSURE_SENSE}`, () => {
+      this._settings.connect(`changed::${settingsKeys.PRESSURE_SENSE}`, () => {
         this.pressureSense = this._settings.get_boolean(
-          SettingsKey.PRESSURE_SENSE
+          settingsKeys.PRESSURE_SENSE
         );
         this.disable();
         this.enable();
@@ -216,10 +219,10 @@ class Extension {
 
     this._settingsListeners.push(
       this._settings.connect(
-        `changed::${SettingsKey.TRANSLUCENT_TOPBAR}`,
+        `changed::${settingsKeys.TRANSLUCENT_TOPBAR}`,
         () => {
           this.translucentTopBar = this._settings.get_boolean(
-            SettingsKey.TRANSLUCENT_TOPBAR
+            settingsKeys.TRANSLUCENT_TOPBAR
           );
           this._updateTopBar();
         }
@@ -227,9 +230,9 @@ class Extension {
     );
 
     this._settingsListeners.push(
-      this._settings.connect(`changed::${SettingsKey.SHOW_TRASH_ICON}`, () => {
+      this._settings.connect(`changed::${settingsKeys.SHOW_TRASH_ICON}`, () => {
         this.showTrashIcon = this._settings.get_boolean(
-          SettingsKey.SHOW_TRASH_ICON
+          settingsKeys.SHOW_TRASH_ICON
         );
         this._updateTrashIcon();
         this._updateLayout();
@@ -312,7 +315,7 @@ class Extension {
 
     this._intervals = [];
     this._intervals.push(
-      setInterval(this._onCheckServices.bind(this), SERVICE_CHECK_INTERVAL)
+      setInterval(this._onCheckServices.bind(this), SERVICES_UPDATE_INTERVAL)
     );
   }
 
@@ -636,27 +639,12 @@ class Extension {
   }
 
   _updateTrashIcon() {
-    var fn = Gio.File.new_for_path(
-      '.local/share/applications/trash-dash2dock-lite.desktop'
-    );
     if (this.showTrashIcon) {
-      if (!fn.query_exists(null)) {
-        var content =
-          '[Desktop Entry]\nVersion=1.0\nTerminal=false\nType=Application\nName=Trash\nExec=xdg-open trash:///\nIcon=user-trash\nStartupWMClass=trash-dash2dock-lite\nActions=trash\n\n[Desktop Action trash]\nName=Empty Trash\nExec=/usr/local/bin/empty-trash.sh\n';
-        const [, etag] = fn.replace_contents(
-          content,
-          null,
-          false,
-          Gio.FileCreateFlags.REPLACE_DESTINATION,
-          null
-        );
-        Main.notify('Preparing the trash icon...');
-      }
+      this.services.setupTrash();
       Fav.getAppFavorites().addFavorite('trash-dash2dock-lite.desktop');
     } else {
       Fav.getAppFavorites().removeFavorite('trash-dash2dock-lite.desktop');
     }
-    fn = null;
   }
 
   _onOverviewShowing() {
@@ -704,20 +692,7 @@ class Extension {
   _onCheckServices() {
     if (this.showTrashIcon) {
       Fav.getAppFavorites().addFavorite('trash-dash2dock-lite.desktop');
-      if (!this.fnTrashDir) {
-        this.fnTrashDir = Gio.File.new_for_uri('trash:///');
-      }
-      var prevTrash = this.trashFull;
-      var iter = this.fnTrashDir.enumerate_children(
-        'standard::*',
-        Gio.FileQueryInfoFlags.NONE,
-        null
-      );
-      this.trashFull = iter.next_file(null) != null;
-      iter = null;
-      // if (prevTrash != this.trashFull) {
-      //   log(`trash ${this.trashFull}`);
-      // }
+      this.services.checkTrash();
     }
   }
 }

@@ -18,9 +18,14 @@ publish:
 	cp stylesheet.css ./build
 	cp README.md ./build
 	cp -R schemas ./build
+	cp -R preferences ./build
+	cp -R ui ./build
 	rm -rf ./*.zip
 	cd build ; \
 	zip -qr ../dash2dock-lite@icedman.github.com.zip .
+
+test-prefs:
+	gnome-extensions prefs dash2dock-lite@icedman.github.com
 
 lint:
 	eslint ./

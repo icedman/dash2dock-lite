@@ -3,28 +3,16 @@
 
 // loosely based on https://gitlab.gnome.org/GNOME/gnome-shell-extensions/-/tree/main/extensions/auto-move-windows
 
-const { Gio, GLib, GObject, Gtk, Pango } = imports.gi;
-
+const { Adw, Gdk, GLib, Gtk, GObject, Gio, Pango } = imports.gi;
 const Me = imports.misc.extensionUtils.getCurrentExtension();
+const UIFolderPath = Me.dir.get_child('ui').get_path();
+
 const Gettext = imports.gettext.domain('dash2dock-lite');
 const _ = Gettext.gettext;
 
 const ExtensionUtils = imports.misc.extensionUtils;
 
-var schema_id = 'org.gnome.shell.extensions.dash2dock-lite';
-
-var SettingsKey = {
-  REUSE_DASH: 'reuse-dash',
-  SHRINK_ICONS: 'shrink-icons',
-  SCALE_ICONS: 'scale-icons',
-  ANIMATE_ICONS: 'animate-icons',
-  AUTOHIDE_DASH: 'autohide-dash',
-  PRESSURE_SENSE: 'pressure-sense',
-  BG_OPACITY: 'background-opacity',
-  BG_DARK: 'background-dark',
-  TRANSLUCENT_TOPBAR: 'translucent-topbar',
-  SHOW_TRASH_ICON: 'trash-icon',
-};
+const { schemaId, settingsKeys } = Me.imports.preferences.keys;
 
 const Dash2DockLiteSettingListBoxRow = GObject.registerClass(
   {
@@ -70,7 +58,7 @@ const Dash2DockLiteSettingListBoxRow = GObject.registerClass(
   class Dash2DockLiteSettingListBoxRow extends Gtk.ListBoxRow {
     _init(label, description, settingsKey, type, options) {
       this.rowType = type;
-      this._settings = ExtensionUtils.getSettings(schema_id);
+      this._settings = ExtensionUtils.getSettings(schemaId);
 
       const _hbox = new Gtk.Box({
         spacing: 12,
@@ -177,28 +165,28 @@ const Dash2DockLiteGeneralPane = GObject.registerClass(
       const shrinkIcons = new Dash2DockLiteSettingListBoxRow(
         _('Shrink icons'),
         _('Shrink dash icons'),
-        SettingsKey.SHRINK_ICONS
+        settingsKeys.SHRINK_ICONS
       );
       _listBox.append(shrinkIcons);
 
       const animateIcons = new Dash2DockLiteSettingListBoxRow(
         _('Animate icons'),
         _('Animate dash icons on hover'),
-        SettingsKey.ANIMATE_ICONS
+        settingsKeys.ANIMATE_ICONS
       );
       _listBox.append(animateIcons);
 
       const autohideDash = new Dash2DockLiteSettingListBoxRow(
         _('Autohide'),
         _('Autohide the dash panel'),
-        SettingsKey.AUTOHIDE_DASH
+        settingsKeys.AUTOHIDE_DASH
       );
       _listBox.append(autohideDash);
 
       const pressureSense = new Dash2DockLiteSettingListBoxRow(
         _('Pressure sense'),
         _('Move pointer down to force dash visibility'),
-        SettingsKey.PRESSURE_SENSE
+        settingsKeys.PRESSURE_SENSE
       );
       _listBox.append(pressureSense);
     }
@@ -235,7 +223,7 @@ const Dash2DockLiteAppearancePane = GObject.registerClass(
       const scaleIcons = new Dash2DockLiteSettingListBoxRow(
         _('Scale icons'),
         _('Rescale dash icons'),
-        SettingsKey.SCALE_ICONS,
+        settingsKeys.SCALE_ICONS,
         'scale'
       );
       _listBox.append(scaleIcons);
@@ -243,14 +231,14 @@ const Dash2DockLiteAppearancePane = GObject.registerClass(
       const backgroundDark = new Dash2DockLiteSettingListBoxRow(
         _('Dark background'),
         _('Use dark color for dash background'),
-        SettingsKey.BG_DARK
+        settingsKeys.BG_DARK
       );
       _listBox.append(backgroundDark);
 
       const backgroundOpacity = new Dash2DockLiteSettingListBoxRow(
         _('Background opacity'),
         _('Set dash background opacity'),
-        SettingsKey.BG_OPACITY,
+        settingsKeys.BG_OPACITY,
         'scale'
       );
       _listBox.append(backgroundOpacity);
@@ -258,7 +246,7 @@ const Dash2DockLiteAppearancePane = GObject.registerClass(
       const translucentTopBar = new Dash2DockLiteSettingListBoxRow(
         _('Translucent topbar'),
         _('Make top bar translucent'),
-        SettingsKey.TRANSLUCENT_TOPBAR
+        settingsKeys.TRANSLUCENT_TOPBAR
       );
       _listBox.append(translucentTopBar);
     }
@@ -293,11 +281,11 @@ const Dash2DockLiteExtraPane = GObject.registerClass(
       });
 
       const trashIcon = new Dash2DockLiteSettingListBoxRow(
-        _('Show trash icon [beta]'),
+        _('Dynamic trash icon [beta]'),
         _(
           'Show a dynamic trash icon. This requires animation enabled.\nMake sure the script /usr/local/bin/empty-trash.sh exists.\nRead http://github.com/icedman/dash2dock-lite'
         ),
-        SettingsKey.SHOW_TRASH_ICON
+        settingsKeys.SHOW_TRASH_ICON
       );
       _listBox.append(trashIcon);
     }
@@ -337,3 +325,9 @@ function init() {
 function buildPrefsWidget() {
   return new Dash2DockLiteSettingsWidget();
 }
+
+// function fillPreferencesWindow(window) {
+//   let builder = new Gtk.Builder();
+//   builder.add_from_file(`${UIFolderPath}/general.ui`);
+//   window.add(builder.get_object('main'));
+// }

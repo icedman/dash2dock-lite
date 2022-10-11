@@ -1,7 +1,3 @@
-/*
-  License: GPL v3
-*/
-
 const Main = imports.ui.main;
 const Dash = imports.ui.dash.Dash;
 const Layout = imports.ui.layout;
@@ -179,11 +175,12 @@ var Animator = class {
       // manipulate icons
       // the trash
       if (
+        this.services &&
         c.first_child &&
         c.first_child.icon_name &&
         c.first_child.icon_name.startsWith('user-trash')
       ) {
-        var new_icon = this.dashContainer.delegate.trashFull
+        var new_icon = this.services.trashFull
           ? 'user-trash-full'
           : 'user-trash';
         if (new_icon != c.first_child.icon_name) {

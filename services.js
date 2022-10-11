@@ -29,7 +29,7 @@ var Services = class {
     return this.trashFull;
   }
 
-  setupTrash() {
+  setupTrashIcon() {
     var fn = Gio.File.new_for_path(
       '.local/share/applications/trash-dash2dock-lite.desktop'
     );

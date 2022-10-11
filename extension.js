@@ -67,6 +67,8 @@ class Extension {
 
     this.listeners = [this.animator, this.autohider];
 
+    this._onCheckServices();
+
     this._updateShrink();
     this._updateBgDark();
     this._updateBgOpacity();
@@ -241,6 +243,11 @@ class Extension {
         this._updateTrashIcon();
         this._updateLayout();
         this._onEnterEvent();
+        this._timeoutId = setTimeout(() => {
+          this._updateLayout();
+          this._onEnterEvent();
+          this._timeoutId = null;
+        }, 250);
       })
     );
   }
@@ -277,6 +284,8 @@ class Extension {
     );
 
     this._layoutManagerEvents = [];
+
+    // todo ... jerky on overview
     this._layoutManagerEvents.push(
       Main.layoutManager.connect('startup-complete', () => {
         this._updateLayout();
@@ -442,6 +451,7 @@ class Extension {
     this.disable();
     this.enable();
     this._onEnterEvent();
+    this._timeoutId = null;
   }
 
   _debounceUpdateScale() {
@@ -644,7 +654,7 @@ class Extension {
 
   _updateTrashIcon() {
     if (this.showTrashIcon) {
-      this.services.setupTrash();
+      this.services.setupTrashIcon();
       Fav.getAppFavorites().addFavorite('trash-dash2dock-lite.desktop');
     } else {
       Fav.getAppFavorites().removeFavorite('trash-dash2dock-lite.desktop');

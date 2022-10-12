@@ -403,7 +403,7 @@ var Animator = class {
       }
     });
 
-    if (validPosition) {
+    if (validPosition && !this._isInFullscreen()) {
       this._iconsContainer.show();
     }
 
@@ -502,17 +502,16 @@ var Animator = class {
 
   _onFullScreen() {
     if (!this.dashContainer || !this._iconsContainer) return;
-    let primary = Main.layoutManager.primaryMonitor;
-    if (!primary.inFullscreen) {
-      // this._dragging = true;
-      // this._oneShotId = setTimeout(this.enable.bind(this), ANIM_REENABLE_DELAY);
+    if (!this._isInFullscreen()) {
       this._iconsContainer.show();
     } else {
-      // disable like when we're dragging
-      // this._dragging = false;
-      // this.disable();
       this._iconsContainer.hide();
     }
+  }
+
+  _isInFullscreen() {
+    let primary = Main.layoutManager.primaryMonitor;
+    return primary.inFullscreen;
   }
 
   _startAnimation() {

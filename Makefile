@@ -27,6 +27,12 @@ publish:
 test-prefs:
 	gnome-extensions prefs dash2dock-lite@icedman.github.com
 
+test-shell: install
+	env GNOME_SHELL_SLOWDOWN_FACTOR=2 \
+		MUTTER_DEBUG_DUMMY_MODE_SPECS=1500x1000 \
+	 	MUTTER_DEBUG_DUMMY_MONITOR_SCALES=1 \
+		dbus-run-session -- gnome-shell --nested --wayland
+
 lint:
 	eslint ./
 

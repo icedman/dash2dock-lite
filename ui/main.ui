@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
   <object class="AdwPreferencesPage" id="main">
+    <property name="name">general</property>
+    <property name="title" translatable="yes">Main</property>
+    <property name="icon-name">general-symbolic</property>
   </object>
 </interface>

@@ -147,7 +147,9 @@ var AutoHide = class {
     this._debounceCheckHide();
   }
 
-  _onFullScreen() {}
+  _onFullScreen() {
+    this._debounceCheckHide();
+  }
 
   show() {
     this.frameDelay = 0;

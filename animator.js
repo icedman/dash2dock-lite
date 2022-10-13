@@ -172,21 +172,25 @@ var Animator = class {
 
     let animateIcons = this._iconsContainer.get_children();
     animateIcons.forEach((c) => {
+      if (this.services) {
+        this.services.updateIcon(c.first_child);
+      }
+
       // manipulate icons
       // the trash
-      if (
-        this.services &&
-        c.first_child &&
-        c.first_child.icon_name &&
-        c.first_child.icon_name.startsWith('user-trash')
-      ) {
-        var new_icon = this.services.trashFull
-          ? 'user-trash-full'
-          : 'user-trash';
-        if (new_icon != c.first_child.icon_name) {
-          c.first_child.icon_name = new_icon;
-        }
-      }
+      // if (
+      //   this.services &&
+      //   c.first_child &&
+      //   c.first_child.icon_name &&
+      //   c.first_child.icon_name.startsWith('user-trash')
+      // ) {
+      //   var new_icon = this.services.trashFull
+      //     ? 'user-trash-full'
+      //     : 'user-trash';
+      //   if (new_icon != c.first_child.icon_name) {
+      //     c.first_child.icon_name = new_icon;
+      //   }
+      // }
 
       let orphan = true;
       for (let i = 0; i < icons.length; i++) {

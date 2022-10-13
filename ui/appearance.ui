@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <object class="AdwPreferencesPage" id="appearance">
+    <property name="name">appearance</property>
+    <property name="title" translatable="yes">Appearance</property>
+    <property name="icon-name">applications-symbolic</property>
+
+    <child>
+      <object class="AdwPreferencesGroup">
+        <property name="title" translatable="yes">Icons Size</property>
+        <property name="description" translatable="yes"></property>
+
+        <child>
+          <object class="AdwActionRow">
+            <property name="title" translatable="yes">Shrink Icons</property>
+            <property name="subtitle" translatable="yes">Shrink the dash icons size.</property>
+            <property name="activatable-widget">shrink-icons</property>
+            <child>
+              <object class="GtkSwitch" id="shrink-icons">
+                <property name="valign">center</property>
+              </object>
+            </child>
+          </object>
+        </child>
+
+        <child>
+          <object class="AdwActionRow">
+            <property name="title" translatable="yes">Scale Icons</property>
+            <property name="subtitle" translatable="yes">Adjust icon sizes with custom scale. This overrides the shrink option.</property>
+            <property name="activatable-widget">scale-icons</property>
+            <child>
+              <object class="GtkScale" id="scale-icons">
+                <property name="valign">center</property>
+                <property name="hexpand">true</property>
+                <property name="width-request">140px</property>
+                <property name="draw-value">false</property>
+                <property name="value-pos">right</property>
+                <property name="orientation">horizontal</property>
+                <property name="digits">2</property>
+                <property name="adjustment">scale-icons-adjust</property>
+              </object>
+            </child>
+          </object>
+        </child>
+
+      </object>
+    </child>
+
+    <child>
+      <object class="AdwPreferencesGroup">
+        <property name="title" translatable="yes">Background</property>
+        <property name="description" translatable="yes">Adjust the dash and top bar backgrounds</property>
+
+        <child>
+          <object class="AdwActionRow">
+            <property name="title" translatable="yes">Translucent Top Bar</property>
+            <property name="subtitle" translatable="yes">Make the top bar translucent.</property>
+            <property name="activatable-widget">translucent-topbar</property>
+            <child>
+              <object class="GtkSwitch" id="translucent-topbar">
+                <property name="valign">center</property>
+              </object>
+            </child>
+          </object>
+        </child>
+
+        <child>
+          <object class="AdwActionRow">
+            <property name="title" translatable="yes">Dark Background</property>
+            <property name="subtitle" translatable="yes">Use dark color as dash background.</property>
+            <property name="activatable-widget">background-dark</property>
+            <child>
+              <object class="GtkSwitch" id="background-dark">
+                <property name="valign">center</property>
+              </object>
+            </child>
+          </object>
+        </child>
+
+      <child>
+          <object class="AdwActionRow">
+            <property name="title" translatable="yes">Background Opacity</property>
+            <property name="subtitle" translatable="yes">Adjust dash background opacity.</property>
+            <property name="activatable-widget">background-opacity</property>
+            <child>
+              <object class="GtkScale" id="background-opacity">
+                <property name="valign">center</property>
+                <property name="hexpand">true</property>
+                <property name="width-request">140px</property>
+                <property name="draw-value">false</property>
+                <property name="value-pos">right</property>
+                <property name="orientation">horizontal</property>
+                <property name="digits">2</property>
+                <property name="adjustment">background-opacity-adjust</property>
+              </object>
+            </child>
+          </object>
+        </child>
+
+      </object>
+    </child>
+
+  </object>
+
+  <object class="GtkAdjustment" id="scale-icons-adjust">
+    <property name="lower">0.0</property>
+    <property name="upper">1.0</property>
+    <property name="step-increment">0.01</property>
+  </object>
+
+  <object class="GtkAdjustment" id="background-opacity-adjust">
+    <property name="lower">0.0</property>
+    <property name="upper">1.0</property>
+    <property name="step-increment">0.01</property>
+  </object>
+
+</interface>

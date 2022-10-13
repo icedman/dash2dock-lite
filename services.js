@@ -45,7 +45,20 @@ var Services = class {
       );
       Main.notify('Preparing the trash icon...');
     }
-
     fn = null;
+  }
+
+  updateIcon(icon) {
+    if (!icon || !icon.icon_name) {
+      return;
+    }
+
+    // the trash
+    if (icon.icon_name.startsWith('user-trash')) {
+      var new_icon = this.trashFull ? 'user-trash-full' : 'user-trash';
+      if (new_icon != icon.icon_name) {
+        icon.icon_name = new_icon;
+      }
+    }
   }
 };

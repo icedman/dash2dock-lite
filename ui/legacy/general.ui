@@ -1,244 +1,232 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
-
-<object class="GtkBox" id="general">
-  <property name="visible">True</property>
-  <property name="can-focus">False</property>
-  <property name="margin-start">12</property>
-  <property name="margin-end">12</property>
-  <property name="margin-top">12</property>
-  <property name="margin-bottom">12</property>
-  <property name="orientation">vertical</property>            
-  <child>
-
-  <object class="GtkListBox">
+  <object class="GtkBox" id="general">
+    <property name="visible">True</property>
+    <property name="can-focus">False</property>
+    <property name="margin-start">12</property>
+    <property name="margin-end">12</property>
+    <property name="margin-top">12</property>
+    <property name="margin-bottom">12</property>
+    <property name="orientation">vertical</property>
     <child>
-      <object class="GtkListBoxRow">
-        <property name="visible">True</property>
-        <property name="can-focus">True</property>
-
+      <object class="GtkListBox">
         <child>
-          <object class="GtkBox">
+          <object class="GtkListBoxRow">
             <property name="visible">True</property>
-            <property name="can-focus">False</property>
-            <property name="margin-start">12</property>
-            <property name="margin-end">12</property>
-            <property name="margin-top">12</property>
-            <property name="margin-bottom">12</property>
-            <property name="orientation">vertical</property>            
+            <property name="can-focus">True</property>
+
             <child>
               <object class="GtkBox">
                 <property name="visible">True</property>
                 <property name="can-focus">False</property>
-                <property name="spacing">32</property>
-                
+                <property name="margin-start">12</property>
+                <property name="margin-end">12</property>
+                <property name="margin-top">12</property>
+                <property name="margin-bottom">12</property>
+                <property name="orientation">vertical</property>
                 <child>
-                  <object class="GtkLabel">
+                  <object class="GtkBox">
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
-                    <property name="valign">center</property>
-                    <property name="label" translatable="yes">Animate Icons</property>
-                    <property name="xalign">0</property>
-                    <property name="hexpand">1</property>
-                    <attributes>
-                      <attribute name="weight" value="PANGO_WEIGHT_BOLD"/>
-                    </attributes>
+                    <property name="spacing">32</property>
+
+                    <child>
+                      <object class="GtkLabel">
+                        <property name="visible">True</property>
+                        <property name="can-focus">False</property>
+                        <property name="valign">center</property>
+                        <property name="label" translatable="yes">Animate Icons</property>
+                        <property name="xalign">0</property>
+                        <property name="hexpand">1</property>
+                        <attributes>
+                          <attribute name="weight" value="PANGO_WEIGHT_BOLD" />
+                        </attributes>
+                      </object>
+                    </child>
+
+                    <child>
+                      <object class="GtkSwitch" id="animate-icons">
+                        <property name="valign">center</property>
+                      </object>
+                    </child>
                   </object>
                 </child>
-               
-               <child> 
-                <object class="GtkSwitch" id="animate-icons">
-                  <property name="valign">center</property>
-                </object>
-              </child>
-                
-              </object>
-            </child>
 
-            <child>
-              <object class="GtkLabel">
-                <property name="halign">start</property>
-                <property name="valign">center</property>
-                <property name="label" translatable="yes">Animate the dash icons the pointer enters and moves over the dock.</property>
+                <child>
+                  <object class="GtkLabel">
+                    <property name="halign">start</property>
+                    <property name="valign">center</property>
+                    <property name="label" translatable="yes">Animate the dash icons the pointer enters and moves over the dock.</property>
+                  </object>
+                </child>
               </object>
             </child>
-            
           </object>
         </child>
-      </object>
-    </child>
-
-    <child>
-      <object class="GtkListBoxRow">
-        <property name="visible">True</property>
-        <property name="can-focus">True</property>
 
         <child>
-          <object class="GtkBox">
+          <object class="GtkListBoxRow">
             <property name="visible">True</property>
-            <property name="can-focus">False</property>
-            <property name="margin-start">12</property>
-            <property name="margin-end">12</property>
-            <property name="margin-top">12</property>
-            <property name="margin-bottom">12</property>
-            <property name="orientation">vertical</property>            
+            <property name="can-focus">True</property>
+
             <child>
               <object class="GtkBox">
                 <property name="visible">True</property>
                 <property name="can-focus">False</property>
-                <property name="spacing">32</property>
-                
+                <property name="margin-start">12</property>
+                <property name="margin-end">12</property>
+                <property name="margin-top">12</property>
+                <property name="margin-bottom">12</property>
+                <property name="orientation">vertical</property>
                 <child>
-                  <object class="GtkLabel">
+                  <object class="GtkBox">
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
-                    <property name="valign">center</property>
-                    <property name="label" translatable="yes">Autohide Icons</property>
-                    <property name="xalign">0</property>
-                    <property name="hexpand">1</property>
-                    <attributes>
-                      <attribute name="weight" value="PANGO_WEIGHT_BOLD"/>
-                    </attributes>
+                    <property name="spacing">32</property>
+
+                    <child>
+                      <object class="GtkLabel">
+                        <property name="visible">True</property>
+                        <property name="can-focus">False</property>
+                        <property name="valign">center</property>
+                        <property name="label" translatable="yes">Autohide Icons</property>
+                        <property name="xalign">0</property>
+                        <property name="hexpand">1</property>
+                        <attributes>
+                          <attribute name="weight" value="PANGO_WEIGHT_BOLD" />
+                        </attributes>
+                      </object>
+                    </child>
+
+                    <child>
+                      <object class="GtkSwitch" id="autohide-dash">
+                        <property name="valign">center</property>
+                      </object>
+                    </child>
                   </object>
                 </child>
-               
-               <child> 
-                <object class="GtkSwitch" id="autohide-dash">
-                  <property name="valign">center</property>
-                </object>
-              </child>
-                
-              </object>
-            </child>
 
-            <child>
-              <object class="GtkLabel">
-                <property name="halign">start</property>
-                <property name="valign">center</property>
-                <property name="label" translatable="yes">Hide the dock when it overlaps with windows or when at fullscreen mode.</property>
+                <child>
+                  <object class="GtkLabel">
+                    <property name="halign">start</property>
+                    <property name="valign">center</property>
+                    <property name="label" translatable="yes">Hide the dock when it overlaps with windows or when at fullscreen mode.</property>
+                  </object>
+                </child>
               </object>
             </child>
-            
           </object>
         </child>
-      </object>
-    </child>
-
-
-    <child>
-      <object class="GtkListBoxRow">
-        <property name="visible">True</property>
-        <property name="can-focus">True</property>
 
         <child>
-          <object class="GtkBox">
+          <object class="GtkListBoxRow">
             <property name="visible">True</property>
-            <property name="can-focus">False</property>
-            <property name="margin-start">12</property>
-            <property name="margin-end">12</property>
-            <property name="margin-top">12</property>
-            <property name="margin-bottom">12</property>
-            <property name="orientation">vertical</property>            
+            <property name="can-focus">True</property>
+
             <child>
               <object class="GtkBox">
                 <property name="visible">True</property>
                 <property name="can-focus">False</property>
-                <property name="spacing">32</property>
-                
+                <property name="margin-start">12</property>
+                <property name="margin-end">12</property>
+                <property name="margin-top">12</property>
+                <property name="margin-bottom">12</property>
+                <property name="orientation">vertical</property>
                 <child>
-                  <object class="GtkLabel">
+                  <object class="GtkBox">
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
-                    <property name="valign">center</property>
-                    <property name="label" translatable="yes">Pressure Sense</property>
-                    <property name="xalign">0</property>
-                    <property name="hexpand">1</property>
-                    <attributes>
-                      <attribute name="weight" value="PANGO_WEIGHT_BOLD"/>
-                    </attributes>
+                    <property name="spacing">32</property>
+
+                    <child>
+                      <object class="GtkLabel">
+                        <property name="visible">True</property>
+                        <property name="can-focus">False</property>
+                        <property name="valign">center</property>
+                        <property name="label" translatable="yes">Pressure Sense</property>
+                        <property name="xalign">0</property>
+                        <property name="hexpand">1</property>
+                        <attributes>
+                          <attribute name="weight" value="PANGO_WEIGHT_BOLD" />
+                        </attributes>
+                      </object>
+                    </child>
+
+                    <child>
+                      <object class="GtkSwitch" id="pressure-sense">
+                        <property name="valign">center</property>
+                      </object>
+                    </child>
                   </object>
                 </child>
-               
-               <child> 
-                <object class="GtkSwitch" id="pressure-sense">
-                  <property name="valign">center</property>
-                </object>
-              </child>
-                
-              </object>
-            </child>
 
-            <child>
-              <object class="GtkLabel">
-                <property name="halign">start</property>
-                <property name="valign">center</property>
-                <property name="label" translatable="yes">Move pointer down to force dash visiblity.</property>
+                <child>
+                  <object class="GtkLabel">
+                    <property name="halign">start</property>
+                    <property name="valign">center</property>
+                    <property name="label" translatable="yes">Move pointer down to force dash visiblity.</property>
+                  </object>
+                </child>
               </object>
             </child>
-            
           </object>
         </child>
-      </object>
-    </child>
-
-    <child>
-      <object class="GtkListBoxRow">
-        <property name="visible">True</property>
-        <property name="can-focus">True</property>
 
         <child>
-          <object class="GtkBox">
+          <object class="GtkListBoxRow">
             <property name="visible">True</property>
-            <property name="can-focus">False</property>
-            <property name="margin-start">12</property>
-            <property name="margin-end">12</property>
-            <property name="margin-top">12</property>
-            <property name="margin-bottom">12</property>
-            <property name="orientation">vertical</property>            
+            <property name="can-focus">True</property>
+
             <child>
               <object class="GtkBox">
                 <property name="visible">True</property>
                 <property name="can-focus">False</property>
-                <property name="spacing">32</property>
-                
+                <property name="margin-start">12</property>
+                <property name="margin-end">12</property>
+                <property name="margin-top">12</property>
+                <property name="margin-bottom">12</property>
+                <property name="orientation">vertical</property>
                 <child>
-                  <object class="GtkLabel">
+                  <object class="GtkBox">
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
-                    <property name="valign">center</property>
-                    <property name="label" translatable="yes">Trash Icon</property>
-                    <property name="xalign">0</property>
-                    <property name="hexpand">1</property>
-                    <attributes>
-                      <attribute name="weight" value="PANGO_WEIGHT_BOLD"/>
-                    </attributes>
+                    <property name="spacing">32</property>
+
+                    <child>
+                      <object class="GtkLabel">
+                        <property name="visible">True</property>
+                        <property name="can-focus">False</property>
+                        <property name="valign">center</property>
+                        <property name="label" translatable="yes">Trash Icon</property>
+                        <property name="xalign">0</property>
+                        <property name="hexpand">1</property>
+                        <attributes>
+                          <attribute name="weight" value="PANGO_WEIGHT_BOLD" />
+                        </attributes>
+                      </object>
+                    </child>
+
+                    <child>
+                      <object class="GtkSwitch" id="trash-icon">
+                        <property name="valign">center</property>
+                      </object>
+                    </child>
                   </object>
                 </child>
-               
-               <child> 
-                <object class="GtkSwitch" id="trash-icon">
-                  <property name="valign">center</property>
-                </object>
-              </child>
-                
-              </object>
-            </child>
 
-            <child>
-              <object class="GtkLabel">
-                <property name="halign">start</property>
-                <property name="valign">center</property>
-                <property name="label" translatable="yes">Add a dynamic Trash icon which changes with its state and with a access to Empty Trash action.</property>
+                <child>
+                  <object class="GtkLabel">
+                    <property name="halign">start</property>
+                    <property name="valign">center</property>
+                    <property name="label" translatable="yes">Add a dynamic Trash icon which changes with its state and with a access
+to Empty Trash action.</property>
+                  </object>
+                </child>
               </object>
             </child>
-            
           </object>
         </child>
       </object>
     </child>
-
-  </object>  
-
-</child>
-</object>
+  </object>
 </interface>

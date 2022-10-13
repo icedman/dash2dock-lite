@@ -1,7 +1,4 @@
-// -*- mode: js2; indent-tabs-mode: nil; js2-basic-offset: 4 -*-
-/* exported init buildPrefsWidget */
-
-// loosely based on https://gitlab.gnome.org/GNOME/gnome-shell-extensions/-/tree/main/extensions/auto-move-windows
+// loosely based on JustPerfection & Blur-My-Shell
 
 const { Adw, Gdk, GLib, Gtk, GObject, Gio, Pango } = imports.gi;
 const Me = imports.misc.extensionUtils.getCurrentExtension();
@@ -25,8 +22,14 @@ function buildPrefsWidget() {
   let builder = new Gtk.Builder();
   builder.add_from_file(`${UIFolderPath}/legacy/general.ui`);
   builder.add_from_file(`${UIFolderPath}/legacy/appearance.ui`);
-  notebook.append_page(builder.get_object('general'), new Gtk.Label({ label: _('General') }));
-  notebook.append_page(builder.get_object('appearance'), new Gtk.Label({ label: _('Appearance') }));
+  notebook.append_page(
+    builder.get_object('general'),
+    new Gtk.Label({ label: _('General') })
+  );
+  notebook.append_page(
+    builder.get_object('appearance'),
+    new Gtk.Label({ label: _('Appearance') })
+  );
 
   SettingsKeys.connectSignals(builder);
   SettingsKeys.connectSettings(ExtensionUtils.getSettings(schemaId));

@@ -135,8 +135,7 @@ class PrefKeys {
 }
 
 let prefKeys = new PrefKeys();
-prefKeys.setKeys({
-});
+prefKeys.setKeys({});
 
 Gtk.init();
 
@@ -153,15 +152,21 @@ app.connect('activate', (me) => {
   iconTheme.add_search_path('ui/icons');
 
   w = new Gtk.Window();
-  notebook = new Gtk.Notebook()
+  notebook = new Gtk.Notebook();
   w.set_child(notebook);
-  w.set_size_request(600,600);
+  w.set_size_request(600, 600);
 
   let builder = new Gtk.Builder();
   builder.add_from_file(`ui/legacy/general.ui`);
   builder.add_from_file(`ui/legacy/appearance.ui`);
-  notebook.append_page(builder.get_object('general'), new Gtk.Label({ label: 'General' }));
-  notebook.append_page(builder.get_object('appearance'), new Gtk.Label({ label: 'Appearance' }));
+  notebook.append_page(
+    builder.get_object('general'),
+    new Gtk.Label({ label: 'General' })
+  );
+  notebook.append_page(
+    builder.get_object('appearance'),
+    new Gtk.Label({ label: 'Appearance' })
+  );
 
   prefKeys.connectSignals(builder);
   // prefKeys.getKey('reset').callback = () => {

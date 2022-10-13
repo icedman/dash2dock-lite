@@ -38,3 +38,4 @@ lint:
 
 pretty:
 	prettier --single-quote --write "**/*.js"
+# 	prettier --print-width=800 --parser=html --single-quote --write "**/*.ui"

@@ -5,6 +5,7 @@
 
 const { Adw, Gdk, GLib, Gtk, GObject, Gio, Pango } = imports.gi;
 const Me = imports.misc.extensionUtils.getCurrentExtension();
+const { SettingsKeys } = Me.imports.preferences.keys;
 const UIFolderPath = Me.dir.get_child('ui').get_path();
 
 const Gettext = imports.gettext.domain('dash2dock-lite');
@@ -327,10 +328,16 @@ function buildPrefsWidget() {
 }
 
 // not yet ready
-// function fillPreferencesWindow(window) {
-//   let builder = new Gtk.Builder();
-//   builder.add_from_file(`${UIFolderPath}/general.ui`);
-//   builder.add_from_file(`${UIFolderPath}/main.ui`);
-//   window.add(builder.get_object('general'));
-//   window.add(builder.get_object('main'));
-// }
+function fillPreferencesWindow(window) {
+  let iconTheme = Gtk.IconTheme.get_for_display(Gdk.Display.get_default());
+  iconTheme.add_search_path(`${UIFolderPath}/icons`);
+
+  let builder = new Gtk.Builder();
+  builder.add_from_file(`${UIFolderPath}/general.ui`);
+  builder.add_from_file(`${UIFolderPath}/appearance.ui`);
+  window.add(builder.get_object('general'));
+  window.add(builder.get_object('appearance'));
+
+  SettingsKeys.connectSignals(builder);
+  SettingsKeys.connectSettings(ExtensionUtils.getSettings(schemaId));
+}

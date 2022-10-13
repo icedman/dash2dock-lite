@@ -171,7 +171,7 @@ app.connect('activate', (me) => {
   m.set_title('Prefs Test');
 
   let iconTheme = Gtk.IconTheme.get_for_display(Gdk.Display.get_default());
-  iconTheme.add_search_path('icons');
+  iconTheme.add_search_path('ui/icons');
 
   w = new Adw.PreferencesWindow();
   // w.add(new Adw.PreferencesPage());

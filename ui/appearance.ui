@@ -53,8 +53,8 @@
 
         <child>
           <object class="AdwActionRow">
-            <property name="title" translatable="yes">Translucent Top Bar</property>
-            <property name="subtitle" translatable="yes">Make the top bar translucent.</property>
+            <property name="title" translatable="yes">Translucent Topbar</property>
+            <property name="subtitle" translatable="yes">Make the topbar translucent.</property>
             <property name="activatable-widget">translucent-topbar</property>
             <child>
               <object class="GtkSwitch" id="translucent-topbar">

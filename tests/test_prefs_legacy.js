@@ -1,3 +1,7 @@
+#!/usr/bin/gjs
+
+const { Adw, Gdk, Gio, GLib, GObject, Gtk, Pango } = imports.gi;
+
 var ValueType = {
   B: 'Boolean',
   I: 'Integer',
@@ -7,7 +11,7 @@ var ValueType = {
   AS: 'StringArray',
 };
 
-var PrefKeys = class {
+class PrefKeys {
   constructor() {
     this._keys = {};
     this._signals = [];
@@ -71,67 +75,21 @@ var PrefKeys = class {
     return this._keys;
   }
 
-  onSetValue(name, value) {
-    let settings = this._settings;
-    let keys = this._keys;
-    if (settings) {
-      let key = keys[name];
-      switch (key.widget_type) {
-        case 'switch': {
-          settings.set_boolean(name, key.value);
-          break;
-        }
-        case 'dropdown': {
-          break;
-        }
-        case 'scale': {
-          settings.set_double(name, key.value);
-          break;
-        }
-      }
-    }
-  }
+  // onSetValue(name, value) {
+  // }
 
-  onGetValue(name, value) {
-    return value;
-  }
-
-  connectSettings(settings) {
-    this._settings = settings;
-    let builder = this._builder;
-    let self = this;
-    let keys = this._keys;
-    Object.keys(keys).forEach((name) => {
-      let key = keys[name];
-      key.object = builder.get_object(key.name);
-      if (!key.object) return;
-      switch (key.widget_type) {
-        case 'switch': {
-          key.value = settings.get_boolean(name);
-          key.object.set_active(key.value);
-          break;
-        }
-        case 'dropdown': {
-          break;
-        }
-        case 'scale': {
-          key.value = settings.get_double(name);
-          key.object.set_value(key.value);
-          break;
-        }
-      }
-    });
-  }
+  // onGetValue(name, value) {
+  //   return value;
+  // }
 
   connectSignals(builder) {
-    this._builder = builder;
     let self = this;
     let keys = this._keys;
     Object.keys(keys).forEach((name) => {
       let key = keys[name];
       let signal_id = null;
       key.object = builder.get_object(key.name);
-      if (!key.object) return;
+      print(key.object);
       switch (key.widget_type) {
         case 'switch': {
           signal_id = key.object.connect('state-set', (w) => {
@@ -174,4 +132,54 @@ var PrefKeys = class {
       });
     });
   }
-};
+}
+
+let prefKeys = new PrefKeys();
+prefKeys.setKeys({
+});
+
+Gtk.init();
+
+let app = new Gtk.Application({
+  application_id: 'com.dash2dock-lite.GtkApplication',
+});
+
+app.connect('activate', (me) => {
+  m = new Gtk.ApplicationWindow({ application: me });
+  m.set_default_size(600, 250);
+  m.set_title('Prefs Test');
+
+  let iconTheme = Gtk.IconTheme.get_for_display(Gdk.Display.get_default());
+  iconTheme.add_search_path('ui/icons');
+
+  w = new Gtk.Window();
+  notebook = new Gtk.Notebook()
+  w.set_child(notebook);
+  w.set_size_request(600,600);
+
+  let builder = new Gtk.Builder();
+  builder.add_from_file(`ui/legacy/general.ui`);
+  builder.add_from_file(`ui/legacy/appearance.ui`);
+  notebook.append_page(builder.get_object('general'), new Gtk.Label({ label: 'General' }));
+  notebook.append_page(builder.get_object('appearance'), new Gtk.Label({ label: 'Appearance' }));
+
+  prefKeys.connectSignals(builder);
+  // prefKeys.getKey('reset').callback = () => {
+  //   prefKeys.reset('brightness_scale');
+  //   print(prefKeys.getValue('brightness_scale'));
+  //   print('reset');
+  // };
+
+  w.title = 'main';
+  w.connect('close_request', () => {
+    m.close();
+    app.quit();
+  });
+  w.show();
+
+  // m.present();
+});
+
+app.connect('startup', () => {});
+
+app.run(['xx']);

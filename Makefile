@@ -18,7 +18,6 @@ publish:
 	cp stylesheet.css ./build
 	cp README.md ./build
 	cp -R schemas ./build
-	cp -R icons ./build
 	cp -R ui ./build
 	cp -R preferences ./build
 	rm -rf ./*.zip

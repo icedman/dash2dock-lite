@@ -16,6 +16,7 @@ const clearInterval = Me.imports.utils.clearInterval;
 const clearTimeout = Me.imports.utils.clearTimeout;
 
 const ANIM_INTERVAL = 15;
+const ANIM_INTERVAL_PAD = 15;
 const ANIM_POS_COEF = 2;
 const ANIM_PULL_COEF = 1.8;
 const ANIM_SCALE_COEF = 2.5;
@@ -72,6 +73,10 @@ var Animator = class {
 
     this._iconsContainer.width = 1;
     this._iconsContainer.height = 1;
+
+    let magnification =
+      (this.dashContainer.delegate.animationMagnify * 0.9 || 0) - 0.2;
+    let spread = 1 - (this.dashContainer.delegate.animationSpread * 1 || 0);
 
     let existingIcons = this._iconsContainer.get_children();
 
@@ -173,24 +178,10 @@ var Animator = class {
     let animateIcons = this._iconsContainer.get_children();
     animateIcons.forEach((c) => {
       if (this.services) {
+        // this is where the trash icon is updated
+        // ...maybe the clock and calendar icons too
         this.services.updateIcon(c.first_child);
       }
-
-      // manipulate icons
-      // the trash
-      // if (
-      //   this.services &&
-      //   c.first_child &&
-      //   c.first_child.icon_name &&
-      //   c.first_child.icon_name.startsWith('user-trash')
-      // ) {
-      //   var new_icon = this.services.trashFull
-      //     ? 'user-trash-full'
-      //     : 'user-trash';
-      //   if (new_icon != c.first_child.icon_name) {
-      //     c.first_child.icon_name = new_icon;
-      //   }
-      // }
 
       let orphan = true;
       for (let i = 0; i < icons.length; i++) {
@@ -290,10 +281,21 @@ var Animator = class {
       idx++;
     });
 
+    //
+    if (!this.dashContainer.delegate.peekHiddenIcons) {
+      if (
+        this.dashContainer.delegate.autohider &&
+        this.dashContainer.delegate.autohider._enabled &&
+        !this.dashContainer.delegate.autohider._shown
+      ) {
+        nearestIcon = null;
+      }
+    }
+
     // set animation behavior here
     if (nearestIcon && nearestDistance < iconSize * 2) {
       nearestIcon._target[iy] -= iconSize * ANIM_ICON_RAISE * scaleFactor;
-      nearestIcon._targetScale = ANIM_ICON_SCALE;
+      nearestIcon._targetScale = ANIM_ICON_SCALE + magnification;
 
       let offset = nearestIcon._dx / 4;
       let offsetY = (offset < 0 ? -offset : offset) / 2;
@@ -306,7 +308,7 @@ var Animator = class {
       let pull_coef = ANIM_PULL_COEF;
 
       for (let i = 1; i < 80; i++) {
-        sz *= 0.8;
+        sz *= 0.8 - 0.2 * spread;
 
         let left = null;
         let right = null;
@@ -342,6 +344,7 @@ var Animator = class {
     let didAnimate = false;
 
     // animate to target scale and position
+    // todo .. make this velocity based
     animateIcons.forEach((icon) => {
       let pos = icon._target;
       let scale = icon._targetScale;
@@ -363,13 +366,6 @@ var Animator = class {
       if (dst > iconSize * 0.01 && dst < iconSize * 3) {
         pos[0] = (from[0] * _pos_coef + pos[0]) / (_pos_coef + 1);
         pos[1] = (from[1] * _pos_coef + pos[1]) / (_pos_coef + 1);
-
-        if (dock_position == 'bottom') {
-          // if (pos[0] < 0) {
-          //   pos[0] = 0;
-          // }
-        }
-
         didAnimate = true;
       }
 
@@ -447,6 +443,12 @@ var Animator = class {
       this._timeoutId = null;
     }
     if (this._intervalId == null) {
+      if (this.dashContainer && this.dashContainer.delegate) {
+        this.animationInterval =
+          ANIM_INTERVAL +
+          (this.dashContainer.delegate.animationFps || 0) * ANIM_INTERVAL_PAD;
+      }
+
       this._intervalId = setInterval(
         this._animate.bind(this),
         this.animationInterval

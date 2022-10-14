@@ -14,6 +14,7 @@ const setInterval = Me.imports.utils.setInterval;
 const clearInterval = Me.imports.utils.clearInterval;
 
 const HIDE_ANIMATION_INTERVAL = 15;
+const HIDE_ANIMATION_INTERVAL_PAD = 15;
 const DEBOUNCE_HIDE_TIMEOUT = 120;
 const PRESSURE_SENSE_DISTANCE = 20;
 
@@ -84,6 +85,13 @@ var AutoHide = class {
   _beginAnimation(t) {
     this.target = t;
     if (this._intervalId == null) {
+      if (this.dashContainer && this.dashContainer.delegate) {
+        this.animationInterval =
+          HIDE_ANIMATION_INTERVAL +
+          (this.dashContainer.delegate.animationFps || 0) *
+            HIDE_ANIMATION_INTERVAL_PAD;
+      }
+
       this._intervalId = setInterval(
         this._animate.bind(this),
         this.animationInterval
@@ -95,7 +103,6 @@ var AutoHide = class {
     if (this._intervalId) {
       clearInterval(this._intervalId);
       this._intervalId = null;
-      this.dashContainer.remove_style_class_name('hi');
     }
   }
 
@@ -120,7 +127,7 @@ var AutoHide = class {
         this._dwell = 0;
       }
 
-      log(`${dx} ${area}`);
+      // log(`${dx} ${area}`);
 
       if (this._dwell > 12) {
         this.show();
@@ -188,15 +195,17 @@ var AutoHide = class {
 
     // this.dashContainer.add_style_class_name('hi');
     this._animating = false;
-
+    let travel = this.dashContainer._dockHeight;
+    let speed = travel / 150;
     let dy = this.target - y;
-    if (dy * dy < 16 || this.animator._dragging) {
+    if (
+      Math.sqrt(dy * dy) <= speed * this.animationInterval ||
+      this.animator._dragging
+    ) {
       y = this.target;
       this._endAnimation();
     } else {
-      dy = dy / 4;
-      y += dy;
-
+      y += speed * (dy < 0 ? -1 : 1) * this.animationInterval;
       this._animating = true;
 
       // animate the icons if needed

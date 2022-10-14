@@ -17,6 +17,13 @@ var settingsKeys = {
   BG_DARK: 'background-dark',
   TRANSLUCENT_TOPBAR: 'translucent-topbar',
   SHOW_TRASH_ICON: 'trash-icon',
+  PEEK_HIDDEN_ICONS: 'peek-hidden-icons',
+  ANIMATION_FPS: 'animation-fps',
+  ANIMATION_MAGNIFY: 'animation-magnify',
+  ANIMATION_SPREAD: 'animation-spread',
+  BORDER_RADIUS: 'border-radius',
+  PANEL_MODE: 'panel-mode',
+  SHOW_APPS_ICON: 'apps-icon',
 };
 
 var SettingsKeys = new PrefKeys();
@@ -68,6 +75,41 @@ SettingsKeys.setKeys({
   'trash-icon': {
     value_type: ValueType.B,
     default_value: false,
+    widget_type: 'switch',
+  },
+  'peek-hidden-icons': {
+    value_type: ValueType.B,
+    default_value: false,
+    widget_type: 'switch',
+  },
+  'animation-fps': {
+    value_type: ValueType.I,
+    default_value: 0,
+    widget_type: 'dropdown',
+  },
+  'animation-magnify': {
+    value_type: ValueType.D,
+    default_value: 0,
+    widget_type: 'scale',
+  },
+  'animation-spread': {
+    value_type: ValueType.D,
+    default_value: 0,
+    widget_type: 'scale',
+  },
+  'border-radius': {
+    value_type: ValueType.I,
+    default_value: 0,
+    widget_type: 'scale',
+  },
+  'panel-mode': {
+    value_type: ValueType.B,
+    default_value: false,
+    widget_type: 'switch',
+  },
+  'apps-icon': {
+    value_type: ValueType.B,
+    default_value: true,
     widget_type: 'switch',
   },
 });

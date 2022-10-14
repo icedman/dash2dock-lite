@@ -89,7 +89,6 @@ class PrefKeys {
       let key = keys[name];
       let signal_id = null;
       key.object = builder.get_object(key.name);
-      print(key.object);
       switch (key.widget_type) {
         case 'switch': {
           signal_id = key.object.connect('state-set', (w) => {
@@ -104,7 +103,7 @@ class PrefKeys {
             let index = w.get_selected();
             let value = index in key.maps ? key.maps[index] : index;
             self.setValue(name, value);
-            // print(value);
+            print(value);
           });
           break;
         }
@@ -136,29 +135,12 @@ class PrefKeys {
 
 let prefKeys = new PrefKeys();
 prefKeys.setKeys({
-  // sigma_scale: {
-  //   value_type: ValueType.D,
-  //   default_value: 0,
-  //   widget_type: 'scale',
-  // },
-  // brightness_scale: {
-  //   value_type: ValueType.D,
-  //   default_value: 1,
-  //   widget_type: 'scale',
-  // },
-  // hack_level: {
-  //   value_type: ValueType.I,
-  //   default_value: 0,
-  //   widget_type: 'dropdown',
-  //   key_maps: {},
-  // },
-  // reset: {
-  //   value_type: ValueType.B,
-  //   default_value: 0,
-  //   widget_type: 'button',
-  //   key_maps: {},
-  // },
-  // debug: { value_type: ValueType.B, default_value: 0, widget_type: 'switch' },
+  'animation-fps': {
+    value_type: ValueType.I,
+    default_value: 0,
+    widget_type: 'dropdown',
+    key_maps: {},
+  },
 });
 
 let app = new Adw.Application({
@@ -179,8 +161,52 @@ app.connect('activate', (me) => {
   let builder = new Gtk.Builder();
   builder.add_from_file(`ui/general.ui`);
   builder.add_from_file(`ui/appearance.ui`);
+  builder.add_from_file(`ui/tweaks.ui`);
+  builder.add_from_file(`ui/menu.ui`);
+  w.add(builder.get_object('tweaks'));
   w.add(builder.get_object('general'));
   w.add(builder.get_object('appearance'));
+
+  let menu_util = builder.get_object('menu_util');
+  w.add(menu_util);
+  w.title = 'Dash2Dock Lite';
+
+  const page = builder.get_object('menu_util');
+  const pages_stack = page.get_parent(); // AdwViewStack
+  const content_stack = pages_stack.get_parent().get_parent(); // GtkStack
+  const preferences = content_stack.get_parent(); // GtkBox
+  const headerbar = preferences.get_first_child(); // AdwHeaderBar
+  headerbar.pack_start(builder.get_object('info_menu'));
+
+  // setup menu actions
+  const actionGroup = new Gio.SimpleActionGroup();
+  w.insert_action_group('prefs', actionGroup);
+
+  // a list of actions with their associated link
+  const actions = [
+    {
+      name: 'open-bug-report',
+      link: 'https://github.com/icedman/dash2dock-lite/issues',
+    },
+    {
+      name: 'open-readme',
+      link: 'https://github.com/icedman/dash2dock-lite',
+    },
+    {
+      name: 'open-license',
+      link: 'https://github.com/icedman/dash2dock-lite/blob/master/LICENSE',
+    },
+  ];
+
+  actions.forEach((action) => {
+    let act = new Gio.SimpleAction({ name: action.name });
+    act.connect('activate', (_) =>
+      Gtk.show_uri(w, action.link, Gdk.CURRENT_TIME)
+    );
+    actionGroup.add_action(act);
+  });
+
+  w.remove(menu_util);
 
   prefKeys.connectSignals(builder);
   // prefKeys.getKey('reset').callback = () => {
@@ -189,11 +215,11 @@ app.connect('activate', (me) => {
   //   print('reset');
   // };
 
-  // w.title = 'main';
   w.connect('close_request', () => {
     m.close();
     app.quit();
   });
+
   w.show();
 
   // m.present();

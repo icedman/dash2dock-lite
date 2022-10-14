@@ -4,52 +4,87 @@
     <key type="b" name="reuse-dash">
         <default>false</default>
         <summary>Reuse existing Dash</summary>
-        <description>Reuse existing Dash instead of creating another instance</description>
+        <description>Reuse existing Dash instead of creating another instance.</description>
     </key>
     <key type="b" name="shrink-icons">
         <default>true</default>
         <summary>Shrink icons</summary>
-        <description>Shrink dash icons</description>
+        <description>Shrink dash icons.</description>
     </key>
     <key type="d" name="scale-icons">
         <default>0.0</default>
         <summary>Scale icons</summary>
-        <description>Rescale dash icons</description>
+        <description>Rescale dash icons/</description>
     </key>
     <key type="b" name="animate-icons">
         <default>true</default>
         <summary>Animate Icons</summary>
-        <description>Animate dash icons on hover</description>
+        <description>Animate dash icons on hover.</description>
     </key>
     <key type="b" name="autohide-dash">
         <default>false</default>
         <summary>Autohide dash panel</summary>
-        <description>Animate dash icons on hover</description>
+        <description>Animate dash icons on hover.</description>
     </key>
     <key type="b" name="pressure-sense">
         <default>false</default>
         <summary>Pressure sense</summary>
-        <description>Move pointer down to force dash visibility</description>
+        <description>Move pointer down to force dash visibility.</description>
     </key>
     <key type="b" name="background-dark">
         <default>true</default>
         <summary>Dark background</summary>
-        <description>Use dark color for dash background</description>
+        <description>Use dark color for dash background.</description>
     </key>
     <key type="d" name="background-opacity">
         <default>1</default>
         <summary>Background opacity</summary>
-        <description>Set dash background opacity</description>
+        <description>Set dash background opacity.</description>
+    </key>
+    <key type="d" name="border-radius">
+        <default>3</default>
+        <summary>Border radius</summary>
+        <description>Set dash background border radius.</description>
     </key>
     <key type="b" name="translucent-topbar">
         <default>true</default>
         <summary>Translucent topbar</summary>
-        <description>Make top bar translucent</description>
+        <description>Make top bar translucent.</description>
     </key>
     <key type="b" name="trash-icon">
         <default>false</default>
         <summary>Show trash icon</summary>
-        <description>Show a dynamic trash icon</description>
+        <description>Show a dynamic trash icon.</description>
+    </key>
+    <key type="b" name="peek-hidden-icons">
+        <default>false</default>
+        <summary>Peek hidden icons</summary>
+        <description>Partially show animated icons when the dash is auto hidden.</description>
+    </key>
+    <key type="i" name="animation-fps">
+        <default>0</default>
+        <summary>Animation frame rate</summary>
+        <description>Set animation frame rate. High setting shows smooth animations at the expense of high cpu resource.</description>
+    </key>
+    <key type="d" name="animation-magnify">
+        <default>1</default>
+        <summary>Icon magnification</summary>
+        <description>Set icons spread radius when zoomed and animated.</description>
+    </key>
+    <key type="d" name="animation-spread">
+        <default>1</default>
+        <summary>Icons spread</summary>
+        <description>Icon spread when animated.</description>
+    </key>
+    <key type="b" name="panel-mode">
+        <default>false</default>
+        <summary>Panel mode</summary>
+        <description>Dock the dash on a full-width panel.</description>
+    </key>
+    <key type="b" name="apps-icon">
+        <default>true</default>
+        <summary>Apps icon</summary>
+        <description>Show the apps icon.</description>
     </key>
   </schema>
 </schemalist>

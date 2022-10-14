@@ -14,8 +14,7 @@
           <object class="AdwActionRow">
             <property name="title" translatable="yes">Animate Icons</property>
             <property name="subtitle" translatable="yes"
-              >Animate the dash icons the pointer enters and moves over the
-dock.</property
+              >Animate the dash icons the pointer enters and moves over the dock.</property
             >
             <property name="activatable-widget">animate-icons</property>
             <child>
@@ -37,8 +36,7 @@ dock.</property
           <object class="AdwActionRow">
             <property name="title" translatable="yes">Autohide Icons</property>
             <property name="subtitle" translatable="yes"
-              >Hide the dock when it overlaps with windows or when at fullscreen
-mode.</property
+              >Hide the dock when it overlaps with windows or when at fullscreen mode.</property
             >
             <property name="activatable-widget">autohide-dash</property>
             <child>
@@ -68,15 +66,31 @@ mode.</property
 
     <child>
       <object class="AdwPreferencesGroup">
-        <property name="title" translatable="yes">Services</property>
+        <property name="title" translatable="yes">Special Icons</property>
         <property name="description" translatable="yes"></property>
+
+        <!-- hide this from justperfection
+        <child>
+          <object class="AdwActionRow">
+            <property name="title" translatable="yes">Apps Icon</property>
+            <property name="subtitle" translatable="yes"
+              >Show the apps icon.</property
+            >
+            <property name="activatable-widget">apps-icon</property>
+            <child>
+              <object class="GtkSwitch" id="apps-icon">
+                <property name="valign">center</property>
+              </object>
+            </child>
+          </object>
+        </child>
+        -->
 
         <child>
           <object class="AdwActionRow">
             <property name="title" translatable="yes">Trash Icon</property>
             <property name="subtitle" translatable="yes"
-              >Add a dynamic Trash icon which changes with its state and with a access
-to Empty Trash action.</property
+              >Add a dynamic Trash icon which changes with its state and with a access to Empty Trash action.</property
             >
             <property name="activatable-widget">trash-icon</property>
             <child>
@@ -86,6 +100,7 @@ to Empty Trash action.</property
             </child>
           </object>
         </child>
+        
       </object>
     </child>
   </object>

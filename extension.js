@@ -76,6 +76,7 @@ class Extension {
     this._updateAnimation();
     this._updateAutohide();
     this._updateTopBar();
+    this._updateCss();
 
     this.services = new Services();
     this.services.enable();
@@ -96,6 +97,7 @@ class Extension {
     this._updateAnimation(true);
     this._updateAutohide(true);
     this._updateTopBar(true);
+    this._updateCss(true);
 
     this.dashContainer.remove_child(this.dash);
     if (this.reuseExistingDash) {
@@ -130,6 +132,7 @@ class Extension {
   }
 
   _enableSettings() {
+    // todo generate this from SettingsKeys
     this._settings = ExtensionUtils.getSettings(schemaId);
     this.shrink = this._settings.get_boolean(settingsKeys.SHRINK_ICONS);
     this.rescale = this._settings.get_double(settingsKeys.SCALE_ICONS);
@@ -152,6 +155,21 @@ class Extension {
     this.vertical = false;
     this.autohide = this._settings.get_boolean(settingsKeys.AUTOHIDE_DASH);
     this.affectsStruts = !this.autohide;
+
+    this.peekHiddenIcons = this._settings.get_boolean(
+      settingsKeys.PEEK_HIDDEN_ICONS
+    );
+    this.animationFps = this._settings.get_int(settingsKeys.ANIMATION_FPS);
+
+    this.animationMagnify = this._settings.get_double(
+      settingsKeys.ANIMATION_MAGNIFY
+    );
+    this.animationSpread = this._settings.get_double(
+      settingsKeys.ANIMATION_SPREAD
+    );
+    this.borderRadius = this._settings.get_double(settingsKeys.BORDER_RADIUS);
+    this.panelMode = this._settings.get_boolean(settingsKeys.PANEL_MODE);
+    this.showAppsIcon = this._settings.get_boolean(settingsKeys.SHOW_APPS_ICON);
 
     this._settingsListeners = [];
 
@@ -236,6 +254,64 @@ class Extension {
     );
 
     this._settingsListeners.push(
+      this._settings.connect(
+        `changed::${settingsKeys.PEEK_HIDDEN_ICONS}`,
+        () => {
+          this.peekHiddenIcons = this._settings.get_boolean(
+            settingsKeys.PEEK_HIDDEN_ICONS
+          );
+        }
+      )
+    );
+
+    this._settingsListeners.push(
+      this._settings.connect(`changed::${settingsKeys.ANIMATION_FPS}`, () => {
+        this.animationFps = this._settings.get_int(settingsKeys.ANIMATION_FPS);
+      })
+    );
+
+    this._settingsListeners.push(
+      this._settings.connect(
+        `changed::${settingsKeys.ANIMATION_MAGNIFY}`,
+        () => {
+          this.animationMagnify = this._settings.get_double(
+            settingsKeys.ANIMATION_MAGNIFY
+          );
+        }
+      )
+    );
+
+    this._settingsListeners.push(
+      this._settings.connect(
+        `changed::${settingsKeys.ANIMATION_SPREAD}`,
+        () => {
+          this.animationSpread = this._settings.get_double(
+            settingsKeys.ANIMATION_SPREAD
+          );
+        }
+      )
+    );
+
+    this._settingsListeners.push(
+      this._settings.connect(`changed::${settingsKeys.BORDER_RADIUS}`, () => {
+        this.borderRadius = this._settings.get_double(
+          settingsKeys.BORDER_RADIUS
+        );
+        this._updateCss();
+      })
+    );
+
+    this._settingsListeners.push(
+      this._settings.connect(`changed::${settingsKeys.SHOW_APPS_ICON}`, () => {
+        this.showAppsIcon = this._settings.get_double(
+          settingsKeys.SHOW_APPS_ICON
+        );
+        this._updateLayout();
+        this._onEnterEvent();
+      })
+    );
+
+    this._settingsListeners.push(
       this._settings.connect(`changed::${settingsKeys.SHOW_TRASH_ICON}`, () => {
         this.showTrashIcon = this._settings.get_boolean(
           settingsKeys.SHOW_TRASH_ICON
@@ -248,6 +324,15 @@ class Extension {
           this._onEnterEvent();
           this._timeoutId = null;
         }, 250);
+      })
+    );
+
+    this._settingsListeners.push(
+      this._settings.connect(`changed::${settingsKeys.PANEL_MODE}`, () => {
+        this.panelMode = this._settings.get_boolean(settingsKeys.PANEL_MODE);
+        this._updateCss();
+        this._updateLayout();
+        this._onEnterEvent();
       })
     );
   }
@@ -291,10 +376,6 @@ class Extension {
         this._updateLayout();
         this.oneShotStartupCompleteId = setTimeout(() => {
           this._updateLayout();
-          this.oneShotStartupCompleteId = setTimeout(() => {
-            this._updateLayout();
-            this.oneShotStartupCompleteId = null;
-          }, 500);
         }, 500);
       })
     );
@@ -500,6 +581,32 @@ class Extension {
     }
   }
 
+  _updateCss(disable) {
+    if (!this.dashContainer) return;
+
+    let background = this.dash ? this.dash.first_child : null;
+    if (background && this.borderRadius !== null) {
+      for (let i = 0; i < 7; i++) {
+        background.remove_style_class_name(`border-radius-${i}`);
+      }
+      if (!disable && !this.panelMode) {
+        log(this.borderRadius);
+        background.add_style_class_name(
+          `border-radius-${Math.floor(this.borderRadius)}`
+        );
+      }
+    }
+    if (background) {
+      if (this.panelMode) {
+        this.dash.set_background_color(Clutter.Color.from_pixel(0x00000050));
+        background.visible = false;
+      } else {
+        this.dash.set_background_color(Clutter.Color.from_pixel(0x00000000));
+        background.visible = true;
+      }
+    }
+  }
+
   _updateBgOpacity(disable) {
     if (!this.dash) return;
 
@@ -588,6 +695,7 @@ class Extension {
     let iconSize = 64;
 
     try {
+      let background = this.dash.first_child;
       this.dash._box.first_child.first_child._delegate.icon.height;
     } catch (err) {
       // dash might not yet be ready
@@ -595,6 +703,10 @@ class Extension {
 
     let scale = this.scale;
     let dockHeight = iconSize * (this.shrink ? 1.8 : 1.6) * scale;
+    if (this.panelMode) {
+      dockHeight -= 12 * this.scaleFactor;
+    } else {
+    }
 
     this.dashContainer.set_size(this.sw, dockHeight * this.scaleFactor);
     if (this.autohider._enabled && !this.autohider._shown) {
@@ -612,7 +724,7 @@ class Extension {
 
     let iconChildren = this._findIcons();
 
-    let iconHook = [...iconChildren, this.dash._showAppsIcon];
+    let iconHook = [...iconChildren];
     for (let i = 0; i < iconHook.length; i++) {
       if (!iconHook[i].child) continue;
       let icon = iconHook[i].child._delegate.icon;

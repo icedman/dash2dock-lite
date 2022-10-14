@@ -3,11 +3,11 @@
   <object class="AdwPreferencesPage" id="appearance">
     <property name="name">appearance</property>
     <property name="title" translatable="yes">Appearance</property>
-    <property name="icon-name">applications-symbolic</property>
+    <property name="icon-name">dash-symbolic</property>
 
     <child>
       <object class="AdwPreferencesGroup">
-        <property name="title" translatable="yes">Icons Size</property>
+        <property name="title" translatable="yes">Icons</property>
         <property name="description" translatable="yes"></property>
 
         <child>
@@ -29,8 +29,7 @@
           <object class="AdwActionRow">
             <property name="title" translatable="yes">Scale Icons</property>
             <property name="subtitle" translatable="yes"
-              >Adjust icon sizes with custom scale. This overrides the
-shrink option.</property
+              >Adjust icon sizes with custom scale. This overrides the shrink option.</property
             >
             <property name="activatable-widget">scale-icons</property>
             <child>
@@ -52,23 +51,45 @@ shrink option.</property
 
     <child>
       <object class="AdwPreferencesGroup">
-        <property name="title" translatable="yes">Background</property>
+        <property name="title" translatable="yes">Dash</property>
         <property name="description" translatable="yes"
-          >Adjust the dash and top bar backgrounds</property
+          >Customize the dash appearance.</property
         >
 
         <child>
           <object class="AdwActionRow">
+            <property name="title" translatable="yes">Panel Mode</property>
+            <property name="subtitle" translatable="yes"
+              >Dock the dash on a full-width panel.</property
+            >
+            <property name="activatable-widget">panel-mode</property>
+            <child>
+              <object class="GtkSwitch" id="panel-mode">
+                <property name="valign">center</property>
+              </object>
+            </child>
+          </object>
+        </child>
+
+        <child>
+          <object class="AdwActionRow">
             <property name="title" translatable="yes"
-              >Translucent Topbar</property
+              >Border Radius</property
             >
             <property name="subtitle" translatable="yes"
-              >Make the topbar translucent.</property
+              >Set dash background border radius.</property
             >
-            <property name="activatable-widget">translucent-topbar</property>
+            <property name="activatable-widget">border-radius</property>
             <child>
-              <object class="GtkSwitch" id="translucent-topbar">
+              <object class="GtkScale" id="border-radius">
                 <property name="valign">center</property>
+                <property name="hexpand">true</property>
+                <property name="width-request">140px</property>
+                <property name="draw-value">false</property>
+                <property name="value-pos">right</property>
+                <property name="orientation">horizontal</property>
+                <property name="digits">0</property>
+                <property name="adjustment">border-radius-adjust</property>
               </object>
             </child>
           </object>
@@ -114,6 +135,34 @@ shrink option.</property
         </child>
       </object>
     </child>
+
+    <child>
+      <object class="AdwPreferencesGroup">
+        <property name="title" translatable="yes">Topbar</property>
+        <property name="description" translatable="yes"
+          ></property
+        >
+
+        <child>
+          <object class="AdwActionRow">
+            <property name="title" translatable="yes"
+              >Translucent Topbar</property
+            >
+            <property name="subtitle" translatable="yes"
+              >Make the topbar translucent.</property
+            >
+            <property name="activatable-widget">translucent-topbar</property>
+            <child>
+              <object class="GtkSwitch" id="translucent-topbar">
+                <property name="valign">center</property>
+              </object>
+            </child>
+          </object>
+        </child>
+
+      </object>
+    </child>
+
   </object>
 
   <object class="GtkAdjustment" id="scale-icons-adjust">
@@ -126,5 +175,11 @@ shrink option.</property
     <property name="lower">0.0</property>
     <property name="upper">1.0</property>
     <property name="step-increment">0.01</property>
+  </object>
+
+  <object class="GtkAdjustment" id="border-radius-adjust">
+    <property name="lower">0</property>
+    <property name="upper">6</property>
+    <property name="step-increment">1</property>
   </object>
 </interface>

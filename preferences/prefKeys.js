@@ -40,8 +40,25 @@ var PrefKeys = class {
 
   setValue(name, value) {
     this._keys[name].value = value;
-    if (this.onSetValue) {
-      this.onSetValue(name, this._keys[name].value);
+
+    let settings = this._settings;
+    let keys = this._keys;
+    if (settings) {
+      let key = keys[name];
+      switch (key.widget_type) {
+        case 'switch': {
+          settings.set_boolean(name, value);
+          break;
+        }
+        case 'dropdown': {
+          settings.set_int(name, value);
+          break;
+        }
+        case 'scale': {
+          settings.set_double(name, value);
+          break;
+        }
+      }
     }
   }
 
@@ -71,31 +88,6 @@ var PrefKeys = class {
     return this._keys;
   }
 
-  onSetValue(name, value) {
-    let settings = this._settings;
-    let keys = this._keys;
-    if (settings) {
-      let key = keys[name];
-      switch (key.widget_type) {
-        case 'switch': {
-          settings.set_boolean(name, key.value);
-          break;
-        }
-        case 'dropdown': {
-          break;
-        }
-        case 'scale': {
-          settings.set_double(name, key.value);
-          break;
-        }
-      }
-    }
-  }
-
-  onGetValue(name, value) {
-    return value;
-  }
-
   connectSettings(settings) {
     this._settings = settings;
     let builder = this._builder;
@@ -112,6 +104,8 @@ var PrefKeys = class {
           break;
         }
         case 'dropdown': {
+          key.value = settings.get_int(name);
+          key.object.set_selected(key.value);
           break;
         }
         case 'scale': {
@@ -121,6 +115,8 @@ var PrefKeys = class {
         }
       }
     });
+
+    // todo connect signals here instead of at the extension.js
   }
 
   connectSignals(builder) {
@@ -131,22 +127,23 @@ var PrefKeys = class {
       let key = keys[name];
       let signal_id = null;
       key.object = builder.get_object(key.name);
-      if (!key.object) return;
+      if (!key.object) {
+        return;
+      }
+
       switch (key.widget_type) {
         case 'switch': {
           signal_id = key.object.connect('state-set', (w) => {
             let value = w.get_active();
             self.setValue(name, value);
-            // print(value);
           });
           break;
         }
         case 'dropdown': {
           signal_id = key.object.connect('notify::selected-item', (w) => {
             let index = w.get_selected();
-            let value = index in key.maps ? key.maps[index] : index;
+            let value = key.maps && index in key.maps ? key.maps[index] : index;
             self.setValue(name, value);
-            // print(value);
           });
           break;
         }
@@ -154,7 +151,6 @@ var PrefKeys = class {
           signal_id = key.object.connect('value-changed', (w) => {
             let value = w.get_value();
             self.setValue(name, value);
-            // print(value);
           });
           break;
         }
@@ -168,6 +164,7 @@ var PrefKeys = class {
         }
       }
 
+      // when do we clean this up?
       this._signals.push({
         source: key.object,
         signal_id: signal_id,

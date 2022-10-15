@@ -65,6 +65,10 @@ class Extension {
     this.autohider.animator = this.animator;
     this.autohider.dashContainer = this.dashContainer;
 
+    this.services = new Services();
+    this.services.enable();
+    this.animator.services = this.services;
+
     this.listeners = [this.animator, this.autohider];
 
     this._onCheckServices();
@@ -77,10 +81,6 @@ class Extension {
     this._updateAutohide();
     this._updateTopBar();
     this._updateCss();
-
-    this.services = new Services();
-    this.services.enable();
-    this.animator.services = this.services;
     this._updateTrashIcon();
 
     this._addEvents();
@@ -240,6 +240,10 @@ class Extension {
       this.dashContainer.connect('destroy', () => {})
     );
 
+    let cache = St.TextureCache.get_default();
+    cache.connectObject(
+        'icon-theme-changed', this._onIconThemeChanged.bind(this), this);
+
     this._sessionModeEvents = [];
     this._sessionModeEvents.push(
       Main.sessionMode.connect('updated', () => this._onSessionUpdated())
@@ -348,6 +352,15 @@ class Extension {
       });
     }
     this._displayEvents = [];
+  }
+
+  _onIconThemeChanged() {
+    if (this.animator._enabled) {
+      this.services.disable();
+      this.services.enable();
+      this.animator.disable();
+      this.animator.enable();
+    }
   }
 
   _onMotionEvent() {
@@ -472,7 +485,7 @@ class Extension {
       }
     }
     if (background) {
-      if (this.panel_mode) {
+      if (this.panel_mode && !disable) {
         this.dash.set_background_color(Clutter.Color.from_pixel(0x00000050));
         background.visible = false;
       } else {

@@ -7,11 +7,28 @@ const AppsFolderPath = Me.dir.get_child('apps').get_path();
 const setTimeout = Me.imports.utils.setTimeout;
 const setInterval = Me.imports.utils.setInterval;
 
+const xClock = Me.imports.apps.clock.xClock;
+
+// sync with animator
+const ANIM_ICON_QUALITY = 2.0;
+const CLOCK_SIZE = 120;
+
 var Services = class {
-  enable() {}
+  enable() {
+    let clock = new xClock(CLOCK_SIZE);
+    clock.visible = false;
+    clock.reactive = true;
+    this.clock = clock;
+  }
 
   disable() {
     this.fnTrashDir = null;
+    if (this.clock && this.clock.get_parent()) {
+      this.clock.get_parent().remove_child(this.clock);
+      this.clock.get_parent().clock = null;
+      delete this.clock;
+      this.clock = null;
+    }
   }
 
   checkTrash() {
@@ -55,9 +72,23 @@ var Services = class {
 
     // the trash
     if (icon.icon_name.startsWith('user-trash')) {
-      var new_icon = this.trashFull ? 'user-trash-full' : 'user-trash';
+      let new_icon = this.trashFull ? 'user-trash-full' : 'user-trash';
       if (new_icon != icon.icon_name) {
         icon.icon_name = new_icon;
+      }
+    }
+
+    // clock
+    if (icon.icon_name == 'org.gnome.clocks') {
+      let p = icon.get_parent();
+      if (!p.clock) {
+        p.clock = this.clock;
+        p.add_child(this.clock);
+        p.clock.show();
+      }
+      if (p.clock) {
+        let scale = (icon.icon_size / ANIM_ICON_QUALITY) / CLOCK_SIZE;
+        p.clock.set_scale(scale, scale);
       }
     }
   }

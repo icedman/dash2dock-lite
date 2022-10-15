@@ -25,6 +25,10 @@ var xClock = GObject.registerClass(
       this.reactive = false;
     }
 
+    redraw() {
+      this._canvas.invalidate();
+    }
+
     draw_line(ctx, color, width, angle, len) {
       ctx.save();
       ctx.rotate(angle);

@@ -19,6 +19,7 @@ publish:
 	cp README.md ./build
 	cp -R schemas ./build
 	cp -R ui ./build
+	cp -R apps ./build
 	cp -R preferences ./build
 	rm -rf ./*.zip
 	cd build ; \

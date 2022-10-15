@@ -25,6 +25,10 @@ var xCalendar = GObject.registerClass(
       this.reactive = false;
     }
 
+    redraw() {
+      this._canvas.invalidate();
+    }
+
     draw_line(ctx, color, width, angle, len) {
       ctx.save();
       ctx.rotate(angle);
@@ -36,7 +40,16 @@ var xCalendar = GObject.registerClass(
       ctx.restore(); //消除旋转的角度
     }
 
-    draw_rounded_rect(ctx, color, x, y, h_size, v_size, line_width, border_radius) {
+    draw_rounded_rect(
+      ctx,
+      color,
+      x,
+      y,
+      h_size,
+      v_size,
+      line_width,
+      border_radius
+    ) {
       ctx.save();
       this.setcolor(ctx, color, 1); //色
       ctx.translate(x, y);
@@ -47,7 +60,14 @@ var xCalendar = GObject.registerClass(
       ctx.curveTo(h_size - border_radius, 0, h_size, 0, h_size, border_radius);
       ctx.lineTo(h_size, v_size - border_radius);
       // ctx.lineTo(h_size - border_radius, h_size);
-      ctx.curveTo(h_size, v_size - border_radius, h_size, v_size, h_size - border_radius, v_size);
+      ctx.curveTo(
+        h_size,
+        v_size - border_radius,
+        h_size,
+        v_size,
+        h_size - border_radius,
+        v_size
+      );
       ctx.lineTo(border_radius, v_size);
       // ctx.lineTo(0, h_size - border_radius);
       ctx.curveTo(border_radius, v_size, 0, v_size, 0, v_size - border_radius);
@@ -57,7 +77,7 @@ var xCalendar = GObject.registerClass(
       ctx.restore(); //消除旋转的角度
     }
 
-    draw_text(ctx, showtext, font = "DejaVuSans 42") {
+    draw_text(ctx, showtext, font = 'DejaVuSans 42') {
       ctx.save();
       let pl = PangoCairo.create_layout(ctx);
       pl.set_text(showtext, -1);
@@ -68,7 +88,7 @@ var xCalendar = GObject.registerClass(
       PangoCairo.show_layout(ctx, pl);
       ctx.relMoveTo(w / 2, 0);
       ctx.restore();
-      return [w, h]
+      return [w, h];
     }
 
     setcolor(ctx, colorstr, alpha) {
@@ -79,6 +99,7 @@ var xCalendar = GObject.registerClass(
     on_draw(canvas, ctx, width, height) {
       const hd_color = 'red';
       const bg_color = 'white';
+      const day_color = 'black';
       const date_color = 'red';
 
       ctx.setOperator(Cairo.Operator.CLEAR);
@@ -98,17 +119,28 @@ var xCalendar = GObject.registerClass(
       // ctx.fill();
       // ctx.restore();
 
-      this.draw_rounded_rect(ctx, bg_color, -size/2 + offset/2, -size/2 + offset/2, bgSize, bgSize, 1, 8);
-      this.setcolor(ctx, date_color, 1.0);
-      ctx.moveTo(0, 0);
-      this.draw_text(ctx, "29");
-      // this.draw_rounded_rect(ctx, hd_color, -size/2 + offset/2, -size/2 + offset/2, bgSize, 16, 1, 8);
-
       const d0 = new Date(); //时间
-      
-      // draw date here
 
-      ctx.$dispose(); // 释放context，有用？
+      this.draw_rounded_rect(
+        ctx,
+        bg_color,
+        -size / 2 + offset / 2,
+        -size / 2 + offset / 2,
+        bgSize,
+        bgSize,
+        1,
+        8
+      );
+      this.setcolor(ctx, date_color, 1.0);
+      ctx.moveTo(0, 12);
+      this.draw_text(ctx, `${d0.getDate()}`, 'DejaVuSans 36');
+
+      let dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+      this.setcolor(ctx, day_color, 1.0);
+      ctx.moveTo(0, -22);
+      this.draw_text(ctx, `${dayNames[d0.getDay()]}`, 'DejaVuSans 16');
+
+      ctx.$dispose(); // 释放context
     }
 
     destroy() {}

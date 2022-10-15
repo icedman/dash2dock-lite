@@ -282,7 +282,7 @@ var Animator = class {
     });
 
     //
-    if (!this.dashContainer.delegate.peekHiddenIcons) {
+    if (!this.dashContainer.delegate.peek_hidden_icons) {
       if (
         this.dashContainer.delegate.autohider &&
         this.dashContainer.delegate.autohider._enabled &&

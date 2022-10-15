@@ -6,10 +6,6 @@ const { PrefKeys } = Me.imports.preferences.prefKeys;
 
 var schemaId = 'org.gnome.shell.extensions.dash2dock-lite';
 
-var settingsKeys = {
-  BORDER_RADIUS: 'border-radius',
-};
-
 var SettingsKeys = new PrefKeys();
 SettingsKeys.setKeys({
   'shrink-icons': {
@@ -49,6 +45,14 @@ SettingsKeys.setKeys({
     widget_type: 'switch',
   },
   'trash-icon': {
+    default_value: false,
+    widget_type: 'switch',
+  },
+  'clock-icon': {
+    default_value: false,
+    widget_type: 'switch',
+  },
+  'calendar-icon': {
     default_value: false,
     widget_type: 'switch',
   },

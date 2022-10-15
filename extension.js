@@ -58,16 +58,19 @@ class Extension {
     }
     this.dashContainer.add_child(this.dash);
 
+    this.services = new Services();
+    this.services.extension = this;
+
     this.animator = new Animator();
     this.animator.dashContainer = this.dashContainer;
+    this.animator.services = this.services;
 
     this.autohider = new AutoHide();
     this.autohider.animator = this.animator;
     this.autohider.dashContainer = this.dashContainer;
 
-    this.services = new Services();
+    // todo follow animator and autohider protocol
     this.services.enable();
-    this.animator.services = this.services;
 
     this.listeners = [this.animator, this.autohider];
 
@@ -84,6 +87,8 @@ class Extension {
     this._updateTrashIcon();
 
     this._addEvents();
+
+    this.startUp();
   }
 
   disable() {
@@ -125,6 +130,13 @@ class Extension {
     this.services = null;
   }
 
+  startUp() {
+    this.oneShotStartupCompleteId = setTimeout(() => {
+      this._updateLayout();
+      this._onEnterEvent();
+    }, 500);
+  }
+
   _queryDisplay() {
     this.monitor = Main.layoutManager.primaryMonitor;
     this.sw = this.monitor.width;
@@ -144,6 +156,12 @@ class Extension {
         case 'animation-magnify':
         case 'animation-spread':
         case 'peek-hidden-icons': {
+          break;
+        }
+        case 'calendar-icon':
+        case 'clock-icon': {
+          this.services.findIconsAndUpdate();
+          this._onEnterEvent();
           break;
         }
         case 'animate-icons': {
@@ -213,7 +231,6 @@ class Extension {
       log(`${name} ${key.value}`);
     });
 
-    this.hideAppsButton = true;
     this.vertical = false;
     this.affectsStruts = !this.autohide_dash;
   }
@@ -254,6 +271,7 @@ class Extension {
         this._updateLayout();
         this.oneShotStartupCompleteId = setTimeout(() => {
           this._updateLayout();
+          this._onEnterEvent();
         }, 500);
       })
     );
@@ -286,9 +304,11 @@ class Extension {
     this._otherEvents.push({
       source: cache,
       id: cache.connectObject(
-        'icon-theme-changed', this._onIconThemeChanged.bind(this), this)
+        'icon-theme-changed',
+        this._onIconThemeChanged.bind(this),
+        this
+      ),
     });
-
 
     this._intervals = [];
     this._intervals.push(
@@ -714,7 +734,7 @@ class Extension {
     if (!this.services) return; // todo why does this happen?
     if (this.trash_icon) {
       Fav.getAppFavorites().addFavorite('trash-dash2dock-lite.desktop');
-      this.services.checkTrash();
+      this.services.update(SERVICES_UPDATE_INTERVAL);
     }
   }
 }

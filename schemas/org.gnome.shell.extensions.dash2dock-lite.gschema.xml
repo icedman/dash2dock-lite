@@ -56,6 +56,16 @@
         <summary>Show trash icon</summary>
         <description>Show a dynamic trash icon.</description>
     </key>
+    <key type="b" name="clock-icon">
+        <default>false</default>
+        <summary>Dynamic clock</summary>
+        <description>Show a dynamic clock icon.</description>
+    </key>
+    <key type="b" name="calendar-icon">
+        <default>false</default>
+        <summary>Dynamic calendar</summary>
+        <description>Show a dynamic calendar icon.</description>
+    </key>
     <key type="b" name="peek-hidden-icons">
         <default>false</default>
         <summary>Peek hidden icons</summary>

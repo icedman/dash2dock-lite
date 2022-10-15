@@ -16,31 +16,24 @@ const CANVAS_SIZE = 120;
 
 var Services = class {
   enable() {
-    let clock = new xClock(CANVAS_SIZE);
-    clock.visible = false;
-    clock.reactive = true;
-    this.clock = clock;
-
-    let calendar = new xCalendar(CANVAS_SIZE);
-    calendar.visible = false;
-    calendar.reactive = true;
-    this.calendar = calendar;
+    this.clockTickCounter = 0;
+    this.calendarTickCounter = 0;
   }
 
   disable() {
     this.fnTrashDir = null;
     if (this.clock) {
       if (this.clock.get_parent()) {
-        this.clock.get_parent().remove_child(this.clock);
         this.clock.get_parent().clock = null;
+        this.clock.get_parent().remove_child(this.clock);
       }
       delete this.clock;
       this.clock = null;
     }
     if (this.calendar) {
       if (this.calendar.get_parent()) {
-        this.calendar.get_parent().remove_child(this.calendar);
         this.calendar.get_parent().calendar = null;
+        this.calendar.get_parent().remove_child(this.calendar);
       }
       delete this.calendar;
       this.calendar = null;
@@ -62,6 +55,43 @@ var Services = class {
     return this.trashFull;
   }
 
+  update(elapsed) {
+    this.checkTrash();
+    if (elapsed && elapsed > 0) {
+      if (this.clock) {
+        if (this.clockTickCounter == 0) {
+          try {
+            this.clock.redraw();
+          } catch (err) {
+            this.calendar = null;
+          }
+        }
+        this.clockTickCounter += elapsed;
+      }
+
+      if (this.calendar) {
+        if (this.calendarTickCounter == 0) {
+          try {
+            this.calendar.redraw();
+          } catch (err) {
+            this.calendar = null;
+          }
+        }
+        this.calendarTickCounter += elapsed;
+      }
+
+      // every two minutes
+      if (this.clockTickCounter > 1000 * 60 * 2) {
+        this.clockTickCounter = 0;
+      }
+
+      // every 15 minutes
+      if (this.calendarTickCounter > 1000 * 60 * 15) {
+        this.calendarTickCounter = 0;
+      }
+    }
+  }
+
   setupTrashIcon() {
     var fn = Gio.File.new_for_path(
       '.local/share/applications/trash-dash2dock-lite.desktop'
@@ -81,13 +111,26 @@ var Services = class {
     fn = null;
   }
 
+  findAndUpdateIcons() {
+    let iconsContainer = Main.uiGroup.find_child_by_name('iconsContainer');
+    if (iconsContainer) {
+      log(iconsContainer);
+      iconsContainer.get_children().forEach((icon) => {
+        log(icon);
+        if (icon.first_child) {
+          this.updateIcon(icon.first_child);
+        }
+      });
+    }
+  }
+
   updateIcon(icon) {
     if (!icon || !icon.icon_name) {
       return;
     }
 
     // the trash
-    if (icon.icon_name.startsWith('user-trash')) {
+    if (this.extension.trash_icon && icon.icon_name.startsWith('user-trash')) {
       let new_icon = this.trashFull ? 'user-trash-full' : 'user-trash';
       if (new_icon != icon.icon_name) {
         icon.icon_name = new_icon;
@@ -97,28 +140,52 @@ var Services = class {
     // clock
     if (icon.icon_name == 'org.gnome.clocks') {
       let p = icon.get_parent();
-      if (!p.clock) {
-        p.clock = this.clock;
-        p.add_child(this.clock);
-        p.clock.show();
-      }
-      if (p.clock) {
-        let scale = (icon.icon_size / ANIM_ICON_QUALITY) / CANVAS_SIZE;
-        p.clock.set_scale(scale, scale);
+      if (this.extension.clock_icon) {
+        if (!p.clock) {
+          let clock = new xClock(CANVAS_SIZE);
+          clock.visible = false;
+          clock.reactive = true;
+          this.clock = clock;
+
+          p.clock = this.clock;
+          p.add_child(this.clock);
+        }
+        if (p.clock) {
+          let scale = icon.icon_size / ANIM_ICON_QUALITY / CANVAS_SIZE;
+          p.clock.set_scale(scale, scale);
+          p.clock.show();
+          p.clock.reactive = false;
+        }
+      } else {
+        if (p.clock) {
+          p.clock.hide();
+        }
       }
     }
 
     // calendar
     if (icon.icon_name == 'org.gnome.Calendar') {
       let p = icon.get_parent();
-      if (!p.calendar) {
-        p.calendar = this.calendar;
-        p.add_child(this.calendar);
-        p.calendar.show();
-      }
-      if (p.calendar) {
-        let scale = (icon.icon_size / ANIM_ICON_QUALITY) / CANVAS_SIZE;
-        p.calendar.set_scale(scale, scale);
+      if (this.extension.calendar_icon) {
+        if (!p.calendar) {
+          let calendar = new xCalendar(CANVAS_SIZE);
+          calendar.visible = false;
+          calendar.reactive = true;
+          this.calendar = calendar;
+
+          p.calendar = this.calendar;
+          p.add_child(this.calendar);
+        }
+        if (p.calendar) {
+          let scale = icon.icon_size / ANIM_ICON_QUALITY / CANVAS_SIZE;
+          p.calendar.set_scale(scale, scale);
+          p.calendar.show();
+          p.calendar.reactive = false;
+        }
+      } else {
+        if (p.calendar) {
+          p.calendar.hide();
+        }
       }
     }
   }

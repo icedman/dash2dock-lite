@@ -1,35 +1,18 @@
-var ValueType = {
-  B: 'Boolean',
-  I: 'Integer',
-  D: 'Double',
-  S: 'String',
-  C: 'Color',
-  AS: 'StringArray',
-};
-
 var PrefKeys = class {
   constructor() {
     this._keys = {};
-    this._signals = [];
   }
 
   setKeys(keys) {
     Object.keys(keys).forEach((name) => {
       let key = keys[name];
-      this.setKey(
-        name,
-        key.value_type,
-        key.default_value,
-        key.widget_type,
-        key.key_maps
-      );
+      this.setKey(name, key.default_value, key.widget_type, key.key_maps);
     });
   }
 
-  setKey(name, value_type, default_value, widget_type, key_maps) {
+  setKey(name, default_value, widget_type, key_maps) {
     this._keys[name] = {
       name,
-      value_type,
       default_value,
       widget_type,
       value: default_value,
@@ -40,6 +23,10 @@ var PrefKeys = class {
 
   setValue(name, value) {
     this._keys[name].value = value;
+
+    if (this._keys[name].callback) {
+      this._keys[name].callback();
+    }
 
     let settings = this._settings;
     let keys = this._keys;
@@ -88,38 +75,68 @@ var PrefKeys = class {
     return this._keys;
   }
 
-  connectSettings(settings) {
+  connectSettings(settings, callback) {
+    this._settingsListeners = [];
+
     this._settings = settings;
     let builder = this._builder;
     let self = this;
     let keys = this._keys;
+
     Object.keys(keys).forEach((name) => {
       let key = keys[name];
-      key.object = builder.get_object(key.name);
-      if (!key.object) return;
+      key.object = builder ? builder.get_object(key.name) : null;
       switch (key.widget_type) {
         case 'switch': {
           key.value = settings.get_boolean(name);
-          key.object.set_active(key.value);
+          if (key.object) key.object.set_active(key.value);
           break;
         }
         case 'dropdown': {
           key.value = settings.get_int(name);
-          key.object.set_selected(key.value);
+          if (key.object) key.object.set_selected(key.value);
           break;
         }
         case 'scale': {
           key.value = settings.get_double(name);
-          key.object.set_value(key.value);
+          if (key.object) key.object.set_value(key.value);
           break;
         }
       }
-    });
 
-    // todo connect signals here instead of at the extension.js
+      this._settingsListeners.push(
+        settings.connect(`changed::${name}`, () => {
+          let key = keys[name];
+          switch (key.widget_type) {
+            case 'switch': {
+              key.value = settings.get_boolean(name);
+              break;
+            }
+            case 'dropdown': {
+              key.value = settings.get_int(name);
+              break;
+            }
+            case 'scale': {
+              key.value = settings.get_double(name);
+              break;
+            }
+          }
+          if (callback) callback(name, key.value);
+        })
+      );
+    });
   }
 
-  connectSignals(builder) {
+  disconnectSettings() {
+    this._settingsListeners.forEach((id) => {
+      this._settings.disconnect(id);
+    });
+    this._settingsListeners = [];
+  }
+
+  connectBuilder(builder) {
+    this._builderListeners = [];
+
     this._builder = builder;
     let self = this;
     let keys = this._keys;
@@ -165,7 +182,7 @@ var PrefKeys = class {
       }
 
       // when do we clean this up?
-      this._signals.push({
+      this._builderListeners.push({
         source: key.object,
         signal_id: signal_id,
       });

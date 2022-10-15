@@ -11,7 +11,8 @@ const Point = imports.gi.Graphene.Point;
 const ExtensionUtils = imports.misc.extensionUtils;
 const Me = ExtensionUtils.getCurrentExtension();
 
-const { schemaId, settingsKeys } = Me.imports.preferences.keys;
+const { schemaId, settingsKeys, SettingsKeys } = Me.imports.preferences.keys;
+
 const Animator = Me.imports.animator.Animator;
 const AutoHide = Me.imports.autohide.AutoHide;
 const Services = Me.imports.services.Services;
@@ -25,7 +26,7 @@ class Extension {
   enable() {
     this.listeners = [];
     this.scale = 1.0;
-    this.rescale = 0.5;
+    this.scale_icons = 0.5;
 
     this._enableSettings();
     this._queryDisplay();
@@ -46,12 +47,11 @@ class Extension {
     if (this.reuseExistingDash) {
       this.dash = Main.overview.dash;
     } else {
-      this.dash = new Dash();
-      this.dash.set_name('dash');
-      this.dash.add_style_class_name('overview');
+      // this.dash = new Dash();
+      // this.dash.set_name('dash');
+      // this.dash.add_style_class_name('overview');
     }
 
-    this.dash = Main.overview.dash;
     this.dashContainer.dash = this.dash;
     if (this.dash.get_parent()) {
       this.dash.get_parent().remove_child(this.dash);
@@ -132,217 +132,94 @@ class Extension {
   }
 
   _enableSettings() {
-    // todo generate this from SettingsKeys
     this._settings = ExtensionUtils.getSettings(schemaId);
-    this.shrink = this._settings.get_boolean(settingsKeys.SHRINK_ICONS);
-    this.rescale = this._settings.get_double(settingsKeys.SCALE_ICONS);
-    this.animateIcons = this._settings.get_boolean(settingsKeys.ANIMATE_ICONS);
-    this.pressureSense = this._settings.get_boolean(
-      settingsKeys.PRESSURE_SENSE
-    );
-    this.bgDark = this._settings.get_boolean(settingsKeys.BG_DARK);
-    this.bgOpacity = this._settings.get_double(settingsKeys.BG_OPACITY);
-    this.translucentTopBar = this._settings.get_boolean(
-      settingsKeys.TRANSLUCENT_TOPBAR
-    );
-    this.showTrashIcon = this._settings.get_boolean(
-      settingsKeys.SHOW_TRASH_ICON
-    );
-    this.reuseExistingDash = this._settings.get_boolean(
-      settingsKeys.REUSE_DASH
-    );
-    this.hideAppsButton = true;
-    this.vertical = false;
-    this.autohide = this._settings.get_boolean(settingsKeys.AUTOHIDE_DASH);
-    this.affectsStruts = !this.autohide;
 
-    this.peekHiddenIcons = this._settings.get_boolean(
-      settingsKeys.PEEK_HIDDEN_ICONS
-    );
-    this.animationFps = this._settings.get_int(settingsKeys.ANIMATION_FPS);
-
-    this.animationMagnify = this._settings.get_double(
-      settingsKeys.ANIMATION_MAGNIFY
-    );
-    this.animationSpread = this._settings.get_double(
-      settingsKeys.ANIMATION_SPREAD
-    );
-    this.borderRadius = this._settings.get_double(settingsKeys.BORDER_RADIUS);
-    this.panelMode = this._settings.get_boolean(settingsKeys.PANEL_MODE);
-    this.showAppsIcon = this._settings.get_boolean(settingsKeys.SHOW_APPS_ICON);
-
-    this._settingsListeners = [];
-
-    this._settingsListeners.push(
-      this._settings.connect(`changed::${settingsKeys.REUSE_DASH}`, () => {
-        this.reuseExistingDash = this._settings.get_boolean(
-          settingsKeys.REUSE_DASH
-        );
-        this.disable();
-        this.enable();
-      })
-    );
-
-    this._settingsListeners.push(
-      this._settings.connect(`changed::${settingsKeys.BG_DARK}`, () => {
-        this.bgDark = this._settings.get_boolean(settingsKeys.BG_DARK);
-        this._updateBgDark();
-      })
-    );
-
-    this._settingsListeners.push(
-      this._settings.connect(`changed::${settingsKeys.BG_OPACITY}`, () => {
-        this.bgOpacity = this._settings.get_double(settingsKeys.BG_OPACITY);
-        this._updateBgOpacity();
-      })
-    );
-
-    this._settingsListeners.push(
-      this._settings.connect(`changed::${settingsKeys.SCALE_ICONS}`, () => {
-        this.rescale = this._settings.get_double(settingsKeys.SCALE_ICONS);
-        this._debounceUpdateScale();
-      })
-    );
-
-    this._settingsListeners.push(
-      this._settings.connect(`changed::${settingsKeys.SHRINK_ICONS}`, () => {
-        this.shrink = this._settings.get_boolean(settingsKeys.SHRINK_ICONS);
-        this._updateShrink();
-        this.disable();
-        this.enable();
-        this._onEnterEvent();
-      })
-    );
-
-    this._settingsListeners.push(
-      this._settings.connect(`changed::${settingsKeys.ANIMATE_ICONS}`, () => {
-        this.animateIcons = this._settings.get_boolean(
-          settingsKeys.ANIMATE_ICONS
-        );
-        this._updateAnimation();
-      })
-    );
-
-    this._settingsListeners.push(
-      this._settings.connect(`changed::${settingsKeys.AUTOHIDE_DASH}`, () => {
-        this.autohide = this._settings.get_boolean(settingsKeys.AUTOHIDE_DASH);
-        this.disable();
-        this.enable();
-      })
-    );
-
-    this._settingsListeners.push(
-      this._settings.connect(`changed::${settingsKeys.PRESSURE_SENSE}`, () => {
-        this.pressureSense = this._settings.get_boolean(
-          settingsKeys.PRESSURE_SENSE
-        );
-        this.disable();
-        this.enable();
-      })
-    );
-
-    this._settingsListeners.push(
-      this._settings.connect(
-        `changed::${settingsKeys.TRANSLUCENT_TOPBAR}`,
-        () => {
-          this.translucentTopBar = this._settings.get_boolean(
-            settingsKeys.TRANSLUCENT_TOPBAR
-          );
-          this._updateTopBar();
+    SettingsKeys.connectSettings(this._settings, (name, value) => {
+      let n = name.replace(/-/g, '_');
+      this[n] = value;
+      log(`${name} ${value}`);
+      switch (name) {
+        case 'apps-icon': // hide this from justperfection (for now)
+        case 'animation-fps':
+        case 'animation-magnify':
+        case 'animation-spread':
+        case 'peek-hidden-icons': {
+          break;
         }
-      )
-    );
-
-    this._settingsListeners.push(
-      this._settings.connect(
-        `changed::${settingsKeys.PEEK_HIDDEN_ICONS}`,
-        () => {
-          this.peekHiddenIcons = this._settings.get_boolean(
-            settingsKeys.PEEK_HIDDEN_ICONS
-          );
+        case 'animate-icons': {
+          this._updateAnimation();
+          break;
         }
-      )
-    );
-
-    this._settingsListeners.push(
-      this._settings.connect(`changed::${settingsKeys.ANIMATION_FPS}`, () => {
-        this.animationFps = this._settings.get_int(settingsKeys.ANIMATION_FPS);
-      })
-    );
-
-    this._settingsListeners.push(
-      this._settings.connect(
-        `changed::${settingsKeys.ANIMATION_MAGNIFY}`,
-        () => {
-          this.animationMagnify = this._settings.get_double(
-            settingsKeys.ANIMATION_MAGNIFY
-          );
+        case 'autohide-dash': {
+          this.disable();
+          this.enable();
+          break;
         }
-      )
-    );
-
-    this._settingsListeners.push(
-      this._settings.connect(
-        `changed::${settingsKeys.ANIMATION_SPREAD}`,
-        () => {
-          this.animationSpread = this._settings.get_double(
-            settingsKeys.ANIMATION_SPREAD
-          );
+        case 'shrink-icons': {
+          this.disable();
+          this.enable();
+          this._onEnterEvent();
+          break;
         }
-      )
-    );
-
-    this._settingsListeners.push(
-      this._settings.connect(`changed::${settingsKeys.BORDER_RADIUS}`, () => {
-        this.borderRadius = this._settings.get_double(
-          settingsKeys.BORDER_RADIUS
-        );
-        this._updateCss();
-      })
-    );
-
-    this._settingsListeners.push(
-      this._settings.connect(`changed::${settingsKeys.SHOW_APPS_ICON}`, () => {
-        this.showAppsIcon = this._settings.get_double(
-          settingsKeys.SHOW_APPS_ICON
-        );
-        this._updateLayout();
-        this._onEnterEvent();
-      })
-    );
-
-    this._settingsListeners.push(
-      this._settings.connect(`changed::${settingsKeys.SHOW_TRASH_ICON}`, () => {
-        this.showTrashIcon = this._settings.get_boolean(
-          settingsKeys.SHOW_TRASH_ICON
-        );
-        this._updateTrashIcon();
-        this._updateLayout();
-        this._onEnterEvent();
-        this._timeoutId = setTimeout(() => {
+        case 'scale-icons': {
+          this._debounceUpdateScale();
+          break;
+        }
+        case 'panel-mode': {
+          this._updateCss();
           this._updateLayout();
           this._onEnterEvent();
-          this._timeoutId = null;
-        }, 250);
-      })
-    );
+          break;
+        }
+        case 'translucent-topbar': {
+          this._updateTopBar();
+          break;
+        }
+        case 'background-dark': {
+          this._updateBgDark();
+          break;
+        }
+        case 'background-opacity': {
+          this._updateBgOpacity();
+          break;
+        }
+        case 'pressure-sense': {
+          this.disable();
+          this.enable();
+          break;
+        }
+        case 'border-radius': {
+          this._updateCss();
+          break;
+        }
+        case 'trash-icon': {
+          this._updateTrashIcon();
+          this._updateLayout();
+          this._onEnterEvent();
+          this._timeoutId = setTimeout(() => {
+            this._updateLayout();
+            this._onEnterEvent();
+            this._timeoutId = null;
+          }, 250);
+          break;
+        }
+      }
+    });
 
-    this._settingsListeners.push(
-      this._settings.connect(`changed::${settingsKeys.PANEL_MODE}`, () => {
-        this.panelMode = this._settings.get_boolean(settingsKeys.PANEL_MODE);
-        this._updateCss();
-        this._updateLayout();
-        this._onEnterEvent();
-      })
-    );
+    Object.keys(SettingsKeys._keys).forEach((k) => {
+      let key = SettingsKeys.getKey(k);
+      let name = k.replace(/-/g, '_');
+      this[name] = key.value;
+      log(`${name} ${key.value}`);
+    });
+
+    this.hideAppsButton = true;
+    this.vertical = false;
+    this.affectsStruts = !this.autohide_dash;
   }
 
   _disableSettings() {
-    this._settingsListeners.forEach((id) => {
-      this._settings.disconnect(id);
-    });
-    this._settingsListeners = [];
-    this._settings = null;
+    SettingsKeys.disconnectSettings();
   }
 
   _addEvents() {
@@ -545,11 +422,11 @@ class Extension {
   _updateShrink(disable) {
     if (!this.dashContainer) return;
 
-    let rescale_modifier = 0.8 + 1.4 * this.rescale;
-    if (this.rescale == 0) {
+    let rescale_modifier = 0.8 + 1.4 * this.scale_icons;
+    if (this.scale_icons == 0) {
       rescale_modifier = 1;
     }
-    if (this.shrink && !disable) {
+    if (this.shrink_icons && !disable) {
       this.scale = 0.8 * rescale_modifier;
       this.dashContainer.add_style_class_name('shrink');
     } else {
@@ -562,8 +439,7 @@ class Extension {
 
   _updateBgDark(disable) {
     if (!this.dashContainer) return;
-
-    if (this.bgDark && !disable) {
+    if (this.background_dark && !disable) {
       this.dash.add_style_class_name('dark');
     } else {
       this.dash.remove_style_class_name('dark');
@@ -574,7 +450,7 @@ class Extension {
     if (!this.dashContainer) return;
 
     let panelBox = Main.uiGroup.find_child_by_name('panelBox');
-    if (panelBox && this.translucentTopBar && !disable) {
+    if (panelBox && this.translucent_topbar && !disable) {
       panelBox.add_style_class_name('translucent');
     } else {
       panelBox.remove_style_class_name('translucent');
@@ -585,19 +461,18 @@ class Extension {
     if (!this.dashContainer) return;
 
     let background = this.dash ? this.dash.first_child : null;
-    if (background && this.borderRadius !== null) {
+    if (background && this.border_radius !== null) {
       for (let i = 0; i < 7; i++) {
         background.remove_style_class_name(`border-radius-${i}`);
       }
-      if (!disable && !this.panelMode) {
-        log(this.borderRadius);
+      if (!disable && !this.panel_mode) {
         background.add_style_class_name(
-          `border-radius-${Math.floor(this.borderRadius)}`
+          `border-radius-${Math.floor(this.border_radius)}`
         );
       }
     }
     if (background) {
-      if (this.panelMode) {
+      if (this.panel_mode) {
         this.dash.set_background_color(Clutter.Color.from_pixel(0x00000050));
         background.visible = false;
       } else {
@@ -609,11 +484,10 @@ class Extension {
 
   _updateBgOpacity(disable) {
     if (!this.dash) return;
-
     if (disable) {
       this.dash.first_child.opacity = 255;
     } else {
-      this.dash.first_child.opacity = 255 * this.bgOpacity;
+      this.dash.first_child.opacity = 255 * this.background_opacity;
     }
   }
 
@@ -702,8 +576,8 @@ class Extension {
     }
 
     let scale = this.scale;
-    let dockHeight = iconSize * (this.shrink ? 1.8 : 1.6) * scale;
-    if (this.panelMode) {
+    let dockHeight = iconSize * (this.shrink_icons ? 1.8 : 1.6) * scale;
+    if (this.panel_mode) {
       dockHeight -= 12 * this.scaleFactor;
     } else {
     }
@@ -746,7 +620,7 @@ class Extension {
   }
 
   _updateAnimation(disable) {
-    if (this.animateIcons && !disable) {
+    if (this.animate_icons && !disable) {
       this.animator.enable();
     } else {
       this.animator.disable();
@@ -757,7 +631,7 @@ class Extension {
     this.autohider.animator = this.animator;
     this.dashContainer.autohider = this.autohider;
 
-    if (this.autohide && !disable) {
+    if (this.autohide_dash && !disable) {
       this.autohider.enable();
     } else {
       this.autohider.disable();
@@ -765,7 +639,7 @@ class Extension {
   }
 
   _updateTrashIcon() {
-    if (this.showTrashIcon) {
+    if (this.trash_icon) {
       this.services.setupTrashIcon();
       Fav.getAppFavorites().addFavorite('trash-dash2dock-lite.desktop');
     } else {
@@ -817,7 +691,7 @@ class Extension {
 
   _onCheckServices() {
     if (!this.services) return; // todo why does this happen?
-    if (this.showTrashIcon) {
+    if (this.trash_icon) {
       Fav.getAppFavorites().addFavorite('trash-dash2dock-lite.desktop');
       this.services.checkTrash();
     }

@@ -107,7 +107,7 @@ var AutoHide = class {
   }
 
   _onMotionEvent() {
-    if (this.dashContainer.delegate.pressureSense && !this._shown) {
+    if (this.dashContainer.delegate.pressure_sense && !this._shown) {
       let monitor = this.dashContainer.delegate.monitor;
       let sw = this.dashContainer.delegate.sw;
       let sh = this.dashContainer.delegate.sh;
@@ -138,7 +138,7 @@ var AutoHide = class {
   }
 
   _onEnterEvent() {
-    if (!this.dashContainer.delegate.pressureSense) {
+    if (!this.dashContainer.delegate.pressure_sense) {
       this.show();
     }
   }

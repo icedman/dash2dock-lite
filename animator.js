@@ -75,8 +75,8 @@ var Animator = class {
     this._iconsContainer.height = 1;
 
     let magnification =
-      (this.dashContainer.delegate.animationMagnify * 0.9 || 0) - 0.2;
-    let spread = 1 - (this.dashContainer.delegate.animationSpread * 1 || 0);
+      (this.dashContainer.delegate.animation_magnify * 0.9 || 0) - 0.2;
+    let spread = 1 - (this.dashContainer.delegate.animation_spread * 1 || 0);
 
     let existingIcons = this._iconsContainer.get_children();
 
@@ -446,7 +446,7 @@ var Animator = class {
       if (this.dashContainer && this.dashContainer.delegate) {
         this.animationInterval =
           ANIM_INTERVAL +
-          (this.dashContainer.delegate.animationFps || 0) * ANIM_INTERVAL_PAD;
+          (this.dashContainer.delegate.animation_fps || 0) * ANIM_INTERVAL_PAD;
       }
 
       this._intervalId = setInterval(

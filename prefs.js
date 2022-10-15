@@ -76,7 +76,7 @@ function buildPrefsWidget() {
     new Gtk.Label({ label: _('Appearance') })
   );
 
-  SettingsKeys.connectSignals(builder);
+  SettingsKeys.connectBuilder(builder);
   SettingsKeys.connectSettings(ExtensionUtils.getSettings(schemaId));
 
   notebook.connect('realize', () => {
@@ -99,7 +99,7 @@ function fillPreferencesWindow(window) {
   window.add(builder.get_object('tweaks'));
   window.set_search_enabled(true);
 
-  SettingsKeys.connectSignals(builder);
+  SettingsKeys.connectBuilder(builder);
   SettingsKeys.connectSettings(ExtensionUtils.getSettings(schemaId));
 
   addMenu(window, builder);

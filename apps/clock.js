@@ -85,11 +85,6 @@ var xClock = GObject.registerClass(
       ctx.$dispose(); // 释放context，有用？
     }
 
-    destroy() {
-      if (timeoutClock) {
-        GLib.Source.remove(timeoutClock);
-        timeoutClock = null;
-      }
-    }
+    destroy() {}
   }
 );

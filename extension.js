@@ -226,6 +226,7 @@ class Extension {
     this.dashContainer.set_reactive(true);
     this.dashContainer.set_track_hover(true);
 
+    // todo .. cleanup
     this._dashContainerEvents = [];
     this._dashContainerEvents.push(
       this.dashContainer.connect('motion-event', this._onMotionEvent.bind(this))
@@ -239,10 +240,6 @@ class Extension {
     this._dashContainerEvents.push(
       this.dashContainer.connect('destroy', () => {})
     );
-
-    let cache = St.TextureCache.get_default();
-    cache.connectObject(
-        'icon-theme-changed', this._onIconThemeChanged.bind(this), this);
 
     this._sessionModeEvents = [];
     this._sessionModeEvents.push(
@@ -283,10 +280,15 @@ class Extension {
       Main.overview.connect('hidden', this._onOverviewHidden.bind(this))
     );
 
-    this._appFavoriteEvents = [];
-    // this._appFavoriteEvents.push(
-    //   Fav.getAppFavorites().connect('changed', this._onEnterEvent.bind(this))
-    // );
+    // other events
+    this._otherEvents = [];
+    let cache = St.TextureCache.get_default();
+    this._otherEvents.push({
+      source: cache,
+      id: cache.connectObject(
+        'icon-theme-changed', this._onIconThemeChanged.bind(this), this)
+    });
+
 
     this._intervals = [];
     this._intervals.push(
@@ -312,6 +314,11 @@ class Extension {
       });
       this._intervals = [];
     }
+
+    this._otherEvents.forEach((evt) => {
+      evt.source.disconnect(evt.id);
+    });
+    this._otherEvents = [];
 
     this._dashContainerEvents.forEach((id) => {
       if (this.dashContainer) {
@@ -358,9 +365,10 @@ class Extension {
     if (this.animator._enabled) {
       this.services.disable();
       this.services.enable();
-      this.animator.disable();
-      this.animator.enable();
     }
+    this.animator.disable();
+    this.animator.enable();
+    this._onEnterEvent();
   }
 
   _onMotionEvent() {

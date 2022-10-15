@@ -8,26 +8,42 @@ const setTimeout = Me.imports.utils.setTimeout;
 const setInterval = Me.imports.utils.setInterval;
 
 const xClock = Me.imports.apps.clock.xClock;
+const xCalendar = Me.imports.apps.calendar.xCalendar;
 
 // sync with animator
 const ANIM_ICON_QUALITY = 2.0;
-const CLOCK_SIZE = 120;
+const CANVAS_SIZE = 120;
 
 var Services = class {
   enable() {
-    let clock = new xClock(CLOCK_SIZE);
+    let clock = new xClock(CANVAS_SIZE);
     clock.visible = false;
     clock.reactive = true;
     this.clock = clock;
+
+    let calendar = new xCalendar(CANVAS_SIZE);
+    calendar.visible = false;
+    calendar.reactive = true;
+    this.calendar = calendar;
   }
 
   disable() {
     this.fnTrashDir = null;
-    if (this.clock && this.clock.get_parent()) {
-      this.clock.get_parent().remove_child(this.clock);
-      this.clock.get_parent().clock = null;
+    if (this.clock) {
+      if (this.clock.get_parent()) {
+        this.clock.get_parent().remove_child(this.clock);
+        this.clock.get_parent().clock = null;
+      }
       delete this.clock;
       this.clock = null;
+    }
+    if (this.calendar) {
+      if (this.calendar.get_parent()) {
+        this.calendar.get_parent().remove_child(this.calendar);
+        this.calendar.get_parent().calendar = null;
+      }
+      delete this.calendar;
+      this.calendar = null;
     }
   }
 
@@ -87,8 +103,22 @@ var Services = class {
         p.clock.show();
       }
       if (p.clock) {
-        let scale = (icon.icon_size / ANIM_ICON_QUALITY) / CLOCK_SIZE;
+        let scale = (icon.icon_size / ANIM_ICON_QUALITY) / CANVAS_SIZE;
         p.clock.set_scale(scale, scale);
+      }
+    }
+
+    // calendar
+    if (icon.icon_name == 'org.gnome.Calendar') {
+      let p = icon.get_parent();
+      if (!p.calendar) {
+        p.calendar = this.calendar;
+        p.add_child(this.calendar);
+        p.calendar.show();
+      }
+      if (p.calendar) {
+        let scale = (icon.icon_size / ANIM_ICON_QUALITY) / CANVAS_SIZE;
+        p.calendar.set_scale(scale, scale);
       }
     }
   }

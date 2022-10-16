@@ -76,6 +76,10 @@ SettingsKeys.setKeys({
     default_value: 0,
     widget_type: 'scale',
   },
+  'animation-rise': {
+    default_value: 0,
+    widget_type: 'scale',
+  },
   'border-radius': {
     default_value: 0,
     widget_type: 'scale',

@@ -45,6 +45,10 @@ var xClock = GObject.registerClass(
       ctx.setSourceRGBA(cc.red, cc.green, cc.blue, alpha);
     }
 
+    setcolor_rgba(ctx, red, green, blue, alpha) {
+      ctx.setSourceRGBA(red, green, blue, alpha);
+    }
+
     on_draw(canvas, ctx, width, height) {
       const back_color = 'black';
       const hour_color = 'white';
@@ -60,7 +64,8 @@ var xClock = GObject.registerClass(
 
       let bgSize = size * 0.8;
       ctx.save();
-      this.setcolor(ctx, back_color, 1.0); //底
+      // this.setcolor(ctx, back_color, 1.0); //底
+      this.setcolor_rgba(ctx, 0.2, 0.2, 0.2, 1.0); //底
       ctx.arc(0, 0, bgSize / 2 - bgSize / 20, 0, 2 * Math.PI);
       ctx.fill();
       ctx.restore();

@@ -93,10 +93,12 @@ function fillPreferencesWindow(window) {
   builder.add_from_file(`${UIFolderPath}/general.ui`);
   builder.add_from_file(`${UIFolderPath}/appearance.ui`);
   builder.add_from_file(`${UIFolderPath}/tweaks.ui`);
+  builder.add_from_file(`${UIFolderPath}/others.ui`);
   builder.add_from_file(`${UIFolderPath}/menu.ui`);
   window.add(builder.get_object('general'));
   window.add(builder.get_object('appearance'));
   window.add(builder.get_object('tweaks'));
+  window.add(builder.get_object('others'));
   window.set_search_enabled(true);
 
   SettingsKeys.connectBuilder(builder);

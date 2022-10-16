@@ -12,22 +12,7 @@
 
         <child>
           <object class="AdwActionRow">
-            <property name="title" translatable="yes">Peek Icons</property>
-            <property name="subtitle" translatable="yes"
-              >Partially show animated icons when the dash is auto hidden.This works only when pressure sense is enabled.</property
-            >
-            <property name="activatable-widget">peek-hidden-icons</property>
-            <child>
-              <object class="GtkSwitch" id="peek-hidden-icons">
-                <property name="valign">center</property>
-              </object>
-            </child>
-          </object>
-        </child>
-
-        <child>
-          <object class="AdwActionRow">
-            <property name="title" translatable="yes">Icon Magnification</property>
+            <property name="title" translatable="yes">Magnification</property>
             <property name="subtitle" translatable="yes"
               >Set maximum icon size when zoomed and animated.</property
             >
@@ -49,7 +34,7 @@
 
         <child>
           <object class="AdwActionRow">
-            <property name="title" translatable="yes">Icons Spread</property>
+            <property name="title" translatable="yes">Spread</property>
             <property name="subtitle" translatable="yes"
               >Set icons spread radius when zoomed and animated.</property
             >
@@ -64,6 +49,28 @@
                 <property name="orientation">horizontal</property>
                 <property name="digits">2</property>
                 <property name="adjustment">animation-spread-adjust</property>
+              </object>
+            </child>
+          </object>
+        </child>
+
+        <child>
+          <object class="AdwActionRow">
+            <property name="title" translatable="yes">Rise</property>
+            <property name="subtitle" translatable="yes"
+              >Set icons rise height when zoomed and animated.</property
+            >
+            <property name="activatable-widget">animation-rise</property>
+            <child>
+              <object class="GtkScale" id="animation-rise">
+                <property name="valign">center</property>
+                <property name="hexpand">true</property>
+                <property name="width-request">140px</property>
+                <property name="draw-value">false</property>
+                <property name="value-pos">right</property>
+                <property name="orientation">horizontal</property>
+                <property name="digits">2</property>
+                <property name="adjustment">animation-rise-adjust</property>
               </object>
             </child>
           </object>
@@ -113,6 +120,12 @@
   </object>
 
   <object class="GtkAdjustment" id="animation-spread-adjust">
+    <property name="lower">0.0</property>
+    <property name="upper">1.0</property>
+    <property name="step-increment">0.01</property>
+  </object>
+
+  <object class="GtkAdjustment" id="animation-rise-adjust">
     <property name="lower">0.0</property>
     <property name="upper">1.0</property>
     <property name="step-increment">0.01</property>

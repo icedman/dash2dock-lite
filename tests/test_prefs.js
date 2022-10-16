@@ -163,9 +163,11 @@ app.connect('activate', (me) => {
   builder.add_from_file(`ui/appearance.ui`);
   builder.add_from_file(`ui/tweaks.ui`);
   builder.add_from_file(`ui/menu.ui`);
-  w.add(builder.get_object('tweaks'));
+  builder.add_from_file(`ui/others.ui`);
   w.add(builder.get_object('general'));
   w.add(builder.get_object('appearance'));
+  w.add(builder.get_object('tweaks'));
+  w.add(builder.get_object('others'));
 
   let menu_util = builder.get_object('menu_util');
   w.add(menu_util);

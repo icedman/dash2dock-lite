@@ -21,7 +21,7 @@ const ANIM_POS_COEF = 2;
 const ANIM_PULL_COEF = 1.8;
 const ANIM_SCALE_COEF = 2.5;
 const ANIM_ON_LEAVE_COEF = 1.4;
-const ANIM_ICON_RAISE = 0.15;
+const ANIM_ICON_RAISE = 0.25;
 const ANIM_ICON_SCALE = 1.8;
 const ANIM_ICON_HIT_AREA = 1.25;
 const ANIM_ICON_QUALITY = 2.0;
@@ -294,7 +294,9 @@ var Animator = class {
 
     // set animation behavior here
     if (nearestIcon && nearestDistance < iconSize * 2) {
-      nearestIcon._target[iy] -= iconSize * ANIM_ICON_RAISE * scaleFactor;
+      let raise = ANIM_ICON_RAISE;
+      raise -= (ANIM_ICON_RAISE * (1.0 - (this.dashContainer.delegate.animation_rise || 0)) - 0.1);
+      nearestIcon._target[iy] -= iconSize * raise * scaleFactor;
       nearestIcon._targetScale = ANIM_ICON_SCALE + magnification;
 
       let offset = nearestIcon._dx / 4;
@@ -390,10 +392,10 @@ var Animator = class {
               icon._label.x -= icon._label.width / 1.8;
               break;
             case 'bottom':
-              icon._label.y = pos[1] - iconSize * scale * 1.1 * scaleFactor;
+              icon._label.y = pos[1] - iconSize * scale * 0.9 * scaleFactor;
               break;
             case 'top':
-              icon._label.y = pos[1] + iconSize * scale * 1.1 * scaleFactor;
+              icon._label.y = pos[1] + iconSize * scale * 0.9 * scaleFactor;
               break;
           }
         }

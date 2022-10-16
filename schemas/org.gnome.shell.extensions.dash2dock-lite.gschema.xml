@@ -91,6 +91,11 @@
         <summary>Icons spread</summary>
         <description>Icon spread when animated.</description>
     </key>
+    <key type="d" name="animation-rise">
+        <default>1</default>
+        <summary>Icons rise</summary>
+        <description>Icon rise when animated.</description>
+    </key>
     <key type="b" name="panel-mode">
         <default>false</default>
         <summary>Panel mode</summary>

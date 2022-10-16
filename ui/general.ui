@@ -61,92 +61,24 @@
             </child>
           </object>
         </child>
+
+        <child>
+          <object class="AdwActionRow">
+            <property name="title" translatable="yes">Peek Icons</property>
+            <property name="subtitle" translatable="yes"
+              >Partially show animated icons when the dash is auto hidden.This works only when pressure sense is enabled.</property
+            >
+            <property name="activatable-widget">peek-hidden-icons</property>
+            <child>
+              <object class="GtkSwitch" id="peek-hidden-icons">
+                <property name="valign">center</property>
+              </object>
+            </child>
+          </object>
+        </child>
+
       </object>
     </child>
 
-    <child>
-      <object class="AdwPreferencesGroup">
-        <property name="title" translatable="yes">Special Icons</property>
-        <property name="description" translatable="yes"></property>
-
-        <!-- hide this from justperfection
-        <child>
-          <object class="AdwActionRow">
-            <property name="title" translatable="yes">Apps Icon</property>
-            <property name="subtitle" translatable="yes"
-              >Show the apps icon.</property
-            >
-            <property name="activatable-widget">apps-icon</property>
-            <child>
-              <object class="GtkSwitch" id="apps-icon">
-                <property name="valign">center</property>
-              </object>
-            </child>
-          </object>
-        </child>
-        -->
-
-        <child>
-          <object class="AdwActionRow">
-            <property name="title" translatable="yes">Trash</property>
-            <property name="subtitle" translatable="yes"
-              >Add a dynamic Trash icon which changes with its state and with a access to Empty Trash action.</property
-            >
-            <property name="activatable-widget">trash-icon</property>
-            <child>
-              <object class="GtkSwitch" id="trash-icon">
-                <property name="valign">center</property>
-              </object>
-            </child>
-          </object>
-        </child>
-
-        <child>
-          <object class="AdwActionRow">
-            <property name="title" translatable="yes">Mounted Devices</property>
-            <property name="subtitle" translatable="yes"
-              >Show mounted device icons quickly open or unmount volumes.</property
-            >
-            <property name="activatable-widget">mounted-icon</property>
-            <child>
-              <object class="GtkSwitch" id="mounted-icon">
-                <property name="valign">center</property>
-              </object>
-            </child>
-          </object>
-        </child>
-
-        <child>
-          <object class="AdwActionRow">
-            <property name="title" translatable="yes">Clock</property>
-            <property name="subtitle" translatable="yes"
-              >Show an analog clock widget. Requires Clocks app (org.gnome.clocks) pinned to the dash</property
-            >
-            <property name="activatable-widget">clock-icon</property>
-            <child>
-              <object class="GtkSwitch" id="clock-icon">
-                <property name="valign">center</property>
-              </object>
-            </child>
-          </object>
-        </child>
-
-        <child>
-          <object class="AdwActionRow">
-            <property name="title" translatable="yes">Calendar</property>
-            <property name="subtitle" translatable="yes"
-              >Show an calendar widget. Requires Calendar app (org.gnome.Calendar) pinned to the dash</property
-            >
-            <property name="activatable-widget">calendar-icon</property>
-            <child>
-              <object class="GtkSwitch" id="calendar-icon">
-                <property name="valign">center</property>
-              </object>
-            </child>
-          </object>
-        </child>
-        
-      </object>
-    </child>
   </object>
 </interface>

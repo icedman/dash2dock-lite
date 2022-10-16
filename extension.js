@@ -155,6 +155,8 @@ class Extension {
         case 'animation-fps':
         case 'animation-magnify':
         case 'animation-spread':
+        case 'animation-rise':
+        case 'mounted-icon':
         case 'peek-hidden-icons': {
           break;
         }

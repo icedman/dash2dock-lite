@@ -21,6 +21,11 @@
 * Resize icons
 * Autohide/intellihide
 * Translucent top panel
+* Panel mode
+* Analog clock
+* Dynamic calendar
+* Dynamic trash icon
+* Mounted devices
 
 ### Prerequisites
 

@@ -4,26 +4,44 @@
      border: 2px solid magenta !important;
 }
 
-#panelBox.translucent #panel {
+#panelBox.translucent-0 #panel {
   background: rgba(0,0,0,0);
 }
-
-#panelBox.translucent #panel {
+#panelBox.translucent-1 #panel {
+  background: rgba(0,0,0,0.1);
+}
+#panelBox.translucent-2 #panel {
+  background: rgba(0,0,0,0.2);
+}
+#panelBox.translucent-3 #panel {
+  background: rgba(0,0,0,0.3);
+}
+#panelBox.translucent-4 #panel {
+  background: rgba(0,0,0,0.4);
+}
+#panelBox.translucent-5 #panel {
   background: rgba(0,0,0,0.5);
+}
+#panelBox.translucent-6 #panel {
+  background: rgba(0,0,0,0.6);
+}
+#panelBox.translucent-7 #panel {
+  background: rgba(0,0,0,0.7);
+}
+#panelBox.translucent-8 #panel {
+  background: rgba(0,0,0,0.8);
+}
+#panelBox.translucent-9 #panel {
+  background: rgba(0,0,0,0.9);
+}
+#panelBox.translucent-10 #panel {
+  background: rgba(0,0,0,1.0);
 }
 
 /* adjust dot position - works for bottom layout only */
 StWidget.app-well-app-running-dot:insensitive {
   margin-bottom: 5px !important;
 }
-
-/*
-#iconsContainer StIcon {
-  border: 2px solid red !important;
-  filter: grayscale(50%);
-  // no filters in gjs?
-}
-*/
 
 
 /* from gnome-shell

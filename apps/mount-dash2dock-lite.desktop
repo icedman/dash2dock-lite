@@ -1,0 +1,17 @@
+[Desktop Entry]
+Version=1.0
+Terminal=false
+Type=Application
+Name=Volume
+Exec=xdg-open /home/iceman
+Icon=drive-harddisk-solidstate
+StartupWMClass=mount-dash2dock-lite
+Actions=mount;unmount;
+
+[Desktop Action mount]
+Name=Mount
+Exec=/usr/local/bin/echo 123
+
+[Desktop Action unmount]
+Name=Unmount
+Exec=/usr/local/bin/echo 123

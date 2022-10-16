@@ -680,12 +680,7 @@ class Extension {
   }
 
   _updateTrashIcon() {
-    if (this.trash_icon) {
-      this.services.setupTrashIcon();
-      Fav.getAppFavorites().addFavorite('trash-dash2dock-lite.desktop');
-    } else {
-      Fav.getAppFavorites().removeFavorite('trash-dash2dock-lite.desktop');
-    }
+    this.services.updateTrashIcon(this.trash_icon);
   }
 
   _onOverviewShowing() {

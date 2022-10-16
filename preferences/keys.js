@@ -48,6 +48,10 @@ SettingsKeys.setKeys({
     default_value: false,
     widget_type: 'switch',
   },
+  'mounted-icon': {
+    default_value: false,
+    widget_type: 'switch',
+  },
   'clock-icon': {
     default_value: false,
     widget_type: 'switch',

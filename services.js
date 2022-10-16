@@ -26,8 +26,12 @@ var Services = class {
     this._deferred_trash_icon_show = false;
     this._volumeMonitor = Gio.VolumeMonitor.get();
     this._volumeMonitor.connectObject(
-        'mount-added', this._onMountAdded.bind(this),
-        'mount-removed', this._onMountRemoved.bind(this), this);
+      'mount-added',
+      this._onMountAdded.bind(this),
+      'mount-removed',
+      this._onMountRemoved.bind(this),
+      this
+    );
   }
 
   disable() {
@@ -61,18 +65,18 @@ var Services = class {
     if (!Main.overview._setMessage) {
       Main.overview._setMessage = Main.overview.setMessage;
     }
-    Main.overview.setMessage = (msg, obj) => {}
+    Main.overview.setMessage = (msg, obj) => {};
 
-    this._oneShotId = setTimeout(
-      () => {
-        Main.overview.setMessage = Main.overview._setMessage;
-        this._oneShotId = null;
-      },
-      1000
-    );
+    this._oneShotId = setTimeout(() => {
+      Main.overview.setMessage = Main.overview._setMessage;
+      this._oneShotId = null;
+    }, 1000);
   }
 
   _onMountAdded(monitor, mount) {
+    if (!this.extension.mounted_icon) {
+      return;
+    }
     this.last_mounted = mount;
     this.mountTickCounter = 0;
     let basename = mount.get_default_location().get_basename();
@@ -85,7 +89,7 @@ var Services = class {
       this.extension.trash_icon ? favorites._getIds().length - 1 : -1
     );
   }
-  
+
   _onMountRemoved(monitor, mount) {
     let basename = mount.get_default_location().get_basename();
     let appname = `mount-${basename}-dash2dock-lite.desktop`;
@@ -97,7 +101,7 @@ var Services = class {
     if (elapsed && elapsed > 0) {
       if (this.mountTickCounter == 0) {
         if (this._deferred_mounts) {
-          this._deferred_mounts.forEach(m => {
+          this._deferred_mounts.forEach((m) => {
             this._onMountAdded(null, m);
           });
           this._deferred_mounts = [];
@@ -153,9 +157,7 @@ var Services = class {
     let icon = mount.get_icon().names[0] || 'drive-harddisk-solidstate';
     let mount_exec = 'echo "not implemented"';
     let unmount_exec = `umount ${fullpath}`;
-    let fn = Gio.File.new_for_path(
-      `.local/share/applications/${appname}`
-    );
+    let fn = Gio.File.new_for_path(`.local/share/applications/${appname}`);
 
     if (!fn.query_exists(null)) {
       let content = `[Desktop Entry]\nVersion=1.0\nTerminal=false\nType=Application\nName=${label}\nExec=xdg-open ${fullpath}\nIcon=${icon}\nStartupWMClass=mount-${basename}-dash2dock-lite\nActions=unmount;\n\n[Desktop Action mount]\nName=Mount\nExec=${mount_exec}\n\n[Desktop Action unmount]\nName=Unmount\nExec=${unmount_exec}\n`;
@@ -194,20 +196,40 @@ var Services = class {
   }
 
   checkMounts() {
-    let mounts = this._volumeMonitor.get_mounts().map((mount) => {
+    if (this.startup_mounts_checked) return;
+
+    let mounts = [];
+    let mount_ids = [];
+    if (this.extension.mounted_icon) {
+      mounts = this._volumeMonitor.get_mounts();
+      mount_ids = mounts.map((mount) => {
         let basename = mount.get_default_location().get_basename();
         let appname = `mount-${basename}-dash2dock-lite.desktop`;
         return appname;
       });
+    }
+
+    this.mounts = mounts;
 
     let favs = Fav.getAppFavorites()._getIds();
     favs.forEach((fav) => {
       if (fav.startsWith('mount-') && fav.endsWith('dash2dock-lite.desktop')) {
-        if (!mounts.includes(fav)) {
+        if (!mount_ids.includes(fav)) {
           this._unpin(fav);
         }
       }
     });
+
+    mounts.forEach((mount) => {
+      let basename = mount.get_default_location().get_basename();
+      let appname = `mount-${basename}-dash2dock-lite.desktop`;
+      if (!favs.includes(appname)) {
+        this._deferred_mounts.push(mount);
+      }
+    });
+
+    this.startup_mounts_checked = true;
+    // added devices will subsequently be on mounted events
   }
 
   setupTrashIcon() {

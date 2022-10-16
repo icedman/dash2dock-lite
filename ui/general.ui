@@ -88,7 +88,7 @@
 
         <child>
           <object class="AdwActionRow">
-            <property name="title" translatable="yes">Trash Icon</property>
+            <property name="title" translatable="yes">Trash</property>
             <property name="subtitle" translatable="yes"
               >Add a dynamic Trash icon which changes with its state and with a access to Empty Trash action.</property
             >
@@ -103,7 +103,22 @@
 
         <child>
           <object class="AdwActionRow">
-            <property name="title" translatable="yes">Dynamic Clock</property>
+            <property name="title" translatable="yes">Mounted Devices</property>
+            <property name="subtitle" translatable="yes"
+              >Show mounted device icons quickly open or unmount volumes.</property
+            >
+            <property name="activatable-widget">mounted-icon</property>
+            <child>
+              <object class="GtkSwitch" id="mounted-icon">
+                <property name="valign">center</property>
+              </object>
+            </child>
+          </object>
+        </child>
+
+        <child>
+          <object class="AdwActionRow">
+            <property name="title" translatable="yes">Clock</property>
             <property name="subtitle" translatable="yes"
               >Show an analog clock widget. Requires Clocks app (org.gnome.clocks) pinned to the dash</property
             >
@@ -118,7 +133,7 @@
 
         <child>
           <object class="AdwActionRow">
-            <property name="title" translatable="yes">Dynamic Calendar</property>
+            <property name="title" translatable="yes">Calendar</property>
             <property name="subtitle" translatable="yes"
               >Show an calendar widget. Requires Calendar app (org.gnome.Calendar) pinned to the dash</property
             >

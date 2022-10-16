@@ -25,6 +25,11 @@ publish:
 	cd build ; \
 	zip -qr ../dash2dock-lite@icedman.github.com.zip .
 
+install-zip: publish
+	rm -rf ~/.local/share/gnome-shell/extensions/dash2dock-lite@icedman.github.com
+	mkdir -p ~/.local/share/gnome-shell/extensions/dash2dock-lite@icedman.github.com/
+	unzip -q dash2dock-lite@icedman.github.com.zip -d ~/.local/share/gnome-shell/extensions/dash2dock-lite@icedman.github.com/
+
 test-prefs:
 	gnome-extensions prefs dash2dock-lite@icedman.github.com
 

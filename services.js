@@ -15,8 +15,6 @@ const xCalendar = Me.imports.apps.calendar.xCalendar;
 const ANIM_ICON_QUALITY = 2.0;
 const CANVAS_SIZE = 120;
 
-// to mute overview popup message
-
 var Services = class {
   enable() {
     this.clockTickCounter = 0;
@@ -97,7 +95,9 @@ var Services = class {
   }
 
   update(elapsed) {
+    // constantly checked?
     this.checkTrash();
+
     if (elapsed && elapsed > 0) {
       if (this.mountTickCounter == 0) {
         if (this._deferred_mounts) {
@@ -135,6 +135,7 @@ var Services = class {
       // every two minutes
       if (this.clockTickCounter > 1000 * 60 * 2) {
         this.clockTickCounter = 0;
+        this.startup_mounts_checked = false; //
       }
 
       // every 15 minutes
@@ -142,8 +143,8 @@ var Services = class {
         this.calendarTickCounter = 0;
       }
 
-      // every 5 seconds
-      if (this.mountTickCounter > 1000 * 15) {
+      // every 10 seconds
+      if (this.mountTickCounter > 1000 * 10) {
         this.mountTickCounter = 0;
       }
     }
@@ -169,7 +170,8 @@ var Services = class {
         null
       );
       Main.notify('Preparing the mounted device icon...');
-      this.mountTickCounter = 1000 * 13; // advance a litte
+      this.mountTickCounter = 1000 * 5;
+      this.startup_mounts_checked = false;
       this._deferred_mounts.push(mount);
     }
   }

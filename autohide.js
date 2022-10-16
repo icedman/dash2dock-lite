@@ -45,7 +45,7 @@ var AutoHide = class {
     this.oneShotStartupCompleteId = setTimeout(() => {
       if (isNaN(this.dashContainer._fixedPosition)) {
         this._checkHide();
-        this.dashContainer.delegate._updateLayout();
+        this.extension._updateLayout();
       }
       this.oneShotStartupCompleteId = setTimeout(() => {
         this._checkHide();
@@ -85,11 +85,10 @@ var AutoHide = class {
   _beginAnimation(t) {
     this.target = t;
     if (this._intervalId == null) {
-      if (this.dashContainer && this.dashContainer.delegate) {
+      if (this.dashContainer && this.extension) {
         this.animationInterval =
           HIDE_ANIMATION_INTERVAL +
-          (this.dashContainer.delegate.animationFps || 0) *
-            HIDE_ANIMATION_INTERVAL_PAD;
+          (this.extension.animationFps || 0) * HIDE_ANIMATION_INTERVAL_PAD;
       }
 
       this._intervalId = setInterval(
@@ -107,10 +106,10 @@ var AutoHide = class {
   }
 
   _onMotionEvent() {
-    if (this.dashContainer.delegate.pressure_sense && !this._shown) {
-      let monitor = this.dashContainer.delegate.monitor;
-      let sw = this.dashContainer.delegate.sw;
-      let sh = this.dashContainer.delegate.sh;
+    if (this.extension.pressure_sense && !this._shown) {
+      let monitor = this.extension.monitor;
+      let sw = this.extension.sw;
+      let sh = this.extension.sh;
       let scale = St.ThemeContext.get_for_stage(global.stage).scale_factor;
       let area = scale * (PRESSURE_SENSE_DISTANCE * PRESSURE_SENSE_DISTANCE);
       let dx = 0;
@@ -138,7 +137,7 @@ var AutoHide = class {
   }
 
   _onEnterEvent() {
-    if (!this.dashContainer.delegate.pressure_sense) {
+    if (!this.extension.pressure_sense) {
       this.show();
     }
   }
@@ -161,17 +160,13 @@ var AutoHide = class {
   show() {
     this.frameDelay = 0;
     this._shown = true;
-    this._beginAnimation(
-      this.dashContainer.delegate.sh - this.dashContainer.height
-    );
+    this._beginAnimation(this.extension.sh - this.dashContainer.height);
   }
 
   hide() {
     this.frameDelay = 10;
     this._shown = false;
-    this._beginAnimation(
-      this.dashContainer.delegate.sh - this.dashContainer.height / 8
-    );
+    this._beginAnimation(this.extension.sh - this.dashContainer.height / 8);
   }
 
   _animate() {

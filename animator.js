@@ -74,9 +74,8 @@ var Animator = class {
     this._iconsContainer.width = 1;
     this._iconsContainer.height = 1;
 
-    let magnification =
-      (this.dashContainer.delegate.animation_magnify * 0.9 || 0) - 0.2;
-    let spread = 1 - (this.dashContainer.delegate.animation_spread * 1 || 0);
+    let magnification = (this.extension.animation_magnify * 0.9 || 0) - 0.2;
+    let spread = 1 - (this.extension.animation_spread * 1 || 0);
 
     let existingIcons = this._iconsContainer.get_children();
 
@@ -177,10 +176,8 @@ var Animator = class {
 
     let animateIcons = this._iconsContainer.get_children();
     animateIcons.forEach((c) => {
-      if (this.services) {
-        // this is where the trash icon is updated
-        // ...maybe the clock and calendar icons too
-        this.services.updateIcon(c.first_child);
+      if (this.extension.services) {
+        this.extension.services.updateIcon(c.first_child);
       }
 
       let orphan = true;
@@ -212,7 +209,7 @@ var Animator = class {
       let bin = icon._bin;
       let pos = this._get_position(bin);
 
-      iconSize = this.dash.iconSize * this.dashContainer.delegate.scale;
+      iconSize = this.dash.iconSize * this.extension.scale;
 
       bin.first_child.opacity = 0;
       // bin.set_size(iconSize, iconSize);
@@ -244,9 +241,9 @@ var Animator = class {
       }
 
       if (
-        this.dashContainer.delegate.autohider &&
-        this.dashContainer.delegate.autohider._enabled &&
-        !this.dashContainer.delegate.autohider._shown
+        this.extension.autohider &&
+        this.extension.autohider._enabled &&
+        !this.extension.autohider._shown
       ) {
         icon._btn.hide();
       } else {
@@ -274,7 +271,7 @@ var Animator = class {
       icon._target = pos;
       icon._targetScale = 1;
 
-      if (pos[1] < this.dashContainer.delegate.sh / 2) {
+      if (pos[1] < this.extension.sh / 2) {
         validPosition = false;
       }
 
@@ -282,11 +279,11 @@ var Animator = class {
     });
 
     //
-    if (!this.dashContainer.delegate.peek_hidden_icons) {
+    if (!this.extension.peek_hidden_icons) {
       if (
-        this.dashContainer.delegate.autohider &&
-        this.dashContainer.delegate.autohider._enabled &&
-        !this.dashContainer.delegate.autohider._shown
+        this.extension.autohider &&
+        this.extension.autohider._enabled &&
+        !this.extension.autohider._shown
       ) {
         nearestIcon = null;
       }
@@ -295,7 +292,8 @@ var Animator = class {
     // set animation behavior here
     if (nearestIcon && nearestDistance < iconSize * 2) {
       let raise = ANIM_ICON_RAISE;
-      raise -= (ANIM_ICON_RAISE * (1.0 - (this.dashContainer.delegate.animation_rise || 0)) - 0.1);
+      raise -=
+        ANIM_ICON_RAISE * (1.0 - (this.extension.animation_rise || 0)) - 0.1;
       nearestIcon._target[iy] -= iconSize * raise * scaleFactor;
       nearestIcon._targetScale = ANIM_ICON_SCALE + magnification;
 
@@ -412,7 +410,7 @@ var Animator = class {
   }
 
   _findIcons() {
-    return this.dashContainer.delegate._findIcons();
+    return this.extension._findIcons();
   }
 
   _get_x(obj) {
@@ -445,10 +443,10 @@ var Animator = class {
       this._timeoutId = null;
     }
     if (this._intervalId == null) {
-      if (this.dashContainer && this.dashContainer.delegate) {
+      if (this.dashContainer && this.extension) {
         this.animationInterval =
           ANIM_INTERVAL +
-          (this.dashContainer.delegate.animation_fps || 0) * ANIM_INTERVAL_PAD;
+          (this.extension.animation_fps || 0) * ANIM_INTERVAL_PAD;
       }
 
       this._intervalId = setInterval(

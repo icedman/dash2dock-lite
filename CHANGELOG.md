@@ -5,8 +5,12 @@
 * Tweak: peek icons
 * Tweak: icon magnification
 * Tweak: icons spread
+* Tweak: icons rise
 * Tweak: frame rate
 * Add dynamic trash icon
+* Add dynamic clock
+* Add dynamic calendar
+* Add mounted devices 
 * Add border radius settings
 * Add panel mode
 

@@ -38,7 +38,7 @@ class Extension {
     this.dashContainer.delegate = this;
 
     Main.layoutManager.addChrome(this.dashContainer, {
-      affectsStruts: this.affectsStruts,
+      affectsStruts: !this.autohide_dash,
       trackFullscreen: true,
     });
 
@@ -62,17 +62,18 @@ class Extension {
     this.services.extension = this;
 
     this.animator = new Animator();
+    this.animator.extension = this;
     this.animator.dashContainer = this.dashContainer;
-    this.animator.services = this.services;
 
     this.autohider = new AutoHide();
+    this.autohider.extension = this;
     this.autohider.animator = this.animator;
     this.autohider.dashContainer = this.dashContainer;
 
     // todo follow animator and autohider protocol
     this.services.enable();
 
-    this.listeners = [this.animator, this.autohider];
+    this.listeners = [this.animator, this.autohider, this.services];
 
     this._onCheckServices();
 
@@ -149,7 +150,6 @@ class Extension {
     SettingsKeys.connectSettings(this._settings, (name, value) => {
       let n = name.replace(/-/g, '_');
       this[n] = value;
-      log(`${name} ${value}`);
       switch (name) {
         case 'apps-icon': // hide this from justperfection (for now)
         case 'animation-fps':
@@ -230,11 +230,7 @@ class Extension {
       let key = SettingsKeys.getKey(k);
       let name = k.replace(/-/g, '_');
       this[name] = key.value;
-      log(`${name} ${key.value}`);
     });
-
-    this.vertical = false;
-    this.affectsStruts = !this.autohide_dash;
   }
 
   _disableSettings() {
@@ -244,73 +240,59 @@ class Extension {
   _addEvents() {
     this.dashContainer.set_reactive(true);
     this.dashContainer.set_track_hover(true);
-
-    // todo .. cleanup
-    this._dashContainerEvents = [];
-    this._dashContainerEvents.push(
-      this.dashContainer.connect('motion-event', this._onMotionEvent.bind(this))
-    );
-    this._dashContainerEvents.push(
-      this.dashContainer.connect('enter-event', this._onEnterEvent.bind(this))
-    );
-    this._dashContainerEvents.push(
-      this.dashContainer.connect('leave-event', this._onLeaveEvent.bind(this))
-    );
-    this._dashContainerEvents.push(
-      this.dashContainer.connect('destroy', () => {})
+    this.dashContainer.connectObject(
+      'motion-event',
+      this._onMotionEvent.bind(this),
+      'enter-event',
+      this._onEnterEvent.bind(this),
+      'leave-event',
+      this._onLeaveEvent.bind(this),
+      'destroy',
+      () => {},
+      this
     );
 
-    this._sessionModeEvents = [];
-    this._sessionModeEvents.push(
-      Main.sessionMode.connect('updated', () => this._onSessionUpdated())
+    Main.sessionMode.connectObject(
+      'updated',
+      () => this._onSessionUpdated(),
+      this
     );
-
-    this._layoutManagerEvents = [];
-
-    // todo ... jerky on overview
-    this._layoutManagerEvents.push(
-      Main.layoutManager.connect('startup-complete', () => {
+    Main.layoutManager.connectObject(
+      'startup-complete',
+      () => {
         this._updateLayout();
         this.oneShotStartupCompleteId = setTimeout(() => {
           this._updateLayout();
           this._onEnterEvent();
         }, 500);
-      })
+      },
+      this
     );
 
-    this._displayEvents = [];
-    this._displayEvents.push(
-      global.display.connect(
-        'notify::focus-window',
-        this._onFocusWindow.bind(this)
-      )
-    );
-    this._displayEvents.push(
-      global.display.connect(
-        'in-fullscreen-changed',
-        this._onFullScreen.bind(this)
-      )
+    global.display.connectObject(
+      'notify::focus-window',
+      this._onFocusWindow.bind(this),
+      'in-fullscreen-changed',
+      this._onFullScreen.bind(this),
+      this
     );
 
-    this._overViewEvents = [];
-    this._overViewEvents.push(
-      Main.overview.connect('showing', this._onOverviewShowing.bind(this))
+    Main.overview.connectObject(
+      'showing',
+      this._onOverviewShowing.bind(this),
+      this
     );
-    this._overViewEvents.push(
-      Main.overview.connect('hidden', this._onOverviewHidden.bind(this))
+    Main.overview.connectObject(
+      'hidden',
+      this._onOverviewHidden.bind(this),
+      this
     );
 
-    // other events
-    this._otherEvents = [];
-    let cache = St.TextureCache.get_default();
-    this._otherEvents.push({
-      source: cache,
-      id: cache.connectObject(
-        'icon-theme-changed',
-        this._onIconThemeChanged.bind(this),
-        this
-      ),
-    });
+    St.TextureCache.get_default().connectObject(
+      'icon-theme-changed',
+      this._onIconThemeChanged.bind(this),
+      this
+    );
 
     this._intervals = [];
     this._intervals.push(
@@ -319,9 +301,6 @@ class Extension {
   }
 
   _removeEvents() {
-    this.dashContainer.set_reactive(false);
-    this.dashContainer.set_track_hover(false);
-
     if (this._timeoutId) {
       clearInterval(this._timeoutId);
       this._timeoutId = null;
@@ -337,50 +316,14 @@ class Extension {
       this._intervals = [];
     }
 
-    this._otherEvents.forEach((evt) => {
-      evt.source.disconnect(evt.id);
-    });
-    this._otherEvents = [];
-
-    this._dashContainerEvents.forEach((id) => {
-      if (this.dashContainer) {
-        this.dashContainer.disconnect(id);
-      }
-    });
-    this._dashContainerEvents = [];
-
-    this._sessionModeEvents.forEach((id) => {
-      Main.sessionMode.disconnect(id);
-    });
-    this._sessionModeEvents = [];
-
-    if (this._overViewEvents) {
-      this._overViewEvents.forEach((id) => {
-        Main.overview.disconnect(id);
-      });
-    }
-    this._overViewEvents = [];
-
-    if (this._appFavoriteEvents) {
-      this._appFavoriteEvents.forEach((id) => {
-        Fav.getAppFavorites().disconnect(id);
-      });
-    }
-    this._appFavoriteEvents = [];
-
-    if (this._layoutManagerEvents) {
-      this._layoutManagerEvents.forEach((id) => {
-        Main.layoutManager.disconnect(id);
-      });
-    }
-    this._layoutManagerEvents = [];
-
-    if (this._displayEvents) {
-      this._displayEvents.forEach((id) => {
-        global.display.disconnect(id);
-      });
-    }
-    this._displayEvents = [];
+    this.dashContainer.set_reactive(false);
+    this.dashContainer.set_track_hover(false);
+    this.dashContainer.disconnectObject(this);
+    Main.sessionMode.disconnectObject(this);
+    Main.overview.disconnectObject(this);
+    Main.layoutManager.disconnectObject(this);
+    global.display.disconnectObject(this);
+    St.TextureCache.get_default().disconnectObject(this);
   }
 
   _onIconThemeChanged() {
@@ -482,6 +425,7 @@ class Extension {
 
   _updateBgDark(disable) {
     if (!this.dashContainer) return;
+
     if (this.background_dark && !disable) {
       this.dash.add_style_class_name('dark');
     } else {
@@ -729,10 +673,8 @@ class Extension {
 
   _onCheckServices() {
     if (!this.services) return; // todo why does this happen?
-    if (this.trash_icon) {
-      Fav.getAppFavorites().addFavorite('trash-dash2dock-lite.desktop');
-      this.services.update(SERVICES_UPDATE_INTERVAL);
-    }
+    this.services.update(SERVICES_UPDATE_INTERVAL);
+    this._updateTrashIcon();
   }
 }
 

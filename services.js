@@ -17,6 +17,7 @@ const CANVAS_SIZE = 120;
 
 var Services = class {
   enable() {
+    this.trashTickCounter = 0;
     this.clockTickCounter = 0;
     this.calendarTickCounter = 0;
     this.mountTickCounter = 1000 * 12; // advance at start
@@ -95,10 +96,12 @@ var Services = class {
   }
 
   update(elapsed) {
-    // constantly checked?
-    this.checkTrash();
-
     if (elapsed && elapsed > 0) {
+      if (this.trashTickCounter == 0) {
+        this.checkTrash();
+      }
+      this.trashTickCounter += elapsed;
+
       if (this.mountTickCounter == 0) {
         if (this._deferred_mounts) {
           this._deferred_mounts.forEach((m) => {
@@ -130,6 +133,11 @@ var Services = class {
           }
         }
         this.calendarTickCounter += elapsed;
+      }
+
+      // every 3 seconds
+      if (this.trashTickCounter > 1000 * 3) {
+        this.trashTickCounter = 0;
       }
 
       // every two minutes
@@ -270,20 +278,6 @@ var Services = class {
       this._pin('trash-dash2dock-lite.desktop');
     } else {
       this._unpin('trash-dash2dock-lite.desktop');
-    }
-  }
-
-  // currently - animator takes care of calling updateIcon
-  findAndUpdateIcons() {
-    let iconsContainer = Main.uiGroup.find_child_by_name('iconsContainer');
-    if (iconsContainer) {
-      log(iconsContainer);
-      iconsContainer.get_children().forEach((icon) => {
-        log(icon);
-        if (icon.first_child) {
-          this.updateIcon(icon.first_child);
-        }
-      });
     }
   }
 

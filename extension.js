@@ -431,6 +431,8 @@ class Extension {
     } else {
       this.dash.remove_style_class_name('dark');
     }
+
+    this._updateCss();
   }
 
   _updateTopBar(disable) {
@@ -460,7 +462,11 @@ class Extension {
     }
     if (background) {
       if (this.panel_mode && !disable) {
-        this.dash.set_background_color(Clutter.Color.from_pixel(0x00000050));
+        let clr = Clutter.Color.from_pixel(
+          this.background_dark ? 0x00000050 : 0x50505050
+        );
+        clr.alpha = this.background_opacity * 255;
+        this.dash.set_background_color(clr);
         background.visible = false;
       } else {
         this.dash.set_background_color(Clutter.Color.from_pixel(0x00000000));
@@ -476,6 +482,7 @@ class Extension {
     } else {
       this.dash.first_child.opacity = 255 * this.background_opacity;
     }
+    this._updateCss();
   }
 
   _findIcons() {
@@ -565,7 +572,7 @@ class Extension {
     let scale = this.scale;
     let dockHeight = iconSize * (this.shrink_icons ? 1.8 : 1.6) * scale;
     if (this.panel_mode) {
-      dockHeight -= 12 * this.scaleFactor;
+      dockHeight -= 10 * this.scaleFactor;
     } else {
     }
 

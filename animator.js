@@ -42,6 +42,7 @@ var Animator = class {
     this._enabled = true;
     this._dragging = false;
     this._oneShotId = null;
+    this._relayout = 8;
   }
 
   disable() {
@@ -71,6 +72,11 @@ var Animator = class {
     if (!this._iconsContainer || !this.dashContainer) return;
     this.dash = this.dashContainer.dash;
 
+    if (this._relayout > 0 && this.extension) {
+      this.extension._updateLayout();
+      this._relayout--;
+    }
+
     this._iconsContainer.width = 1;
     this._iconsContainer.height = 1;
 
@@ -78,6 +84,10 @@ var Animator = class {
     let spread = 1 - (this.extension.animation_spread * 1 || 0);
 
     let existingIcons = this._iconsContainer.get_children();
+    if (this._iconsCount != existingIcons.length) {
+      this._relayout = 8;
+      this._iconsCount = existingIcons.length;
+    }
 
     let validPosition = true;
     let dock_position = 'bottom';
@@ -472,6 +482,7 @@ var Animator = class {
     if (this.dashContainer) {
       this.dashContainer.remove_style_class_name('hi');
     }
+    this._relayout = 0;
   }
 
   _debounceEndAnimation() {

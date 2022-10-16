@@ -61,7 +61,7 @@
           <object class="AdwActionRow">
             <property name="title" translatable="yes">Clock</property>
             <property name="subtitle" translatable="yes"
-              >Show an analog clock widget. Requires Clocks app (org.gnome.clocks) pinned to the dash</property
+              >Show an analog clock widget. Requires Clocks app (gnome-clocks) pinned to the dash</property
             >
             <property name="activatable-widget">clock-icon</property>
             <child>
@@ -76,7 +76,7 @@
           <object class="AdwActionRow">
             <property name="title" translatable="yes">Calendar</property>
             <property name="subtitle" translatable="yes"
-              >Show an calendar widget. Requires Calendar app (org.gnome.Calendar) pinned to the dash</property
+              >Show an calendar widget. Requires Calendar app (gnome-calendar) pinned to the dash</property
             >
             <property name="activatable-widget">calendar-icon</property>
             <child>

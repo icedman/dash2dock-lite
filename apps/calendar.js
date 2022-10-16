@@ -1,8 +1,8 @@
 // from gnome-shell-cairo clock extension
 
 const { Clutter, GObject, GLib, PangoCairo, Pango } = imports.gi;
-
 const Cairo = imports.cairo;
+
 let size = 400;
 
 var xCalendar = GObject.registerClass(
@@ -32,7 +32,7 @@ var xCalendar = GObject.registerClass(
     draw_line(ctx, color, width, angle, len) {
       ctx.save();
       ctx.rotate(angle);
-      this.setcolor(ctx, color, 1); //指针颜色
+      this.set_color(ctx, color, 1); //指针颜色
       ctx.setLineWidth(width);
       ctx.moveTo(0, 0);
       ctx.lineTo(0, len);
@@ -51,7 +51,7 @@ var xCalendar = GObject.registerClass(
       border_radius
     ) {
       ctx.save();
-      this.setcolor(ctx, color, 1); //色
+      this.set_color(ctx, color, 1); //色
       ctx.translate(x, y);
       ctx.setLineWidth(line_width);
       ctx.moveTo(border_radius, 0);
@@ -91,7 +91,7 @@ var xCalendar = GObject.registerClass(
       return [w, h];
     }
 
-    setcolor(ctx, colorstr, alpha) {
+    set_color(ctx, colorstr, alpha) {
       const [, cc] = Clutter.Color.from_string(colorstr);
       ctx.setSourceRGBA(cc.red, cc.green, cc.blue, alpha);
     }
@@ -105,7 +105,7 @@ var xCalendar = GObject.registerClass(
       ctx.setOperator(Cairo.Operator.CLEAR);
       ctx.paint();
 
-      ctx.translate(size / 2, size / 2); //窗口中心为坐标原点。
+      ctx.translate(size / 2, size / 2);
       ctx.setLineWidth(1);
       ctx.setLineCap(Cairo.LineCap.ROUND);
       ctx.setOperator(Cairo.Operator.SOURCE);
@@ -113,13 +113,7 @@ var xCalendar = GObject.registerClass(
       let bgSize = size * 0.7;
       let offset = size - bgSize;
 
-      // ctx.save();
-      // this.setcolor(ctx, bg_color, 1.0); //底
-      // ctx.arc(0, 0, bgSize / 2 - bgSize / 20, 0, 2 * Math.PI);
-      // ctx.fill();
-      // ctx.restore();
-
-      const d0 = new Date(); //时间
+      const d0 = new Date();
 
       this.draw_rounded_rect(
         ctx,
@@ -131,16 +125,16 @@ var xCalendar = GObject.registerClass(
         1,
         8
       );
-      this.setcolor(ctx, date_color, 1.0);
+      this.set_color(ctx, date_color, 1.0);
       ctx.moveTo(0, 12);
       this.draw_text(ctx, `${d0.getDate()}`, 'DejaVuSans 36');
 
       let dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-      this.setcolor(ctx, day_color, 1.0);
+      this.set_color(ctx, day_color, 1.0);
       ctx.moveTo(0, -22);
       this.draw_text(ctx, `${dayNames[d0.getDay()]}`, 'DejaVuSans 16');
 
-      ctx.$dispose(); // 释放context
+      ctx.$dispose();
     }
 
     destroy() {}

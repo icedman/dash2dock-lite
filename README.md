@@ -12,7 +12,7 @@
 ![Contributors](https://img.shields.io/github/contributors/icedman/dash2dock-lite?color=dark-green) ![Forks](https://img.shields.io/github/forks/icedman/dash2dock-lite?style=social) ![Stargazers](https://img.shields.io/github/stars/icedman/dash2dock-lite?style=social) ![Issues](https://img.shields.io/github/issues/icedman/dash2dock-lite) ![License](https://img.shields.io/github/license/icedman/dash2dock-lite) 
 
 
-![Screen Shot](.github/images/thumbnail-dash2dock-lite.png)
+![Screen Shot](https://raw.githubusercontent.com/icedman/dash2dock-lite/development/screenshots/Screenshot%20from%202022-10-16%2020-22-00.png)
 
 ### Features
 

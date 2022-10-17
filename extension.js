@@ -439,10 +439,17 @@ class Extension {
     if (!this.dashContainer) return;
 
     let panelBox = Main.uiGroup.find_child_by_name('panelBox');
-    if (panelBox && this.translucent_topbar && !disable) {
-      panelBox.add_style_class_name('translucent');
-    } else {
-      panelBox.remove_style_class_name('translucent');
+    if (panelBox) {
+      let o = -1;
+      if (this.translucent_topbar && !disable) {
+        o = Math.floor(10 * this.background_opacity);
+        panelBox.add_style_class_name(`translucent-${o}`);
+      }
+      for (let i = 0; i < 11; i++) {
+        if (i != o) {
+          panelBox.remove_style_class_name(`translucent-${i}`);
+        }
+      }
     }
   }
 
@@ -451,13 +458,15 @@ class Extension {
 
     let background = this.dash ? this.dash.first_child : null;
     if (background && this.border_radius !== null) {
-      for (let i = 0; i < 7; i++) {
-        background.remove_style_class_name(`border-radius-${i}`);
-      }
+      let r = -1;
       if (!disable && !this.panel_mode) {
-        background.add_style_class_name(
-          `border-radius-${Math.floor(this.border_radius)}`
-        );
+        r = Math.floor(this.border_radius);
+        background.add_style_class_name(`border-radius-${r}`);
+      }
+      for (let i = 0; i < 7; i++) {
+        if (i != r) {
+          background.remove_style_class_name(`border-radius-${i}`);
+        }
       }
     }
     if (background) {
@@ -483,6 +492,7 @@ class Extension {
       this.dash.first_child.opacity = 255 * this.background_opacity;
     }
     this._updateCss();
+    this._updateTopBar();
   }
 
   _findIcons() {

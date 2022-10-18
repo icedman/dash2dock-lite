@@ -105,7 +105,7 @@ var Animator = class {
     pivot.x = 0.5;
     pivot.y = 1.0;
 
-    let iconSize = this.dash.iconSize;
+    let iconSize = this.dash.iconSize * this.extension.scale;
 
     switch (this.dashContainer._position) {
       case 0:
@@ -223,8 +223,6 @@ var Animator = class {
     animateIcons.forEach((icon) => {
       let bin = icon._bin;
       let pos = this._get_position(bin);
-
-      iconSize = this.dash.iconSize * this.extension.scale;
 
       bin.first_child.opacity = 0;
       // bin.set_size(iconSize, iconSize);
@@ -529,7 +527,7 @@ var Animator = class {
   }
 
   _onFullScreen() {
-    if (!this.dashContainer || !this._iconsContainer) return;
+    if (!this._iconsContainer) return;
     if (!this._isInFullscreen()) {
       this._iconsContainer.show();
     } else {
@@ -538,7 +536,8 @@ var Animator = class {
   }
 
   _isInFullscreen() {
-    let primary = Main.layoutManager.primaryMonitor;
+    // todo! detect the proper monitor for the dash
+    let primary = this.dashContainer.monitor;
     return primary.inFullscreen;
   }
 

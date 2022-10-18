@@ -108,7 +108,7 @@ var AutoHide = class {
 
   _onMotionEvent() {
     if (this.extension.pressure_sense && !this._shown) {
-      let monitor = this.extension.monitor;
+      let monitor = this.dashContainer.monitor;
       let sw = this.extension.sw;
       let sh = this.extension.sh;
       let scale = St.ThemeContext.get_for_stage(global.stage).scale_factor;
@@ -255,7 +255,7 @@ var AutoHide = class {
 
     if (pointer[1] > dash_position[1]) return false;
 
-    let monitor = Main.layoutManager.primaryMonitor;
+    let monitor = this.dashContainer.monitor;
     let actors = global.get_window_actors();
     let windows = actors.map((a) => a.get_meta_window());
     windows = windows.filter((w) => w.get_monitor() == monitor.index);

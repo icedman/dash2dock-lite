@@ -132,6 +132,7 @@ class Extension {
   }
 
   startUp() {
+    this._updateLayout();
     this.oneShotStartupCompleteId = setTimeout(() => {
       this._updateLayout();
       this._onEnterEvent();
@@ -140,6 +141,9 @@ class Extension {
 
   _queryDisplay() {
     this.monitor = Main.layoutManager.primaryMonitor;
+    if (this.dashContainer) {
+      this.dashContainer.monitor = this.monitor;
+    }
     this.sw = this.monitor.width;
     this.sh = this.monitor.height;
   }
@@ -265,13 +269,7 @@ class Extension {
     );
     Main.layoutManager.connectObject(
       'startup-complete',
-      () => {
-        this._updateLayout();
-        this.oneShotStartupCompleteId = setTimeout(() => {
-          this._updateLayout();
-          this._onEnterEvent();
-        }, 500);
-      },
+      this.startUp.bind(this),
       this
     );
 

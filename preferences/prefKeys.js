@@ -55,9 +55,6 @@ var PrefKeys = class {
 
   getValue(name) {
     let value = this._keys[name].value;
-    if (this.onGetValue) {
-      value = this.onGetValue(name, value);
-    }
     return value;
   }
 

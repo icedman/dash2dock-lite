@@ -84,7 +84,10 @@ var AutoHide = class {
   }
 
   _beginAnimation(t) {
-    this.target = t;
+    let y = this.dashContainer.monitor.y;
+    let height = this.dashContainer.monitor.height;
+    this.target = y + height - t;
+    log(this.target);
     if (this._intervalId == null) {
       if (this.dashContainer && this.extension) {
         this.animationInterval =
@@ -109,6 +112,7 @@ var AutoHide = class {
   _onMotionEvent() {
     if (this.extension.pressure_sense && !this._shown) {
       let monitor = this.dashContainer.monitor;
+
       let sw = this.extension.sw;
       let sh = this.extension.sh;
       let scale = St.ThemeContext.get_for_stage(global.stage).scale_factor;
@@ -161,13 +165,13 @@ var AutoHide = class {
   show() {
     this.frameDelay = 0;
     this._shown = true;
-    this._beginAnimation(this.extension.sh - this.dashContainer.height);
+    this._beginAnimation(this.dashContainer.height);
   }
 
   hide() {
     this.frameDelay = 10;
     this._shown = false;
-    this._beginAnimation(this.extension.sh - this.dashContainer.height / 8);
+    this._beginAnimation(this.dashContainer.height / 8);
   }
 
   _animate() {

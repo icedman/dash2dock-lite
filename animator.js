@@ -536,9 +536,8 @@ var Animator = class {
   }
 
   _isInFullscreen() {
-    // todo! detect the proper monitor for the dash
-    let primary = this.dashContainer.monitor;
-    return primary.inFullscreen;
+    let monitor = this.dashContainer.monitor;
+    return monitor.inFullscreen;
   }
 
   _startAnimation() {

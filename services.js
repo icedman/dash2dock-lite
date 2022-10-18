@@ -1,5 +1,6 @@
 const Main = imports.ui.main;
 const Gio = imports.gi.Gio;
+const St = imports.gi.St;
 const Fav = imports.ui.appFavorites;
 const ExtensionUtils = imports.misc.extensionUtils;
 const Me = ExtensionUtils.getCurrentExtension();
@@ -286,6 +287,8 @@ var Services = class {
       return;
     }
 
+    this.scaleFactor = St.ThemeContext.get_for_stage(global.stage).scale_factor;
+
     // the trash
     if (this.extension.trash_icon && icon.icon_name.startsWith('user-trash')) {
       let new_icon = this.trashFull ? 'user-trash-full' : 'user-trash';
@@ -309,6 +312,7 @@ var Services = class {
         }
         if (p.clock) {
           let scale = icon.icon_size / ANIM_ICON_QUALITY / CANVAS_SIZE;
+          scale *= this.scaleFactor;
           p.clock.set_scale(scale, scale);
           p.clock.show();
           p.clock.reactive = false;
@@ -335,6 +339,7 @@ var Services = class {
         }
         if (p.calendar) {
           let scale = icon.icon_size / ANIM_ICON_QUALITY / CANVAS_SIZE;
+          scale *= this.scaleFactor;
           p.calendar.set_scale(scale, scale);
           p.calendar.show();
           p.calendar.reactive = false;

@@ -153,11 +153,17 @@ class Extension {
       switch (name) {
         case 'apps-icon': // hide this from justperfection (for now)
         case 'animation-fps':
-        case 'animation-magnify':
-        case 'animation-spread':
-        case 'animation-rise':
         case 'mounted-icon':
         case 'peek-hidden-icons': {
+          break;
+        }
+        case 'animation-magnify':
+        case 'animation-spread':
+        case 'animation-rise': {
+          if (this.animator._enabled) {
+            this.animator.preview();
+            this.animator._onEnterEvent();
+          }
           break;
         }
         case 'calendar-icon':

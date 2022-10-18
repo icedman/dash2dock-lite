@@ -27,6 +27,7 @@ const ANIM_ICON_HIT_AREA = 1.25;
 const ANIM_ICON_QUALITY = 2.0;
 const ANIM_REENABLE_DELAY = 750;
 const ANIM_DEBOUNCE_END_DELAY = 1500;
+const ANIM_PREVIEW_DURATION = 1500;
 
 var Animator = class {
   constructor() {
@@ -66,6 +67,10 @@ var Animator = class {
     }
 
     // log('disable animator');
+  }
+
+  preview() {
+    this._preview = ANIM_PREVIEW_DURATION;
   }
 
   _animate() {
@@ -287,6 +292,15 @@ var Animator = class {
 
       idx++;
     });
+
+    if (this._preview && this._preview > 0) {
+      nearestIdx = Math.floor(animateIcons.length / 2);
+      nearestIcon = animateIcons[nearestIdx];
+      nearestDistance = 0;
+      this._preview -= this.animationInterval;
+    } else {
+      this._preview = null;
+    }
 
     //
     if (!this.extension.peek_hidden_icons) {

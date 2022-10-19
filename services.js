@@ -191,6 +191,7 @@ var Services = class {
   }
 
   _checkTrashEmpty() {
+    if (!this.extension.trash_icon) return;
     let iter = this.fnTrashDir.enumerate_children(
       'standard::*',
       Gio.FileQueryInfoFlags.NONE,

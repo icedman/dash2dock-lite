@@ -32,12 +32,17 @@ var Services = class {
       this._onMountRemoved.bind(this),
       this
     );
+
+    this.checkTrash();
+    this._checkTrashEmpty(); // << this actually reads the directory for files
   }
 
   disable() {
     this._volumeMonitor.disconnectObject(this);
 
     this.fnTrashDir = null;
+    this.fnTrashMonitor = null;
+
     if (this.clock) {
       if (this.clock.get_parent()) {
         this.clock.get_parent().clock = null;
@@ -185,17 +190,7 @@ var Services = class {
     }
   }
 
-  checkTrash() {
-    if (!this.fnTrashDir) {
-      this.fnTrashDir = Gio.File.new_for_uri('trash:///');
-    }
-
-    if (this._deferred_trash_icon_show) {
-      this.updateTrashIcon(true);
-      this._deferred_trash_icon_show = false;
-    }
-
-    let prevTrash = this.trashFull;
+  _checkTrashEmpty() {
     let iter = this.fnTrashDir.enumerate_children(
       'standard::*',
       Gio.FileQueryInfoFlags.NONE,
@@ -203,6 +198,31 @@ var Services = class {
     );
     this.trashFull = iter.next_file(null) != null;
     iter = null;
+
+    // log('checking trash...');
+    return this.trashFull;
+  }
+
+  checkTrash() {
+    if (!this.fnTrashDir) {
+      this.fnTrashDir = Gio.File.new_for_uri('trash:///');
+      this.fnTrashMonitor = this.fnTrashDir.monitor(Gio.FileMonitorFlags.WATCH_MOVES, null);
+      this.fnTrashMonitor.connect('changed', (fileMonitor, file, otherFile, eventType) => {
+        switch (eventType) {
+        case Gio.FileMonitorEvent.CHANGED:
+        case Gio.FileMonitorEvent.CREATED:
+        case Gio.FileMonitorEvent.MOVED_IN:
+          return;
+        }
+        this._checkTrashEmpty();
+      });
+    }
+
+    if (this._deferred_trash_icon_show) {
+      this.updateTrashIcon(true);
+      this._deferred_trash_icon_show = false;
+    }
+
     return this.trashFull;
   }
 

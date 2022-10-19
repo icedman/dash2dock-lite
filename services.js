@@ -2,6 +2,7 @@ const Main = imports.ui.main;
 const Gio = imports.gi.Gio;
 const St = imports.gi.St;
 const Fav = imports.ui.appFavorites;
+const Weather = imports.misc.weather;
 const ExtensionUtils = imports.misc.extensionUtils;
 const Me = ExtensionUtils.getCurrentExtension();
 const AppsFolderPath = Me.dir.get_child('apps').get_path();
@@ -16,12 +17,51 @@ const xCalendar = Me.imports.apps.calendar.xCalendar;
 const ANIM_ICON_QUALITY = 2.0;
 const CANVAS_SIZE = 120;
 
+class ServiceCounter {
+  constructor(name, interval, callback, advance) {
+    advance = advance || 0;
+    this.name = name;
+    this._interval = interval;
+    this._ticks = advance == -1 ? interval : advance;
+    this._callback = callback;
+  }
+
+  update(elapsed) {
+    this._ticks += elapsed;
+    // log(`${this.name} ${this._ticks}/${this._interval}`);
+    if (this._ticks >= this._interval) {
+      this._ticks -= this._interval;
+      if (this._callback) {
+        // log(this.name);
+        this._callback();
+      }
+      return true;
+    }
+    return false;
+  }
+}
+
 var Services = class {
   enable() {
-    this.trashTickCounter = 0;
-    this.clockTickCounter = 0;
-    this.calendarTickCounter = 0;
-    this.mountTickCounter = 1000 * 12; // advance at start
+    this._services = [
+      new ServiceCounter('trash', 1000 * 15, this.checkTrash.bind(this)),
+      new ServiceCounter('clock', 1000 * 60, () => {
+        if (this.clock) {
+          this.clock.redraw();
+        }
+      }, -1),
+      new ServiceCounter('calendar', 1000 * 60 * 15, () => {
+        if (this.calendar) {
+          this.calendar.redraw();
+        }
+      }, -1),
+      new ServiceCounter('mounts', 1000 * 10, this.checkMounts.bind(this)),
+      new ServiceCounter('mounts_recheck', 1000 * 60 * 2, () => {
+        this._mounts_checked = false;
+      },  Math.floor(1000 * 60 * 1.8)
+      ),
+    ];
+
     this._deferred_mounts = [];
     this._deferred_trash_icon_show = false;
     this._volumeMonitor = Gio.VolumeMonitor.get();
@@ -33,32 +73,17 @@ var Services = class {
       this
     );
 
+    this.checkMounts();
     this.checkTrash();
     this._checkTrashEmpty(); // << this actually reads the directory for files
   }
 
   disable() {
     this._volumeMonitor.disconnectObject(this);
+    this._services = [];
 
     this.fnTrashDir = null;
     this.fnTrashMonitor = null;
-
-    if (this.clock) {
-      if (this.clock.get_parent()) {
-        this.clock.get_parent().clock = null;
-        this.clock.get_parent().remove_child(this.clock);
-      }
-      delete this.clock;
-      this.clock = null;
-    }
-    if (this.calendar) {
-      if (this.calendar.get_parent()) {
-        this.calendar.get_parent().calendar = null;
-        this.calendar.get_parent().remove_child(this.calendar);
-      }
-      delete this.calendar;
-      this.calendar = null;
-    }
 
     if (this._oneShotId) {
       clearInterval(this._oneShotId);
@@ -83,7 +108,7 @@ var Services = class {
       return;
     }
     this.last_mounted = mount;
-    this.mountTickCounter = 0;
+    this._mountTickCounter = 0;
     let basename = mount.get_default_location().get_basename();
     let appname = `mount-${basename}-dash2dock-lite.desktop`;
     this.setupMountIcon(mount);
@@ -102,66 +127,9 @@ var Services = class {
   }
 
   update(elapsed) {
-    if (elapsed && elapsed > 0) {
-      if (this.trashTickCounter == 0) {
-        this.checkTrash();
-      }
-      this.trashTickCounter += elapsed;
-
-      if (this.mountTickCounter == 0) {
-        if (this._deferred_mounts) {
-          this._deferred_mounts.forEach((m) => {
-            this._onMountAdded(null, m);
-          });
-          this._deferred_mounts = [];
-        }
-        this.checkMounts();
-      }
-      this.mountTickCounter += elapsed;
-
-      if (this.clock) {
-        if (this.clockTickCounter == 0) {
-          try {
-            this.clock.redraw();
-          } catch (err) {
-            this.calendar = null;
-          }
-        }
-        this.clockTickCounter += elapsed;
-      }
-
-      if (this.calendar) {
-        if (this.calendarTickCounter == 0) {
-          try {
-            this.calendar.redraw();
-          } catch (err) {
-            this.calendar = null;
-          }
-        }
-        this.calendarTickCounter += elapsed;
-      }
-
-      // every 3 seconds
-      if (this.trashTickCounter > 1000 * 3) {
-        this.trashTickCounter = 0;
-      }
-
-      // every two minutes
-      if (this.clockTickCounter > 1000 * 60 * 2) {
-        this.clockTickCounter = 0;
-        this.startup_mounts_checked = false; //
-      }
-
-      // every 15 minutes
-      if (this.calendarTickCounter > 1000 * 60 * 15) {
-        this.calendarTickCounter = 0;
-      }
-
-      // every 10 seconds
-      if (this.mountTickCounter > 1000 * 10) {
-        this.mountTickCounter = 0;
-      }
-    }
+    this._services.forEach((s) => {
+      s.update(elapsed);
+    });
   }
 
   setupMountIcon(mount) {
@@ -184,8 +152,8 @@ var Services = class {
         null
       );
       Main.notify('Preparing the mounted device icon...');
-      this.mountTickCounter = 1000 * 5;
-      this.startup_mounts_checked = false;
+      this._mountTickCounter = 1000 * 5;
+      this._mounts_checked = false;
       this._deferred_mounts.push(mount);
     }
   }
@@ -199,8 +167,6 @@ var Services = class {
     );
     this.trashFull = iter.next_file(null) != null;
     iter = null;
-
-    // log('checking trash...');
     return this.trashFull;
   }
 
@@ -228,7 +194,18 @@ var Services = class {
   }
 
   checkMounts() {
-    if (this.startup_mounts_checked) return;
+    if (!this.extension.mounted_icon) {
+      return;
+    }
+    if (this._mounts_checked) return;
+
+    if (this._deferred_mounts && this._deferred_mounts.length) {
+      this._deferred_mounts.forEach((m) => {
+        this._onMountAdded(null, m);
+      });
+      this._deferred_mounts = [];
+      return;
+    }
 
     let mounts = [];
     let mount_ids = [];
@@ -242,7 +219,6 @@ var Services = class {
     }
 
     this.mounts = mounts;
-
     let favs = Fav.getAppFavorites()._getIds();
     favs.forEach((fav) => {
       if (fav.startsWith('mount-') && fav.endsWith('dash2dock-lite.desktop')) {
@@ -260,7 +236,7 @@ var Services = class {
       }
     });
 
-    this.startup_mounts_checked = true;
+    this._mounts_checked = true;
     // added devices will subsequently be on mounted events
   }
 
@@ -287,11 +263,13 @@ var Services = class {
   _pin(app) {
     this.temporarilyMuteOverview();
     Fav.getAppFavorites().addFavorite(app);
+    // this.extension._onEnterEvent();
   }
 
   _unpin(app) {
     this.temporarilyMuteOverview();
     Fav.getAppFavorites().removeFavorite(app);
+    // this.extension._onEnterEvent();
   }
 
   updateTrashIcon(show) {

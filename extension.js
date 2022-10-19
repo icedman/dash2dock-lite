@@ -136,6 +136,7 @@ class Extension {
     this.oneShotStartupCompleteId = setTimeout(() => {
       this._updateLayout();
       this._onEnterEvent();
+      this.oneShotStartupCompleteId = null;
     }, 500);
   }
 

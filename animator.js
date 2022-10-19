@@ -26,7 +26,7 @@ const ANIM_ICON_SCALE = 1.8;
 const ANIM_ICON_HIT_AREA = 1.25;
 const ANIM_ICON_QUALITY = 2.0;
 const ANIM_REENABLE_DELAY = 750;
-const ANIM_DEBOUNCE_END_DELAY = 1500;
+const ANIM_DEBOUNCE_END_DELAY = 1000;
 const ANIM_PREVIEW_DURATION = 1500;
 
 var Animator = class {
@@ -477,8 +477,8 @@ var Animator = class {
       );
     }
 
-    if (this.dashContainer) {
-      // this.dashContainer.add_style_class_name('hi');
+    if (this.dash && this.extension && this.extension.debug_visual) {
+      this.dash.first_child.add_style_class_name('hi');
     }
   }
 
@@ -491,8 +491,8 @@ var Animator = class {
       clearInterval(this._timeoutId);
     }
     this._timeoutId = null;
-    if (this.dashContainer) {
-      this.dashContainer.remove_style_class_name('hi');
+    if (this.dash) {
+      this.dash.first_child.remove_style_class_name('hi');
     }
     this._relayout = 0;
   }
@@ -503,7 +503,7 @@ var Animator = class {
     }
     this._timeoutId = setTimeout(
       this._endAnimation.bind(this),
-      ANIM_DEBOUNCE_END_DELAY
+      ANIM_DEBOUNCE_END_DELAY + this.animationInterval
     );
   }
 

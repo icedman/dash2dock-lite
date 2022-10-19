@@ -80,5 +80,45 @@
       </object>
     </child>
 
+    <child>
+      <object class="AdwPreferencesGroup">
+        <property name="title" translatable="yes">Debug</property>
+        <property name="description" translatable="yes"></property>
+
+        <!--
+        <child>
+          <object class="AdwActionRow">
+            <property name="title" translatable="yes">Logs</property>
+            <property name="subtitle" translatable="yes"
+              >Enable verbose debug logging.</property
+            >
+            <property name="activatable-widget">debug-log</property>
+            <child>
+              <object class="GtkSwitch" id="debug-log">
+                <property name="valign">center</property>
+              </object>
+            </child>
+          </object>
+        </child>
+      -->
+
+        <child>
+          <object class="AdwActionRow">
+            <property name="title" translatable="yes">Visual Indicators</property>
+            <property name="subtitle" translatable="yes"
+              >Show visual indicators when animations are running.</property
+            >
+            <property name="activatable-widget">debug-visual</property>
+            <child>
+              <object class="GtkSwitch" id="debug-visual">
+                <property name="valign">center</property>
+              </object>
+            </child>
+          </object>
+        </child>
+
+      </object>
+    </child>
+
   </object>
 </interface>

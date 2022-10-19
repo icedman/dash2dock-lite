@@ -6,6 +6,21 @@
         <summary>Reuse existing Dash</summary>
         <description>Reuse existing Dash instead of creating another instance.</description>
     </key>
+    <key type="b" name="debug">
+        <default>false</default>
+        <summary>Debug Mode</summary>
+        <description></description>
+    </key>
+    <key type="b" name="debug-log">
+        <default>false</default>
+        <summary>Logs</summary>
+        <description>Enable debug logs</description>
+    </key>
+    <key type="b" name="debug-visual">
+        <default>false</default>
+        <summary>Visual Indicators</summary>
+        <description>Enable debug visual indicators when animations are running.</description>
+    </key>
     <key type="b" name="shrink-icons">
         <default>true</default>
         <summary>Shrink icons</summary>

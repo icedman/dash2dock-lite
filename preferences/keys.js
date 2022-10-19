@@ -8,6 +8,18 @@ var schemaId = 'org.gnome.shell.extensions.dash2dock-lite';
 
 var SettingsKeys = new PrefKeys();
 SettingsKeys.setKeys({
+  debug: {
+    default_value: false,
+    widget_type: 'switch',
+  },
+  'debug-log': {
+    default_value: false,
+    widget_type: 'switch',
+  },
+  'debug-visual': {
+    default_value: false,
+    widget_type: 'switch',
+  },
   'shrink-icons': {
     default_value: false,
     widget_type: 'switch',

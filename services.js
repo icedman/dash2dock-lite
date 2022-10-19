@@ -45,20 +45,34 @@ var Services = class {
   enable() {
     this._services = [
       new ServiceCounter('trash', 1000 * 15, this.checkTrash.bind(this)),
-      new ServiceCounter('clock', 1000 * 60, () => {
-        if (this.clock) {
-          this.clock.redraw();
-        }
-      }, -1),
-      new ServiceCounter('calendar', 1000 * 60 * 15, () => {
-        if (this.calendar) {
-          this.calendar.redraw();
-        }
-      }, -1),
+      new ServiceCounter(
+        'clock',
+        1000 * 60,
+        () => {
+          if (this.clock) {
+            this.clock.redraw();
+          }
+        },
+        -1
+      ),
+      new ServiceCounter(
+        'calendar',
+        1000 * 60 * 15,
+        () => {
+          if (this.calendar) {
+            this.calendar.redraw();
+          }
+        },
+        -1
+      ),
       new ServiceCounter('mounts', 1000 * 10, this.checkMounts.bind(this)),
-      new ServiceCounter('mounts_recheck', 1000 * 60 * 2, () => {
-        this._mounts_checked = false;
-      },  Math.floor(1000 * 60 * 1.8)
+      new ServiceCounter(
+        'mounts_recheck',
+        1000 * 60 * 2,
+        () => {
+          this._mounts_checked = false;
+        },
+        Math.floor(1000 * 60 * 1.8)
       ),
     ];
 
@@ -173,16 +187,22 @@ var Services = class {
   checkTrash() {
     if (!this.fnTrashDir) {
       this.fnTrashDir = Gio.File.new_for_uri('trash:///');
-      this.fnTrashMonitor = this.fnTrashDir.monitor(Gio.FileMonitorFlags.WATCH_MOVES, null);
-      this.fnTrashMonitor.connect('changed', (fileMonitor, file, otherFile, eventType) => {
-        switch (eventType) {
-        case Gio.FileMonitorEvent.CHANGED:
-        case Gio.FileMonitorEvent.CREATED:
-        case Gio.FileMonitorEvent.MOVED_IN:
-          return;
+      this.fnTrashMonitor = this.fnTrashDir.monitor(
+        Gio.FileMonitorFlags.WATCH_MOVES,
+        null
+      );
+      this.fnTrashMonitor.connect(
+        'changed',
+        (fileMonitor, file, otherFile, eventType) => {
+          switch (eventType) {
+            case Gio.FileMonitorEvent.CHANGED:
+            case Gio.FileMonitorEvent.CREATED:
+            case Gio.FileMonitorEvent.MOVED_IN:
+              return;
+          }
+          this._checkTrashEmpty();
         }
-        this._checkTrashEmpty();
-      });
+      );
     }
 
     if (this._deferred_trash_icon_show) {

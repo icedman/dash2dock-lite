@@ -517,6 +517,8 @@ class Extension {
       );
     }
 
+    // Marker: possible breakage here
+    // should Gnome change this private variable, we won't find icons
     let icons = this.dash._box.get_children().filter((actor) => {
       if (actor.child && actor.child._delegate && actor.child._delegate.icon) {
         return true;
@@ -545,7 +547,7 @@ class Extension {
 
     try {
       // this.dash._showAppsIcon;
-      let apps = Main.overview.dash.last_child.last_child;
+      let apps = this.dash.last_child.last_child;
       if (apps) {
         let widget = apps.child;
         if (widget && widget.width > 0 && widget.get_parent().visible) {

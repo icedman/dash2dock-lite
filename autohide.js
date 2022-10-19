@@ -106,6 +106,10 @@ var AutoHide = class {
       clearInterval(this._intervalId);
       this._intervalId = null;
     }
+
+    if (this.dashContainer) {
+      this.dashContainer.remove_style_class_name('hi');
+    }
   }
 
   _onMotionEvent() {
@@ -192,7 +196,10 @@ var AutoHide = class {
       return true;
     }
 
-    // this.dashContainer.add_style_class_name('hi');
+    if (this.extension.debug_visual) {
+      this.dashContainer.add_style_class_name('hi');
+    }
+
     this._animating = false;
     let travel = this.dashContainer._dockHeight;
     let speed = travel / 150;

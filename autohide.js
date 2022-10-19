@@ -87,7 +87,6 @@ var AutoHide = class {
     let y = this.dashContainer.monitor.y;
     let height = this.dashContainer.monitor.height;
     this.target = y + height - t;
-    log(this.target);
     if (this._intervalId == null) {
       if (this.dashContainer && this.extension) {
         this.animationInterval =

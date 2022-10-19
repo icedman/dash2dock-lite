@@ -62,10 +62,10 @@ var xClock = GObject.registerClass(
       ctx.setLineCap(Cairo.LineCap.ROUND);
       ctx.setOperator(Cairo.Operator.SOURCE);
 
-      let bgSize = size * 0.8;
+      let bgSize = size * 0.84;
       ctx.save();
-      // this.set_color(ctx, back_color, 1.0); //底
-      this.set_color_rgba(ctx, 0.2, 0.2, 0.2, 1.0); //底
+      // this.set_color(ctx, back_color, 1.0);
+      this.set_color_rgba(ctx, 0.2, 0.2, 0.2, 1.0);
       ctx.arc(0, 0, bgSize / 2 - bgSize / 20, 0, 2 * Math.PI);
       ctx.fill();
       ctx.restore();

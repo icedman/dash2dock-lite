@@ -130,6 +130,7 @@ var Services = class {
       appname,
       this.extension.trash_icon ? favorites._getIds().length - 1 : -1
     );
+    this.extension._onEnterEvent();
   }
 
   _onMountRemoved(monitor, mount) {
@@ -246,15 +247,17 @@ var Services = class {
       }
     });
 
+    this._mounts_checked = true;
+
     mounts.forEach((mount) => {
       let basename = mount.get_default_location().get_basename();
       let appname = `mount-${basename}-dash2dock-lite.desktop`;
       if (!favs.includes(appname)) {
         this._deferred_mounts.push(mount);
+        this._mounts_checked = false;
       }
     });
 
-    this._mounts_checked = true;
     // added devices will subsequently be on mounted events
   }
 
@@ -280,14 +283,20 @@ var Services = class {
 
   _pin(app) {
     this.temporarilyMuteOverview();
-    Fav.getAppFavorites().addFavorite(app);
-    // this.extension._onEnterEvent();
+    let favorites = Fav.getAppFavorites();
+    if (!favorites._getIds().includes(app)) {
+      favorites.addFavorite(app);
+      this.extension._onEnterEvent();
+    }
   }
 
   _unpin(app) {
     this.temporarilyMuteOverview();
-    Fav.getAppFavorites().removeFavorite(app);
-    // this.extension._onEnterEvent();
+    let favorites = Fav.getAppFavorites();
+    if (favorites._getIds().includes(app)) {
+      favorites.removeFavorite(app);
+      this.extension._onEnterEvent();
+    }
   }
 
   updateTrashIcon(show) {

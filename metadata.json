@@ -5,7 +5,7 @@
     "icedman"
   ],
   "shell-version": [
-    "42", "43"
+    "40", "41", "42", "43"
   ],
   "url": "https://github.com/icedman/dash2dock-lite",
   "uuid": "dash2dock-lite@icedman.github.com",

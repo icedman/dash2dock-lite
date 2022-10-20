@@ -43,7 +43,6 @@ StWidget.app-well-app-running-dot:insensitive {
   margin-bottom: 5px !important;
 }
 
-
 /* from gnome-shell
 // background of the dash behind app icons
 .dash-background {
@@ -66,25 +65,25 @@ StWidget.app-well-app-running-dot:insensitive {
   background-color: rgb(0,0,0) !important;
 }
 
-#dash > StWidget.dash-background.border-radius-0 {
+#dash.border-radius-0 > StWidget.dash-background {
   border-radius: 0px !important;
 }
-#dash > StWidget.dash-background.border-radius-1 {
+#dash.border-radius-1 > StWidget.dash-background {
   border-radius: 8px !important;
 }
-#dash > StWidget.dash-background.border-radius-2 {
+#dash.border-radius-2 > StWidget.dash-background {
   border-radius: 16px !important;
 }
-#dash > StWidget.dash-background.border-radius-3 {
+#dash.border-radius-3 > StWidget.dash-background {
   border-radius: 20px !important;
 }
-#dash > StWidget.dash-background.border-radius-4 {
+#dash.border-radius-4 > StWidget.dash-background {
   border-radius: 24px !important;
 }
-#dash > StWidget.dash-background.border-radius-5 {
+#dash.border-radius-5 > StWidget.dash-background {
   border-radius: 28px !important;
 }
-#dash > StWidget.dash-background.border-radius-6 {
+#dash.border-radius-6 > StWidget.dash-background {
   border-radius: 32px !important;
 }
 

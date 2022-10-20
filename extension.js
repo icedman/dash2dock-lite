@@ -466,11 +466,11 @@ class Extension {
       let r = -1;
       if (!disable && !this.panel_mode) {
         r = Math.floor(this.border_radius);
-        background.add_style_class_name(`border-radius-${r}`);
+        this.dash.add_style_class_name(`border-radius-${r}`);
       }
       for (let i = 0; i < 7; i++) {
         if (i != r) {
-          background.remove_style_class_name(`border-radius-${i}`);
+          this.dash.remove_style_class_name(`border-radius-${i}`);
         }
       }
     }

@@ -1,6 +1,6 @@
 <?xml version="1.0" ?>
 <interface>
-  <object class="GtkBox" id="appearance">
+  <object class="GtkBox" id="tweaks">
     <property name="visible">True</property>
     <property name="can-focus">False</property>
     <property name="margin-start">12</property>
@@ -33,7 +33,7 @@
                         <property name="visible">True</property>
                         <property name="can-focus">False</property>
                         <property name="valign">center</property>
-                        <property name="label" translatable="yes">Shrink Icons</property>
+                        <property name="label" translatable="yes">Magnification</property>
                         <property name="xalign">0</property>
                         <property name="hexpand">1</property>
                         <attributes>
@@ -42,56 +42,7 @@
                       </object>
                     </child>
                     <child>
-                      <object class="GtkSwitch" id="shrink-icons">
-                        <property name="valign">center</property>
-                      </object>
-                    </child>
-                  </object>
-                </child>
-                <child>
-                  <object class="GtkLabel">
-                    <property name="halign">start</property>
-                    <property name="valign">center</property>
-                    <property name="label" translatable="yes">Shrink the dash icons size.</property>
-                  </object>
-                </child>
-              </object>
-            </child>
-          </object>
-        </child>
-        <child>
-          <object class="GtkListBoxRow">
-            <property name="visible">True</property>
-            <property name="can-focus">True</property>
-            <child>
-              <object class="GtkBox">
-                <property name="visible">True</property>
-                <property name="can-focus">False</property>
-                <property name="margin-start">12</property>
-                <property name="margin-end">12</property>
-                <property name="margin-top">12</property>
-                <property name="margin-bottom">12</property>
-                <property name="orientation">vertical</property>
-                <child>
-                  <object class="GtkBox">
-                    <property name="visible">True</property>
-                    <property name="can-focus">False</property>
-                    <property name="spacing">32</property>
-                    <child>
-                      <object class="GtkLabel">
-                        <property name="visible">True</property>
-                        <property name="can-focus">False</property>
-                        <property name="valign">center</property>
-                        <property name="label" translatable="yes">Scale Icons</property>
-                        <property name="xalign">0</property>
-                        <property name="hexpand">1</property>
-                        <attributes>
-                          <attribute name="weight" value="PANGO_WEIGHT_BOLD"/>
-                        </attributes>
-                      </object>
-                    </child>
-                    <child>
-                      <object class="GtkScale" id="scale-icons">
+                      <object class="GtkScale" id="animation-magnify">
                         <property name="valign">center</property>
                         <property name="hexpand">true</property>
                         <property name="width-request">140px</property>
@@ -99,7 +50,7 @@
                         <property name="value-pos">right</property>
                         <property name="orientation">horizontal</property>
                         <property name="digits">2</property>
-                        <property name="adjustment">scale-icons-adjust</property>
+                        <property name="adjustment">animation-magnify-adjust</property>
                       </object>
                     </child>
                   </object>
@@ -108,7 +59,7 @@
                   <object class="GtkLabel">
                     <property name="halign">start</property>
                     <property name="valign">center</property>
-                    <property name="label" translatable="yes">Adjust icon sizes with custom scale. This overrides the shrink option.</property>
+                    <property name="label" translatable="yes">Set maximum icon size when zoomed and animated.</property>
                   </object>
                 </child>
               </object>
@@ -138,7 +89,7 @@
                         <property name="visible">True</property>
                         <property name="can-focus">False</property>
                         <property name="valign">center</property>
-                        <property name="label" translatable="yes">Panel Mode</property>
+                        <property name="label" translatable="yes">Spread</property>
                         <property name="xalign">0</property>
                         <property name="hexpand">1</property>
                         <attributes>
@@ -147,161 +98,7 @@
                       </object>
                     </child>
                     <child>
-                      <object class="GtkSwitch" id="panel-mode">
-                        <property name="valign">center</property>
-                      </object>
-                    </child>
-                  </object>
-                </child>
-                <child>
-                  <object class="GtkLabel">
-                    <property name="halign">start</property>
-                    <property name="valign">center</property>
-                    <property name="label" translatable="yes">Dock the dash on a full-width panel.</property>
-                  </object>
-                </child>
-              </object>
-            </child>
-          </object>
-        </child>
-        <child>
-          <object class="GtkListBoxRow">
-            <property name="visible">True</property>
-            <property name="can-focus">True</property>
-            <child>
-              <object class="GtkBox">
-                <property name="visible">True</property>
-                <property name="can-focus">False</property>
-                <property name="margin-start">12</property>
-                <property name="margin-end">12</property>
-                <property name="margin-top">12</property>
-                <property name="margin-bottom">12</property>
-                <property name="orientation">vertical</property>
-                <child>
-                  <object class="GtkBox">
-                    <property name="visible">True</property>
-                    <property name="can-focus">False</property>
-                    <property name="spacing">32</property>
-                    <child>
-                      <object class="GtkLabel">
-                        <property name="visible">True</property>
-                        <property name="can-focus">False</property>
-                        <property name="valign">center</property>
-                        <property name="label" translatable="yes">Border Radius</property>
-                        <property name="xalign">0</property>
-                        <property name="hexpand">1</property>
-                        <attributes>
-                          <attribute name="weight" value="PANGO_WEIGHT_BOLD"/>
-                        </attributes>
-                      </object>
-                    </child>
-                    <child>
-                      <object class="GtkScale" id="border-radius">
-                        <property name="valign">center</property>
-                        <property name="hexpand">true</property>
-                        <property name="width-request">140px</property>
-                        <property name="draw-value">false</property>
-                        <property name="value-pos">right</property>
-                        <property name="orientation">horizontal</property>
-                        <property name="digits">0</property>
-                        <property name="adjustment">border-radius-adjust</property>
-                      </object>
-                    </child>
-                  </object>
-                </child>
-                <child>
-                  <object class="GtkLabel">
-                    <property name="halign">start</property>
-                    <property name="valign">center</property>
-                    <property name="label" translatable="yes">Set dash background border radius.</property>
-                  </object>
-                </child>
-              </object>
-            </child>
-          </object>
-        </child>
-        <child>
-          <object class="GtkListBoxRow">
-            <property name="visible">True</property>
-            <property name="can-focus">True</property>
-            <child>
-              <object class="GtkBox">
-                <property name="visible">True</property>
-                <property name="can-focus">False</property>
-                <property name="margin-start">12</property>
-                <property name="margin-end">12</property>
-                <property name="margin-top">12</property>
-                <property name="margin-bottom">12</property>
-                <property name="orientation">vertical</property>
-                <child>
-                  <object class="GtkBox">
-                    <property name="visible">True</property>
-                    <property name="can-focus">False</property>
-                    <property name="spacing">32</property>
-                    <child>
-                      <object class="GtkLabel">
-                        <property name="visible">True</property>
-                        <property name="can-focus">False</property>
-                        <property name="valign">center</property>
-                        <property name="label" translatable="yes">Dark Background</property>
-                        <property name="xalign">0</property>
-                        <property name="hexpand">1</property>
-                        <attributes>
-                          <attribute name="weight" value="PANGO_WEIGHT_BOLD"/>
-                        </attributes>
-                      </object>
-                    </child>
-                    <child>
-                      <object class="GtkSwitch" id="background-dark">
-                        <property name="valign">center</property>
-                      </object>
-                    </child>
-                  </object>
-                </child>
-                <child>
-                  <object class="GtkLabel">
-                    <property name="halign">start</property>
-                    <property name="valign">center</property>
-                    <property name="label" translatable="yes">Use dark color as dash background.</property>
-                  </object>
-                </child>
-              </object>
-            </child>
-          </object>
-        </child>
-        <child>
-          <object class="GtkListBoxRow">
-            <property name="visible">True</property>
-            <property name="can-focus">True</property>
-            <child>
-              <object class="GtkBox">
-                <property name="visible">True</property>
-                <property name="can-focus">False</property>
-                <property name="margin-start">12</property>
-                <property name="margin-end">12</property>
-                <property name="margin-top">12</property>
-                <property name="margin-bottom">12</property>
-                <property name="orientation">vertical</property>
-                <child>
-                  <object class="GtkBox">
-                    <property name="visible">True</property>
-                    <property name="can-focus">False</property>
-                    <property name="spacing">32</property>
-                    <child>
-                      <object class="GtkLabel">
-                        <property name="visible">True</property>
-                        <property name="can-focus">False</property>
-                        <property name="valign">center</property>
-                        <property name="label" translatable="yes">Background Opacity</property>
-                        <property name="xalign">0</property>
-                        <property name="hexpand">1</property>
-                        <attributes>
-                          <attribute name="weight" value="PANGO_WEIGHT_BOLD"/>
-                        </attributes>
-                      </object>
-                    </child>
-                    <child>
-                      <object class="GtkScale" id="background-opacity">
+                      <object class="GtkScale" id="animation-spread">
                         <property name="valign">center</property>
                         <property name="hexpand">true</property>
                         <property name="width-request">140px</property>
@@ -309,7 +106,7 @@
                         <property name="value-pos">right</property>
                         <property name="orientation">horizontal</property>
                         <property name="digits">2</property>
-                        <property name="adjustment">background-opacity-adjust</property>
+                        <property name="adjustment">animation-spread-adjust</property>
                       </object>
                     </child>
                   </object>
@@ -318,7 +115,7 @@
                   <object class="GtkLabel">
                     <property name="halign">start</property>
                     <property name="valign">center</property>
-                    <property name="label" translatable="yes">Adjust dash background opacity.</property>
+                    <property name="label" translatable="yes">Set icons spread radius when zoomed and animated.</property>
                   </object>
                 </child>
               </object>
@@ -348,7 +145,7 @@
                         <property name="visible">True</property>
                         <property name="can-focus">False</property>
                         <property name="valign">center</property>
-                        <property name="label" translatable="yes">Translucent Topbar</property>
+                        <property name="label" translatable="yes">Rise</property>
                         <property name="xalign">0</property>
                         <property name="hexpand">1</property>
                         <attributes>
@@ -357,8 +154,15 @@
                       </object>
                     </child>
                     <child>
-                      <object class="GtkSwitch" id="translucent-topbar">
+                      <object class="GtkScale" id="animation-rise">
                         <property name="valign">center</property>
+                        <property name="hexpand">true</property>
+                        <property name="width-request">140px</property>
+                        <property name="draw-value">false</property>
+                        <property name="value-pos">right</property>
+                        <property name="orientation">horizontal</property>
+                        <property name="digits">2</property>
+                        <property name="adjustment">animation-rise-adjust</property>
                       </object>
                     </child>
                   </object>
@@ -367,7 +171,57 @@
                   <object class="GtkLabel">
                     <property name="halign">start</property>
                     <property name="valign">center</property>
-                    <property name="label" translatable="yes">Make the topbar translucent.</property>
+                    <property name="label" translatable="yes">Set icons rise height when zoomed and animated.</property>
+                  </object>
+                </child>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="GtkListBoxRow">
+            <property name="visible">True</property>
+            <property name="can-focus">True</property>
+            <child>
+              <object class="GtkBox">
+                <property name="visible">True</property>
+                <property name="can-focus">False</property>
+                <property name="margin-start">12</property>
+                <property name="margin-end">12</property>
+                <property name="margin-top">12</property>
+                <property name="margin-bottom">12</property>
+                <property name="orientation">vertical</property>
+                <child>
+                  <object class="GtkBox">
+                    <property name="visible">True</property>
+                    <property name="can-focus">False</property>
+                    <property name="spacing">32</property>
+                    <child>
+                      <object class="GtkLabel">
+                        <property name="visible">True</property>
+                        <property name="can-focus">False</property>
+                        <property name="valign">center</property>
+                        <property name="label" translatable="yes">Framerate</property>
+                        <property name="xalign">0</property>
+                        <property name="hexpand">1</property>
+                        <attributes>
+                          <attribute name="weight" value="PANGO_WEIGHT_BOLD"/>
+                        </attributes>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkDropDown" id="animation-fps">
+                        <property name="valign">center</property>
+                        <property name="model">animation-fps-model</property>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkLabel">
+                    <property name="halign">start</property>
+                    <property name="valign">center</property>
+                    <property name="label" translatable="yes">Set animation framerate. High setting shows smooth animations at the expense of high cpu resource.</property>
                   </object>
                 </child>
               </object>
@@ -377,19 +231,26 @@
       </object>
     </child>
   </object>
-  <object class="GtkAdjustment" id="scale-icons-adjust">
+  <object class="GtkAdjustment" id="animation-magnify-adjust">
     <property name="lower">0.0</property>
     <property name="upper">1.0</property>
     <property name="step-increment">0.01</property>
   </object>
-  <object class="GtkAdjustment" id="background-opacity-adjust">
+  <object class="GtkAdjustment" id="animation-spread-adjust">
     <property name="lower">0.0</property>
     <property name="upper">1.0</property>
     <property name="step-increment">0.01</property>
   </object>
-  <object class="GtkAdjustment" id="border-radius-adjust">
-    <property name="lower">0</property>
-    <property name="upper">6</property>
-    <property name="step-increment">1</property>
+  <object class="GtkAdjustment" id="animation-rise-adjust">
+    <property name="lower">0.0</property>
+    <property name="upper">1.0</property>
+    <property name="step-increment">0.01</property>
+  </object>
+  <object class="GtkStringList" id="animation-fps-model">
+    <items>
+      <item translatable="yes">High</item>
+      <item translatable="yes">Medium</item>
+      <item translatable="yes">Low</item>
+    </items>
   </object>
 </interface>

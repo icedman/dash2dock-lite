@@ -66,6 +66,8 @@ function buildPrefsWidget() {
   let builder = new Gtk.Builder();
   builder.add_from_file(`${UIFolderPath}/legacy/general.ui`);
   builder.add_from_file(`${UIFolderPath}/legacy/appearance.ui`);
+  builder.add_from_file(`${UIFolderPath}/legacy/tweaks.ui`);
+  builder.add_from_file(`${UIFolderPath}/legacy/others.ui`);
   builder.add_from_file(`${UIFolderPath}/menu.ui`);
   notebook.append_page(
     builder.get_object('general'),
@@ -74,6 +76,14 @@ function buildPrefsWidget() {
   notebook.append_page(
     builder.get_object('appearance'),
     new Gtk.Label({ label: _('Appearance') })
+  );
+  notebook.append_page(
+    builder.get_object('tweaks'),
+    new Gtk.Label({ label: _('Tweaks') })
+  );
+  notebook.append_page(
+    builder.get_object('others'),
+    new Gtk.Label({ label: _('Others') })
   );
 
   SettingsKeys.connectBuilder(builder);

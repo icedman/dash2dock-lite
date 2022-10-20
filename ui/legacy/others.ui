@@ -1,6 +1,6 @@
 <?xml version="1.0" ?>
 <interface>
-  <object class="GtkBox" id="general">
+  <object class="GtkBox" id="others">
     <property name="visible">True</property>
     <property name="can-focus">False</property>
     <property name="margin-start">12</property>
@@ -33,7 +33,7 @@
                         <property name="visible">True</property>
                         <property name="can-focus">False</property>
                         <property name="valign">center</property>
-                        <property name="label" translatable="yes">Animate Icons</property>
+                        <property name="label" translatable="yes">Trash</property>
                         <property name="xalign">0</property>
                         <property name="hexpand">1</property>
                         <attributes>
@@ -42,7 +42,7 @@
                       </object>
                     </child>
                     <child>
-                      <object class="GtkSwitch" id="animate-icons">
+                      <object class="GtkSwitch" id="trash-icon">
                         <property name="valign">center</property>
                       </object>
                     </child>
@@ -52,7 +52,7 @@
                   <object class="GtkLabel">
                     <property name="halign">start</property>
                     <property name="valign">center</property>
-                    <property name="label" translatable="yes">Animate the dash icons the pointer enters and moves over the dock.</property>
+                    <property name="label" translatable="yes">Add a dynamic Trash icon which changes with its state and with a access to Empty Trash action.</property>
                   </object>
                 </child>
               </object>
@@ -82,7 +82,7 @@
                         <property name="visible">True</property>
                         <property name="can-focus">False</property>
                         <property name="valign">center</property>
-                        <property name="label" translatable="yes">Autohide Icons</property>
+                        <property name="label" translatable="yes">Mounted Devices</property>
                         <property name="xalign">0</property>
                         <property name="hexpand">1</property>
                         <attributes>
@@ -91,7 +91,7 @@
                       </object>
                     </child>
                     <child>
-                      <object class="GtkSwitch" id="autohide-dash">
+                      <object class="GtkSwitch" id="mounted-icon">
                         <property name="valign">center</property>
                       </object>
                     </child>
@@ -101,7 +101,7 @@
                   <object class="GtkLabel">
                     <property name="halign">start</property>
                     <property name="valign">center</property>
-                    <property name="label" translatable="yes">Hide the dock when it overlaps with windows or when at fullscreen mode.</property>
+                    <property name="label" translatable="yes">Show mounted device icons to quickly open or unmount devices.</property>
                   </object>
                 </child>
               </object>
@@ -131,7 +131,7 @@
                         <property name="visible">True</property>
                         <property name="can-focus">False</property>
                         <property name="valign">center</property>
-                        <property name="label" translatable="yes">Pressure Sense</property>
+                        <property name="label" translatable="yes">Clock</property>
                         <property name="xalign">0</property>
                         <property name="hexpand">1</property>
                         <attributes>
@@ -140,7 +140,7 @@
                       </object>
                     </child>
                     <child>
-                      <object class="GtkSwitch" id="pressure-sense">
+                      <object class="GtkSwitch" id="clock-icon">
                         <property name="valign">center</property>
                       </object>
                     </child>
@@ -150,7 +150,7 @@
                   <object class="GtkLabel">
                     <property name="halign">start</property>
                     <property name="valign">center</property>
-                    <property name="label" translatable="yes">Move pointer down to force dash visiblity.</property>
+                    <property name="label" translatable="yes">Show an analog clock widget. Requires Clocks app (gnome-clocks) pinned to the dash</property>
                   </object>
                 </child>
               </object>
@@ -180,7 +180,7 @@
                         <property name="visible">True</property>
                         <property name="can-focus">False</property>
                         <property name="valign">center</property>
-                        <property name="label" translatable="yes">Peek Icons</property>
+                        <property name="label" translatable="yes">Calendar</property>
                         <property name="xalign">0</property>
                         <property name="hexpand">1</property>
                         <attributes>
@@ -189,7 +189,7 @@
                       </object>
                     </child>
                     <child>
-                      <object class="GtkSwitch" id="peek-hidden-icons">
+                      <object class="GtkSwitch" id="calendar-icon">
                         <property name="valign">center</property>
                       </object>
                     </child>
@@ -199,56 +199,7 @@
                   <object class="GtkLabel">
                     <property name="halign">start</property>
                     <property name="valign">center</property>
-                    <property name="label" translatable="yes">Partially show animated icons when the dash is auto hidden.This works only when pressure sense is enabled.</property>
-                  </object>
-                </child>
-              </object>
-            </child>
-          </object>
-        </child>
-        <child>
-          <object class="GtkListBoxRow">
-            <property name="visible">True</property>
-            <property name="can-focus">True</property>
-            <child>
-              <object class="GtkBox">
-                <property name="visible">True</property>
-                <property name="can-focus">False</property>
-                <property name="margin-start">12</property>
-                <property name="margin-end">12</property>
-                <property name="margin-top">12</property>
-                <property name="margin-bottom">12</property>
-                <property name="orientation">vertical</property>
-                <child>
-                  <object class="GtkBox">
-                    <property name="visible">True</property>
-                    <property name="can-focus">False</property>
-                    <property name="spacing">32</property>
-                    <child>
-                      <object class="GtkLabel">
-                        <property name="visible">True</property>
-                        <property name="can-focus">False</property>
-                        <property name="valign">center</property>
-                        <property name="label" translatable="yes">Visual Indicators</property>
-                        <property name="xalign">0</property>
-                        <property name="hexpand">1</property>
-                        <attributes>
-                          <attribute name="weight" value="PANGO_WEIGHT_BOLD"/>
-                        </attributes>
-                      </object>
-                    </child>
-                    <child>
-                      <object class="GtkSwitch" id="debug-visual">
-                        <property name="valign">center</property>
-                      </object>
-                    </child>
-                  </object>
-                </child>
-                <child>
-                  <object class="GtkLabel">
-                    <property name="halign">start</property>
-                    <property name="valign">center</property>
-                    <property name="label" translatable="yes">Show visual indicators when animations are running.</property>
+                    <property name="label" translatable="yes">Show an calendar widget. Requires Calendar app (gnome-calendar) pinned to the dash</property>
                   </object>
                 </child>
               </object>

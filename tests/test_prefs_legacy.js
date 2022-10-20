@@ -140,7 +140,7 @@ prefKeys.setKeys({});
 Gtk.init();
 
 let app = new Gtk.Application({
-  application_id: 'com.dash2dock-lite.GtkApplication',
+  application_id: 'com.dash2dock-lite.legacy.GtkApplication',
 });
 
 app.connect('activate', (me) => {
@@ -159,6 +159,8 @@ app.connect('activate', (me) => {
   let builder = new Gtk.Builder();
   builder.add_from_file(`ui/legacy/general.ui`);
   builder.add_from_file(`ui/legacy/appearance.ui`);
+  builder.add_from_file(`ui/legacy/tweaks.ui`);
+  builder.add_from_file(`ui/legacy/others.ui`);
   notebook.append_page(
     builder.get_object('general'),
     new Gtk.Label({ label: 'General' })
@@ -166,6 +168,14 @@ app.connect('activate', (me) => {
   notebook.append_page(
     builder.get_object('appearance'),
     new Gtk.Label({ label: 'Appearance' })
+  );
+  notebook.append_page(
+    builder.get_object('tweaks'),
+    new Gtk.Label({ label: 'Tweaks' })
+  );
+  notebook.append_page(
+    builder.get_object('others'),
+    new Gtk.Label({ label: 'Others' })
   );
 
   prefKeys.connectSignals(builder);

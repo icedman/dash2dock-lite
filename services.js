@@ -28,11 +28,9 @@ class ServiceCounter {
 
   update(elapsed) {
     this._ticks += elapsed;
-    // log(`${this.name} ${this._ticks}/${this._interval}`);
     if (this._ticks >= this._interval) {
       this._ticks -= this._interval;
       if (this._callback) {
-        // log(this.name);
         this._callback();
       }
       return true;

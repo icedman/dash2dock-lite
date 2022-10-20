@@ -23,6 +23,7 @@ const ANIM_SCALE_COEF = 2.5;
 const ANIM_ON_LEAVE_COEF = 1.4;
 const ANIM_ICON_RAISE = 0.25;
 const ANIM_ICON_SCALE = 1.8;
+const ANIM_ICON_SCALE_REDUCE = 0.5;
 const ANIM_ICON_HIT_AREA = 1.25;
 const ANIM_ICON_QUALITY = 2.0;
 const ANIM_REENABLE_DELAY = 750;
@@ -85,7 +86,7 @@ var Animator = class {
     this._iconsContainer.width = 1;
     this._iconsContainer.height = 1;
 
-    let magnification = (this.extension.animation_magnify * 0.9 || 0) - 0.2;
+    let magnification = (this.extension.animation_magnify * 0.9 || 0) - ANIM_ICON_SCALE_REDUCE;
     let spread = 1 - (this.extension.animation_spread * 1 || 0);
 
     let existingIcons = this._iconsContainer.get_children();

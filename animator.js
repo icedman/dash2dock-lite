@@ -415,6 +415,10 @@ var Animator = class {
       let scale = icon._targetScale;
       let fromScale = icon.get_scale()[0];
 
+      // could happen at login
+      icon.visible = !isNaN(pos[0]);
+      if (!icon.visible) return;
+
       icon.set_scale(1, 1);
       let from = this._get_position(icon);
       let dst = this._get_distance(from, icon._target);

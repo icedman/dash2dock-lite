@@ -145,7 +145,7 @@
           <object class="AdwActionRow">
             <property name="title" translatable="yes">Indicator Style</property>
             <property name="subtitle" translatable="yes"
-              >Customize the running app indicator.</property
+              >Customize the running app indicator style.</property
             >
             <property name="activatable-widget">running-indicator-style</property>
             <child>
@@ -159,8 +159,8 @@
 
         <child>
           <object class="AdwActionRow">
-            <property name="title" translatable="yes">Color</property>
-            <property name="subtitle" translatable="yes">Indicator color.</property>
+            <property name="title" translatable="yes">Indicator Color</property>
+            <property name="subtitle" translatable="yes">Select indicator color.</property>
             <property name="activatable-widget">running-indicator-color</property>
 
             <child>

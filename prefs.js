@@ -97,7 +97,7 @@ function buildPrefsWidget() {
   return notebook;
 }
 
-function _fillPreferencesWindow(window) {
+function fillPreferencesWindow(window) {
   let builder = new Gtk.Builder();
 
   builder.add_from_file(`${UIFolderPath}/general.ui`);

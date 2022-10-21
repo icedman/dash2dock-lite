@@ -68,8 +68,40 @@ def parseXML(source_file, target_file):
 
             group = ch.find('object[@class="AdwPreferencesGroup"]')
             groupTitle = group.find('property[@name="title"]')
+            groupDescription = group.find('property[@name="description"]')
 
-            # print(groupTitle.text)
+            ######################
+
+            # listBoxChild = doc.createElement('child')
+            # listBoxRow = _createElement(doc, 'object', [{'class': 'GtkListBoxRow'}], None)
+            # listBoxRow.appendChild(_createElement(doc, 'property', [{'name':'visible'}], 'True'))
+            # listBoxRow.appendChild(_createElement(doc, 'property', [{'name':'can-focus'}], 'True'))
+            # listBoxChild.appendChild(listBoxRow)
+            # listBox.appendChild(listBoxChild)
+
+            # row_template = ET.parse("./tests/legacy_row_template.ui").getroot().find('child')
+
+            # label = row_template.find('object/child/object/child/object[@class="GtkLabel"]/property[@name="label"]')
+            # label.text = groupTitle.text
+
+            # description = row_template.find('object/child/object[@class="GtkLabel"]/property[@name="label"]')
+            # description.text = groupDescription.text;
+
+            # box = row_template.find('object/child[1]/object')
+            # control = row_template.find('object/child[1]/object/child[2]')
+            # box.remove(control)
+
+            # row = _toDomElement(doc, row_template)
+            # listBoxRow.appendChild(row)
+
+            # groupChild = doc.createElement('child')
+            # groupBox = _createElement(doc, 'object', [{'class': 'GtkListBox'}], None)
+            # groupChild.appendChild(groupBox)
+            # listBox.appendChild(groupChild)
+
+            ######################
+            
+            groupBox = listBox
 
             for actionRow in group.findall('child/object[@class="AdwActionRow"]'):
                 actionTitle = actionRow.find('property[@name="title"]')
@@ -83,7 +115,7 @@ def parseXML(source_file, target_file):
                 listBoxRow.appendChild(_createElement(doc, 'property', [{'name':'visible'}], 'True'))
                 listBoxRow.appendChild(_createElement(doc, 'property', [{'name':'can-focus'}], 'True'))
                 listBoxChild.appendChild(listBoxRow)
-                listBox.appendChild(listBoxChild)
+                groupBox.appendChild(listBoxChild)
 
                 row_template = ET.parse("./tests/legacy_row_template.ui").getroot().find('child')
 

@@ -468,7 +468,7 @@ class Extension {
   _updateCss(disable) {
     if (!this.dashContainer) return;
 
-    let background = this.dash ? this.dash.first_child : null;
+    let background = this.dash ? this.dash._background : null;
     if (background && this.border_radius !== null) {
       let r = -1;
       if (!disable && !this.panel_mode) {
@@ -494,14 +494,20 @@ class Extension {
         background.visible = true;
       }
     }
+
+    if (!disable && this.animate_icons) {
+      this.dash.add_style_class_name('custom-dots');
+    } else {
+      this.dash.remove_style_class_name('custom-dots');
+    }
   }
 
   _updateBgOpacity(disable) {
     if (!this.dash) return;
     if (disable) {
-      this.dash.first_child.opacity = 255;
+      this.dash._background.opacity = 255;
     } else {
-      this.dash.first_child.opacity = 255 * this.background_opacity;
+      this.dash._background.opacity = 255 * this.background_opacity;
     }
     this._updateCss();
     this._updateTopBar();
@@ -587,7 +593,7 @@ class Extension {
     let iconSize = 64;
 
     try {
-      let background = this.dash.first_child;
+      this.dash._background;
       this.dash._box.first_child.first_child._delegate.icon.height;
     } catch (err) {
       // dash might not yet be ready
@@ -643,6 +649,7 @@ class Extension {
     } else {
       this.animator.disable();
     }
+    this._updateCss();
   }
 
   _updateAutohide(disable) {

@@ -40,7 +40,6 @@ var xDot = GObject.registerClass(
     }
 
     set_state(s) {
-      // count deep compare
       if (
         !this.state ||
         this.state.count != s.count ||

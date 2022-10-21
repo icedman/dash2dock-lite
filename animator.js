@@ -479,7 +479,7 @@ var Animator = class {
             );
             dot.set_state({
               count: icon._appwell.app.get_n_windows(),
-              color: 'white',
+              color: this.extension.running_indicator_color || 'white',
               style: this.extension.running_indicator_style,
             });
           }
@@ -589,6 +589,7 @@ var Animator = class {
   _onFocusWindow() {
     this._endAnimation();
     this._startAnimation();
+    this._relayout = 8;
   }
 
   _onFullScreen() {

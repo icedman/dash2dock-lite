@@ -157,6 +157,25 @@
           </object>
         </child>
 
+        <child>
+          <object class="AdwActionRow">
+            <property name="title" translatable="yes">Color</property>
+            <property name="subtitle" translatable="yes">Indicator color.</property>
+            <property name="activatable-widget">running-indicator-color</property>
+
+            <child>
+              <object class="GtkColorButton" id="running-indicator-color">
+                <property name="valign">center</property>
+                <property name="hexpand">false</property>
+                <property name="width-request">70px</property>
+                <property name="height-request">45px</property>
+                <property name="show-editor">true</property>
+                <property name="use-alpha">true</property>
+              </object>
+            </child>
+          </object>
+        </child>
+
       </object>
     </child>
 

@@ -151,10 +151,14 @@ class Extension {
 
   _enableSettings() {
     this._settings = ExtensionUtils.getSettings(schemaId);
+    this._settingsKeys = SettingsKeys;
 
     SettingsKeys.connectSettings(this._settings, (name, value) => {
       let n = name.replace(/-/g, '_');
       this[n] = value;
+
+      log(`${n} ${value}`);
+
       switch (name) {
         case 'apps-icon': // hide this from justperfection (for now)
         case 'animation-fps':
@@ -171,10 +175,9 @@ class Extension {
           }
           break;
         }
-        case 'running_indicator_style':
-          if (this.animator._enabled) {
-            this.animator._onEnterEvent();
-          }
+        case 'running-indicator-color':
+        case 'running-indicator-style':
+          this._onEnterEvent();
           break;
         case 'calendar-icon':
         case 'clock-icon': {

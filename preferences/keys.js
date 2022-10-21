@@ -108,4 +108,8 @@ SettingsKeys.setKeys({
     default_value: true,
     widget_type: 'dropdown',
   },
+  'running-indicator-color': {
+    default_value: [1, 1, 1, 1],
+    widget_type: 'color',
+  },
 });

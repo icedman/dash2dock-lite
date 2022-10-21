@@ -124,7 +124,12 @@
     <key type="i" name="running-indicator-style">
         <default>0</default>
         <summary>Running window indicator</summary>
-        <description>Customize the running window indicator.</description>
+        <description>Customize the running window indicator style.</description>
+    </key>
+    <key type="(dddd)" name="running-indicator-color">
+        <default>(1.,1.,1.,1.)</default>
+        <summary>Running window indicator color</summary>
+        <description>Customize the running window indicator color.</description>
     </key>
   </schema>
 </schemalist>

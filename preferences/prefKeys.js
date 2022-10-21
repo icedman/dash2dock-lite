@@ -1,3 +1,6 @@
+const Gdk = imports.gi.Gdk;
+const GLib = imports.gi.GLib;
+
 var PrefKeys = class {
   constructor() {
     this._keys = {};
@@ -24,10 +27,6 @@ var PrefKeys = class {
   setValue(name, value) {
     this._keys[name].value = value;
 
-    if (this._keys[name].callback) {
-      this._keys[name].callback();
-    }
-
     let settings = this._settings;
     let keys = this._keys;
     if (settings) {
@@ -45,7 +44,15 @@ var PrefKeys = class {
           settings.set_double(name, value);
           break;
         }
+        case 'color': {
+          settings.set_value(name, new GLib.Variant('(dddd)', value));
+          break;
+        }
       }
+    }
+
+    if (this._keys[name].callback) {
+      this._keys[name].callback();
     }
   }
 
@@ -99,6 +106,20 @@ var PrefKeys = class {
           if (key.object) key.object.set_value(key.value);
           break;
         }
+        case 'color': {
+          key.value = settings.get_value(name).deepUnpack();
+          if (key.object) {
+            key.object.set_rgba(
+              new Gdk.RGBA({
+                red: key.value[0],
+                green: key.value[1],
+                blue: key.value[2],
+                alpha: key.value[3],
+              })
+            );
+          }
+          break;
+        }
       }
 
       this._settingsListeners.push(
@@ -115,6 +136,13 @@ var PrefKeys = class {
             }
             case 'scale': {
               key.value = settings.get_double(name);
+              break;
+            }
+            case 'color': {
+              key.value = settings.get_value(name).deepUnpack();
+              if (key.value.length != 4) {
+                key.value = [1, 1, 1, 0];
+              }
               break;
             }
           }
@@ -164,6 +192,14 @@ var PrefKeys = class {
         case 'scale': {
           signal_id = key.object.connect('value-changed', (w) => {
             let value = w.get_value();
+            self.setValue(name, value);
+          });
+          break;
+        }
+        case 'color': {
+          signal_id = key.object.connect('color-set', (w) => {
+            let rgba = w.get_rgba();
+            let value = [rgba.red, rgba.green, rgba.blue, rgba.alpha];
             self.setValue(name, value);
           });
           break;

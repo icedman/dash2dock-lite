@@ -2,15 +2,6 @@
 
 const { Adw, Gdk, Gio, GLib, GObject, Gtk, Pango } = imports.gi;
 
-var ValueType = {
-  B: 'Boolean',
-  I: 'Integer',
-  D: 'Double',
-  S: 'String',
-  C: 'Color',
-  AS: 'StringArray',
-};
-
 class PrefKeys {
   constructor() {
     this._keys = {};
@@ -115,6 +106,15 @@ class PrefKeys {
           });
           break;
         }
+        case 'color': {
+          signal_id = key.object.connect('color-set', (w) => {
+            let rgba = w.get_rgba();
+            let value = [rgba.red, rgba.green, rgba.blue, rgba.alpha];
+            print(value);
+            self.setValue(name, value);
+          });
+          break;
+        }
         case 'button': {
           signal_id = key.object.connect('clicked', (w) => {
             if (key.callback) {
@@ -136,9 +136,13 @@ class PrefKeys {
 let prefKeys = new PrefKeys();
 prefKeys.setKeys({
   'animation-fps': {
-    value_type: ValueType.I,
     default_value: 0,
     widget_type: 'dropdown',
+    key_maps: {},
+  },
+  'running-indicator-color': {
+    default_value: [1, 1, 1, 1],
+    widget_type: 'color',
     key_maps: {},
   },
 });
@@ -211,11 +215,11 @@ app.connect('activate', (me) => {
   w.remove(menu_util);
 
   prefKeys.connectSignals(builder);
-  // prefKeys.getKey('reset').callback = () => {
-  //   prefKeys.reset('brightness_scale');
-  //   print(prefKeys.getValue('brightness_scale'));
-  //   print('reset');
-  // };
+  prefKeys.getKey('running-indicator-color').callback = () => {
+    // prefKeys.reset('brightness_scale');
+    print(prefKeys.getValue('running-indicator-color'));
+    // print('reset');
+  };
 
   w.connect('close_request', () => {
     m.close();

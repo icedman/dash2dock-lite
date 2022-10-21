@@ -39,8 +39,15 @@
 }
 
 /* adjust dot position - works for bottom layout only */
+/*
 StWidget.app-well-app-running-dot:insensitive {
   margin-bottom: 5px !important;
+}
+*/
+
+StWidget.app-well-app-running-dot:insensitive {
+  width: 0px !important;
+  height: 0px !important;
 }
 
 /* from gnome-shell

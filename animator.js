@@ -14,6 +14,7 @@ const setTimeout = Me.imports.utils.setTimeout;
 const setInterval = Me.imports.utils.setInterval;
 const clearInterval = Me.imports.utils.clearInterval;
 const clearTimeout = Me.imports.utils.clearTimeout;
+const xDot = Me.imports.apps.dot.xDot;
 
 const ANIM_INTERVAL = 15;
 const ANIM_INTERVAL_PAD = 15;
@@ -30,6 +31,8 @@ const ANIM_REENABLE_DELAY = 750;
 const ANIM_DEBOUNCE_END_DELAY = 1000;
 const ANIM_PREVIEW_DURATION = 1500;
 
+const DOT_CANVAS_SIZE = 96;
+
 var Animator = class {
   constructor() {
     this._enabled = false;
@@ -39,12 +42,16 @@ var Animator = class {
   enable() {
     if (this._enabled) return;
     this._iconsContainer = new St.Widget({ name: 'iconsContainer' });
+    this._dotsContainer = new St.Widget({ name: 'dotsContainer' });
+    Main.uiGroup.add_child(this._dotsContainer);
     Main.uiGroup.add_child(this._iconsContainer);
     // log('enable animator');
     this._enabled = true;
     this._dragging = false;
     this._oneShotId = null;
     this._relayout = 8;
+
+    this.show_dots = true;
   }
 
   disable() {
@@ -61,7 +68,12 @@ var Animator = class {
       Main.uiGroup.remove_child(this._iconsContainer);
       delete this._iconsContainer;
       this._iconsContainer = null;
+      Main.uiGroup.remove_child(this._dotsContainer);
+      delete this._dotsContainer;
+      this._dotsContainer = null;
     }
+
+    this._dots = [];
 
     if (this.dashContainer) {
       this._restoreIcons();
@@ -72,6 +84,23 @@ var Animator = class {
 
   preview() {
     this._preview = ANIM_PREVIEW_DURATION;
+  }
+
+  _precreate_dots(count) {
+    if (!this._dots) {
+      this._dots = [];
+    }
+    if (this.show_dots) {
+      for (let i = 0; i < count - this._dots.length; i++) {
+        let dot = new xDot(DOT_CANVAS_SIZE);
+        this._dots.push(dot);
+        this._dotsContainer.add_child(dot);
+        dot.set_position(0, 0);
+      }
+    }
+    this._dots.forEach((d) => {
+      d.visible = false;
+    });
   }
 
   _animate() {
@@ -85,8 +114,11 @@ var Animator = class {
 
     this._iconsContainer.width = 1;
     this._iconsContainer.height = 1;
+    this._dotsContainer.width = 1;
+    this._dotsContainer.height = 1;
 
-    let magnification = (this.extension.animation_magnify * 0.9 || 0) - ANIM_ICON_SCALE_REDUCE;
+    let magnification =
+      (this.extension.animation_magnify * 0.9 || 0) - ANIM_ICON_SCALE_REDUCE;
     let spread = 1 - (this.extension.animation_spread * 1 || 0);
 
     let existingIcons = this._iconsContainer.get_children();
@@ -141,10 +173,16 @@ var Animator = class {
     pivot.x *= scaleFactor;
     pivot.y *= scaleFactor;
 
+    let visible_dots = 0;
+
     let icons = this._findIcons();
     icons.forEach((c) => {
       let bin = c._bin;
       if (!bin) return;
+
+      if (c._appwell && c._appwell.app.get_n_windows() > 0) {
+        visible_dots++;
+      }
 
       for (let i = 0; i < existingIcons.length; i++) {
         if (existingIcons[i]._bin == bin) {
@@ -183,6 +221,8 @@ var Animator = class {
         });
       }
     });
+
+    this._precreate_dots(visible_dots);
 
     let pointer = global.get_pointer();
 
@@ -366,6 +406,8 @@ var Animator = class {
 
     let didAnimate = false;
 
+    let dotIndex = 0;
+
     // animate to target scale and position
     // todo .. make this velocity based
     animateIcons.forEach((icon) => {
@@ -418,6 +460,25 @@ var Animator = class {
             case 'top':
               icon._label.y = pos[1] + iconSize * scale * 0.9 * scaleFactor;
               break;
+          }
+        }
+
+        // update the dot
+        if (
+          this.show_dots &&
+          icon._appwell &&
+          icon._appwell.app.get_n_windows() > 0
+        ) {
+          let dot = this._dots[dotIndex++];
+          if (dot) {
+            dot.visible = true;
+            dot.set_position(pos[0], pos[1] + 2);
+            dot.set_scale(iconSize / DOT_CANVAS_SIZE, iconSize / DOT_CANVAS_SIZE);
+            dot.set_state({
+              count: icon._appwell.app.get_n_windows(),
+              color: 'white',
+              style: 'dash',
+            });
           }
         }
       }

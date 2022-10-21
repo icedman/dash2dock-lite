@@ -1,4 +1,5 @@
-// from gnome-shell-cairo clock extension
+// adapted from https://github.com/jderose9/dash-to-panel
+// adapted from https://github.com/micheleg/dash-to-dock
 
 const { Clutter, GObject, GLib, PangoCairo, Pango } = imports.gi;
 const Cairo = imports.cairo;
@@ -29,6 +30,9 @@ var xDot = GObject.registerClass(
       this.reactive = false;
 
       this.state = {};
+
+      this._padding = 8;
+      this._barHeight = 6;
     }
 
     redraw() {
@@ -37,7 +41,12 @@ var xDot = GObject.registerClass(
 
     set_state(s) {
       // count deep compare
-      if (!this.state ||this.state.count != s.count || this.state.color != s.color || this.state.style != s.style) {
+      if (
+        !this.state ||
+        this.state.count != s.count ||
+        this.state.color != s.color ||
+        this.state.style != s.style
+      ) {
         this.state = s;
         this.redraw();
       }
@@ -51,43 +60,31 @@ var xDot = GObject.registerClass(
       ctx.setOperator(Cairo.Operator.CLEAR);
       ctx.paint();
 
-      ctx.translate(size / 2, size / 2);
       ctx.setLineWidth(1);
       ctx.setLineCap(Cairo.LineCap.ROUND);
       ctx.setOperator(Cairo.Operator.SOURCE);
 
-      // background
-      /*
       ctx.save();
-      // Drawing.draw_line(ctx, dot_color, 2, 0, 0, size, size);
-      Drawing.draw_rounded_rect(
-        ctx,
-        dot_color,
-        -size/2,
-        -size/2,
-        size,
-        size,
-        2,
-        8
-      );
-      ctx.restore();
-      */
 
-      let style = {
-        length: 8,
-        distance: 24,
-        width: 4
-      };
-
-      ctx.save();
-      let count = this.state.count;
-      if (count > 3) count = 3;
-      let space = (style.length * count) + (style.distance * (count - 1));
-      let sw = space / count;
-      for(let i=0; i<count; i++) {
-        let x = -space/2 + (sw * i) + (sw/2);
-        let y = size/2 - style.width/2;
-        Drawing.draw_line(ctx, this.state.color, style.width, x-style.length/2, y, x+style.length/2, y);
+      switch (this.state.style) {
+        case 1:
+          this._draw_dots(ctx, this.state);
+          break;
+        case 2:
+          this._draw_dashes(ctx, this.state);
+          break;
+        case 3:
+          this._draw_squares(ctx, this.state);
+          break;
+        case 4:
+          this._draw_segmented(ctx, this.state);
+          break;
+        case 5:
+          this._draw_solid(ctx, this.state);
+          break;
+        case 0: // default
+        default:
+          this._draw_default(ctx, this.state);
       }
       ctx.restore();
 
@@ -95,5 +92,125 @@ var xDot = GObject.registerClass(
     }
 
     destroy() {}
+
+    _draw_segmented(ctx, state) {
+      let height = this._barHeight;
+      let width = size - this._padding * 2;
+      ctx.translate(this._padding, size - height);
+
+      let sz = width / 20;
+      let spacing = Math.ceil(width / 18); // separation between the dots
+      let dashLength = Math.ceil(
+        (width - (state.count - 1) * spacing) / state.count
+      );
+      let lineLength =
+        width - sz * (state.count - 1) - spacing * (state.count - 1);
+
+      for (let i = 0; i < state.count; i++) {
+        ctx.newSubPath();
+        ctx.rectangle(i * dashLength + i * spacing, 0, dashLength, height);
+      }
+
+      ctx.strokePreserve();
+      Drawing.set_color(ctx, state.color, 1.0);
+      ctx.fill();
+    }
+
+    _draw_solid(ctx, state) {
+      let height = this._barHeight;
+      let width = size - this._padding * 2;
+      ctx.translate(this._padding, size - height);
+
+      let sz = width / 20;
+
+      ctx.newSubPath();
+      ctx.rectangle(0, 0, size, sz);
+      ctx.strokePreserve();
+      Drawing.set_color(ctx, state.color, 1.0);
+      ctx.fill();
+    }
+
+    _draw_dashes(ctx, state) {
+      let height = this._barHeight;
+      let width = size - this._padding * 2;
+
+      let sz = width / 20;
+      let spacing = Math.ceil(width / 18); // separation between the dots
+      let dashLength = Math.floor(width / 4) - spacing;
+
+      ctx.translate(
+        Math.floor(
+          (size - state.count * dashLength - (state.count - 1) * spacing) / 2
+        ),
+        size - height
+      );
+
+      for (let i = 0; i < state.count; i++) {
+        ctx.newSubPath();
+        ctx.rectangle(i * dashLength + i * spacing, 0, dashLength, sz);
+      }
+
+      ctx.strokePreserve();
+      Drawing.set_color(ctx, state.color, 1.0);
+      ctx.fill();
+    }
+
+    _draw_squares(ctx, state) {
+      let height = this._barHeight + 2;
+      let width = size - this._padding * 2;
+
+      let spacing = Math.ceil(width / 18); // separation between the dots
+      let dashLength = height;
+
+      ctx.translate(
+        Math.floor(
+          (size - state.count * dashLength - (state.count - 1) * spacing) / 2
+        ),
+        size - height
+      );
+
+      for (let i = 0; i < state.count; i++) {
+        ctx.newSubPath();
+        ctx.rectangle(i * dashLength + i * spacing, 0, dashLength, height);
+      }
+
+      ctx.strokePreserve();
+      Drawing.set_color(ctx, state.color, 1.0);
+      ctx.fill();
+    }
+
+    _draw_dots(ctx, state) {
+      let height = this._barHeight;
+      let width = size - this._padding * 2;
+
+      let spacing = Math.ceil(width / 18); // separation between the dots
+      let radius = height;
+
+      ctx.translate(
+        Math.floor(
+          (size - state.count * radius - (state.count - 1) * spacing) / 2
+        ),
+        size - height
+      );
+
+      for (let i = 0; i < state.count; i++) {
+        ctx.newSubPath();
+        ctx.arc(
+          (2 * i + 1) * radius + i * radius,
+          -radius,
+          radius,
+          0,
+          2 * Math.PI
+        );
+      }
+
+      ctx.strokePreserve();
+      Drawing.set_color(ctx, state.color, 1.0);
+      ctx.fill();
+    }
+
+    _draw_default(ctx, state) {
+      this._draw_dots(ctx, { ...state, count: 1 });
+    }
   }
 );

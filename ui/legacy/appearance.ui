@@ -348,6 +348,56 @@
                         <property name="visible">True</property>
                         <property name="can-focus">False</property>
                         <property name="valign">center</property>
+                        <property name="label" translatable="yes">Indicator Style</property>
+                        <property name="xalign">0</property>
+                        <property name="hexpand">1</property>
+                        <attributes>
+                          <attribute name="weight" value="PANGO_WEIGHT_BOLD"/>
+                        </attributes>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkDropDown" id="running-indicator-style">
+                        <property name="valign">center</property>
+                        <property name="model">running-indicator-style-model</property>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkLabel">
+                    <property name="halign">start</property>
+                    <property name="valign">center</property>
+                    <property name="label" translatable="yes">Customize the running app indicator.</property>
+                  </object>
+                </child>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="GtkListBoxRow">
+            <property name="visible">True</property>
+            <property name="can-focus">True</property>
+            <child>
+              <object class="GtkBox">
+                <property name="visible">True</property>
+                <property name="can-focus">False</property>
+                <property name="margin-start">12</property>
+                <property name="margin-end">12</property>
+                <property name="margin-top">12</property>
+                <property name="margin-bottom">12</property>
+                <property name="orientation">vertical</property>
+                <child>
+                  <object class="GtkBox">
+                    <property name="visible">True</property>
+                    <property name="can-focus">False</property>
+                    <property name="spacing">32</property>
+                    <child>
+                      <object class="GtkLabel">
+                        <property name="visible">True</property>
+                        <property name="can-focus">False</property>
+                        <property name="valign">center</property>
                         <property name="label" translatable="yes">Translucent Topbar</property>
                         <property name="xalign">0</property>
                         <property name="hexpand">1</property>
@@ -391,5 +441,15 @@
     <property name="lower">0</property>
     <property name="upper">6</property>
     <property name="step-increment">1</property>
+  </object>
+  <object class="GtkStringList" id="running-indicator-style-model">
+    <items>
+      <item translatable="yes">Default</item>
+      <item translatable="yes">Dots</item>
+      <item translatable="yes">Dashes</item>
+      <item translatable="yes">Squares</item>
+      <item translatable="yes">Segmented</item>
+      <item translatable="yes">Solid</item>
+    </items>
   </object>
 </interface>

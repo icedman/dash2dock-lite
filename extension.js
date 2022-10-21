@@ -171,9 +171,13 @@ class Extension {
           }
           break;
         }
+        case 'running_indicator_style':
+          if (this.animator._enabled) {
+            this.animator._onEnterEvent();
+          }
+          break;
         case 'calendar-icon':
         case 'clock-icon': {
-          this.services.findIconsAndUpdate();
           this._onEnterEvent();
           break;
         }

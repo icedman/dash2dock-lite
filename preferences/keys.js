@@ -104,4 +104,8 @@ SettingsKeys.setKeys({
     default_value: true,
     widget_type: 'switch',
   },
+  'running-indicator-style': {
+    default_value: true,
+    widget_type: 'dropdown',
+  },
 });

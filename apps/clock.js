@@ -1,4 +1,4 @@
-// from gnome-shell-cairo clock extension
+// adapted from gnome-shell-cairo clock extension
 
 const { Clutter, GObject, GLib, PangoCairo, Pango } = imports.gi;
 const Cairo = imports.cairo;
@@ -14,6 +14,8 @@ var xClock = GObject.registerClass(
     Properties: {},
     Signals: {},
   },
+
+  // todo St.DrawingArea
   class xClock extends Clutter.Actor {
     _init(x) {
       super._init();

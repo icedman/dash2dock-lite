@@ -42,9 +42,9 @@ var Animator = class {
   enable() {
     if (this._enabled) return;
     this._iconsContainer = new St.Widget({ name: 'iconsContainer' });
+    Main.uiGroup.add_child(this._iconsContainer);
     this._dotsContainer = new St.Widget({ name: 'dotsContainer' });
     Main.uiGroup.add_child(this._dotsContainer);
-    Main.uiGroup.add_child(this._iconsContainer);
     // log('enable animator');
     this._enabled = true;
     this._dragging = false;
@@ -472,12 +472,15 @@ var Animator = class {
           let dot = this._dots[dotIndex++];
           if (dot) {
             dot.visible = true;
-            dot.set_position(pos[0], pos[1] + 2);
-            dot.set_scale(iconSize / DOT_CANVAS_SIZE, iconSize / DOT_CANVAS_SIZE);
+            dot.set_position(pos[0], pos[1] + 8 * scaleFactor);
+            dot.set_scale(
+              iconSize / DOT_CANVAS_SIZE,
+              iconSize / DOT_CANVAS_SIZE
+            );
             dot.set_state({
               count: icon._appwell.app.get_n_windows(),
               color: 'white',
-              style: 'dash',
+              style: this.extension.running_indicator_style,
             });
           }
         }

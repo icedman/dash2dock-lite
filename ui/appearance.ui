@@ -138,6 +138,30 @@
 
     <child>
       <object class="AdwPreferencesGroup">
+        <property name="title" translatable="yes">Running app indicator</property>
+        <property name="description" translatable="yes"></property>
+
+        <child>
+          <object class="AdwActionRow">
+            <property name="title" translatable="yes">Indicator Style</property>
+            <property name="subtitle" translatable="yes"
+              >Customize the running app indicator.</property
+            >
+            <property name="activatable-widget">running-indicator-style</property>
+            <child>
+              <object class="GtkDropDown" id="running-indicator-style">
+                <property name="valign">center</property>
+                <property name="model">running-indicator-style-model</property>
+              </object>
+            </child>
+          </object>
+        </child>
+
+      </object>
+    </child>
+
+    <child>
+      <object class="AdwPreferencesGroup">
         <property name="title" translatable="yes">Topbar</property>
         <property name="description" translatable="yes"
           ></property
@@ -181,5 +205,16 @@
     <property name="lower">0</property>
     <property name="upper">6</property>
     <property name="step-increment">1</property>
+  </object>
+
+  <object class="GtkStringList" id="running-indicator-style-model">
+    <items>
+      <item translatable="yes">Default</item>
+      <item translatable="yes">Dots</item>
+      <item translatable="yes">Dashes</item>
+      <item translatable="yes">Squares</item>
+      <item translatable="yes">Segmented</item>
+      <item translatable="yes">Solid</item>
+    </items>
   </object>
 </interface>

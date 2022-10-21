@@ -121,5 +121,10 @@
         <summary>Apps icon</summary>
         <description>Show the apps icon.</description>
     </key>
+    <key type="i" name="running-indicator-style">
+        <default>0</default>
+        <summary>Running window indicator</summary>
+        <description>Customize the running window indicator.</description>
+    </key>
   </schema>
 </schemalist>

@@ -16,6 +16,7 @@ const { schemaId, settingsKeys, SettingsKeys } = Me.imports.preferences.keys;
 const Animator = Me.imports.animator.Animator;
 const AutoHide = Me.imports.autohide.AutoHide;
 const Services = Me.imports.services.Services;
+const xDot = Me.imports.apps.dot.xDot;
 
 const setTimeout = Me.imports.utils.setTimeout;
 const setInterval = Me.imports.utils.setInterval;
@@ -27,6 +28,7 @@ class Extension {
     this.listeners = [];
     this.scale = 1.0;
     this.scale_icons = 0.5;
+    this.xDot = xDot;
 
     this._enableSettings();
     this._queryDisplay();

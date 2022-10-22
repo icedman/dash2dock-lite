@@ -14,7 +14,6 @@ const setTimeout = Me.imports.utils.setTimeout;
 const setInterval = Me.imports.utils.setInterval;
 const clearInterval = Me.imports.utils.clearInterval;
 const clearTimeout = Me.imports.utils.clearTimeout;
-const xDot = Me.imports.apps.dot.xDot;
 
 const ANIM_INTERVAL = 15;
 const ANIM_INTERVAL_PAD = 15;
@@ -90,9 +89,9 @@ var Animator = class {
     if (!this._dots) {
       this._dots = [];
     }
-    if (this.show_dots) {
+    if (this.show_dots && this.extension.xDot) {
       for (let i = 0; i < count - this._dots.length; i++) {
-        let dot = new xDot(DOT_CANVAS_SIZE);
+        let dot = new this.extension.xDot(DOT_CANVAS_SIZE);
         this._dots.push(dot);
         this._dotsContainer.add_child(dot);
         dot.set_position(0, 0);
@@ -107,7 +106,7 @@ var Animator = class {
     if (!this._iconsContainer || !this.dashContainer) return;
     this.dash = this.dashContainer.dash;
 
-    if (this._relayout > 0 && this.extension) {
+    if (this._relayout > 0 && this.extension && this._updateLayout) {
       this.extension._updateLayout();
       this._relayout--;
     }
@@ -610,7 +609,7 @@ var Animator = class {
   }
 
   _isInFullscreen() {
-    let monitor = this.dashContainer.monitor;
+    let monitor = this.dashContainer.monitor || this.dashContainer._monitor;
     return monitor.inFullscreen;
   }
 

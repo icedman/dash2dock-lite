@@ -24,6 +24,7 @@ publish:
 	cp -R apps ./build
 	cp -R preferences ./build
 	rm -rf ./*.zip
+	rm build/apps/*.desktop
 	cd build ; \
 	zip -qr ../dash2dock-lite@icedman.github.com.zip .
 

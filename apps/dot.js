@@ -116,25 +116,15 @@ var xDot = GObject.registerClass(
     }
 
     _draw_solid(ctx, state) {
-      let height = this._barHeight;
-      let width = size - this._padding * 2;
-      ctx.translate(this._padding, size - height);
-
-      let sz = width / 20;
-
-      ctx.newSubPath();
-      ctx.rectangle(0, 0, size, sz);
-      ctx.strokePreserve();
-      Drawing.set_color(ctx, state.color, 1.0);
-      ctx.fill();
+      this._draw_segmented(ctx, { ...state, count: 1 });
     }
 
     _draw_dashes(ctx, state) {
-      let height = this._barHeight + 3;
+      let height = this._barHeight + 2;
       let width = size - this._padding * 2;
 
-      let sz = width / 20;
-      let spacing = Math.ceil(width / 18); // separation between the dots
+      let sz = width / 14;
+      let spacing = Math.ceil(width / 16); // separation between the dots
       let dashLength = Math.floor(width / 4) - spacing;
 
       ctx.translate(

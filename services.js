@@ -63,19 +63,36 @@ var Services = class {
         },
         -1
       ),
-      new ServiceCounter('mounts', 1000 * 10, this.checkMounts.bind(this)),
       new ServiceCounter(
-        'mounts_recheck',
-        1000 * 60 * 2,
+        'ping',
+        1000 * 5,
         () => {
-          this._mounts_checked = false;
+          // deferred stuff is required when .desktop entry if first created
+
+          // check for deferred mounts
+          if (this._deferredMounts && this._deferredMounts.length) {
+            let mounts = [...this._deferredMounts];
+            this._deferredMounts = [];
+            mounts.forEach((m) => {
+              this._onMountAdded(null, m);
+            });
+          }
+
+          // check for deferred trash
+          if (!this._trashIconSetup) {
+            this.setupTrashIcon();
+          }
+          if (this._deferredTrash) {
+            this.updateTrashIcon(true);
+            this._deferredTrash = false;
+          }
         },
-        Math.floor(1000 * 60 * 1.8)
+        0
       ),
     ];
 
-    this._deferred_mounts = [];
-    this._deferred_trash_icon_show = false;
+    this._deferredMounts = [];
+    this._deferredTrash = false;
     this._volumeMonitor = Gio.VolumeMonitor.get();
     this._volumeMonitor.connectObject(
       'mount-added',
@@ -85,17 +102,37 @@ var Services = class {
       this
     );
 
+    this._trashDir = Gio.File.new_for_uri('trash:///');
+    this._trashMonitor = this._trashDir.monitor(
+      Gio.FileMonitorFlags.WATCH_MOVES,
+      null
+    );
+    this._trashMonitor.connectObject(
+      'changed',
+      (fileMonitor, file, otherFile, eventType) => {
+        switch (eventType) {
+          case Gio.FileMonitorEvent.CHANGED:
+          case Gio.FileMonitorEvent.CREATED:
+          case Gio.FileMonitorEvent.MOVED_IN:
+            return;
+        }
+        this.checkTrash();
+      },
+      this
+    );
+
     this.checkMounts();
     this.checkTrash();
-    this._checkTrashEmpty(); // << this actually reads the directory for files
   }
 
   disable() {
-    this._volumeMonitor.disconnectObject(this);
     this._services = [];
 
-    this.fnTrashDir = null;
-    this.fnTrashMonitor = null;
+    this._volumeMonitor.disconnectObject(this);
+    this._volumeMonitor = null;
+    this._trashMonitor.disconnectObject(this);
+    this._trashMonitor = null;
+    this._trashDir = null;
 
     if (this._oneShotId) {
       clearInterval(this._oneShotId);
@@ -117,20 +154,27 @@ var Services = class {
 
   _onMountAdded(monitor, mount) {
     if (!this.extension.mounted_icon) {
-      return;
+      return false;
     }
+
     this.last_mounted = mount;
-    this._mountTickCounter = 0;
     let basename = mount.get_default_location().get_basename();
     let appname = `mount-${basename}-dash2dock-lite.desktop`;
     this.setupMountIcon(mount);
     let favorites = Fav.getAppFavorites();
+
     this.temporarilyMuteOverview();
     favorites.addFavoriteAtPos(
       appname,
       this.extension.trash_icon ? favorites._getIds().length - 1 : -1
     );
     this.extension._onEnterEvent();
+
+    // re-try later
+    if (!favorites._getIds().includes(appname)) {
+      this._deferredMounts.push(mount);
+    }
+    return true;
   }
 
   _onMountRemoved(monitor, mount) {
@@ -165,15 +209,14 @@ var Services = class {
         null
       );
       Main.notify('Preparing the mounted device icon...');
-      this._mountTickCounter = 1000 * 5;
-      this._mounts_checked = false;
-      this._deferred_mounts.push(mount);
+      this._deferredMounts.push(mount);
     }
   }
 
-  _checkTrashEmpty() {
+  checkTrash() {
     if (!this.extension.trash_icon) return;
-    let iter = this.fnTrashDir.enumerate_children(
+
+    let iter = this._trashDir.enumerate_children(
       'standard::*',
       Gio.FileQueryInfoFlags.NONE,
       null
@@ -183,46 +226,8 @@ var Services = class {
     return this.trashFull;
   }
 
-  checkTrash() {
-    if (!this.fnTrashDir) {
-      this.fnTrashDir = Gio.File.new_for_uri('trash:///');
-      this.fnTrashMonitor = this.fnTrashDir.monitor(
-        Gio.FileMonitorFlags.WATCH_MOVES,
-        null
-      );
-      this.fnTrashMonitor.connect(
-        'changed',
-        (fileMonitor, file, otherFile, eventType) => {
-          switch (eventType) {
-            case Gio.FileMonitorEvent.CHANGED:
-            case Gio.FileMonitorEvent.CREATED:
-            case Gio.FileMonitorEvent.MOVED_IN:
-              return;
-          }
-          this._checkTrashEmpty();
-        }
-      );
-    }
-
-    if (this._deferred_trash_icon_show) {
-      this.updateTrashIcon(true);
-      this._deferred_trash_icon_show = false;
-    }
-
-    return this.trashFull;
-  }
-
   checkMounts() {
     if (!this.extension.mounted_icon) {
-      return;
-    }
-    if (this._mounts_checked) return;
-
-    if (this._deferred_mounts && this._deferred_mounts.length) {
-      this._deferred_mounts.forEach((m) => {
-        this._onMountAdded(null, m);
-      });
-      this._deferred_mounts = [];
       return;
     }
 
@@ -247,14 +252,11 @@ var Services = class {
       }
     });
 
-    this._mounts_checked = true;
-
     mounts.forEach((mount) => {
       let basename = mount.get_default_location().get_basename();
       let appname = `mount-${basename}-dash2dock-lite.desktop`;
       if (!favs.includes(appname)) {
-        this._deferred_mounts.push(mount);
-        this._mounts_checked = false;
+        this._deferredMounts.push(mount);
       }
     });
 
@@ -262,6 +264,9 @@ var Services = class {
   }
 
   setupTrashIcon() {
+    if (!this.extension.trash_icon) {
+      return;
+    }
     let fn = Gio.File.new_for_path(
       '.local/share/applications/trash-dash2dock-lite.desktop'
     );
@@ -276,7 +281,8 @@ var Services = class {
         null
       );
       Main.notify('Preparing the trash icon...');
-      this._deferred_trash_icon_show = true;
+      this._deferredTrash = true;
+      this._trashIconSetup = true;
     }
     fn = null;
   }
@@ -301,7 +307,6 @@ var Services = class {
 
   updateTrashIcon(show) {
     if (show) {
-      this.setupTrashIcon();
       this._pin('trash-dash2dock-lite.desktop');
     } else {
       this._unpin('trash-dash2dock-lite.desktop');

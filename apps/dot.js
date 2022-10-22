@@ -130,7 +130,7 @@ var xDot = GObject.registerClass(
     }
 
     _draw_dashes(ctx, state) {
-      let height = this._barHeight;
+      let height = this._barHeight + 3;
       let width = size - this._padding * 2;
 
       let sz = width / 20;
@@ -155,7 +155,7 @@ var xDot = GObject.registerClass(
     }
 
     _draw_squares(ctx, state) {
-      let height = this._barHeight + 2;
+      let height = this._barHeight + 3;
       let width = size - this._padding * 2;
 
       let spacing = Math.ceil(width / 18); // separation between the dots

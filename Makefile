@@ -6,10 +6,12 @@ build:
 	glib-compile-schemas --strict --targetdir=schemas/ schemas
 
 install:
+	echo "installing..."
 	mkdir -p ~/.local/share/gnome-shell/extensions/dash2dock-lite@icedman.github.com/
 	cp -R ./* ~/.local/share/gnome-shell/extensions/dash2dock-lite@icedman.github.com/
 
 publish:
+	echo "publishing..."
 	rm -rf build
 	mkdir build
 	cp LICENSE ./build
@@ -26,6 +28,7 @@ publish:
 	zip -qr ../dash2dock-lite@icedman.github.com.zip .
 
 install-zip: publish
+	echo "installing zip..."
 	rm -rf ~/.local/share/gnome-shell/extensions/dash2dock-lite@icedman.github.com
 	mkdir -p ~/.local/share/gnome-shell/extensions/dash2dock-lite@icedman.github.com/
 	unzip -q dash2dock-lite@icedman.github.com.zip -d ~/.local/share/gnome-shell/extensions/dash2dock-lite@icedman.github.com/

@@ -12,7 +12,9 @@
 * Add dynamic calendar
 * Add mounted devices 
 * Add border radius settings
+* Add hover icon border radius settings
 * Add panel mode
+* Custom running window indicator style and color
 
 # Release 12
 
@@ -23,4 +25,5 @@
 * Shrink/Scale icons
 * Dark background
 * Background opacity
+* Topbar opacity
 

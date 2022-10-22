@@ -491,8 +491,10 @@ var Animator = class {
       }
     });
 
+    // todo... remove?
     if (validPosition && !this._isInFullscreen()) {
       this._iconsContainer.show();
+      this._dotsContainer.show();
     }
 
     if (didAnimate) {
@@ -600,8 +602,10 @@ var Animator = class {
     if (!this._iconsContainer) return;
     if (!this._isInFullscreen()) {
       this._iconsContainer.show();
+      this._dotsContainer.show();
     } else {
       this._iconsContainer.hide();
+      this._dotsContainer.hide();
     }
   }
 

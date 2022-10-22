@@ -20,7 +20,7 @@ const Services = Me.imports.services.Services;
 const setTimeout = Me.imports.utils.setTimeout;
 const setInterval = Me.imports.utils.setInterval;
 
-const SERVICES_UPDATE_INTERVAL = 4500;
+const SERVICES_UPDATE_INTERVAL = 2500;
 
 class Extension {
   enable() {
@@ -31,6 +31,7 @@ class Extension {
     this._enableSettings();
     this._queryDisplay();
 
+    // setup the dash container
     this.dashContainer = new St.BoxLayout({
       name: 'dashContainer',
       vertical: true,
@@ -58,13 +59,16 @@ class Extension {
     }
     this.dashContainer.add_child(this.dash);
 
+    // service
     this.services = new Services();
     this.services.extension = this;
 
+    // animator
     this.animator = new Animator();
     this.animator.extension = this;
     this.animator.dashContainer = this.dashContainer;
 
+    // autohider
     this.autohider = new AutoHide();
     this.autohider.extension = this;
     this.autohider.animator = this.animator;
@@ -157,7 +161,7 @@ class Extension {
       let n = name.replace(/-/g, '_');
       this[n] = value;
 
-      log(`${n} ${value}`);
+      // log(`${n} ${value}`);
 
       switch (name) {
         case 'apps-icon': // hide this from justperfection (for now)

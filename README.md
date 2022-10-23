@@ -52,6 +52,11 @@ Using the AUR (Arch User Repository):
 $ git clone https://aur.archlinux.org/gnome-shell-extension-dash2dock-lite.git
 $ makepkg -si
 ```
+
+From Gnome Extensions Repository
+
+Visit [https://extensions.gnome.org/extension/4994/dash2dock-lite/](https://extensions.gnome.org/extension/4994/dash2dock-lite/)
+
 ## Alternative
 
 Checkout Dash Animator. It adds animation to Dash-to-Dock.

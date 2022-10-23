@@ -18,6 +18,25 @@ function init() {
   ExtensionUtils.initTranslations();
 }
 
+function updateMonitors(window, builder) {
+  // monitors
+  let count = 1;
+  try {
+    let tmp = Gio.File.new_for_path(
+      `${GLib.get_tmp_dir()}/monitors.dash2dock-lite`
+    );
+    const [, contents, etag] = tmp.load_contents(null);
+    count = Number(contents);
+  } catch (err) {
+    // fail silently
+    // print(err)
+  }
+
+  // print(count);
+  const monitors_model = builder.get_object('preferred-monitor-model');
+  monitors_model.splice(count, 6 - count, []);
+}
+
 function addMenu(window, builder) {
   let menu_util = builder.get_object('menu_util');
   window.add(menu_util);
@@ -114,5 +133,6 @@ function fillPreferencesWindow(window) {
   SettingsKeys.connectBuilder(builder);
   SettingsKeys.connectSettings(ExtensionUtils.getSettings(schemaId));
 
+  updateMonitors(window, builder);
   addMenu(window, builder);
 }

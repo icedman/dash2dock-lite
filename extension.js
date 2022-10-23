@@ -1,6 +1,6 @@
 'use strict';
 
-const { St, Shell, Gio, Gtk, Meta, Clutter } = imports.gi;
+const { St, Shell, Gio, GLib, Gtk, Meta, Clutter } = imports.gi;
 
 const Main = imports.ui.main;
 const Dash = imports.ui.dash.Dash;
@@ -148,12 +148,29 @@ class Extension {
 
   _queryDisplay() {
     let idx = this.preferred_monitor || 0;
-    this.monitor = Main.layoutManager.monitors[idx] || Main.layoutManager.primaryMonitor;
+    this.monitor =
+      Main.layoutManager.monitors[idx] || Main.layoutManager.primaryMonitor;
     if (this.dashContainer) {
       this.dashContainer._monitor = this.monitor;
     }
     this.sw = this.monitor.width;
     this.sh = this.monitor.height;
+
+    if (this._last_monitor_count != Main.layoutManager.monitors.length) {
+      // save monitor count - for preference pages
+      let tmp = Gio.File.new_for_path(
+        `${GLib.get_tmp_dir()}/monitors.dash2dock-lite`
+      );
+      let content = `${Main.layoutManager.monitors.length}\n`;
+      const [, etag] = tmp.replace_contents(
+        content,
+        null,
+        false,
+        Gio.FileCreateFlags.REPLACE_DESTINATION,
+        null
+      );
+      this._last_monitor_count = Main.layoutManager.monitors.length;
+    }
   }
 
   _enableSettings() {
@@ -195,6 +212,7 @@ class Extension {
           this._updateAnimation();
           break;
         }
+        case 'preferred_monitor':
         case 'autohide-dash': {
           this.disable();
           this.enable();

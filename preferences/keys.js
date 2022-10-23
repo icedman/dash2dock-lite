@@ -105,11 +105,19 @@ SettingsKeys.setKeys({
     widget_type: 'switch',
   },
   'running-indicator-style': {
-    default_value: true,
+    default_value: 0,
     widget_type: 'dropdown',
   },
   'running-indicator-color': {
     default_value: [1, 1, 1, 1],
     widget_type: 'color',
+  },
+  'preferred-monitor': {
+    default_value: 0,
+    widget_type: 'dropdown',
+  },
+  'dock-location': {
+    default_value: 0,
+    widget_type: 'dropdown',
   },
 });

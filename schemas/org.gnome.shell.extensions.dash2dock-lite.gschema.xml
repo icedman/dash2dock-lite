@@ -126,6 +126,16 @@
         <summary>Running window indicator</summary>
         <description>Customize the running window indicator style.</description>
     </key>
+    <key type="i" name="preferred-monitor">
+        <default>0</default>
+        <summary>Preferred monitor to dock</summary>
+        <description>Show dock on selected monitor.</description>
+    </key>
+    <key type="i" name="dock-location">
+        <default>0</default>
+        <summary>Dock location</summary>
+        <description>Set dock position on the screen.</description>
+    </key>
     <key type="(dddd)" name="running-indicator-color">
         <default>(1.,1.,1.,1.)</default>
         <summary>Running window indicator color</summary>

@@ -7,6 +7,45 @@
 
     <child>
       <object class="AdwPreferencesGroup">
+        <property name="title" translatable="yes">Dock</property>
+        <property name="description" translatable="yes"></property>
+
+        <child>
+          <object class="AdwActionRow">
+            <property name="title" translatable="yes">Preferred Monitor</property>
+            <property name="subtitle" translatable="yes"
+              >Show dock on selected monitor.</property
+            >
+            <property name="activatable-widget">preferred-monitor</property>
+            <child>
+              <object class="GtkDropDown" id="preferred-monitor">
+                <property name="valign">center</property>
+                <property name="model">preferred-monitor-model</property>
+              </object>
+            </child>
+          </object>
+        </child>
+
+        <child>
+          <object class="AdwActionRow">
+            <property name="title" translatable="yes">Dock Location</property>
+            <property name="subtitle" translatable="yes"
+              >Set dock position on the screen.</property
+            >
+            <property name="activatable-widget">dock-location</property>
+            <child>
+              <object class="GtkDropDown" id="dock-location">
+                <property name="valign">center</property>
+                <property name="model">dock-location-model</property>
+              </object>
+            </child>
+          </object>
+        </child>
+      </object>
+    </child>
+
+    <child>
+      <object class="AdwPreferencesGroup">
         <property name="title" translatable="yes">Animation</property>
         <property name="description" translatable="yes"></property>
 
@@ -120,5 +159,24 @@
       </object>
     </child>
 
+  </object>
+
+  <object class="GtkStringList" id="preferred-monitor-model">
+    <items>
+      <item translatable="yes">Primary Monitor</item>
+      <item translatable="yes">Secondary Monitor</item>
+      <item translatable="yes">Monitor 3</item>
+      <item translatable="yes">Monitor 4</item>
+      <item translatable="yes">Monitor 5</item>
+      <item translatable="yes">Monitor 6</item>
+    </items>
+  </object>
+
+  <object class="GtkStringList" id="dock-location-model">
+    <items>
+      <item translatable="yes">Bottom</item>
+      <item translatable="yes">Left</item>
+      <item translatable="yes">Right</item>
+    </items>
   </object>
 </interface>

@@ -25,7 +25,7 @@
             </child>
           </object>
         </child>
-
+      <!--
         <child>
           <object class="AdwActionRow">
             <property name="title" translatable="yes">Dock Location</property>
@@ -41,6 +41,7 @@
             </child>
           </object>
         </child>
+      -->
       </object>
     </child>
 

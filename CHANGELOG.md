@@ -1,3 +1,8 @@
+# Target Release 
+
+* Add preferred monitor
+* Add dock position
+
 # Release 14
 
 * Update settings panel

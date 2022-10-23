@@ -148,8 +148,14 @@ class Extension {
 
   _queryDisplay() {
     let idx = this.preferred_monitor || 0;
+    if (idx == 0) {
+      idx = Main.layoutManager.primaryIndex;
+    } else if (idx == Main.layoutManager.primaryIndex) {
+      idx = 0;
+    }
     this.monitor =
       Main.layoutManager.monitors[idx] || Main.layoutManager.primaryMonitor;
+
     if (this.dashContainer) {
       this.dashContainer._monitor = this.monitor;
     }
@@ -212,7 +218,7 @@ class Extension {
           this._updateAnimation();
           break;
         }
-        case 'preferred_monitor':
+        case 'preferred-monitor':
         case 'autohide-dash': {
           this.disable();
           this.enable();
@@ -619,6 +625,13 @@ class Extension {
 
     this._queryDisplay();
 
+    let pos = this.dock_location || 0;
+    // be friendly with dash-to-dock
+    // remap [ bottom, left, right, top ] >> [ top, right, bottom, left ]
+    this.dashContainer._position = [2, 3, 1, 0][pos];
+    this._vertical =
+      this.dashContainer._position == 1 || this.dashContainer._position == 3;
+
     this.scaleFactor = St.ThemeContext.get_for_stage(global.stage).scale_factor;
     let iconSize = 64;
 
@@ -636,14 +649,33 @@ class Extension {
     } else {
     }
 
-    this.dashContainer.set_size(this.sw, dockHeight * this.scaleFactor);
+    if (!this._vertical) {
+      // top/bottom
+      this.dashContainer.set_size(this.sw, dockHeight * this.scaleFactor);
+      this.dash._box.layout_manager.orientation = 0;
+    } else {
+      this.dashContainer.set_size(dockHeight * this.scaleFactor, this.sh);
+      this.dash._box.layout_manager.orientation = 1;
+      this.dash._box.width = dockHeight * this.scaleFactor;
+    }
+
     if (this.autohider._enabled && !this.autohider._shown) {
       // remain hidden
     } else {
-      this.dashContainer.set_position(
-        this.monitor.x,
-        this.monitor.y + this.sh - dockHeight * this.scaleFactor
-      );
+      if (!this._vertical) {
+        this.dashContainer.set_position(
+          this.monitor.x,
+          this.monitor.y + this.sh - dockHeight * this.scaleFactor
+        );
+      } else {
+        this.dashContainer.set_position(
+          this.monitor.x,
+          this.monitor.y
+          // this.monitor.x,
+          // this.monitor.y + this.sh - dockHeight * this.scaleFactor
+        );
+      }
+
       this.dashContainer._fixedPosition = this.animator._get_position(
         this.dashContainer
       );

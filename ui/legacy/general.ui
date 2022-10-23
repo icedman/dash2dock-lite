@@ -33,6 +33,56 @@
                         <property name="visible">True</property>
                         <property name="can-focus">False</property>
                         <property name="valign">center</property>
+                        <property name="label" translatable="yes">Preferred Monitor</property>
+                        <property name="xalign">0</property>
+                        <property name="hexpand">1</property>
+                        <attributes>
+                          <attribute name="weight" value="PANGO_WEIGHT_BOLD"/>
+                        </attributes>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkDropDown" id="preferred-monitor">
+                        <property name="valign">center</property>
+                        <property name="model">preferred-monitor-model</property>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkLabel">
+                    <property name="halign">start</property>
+                    <property name="valign">center</property>
+                    <property name="label" translatable="yes">Show dock on selected monitor.</property>
+                  </object>
+                </child>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="GtkListBoxRow">
+            <property name="visible">True</property>
+            <property name="can-focus">True</property>
+            <child>
+              <object class="GtkBox">
+                <property name="visible">True</property>
+                <property name="can-focus">False</property>
+                <property name="margin-start">12</property>
+                <property name="margin-end">12</property>
+                <property name="margin-top">12</property>
+                <property name="margin-bottom">12</property>
+                <property name="orientation">vertical</property>
+                <child>
+                  <object class="GtkBox">
+                    <property name="visible">True</property>
+                    <property name="can-focus">False</property>
+                    <property name="spacing">32</property>
+                    <child>
+                      <object class="GtkLabel">
+                        <property name="visible">True</property>
+                        <property name="can-focus">False</property>
+                        <property name="valign">center</property>
                         <property name="label" translatable="yes">Animate Icons</property>
                         <property name="xalign">0</property>
                         <property name="hexpand">1</property>
@@ -257,5 +307,22 @@
         </child>
       </object>
     </child>
+  </object>
+  <object class="GtkStringList" id="preferred-monitor-model">
+    <items>
+      <item translatable="yes">Primary Monitor</item>
+      <item translatable="yes">Secondary Monitor</item>
+      <item translatable="yes">Monitor 3</item>
+      <item translatable="yes">Monitor 4</item>
+      <item translatable="yes">Monitor 5</item>
+      <item translatable="yes">Monitor 6</item>
+    </items>
+  </object>
+  <object class="GtkStringList" id="dock-location-model">
+    <items>
+      <item translatable="yes">Bottom</item>
+      <item translatable="yes">Left</item>
+      <item translatable="yes">Right</item>
+    </items>
   </object>
 </interface>

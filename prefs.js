@@ -2,7 +2,6 @@
 
 const { Adw, Gdk, GLib, Gtk, GObject, Gio, Pango } = imports.gi;
 const Me = imports.misc.extensionUtils.getCurrentExtension();
-const { SettingsKeys } = Me.imports.preferences.keys;
 const UIFolderPath = Me.dir.get_child('ui').get_path();
 
 const Gettext = imports.gettext.domain('dash2dock-lite');
@@ -10,7 +9,7 @@ const _ = Gettext.gettext;
 
 const ExtensionUtils = imports.misc.extensionUtils;
 
-const { schemaId, settingsKeys } = Me.imports.preferences.keys;
+const { schemaId, SettingsKeys } = Me.imports.preferences.keys;
 
 function init() {
   let iconTheme = Gtk.IconTheme.get_for_display(Gdk.Display.get_default());

@@ -368,7 +368,7 @@
                   <object class="GtkLabel">
                     <property name="halign">start</property>
                     <property name="valign">center</property>
-                    <property name="label" translatable="yes">Customize the running app indicator.</property>
+                    <property name="label" translatable="yes">Customize the running app indicator style.</property>
                   </object>
                 </child>
               </object>
@@ -398,7 +398,7 @@
                         <property name="visible">True</property>
                         <property name="can-focus">False</property>
                         <property name="valign">center</property>
-                        <property name="label" translatable="yes">Color</property>
+                        <property name="label" translatable="yes">Indicator Color</property>
                         <property name="xalign">0</property>
                         <property name="hexpand">1</property>
                         <attributes>
@@ -422,7 +422,7 @@
                   <object class="GtkLabel">
                     <property name="halign">start</property>
                     <property name="valign">center</property>
-                    <property name="label" translatable="yes">Indicator color.</property>
+                    <property name="label" translatable="yes">Select indicator color.</property>
                   </object>
                 </child>
               </object>

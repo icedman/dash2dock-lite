@@ -609,7 +609,7 @@ var Animator = class {
   }
 
   _isInFullscreen() {
-    let monitor = this.dashContainer.monitor || this.dashContainer._monitor;
+    let monitor = this.dashContainer._monitor;
     return monitor.inFullscreen;
   }
 

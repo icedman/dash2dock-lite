@@ -147,9 +147,10 @@ class Extension {
   }
 
   _queryDisplay() {
-    this.monitor = Main.layoutManager.primaryMonitor;
+    let idx = this.preferred_monitor || 0;
+    this.monitor = Main.layoutManager.monitors[idx] || Main.layoutManager.primaryMonitor;
     if (this.dashContainer) {
-      this.dashContainer.monitor = this.monitor;
+      this.dashContainer._monitor = this.monitor;
     }
     this.sw = this.monitor.width;
     this.sh = this.monitor.height;
@@ -284,6 +285,11 @@ class Extension {
     Main.layoutManager.connectObject(
       'startup-complete',
       this.startUp.bind(this),
+      'monitors-changed',
+      () => {
+        this._updateLayout();
+        this._onEnterEvent();
+      },
       this
     );
 

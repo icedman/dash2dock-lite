@@ -84,8 +84,9 @@ var AutoHide = class {
   }
 
   _beginAnimation(t) {
-    let y = this.dashContainer.monitor.y;
-    let height = this.dashContainer.monitor.height;
+    let monitor = this.dashContainer._monitor;
+    let y = monitor.y;
+    let height = monitor.height;
     this.target = y + height - t;
     if (this._intervalId == null) {
       if (this.dashContainer && this.extension) {
@@ -114,7 +115,7 @@ var AutoHide = class {
 
   _onMotionEvent() {
     if (this.extension.pressure_sense && !this._shown) {
-      let monitor = this.dashContainer.monitor;
+      let monitor = this.dashContainer._monitor;
 
       let sw = this.extension.sw;
       let sh = this.extension.sh;
@@ -265,7 +266,7 @@ var AutoHide = class {
 
     if (pointer[1] > dash_position[1]) return false;
 
-    let monitor = this.dashContainer.monitor;
+    let monitor = this.dashContainer._monitor;
     let actors = global.get_window_actors();
     let windows = actors.map((a) => a.get_meta_window());
     windows = windows.filter((w) => w.get_monitor() == monitor.index);

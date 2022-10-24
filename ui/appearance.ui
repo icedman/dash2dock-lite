@@ -46,6 +46,42 @@
             </child>
           </object>
         </child>
+
+        <child>
+          <object class="AdwActionRow">
+            <property name="title" translatable="yes">Icon Effect</property>
+            <property name="subtitle" translatable="yes"
+              >Set icon rendering effect.</property
+            >
+            <property name="activatable-widget">icon-effect</property>
+            <child>
+              <object class="GtkDropDown" id="icon-effect">
+                <property name="valign">center</property>
+                <property name="model">icon-effect-model</property>
+              </object>
+            </child>
+          </object>
+        </child>
+
+        <child>
+          <object class="AdwActionRow">
+            <property name="title" translatable="yes">Icon Effect Color</property>
+            <property name="subtitle" translatable="yes">Select icon effect color.</property>
+            <property name="activatable-widget">icon-effect-color</property>
+
+            <child>
+              <object class="GtkColorButton" id="icon-effect-color">
+                <property name="valign">center</property>
+                <property name="hexpand">false</property>
+                <property name="width-request">70px</property>
+                <property name="height-request">45px</property>
+                <property name="show-editor">true</property>
+                <property name="use-alpha">true</property>
+              </object>
+            </child>
+          </object>
+        </child>
+
       </object>
     </child>
 
@@ -234,6 +270,14 @@
       <item translatable="yes">Squares</item>
       <item translatable="yes">Segmented</item>
       <item translatable="yes">Solid</item>
+    </items>
+  </object>
+
+  <object class="GtkStringList" id="icon-effect-model">
+    <items>
+      <item translatable="yes">Default</item>
+      <item translatable="yes">Tint</item>
+      <item translatable="yes">Monochrome</item>
     </items>
   </object>
 </interface>

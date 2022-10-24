@@ -1,7 +1,8 @@
 # Target Release 
 
 * Add preferred monitor
-* Add dock position
+* Add icon color effects
+* Add dock position (on-hold)
 
 # Release 14
 

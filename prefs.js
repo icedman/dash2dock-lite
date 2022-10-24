@@ -11,6 +11,8 @@ const ExtensionUtils = imports.misc.extensionUtils;
 
 const { schemaId, SettingsKeys } = Me.imports.preferences.keys;
 
+let debugToggled = 0;
+
 function init() {
   let iconTheme = Gtk.IconTheme.get_for_display(Gdk.Display.get_default());
   iconTheme.add_search_path(`${UIFolderPath}/icons`);
@@ -111,6 +113,7 @@ function buildPrefsWidget() {
     let gtkVersion = Gtk.get_major_version();
     let w = gtkVersion === 3 ? notebook.get_toplevel() : notebook.get_root();
     addMenu(w, builder);
+    updateMonitors(w, builder);
   });
   return notebook;
 }
@@ -129,9 +132,18 @@ function fillPreferencesWindow(window) {
   window.add(builder.get_object('others'));
   window.set_search_enabled(true);
 
+  let settings = ExtensionUtils.getSettings(schemaId);
+
   SettingsKeys.connectBuilder(builder);
-  SettingsKeys.connectSettings(ExtensionUtils.getSettings(schemaId));
+  SettingsKeys.connectSettings(settings);
 
   updateMonitors(window, builder);
   addMenu(window, builder);
+
+  settings.connect('changed::debug-visual', () => {
+    debugToggled++;
+    if (debugToggled > 4) {
+      builder.get_object('dock-location-row').visible = true;
+    }
+  });
 }

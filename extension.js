@@ -214,8 +214,21 @@ class Extension {
           this._onEnterEvent();
           break;
         }
+        case 'icon-effect':
+        case 'icon-effect-color': {
+          if (this.animator._enabled) {
+            this.animator.enable();
+            this.animator.disable();
+            this.startUp();
+          }
+        }
         case 'animate-icons': {
           this._updateAnimation();
+          break;
+        }
+        case 'dock-location': {
+          this._updateLayout();
+          this._onEnterEvent();
           break;
         }
         case 'preferred-monitor':
@@ -649,30 +662,36 @@ class Extension {
     } else {
     }
 
-    if (!this._vertical) {
+    if (this._vertical) {
+      // left/right
+      this.dashContainer.set_size(dockHeight * this.scaleFactor, this.sh);
+      this.dash.last_child.layout_manager.orientation = 1;
+      this.dash._box.layout_manager.orientation = 1;
+      this.dash._box.height = -1;
+      this.dash._box.width = dockHeight * this.scaleFactor;
+    } else {
       // top/bottom
       this.dashContainer.set_size(this.sw, dockHeight * this.scaleFactor);
+      this.dash.last_child.layout_manager.orientation = 0;
       this.dash._box.layout_manager.orientation = 0;
-    } else {
-      this.dashContainer.set_size(dockHeight * this.scaleFactor, this.sh);
-      this.dash._box.layout_manager.orientation = 1;
-      this.dash._box.width = dockHeight * this.scaleFactor;
+      this.dash._box.height = -1;
+      this.dash._box.width = -1;
     }
 
     if (this.autohider._enabled && !this.autohider._shown) {
       // remain hidden
     } else {
-      if (!this._vertical) {
-        this.dashContainer.set_position(
-          this.monitor.x,
-          this.monitor.y + this.sh - dockHeight * this.scaleFactor
-        );
-      } else {
+      if (this._vertical) {
+        // left/right
         this.dashContainer.set_position(
           this.monitor.x,
           this.monitor.y
-          // this.monitor.x,
-          // this.monitor.y + this.sh - dockHeight * this.scaleFactor
+        );
+      } else {
+        // top/bottom
+        this.dashContainer.set_position(
+          this.monitor.x,
+          this.monitor.y + this.sh - dockHeight * this.scaleFactor
         );
       }
 

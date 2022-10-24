@@ -120,4 +120,12 @@ SettingsKeys.setKeys({
     default_value: 0,
     widget_type: 'dropdown',
   },
+  'icon-effect': {
+    default_value: 0,
+    widget_type: 'dropdown',
+  },
+  'icon-effect-color': {
+    default_value: [1, 1, 1, 1],
+    widget_type: 'color',
+  },
 });

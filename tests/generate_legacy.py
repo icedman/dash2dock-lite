@@ -107,6 +107,10 @@ def parseXML(source_file, target_file):
                 actionTitle = actionRow.find('property[@name="title"]')
                 actionSubTitle = actionRow.find('property[@name="subtitle"]')
                 actionControl = actionRow.find('child')
+                visible = actionRow.find('property[@name="visible"]')
+
+                if not visible is None and visible.text == 'false':
+                    continue
                 
                 # print(actionTitle.text)
 

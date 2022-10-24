@@ -15,6 +15,9 @@ const setInterval = Me.imports.utils.setInterval;
 const clearInterval = Me.imports.utils.clearInterval;
 const clearTimeout = Me.imports.utils.clearTimeout;
 
+const TintEffect = Me.imports.effects.tint_effect.TintEffect;
+const MonochromeEffect = Me.imports.effects.monochrome_effect.MonochromeEffect;
+
 const ANIM_INTERVAL = 15;
 const ANIM_INTERVAL_PAD = 15;
 const ANIM_POS_COEF = 2;
@@ -51,12 +54,41 @@ var Animator = class {
     this._relayout = 8;
 
     this.show_dots = true;
+
+    if (this.extension.icon_effect > 0) {
+      let effect = null;
+      let effect_dash = null;
+      switch(this.extension.icon_effect) {
+        case 1: {
+          effect = new TintEffect({
+              name: 'color',
+              color: this.extension.icon_effect_color
+          });
+          effect = new TintEffect({
+              name: 'color',
+              color: this.extension.icon_effect_color
+          });
+          break;
+        }
+        case 2: {
+          effect = new MonochromeEffect({
+              name: 'color',
+              color: this.extension.icon_effect_color
+          });
+          break;
+        }
+      }
+      this._iconsContainer.add_effect(effect);
+      this._lastEffect = effect;
+    }
   }
 
   disable() {
     if (!this._enabled) return;
     this._enabled = false;
     this._endAnimation();
+
+    this._lastEffect = null;
 
     if (this._oneShotId) {
       clearInterval(this._oneShotId);
@@ -234,7 +266,7 @@ var Animator = class {
       if (this.extension.services) {
         this.extension.services.updateIcon(c.first_child);
       }
-
+      
       let orphan = true;
       for (let i = 0; i < icons.length; i++) {
         if (icons[i]._bin == c._bin) {
@@ -276,6 +308,7 @@ var Animator = class {
             : null,
           gicon: bin.first_child.gicon ? bin.first_child.gicon : null,
         });
+        img._source = bin;
         img.set_icon_size(iconSize * ANIM_ICON_QUALITY);
         img.set_scale(1 / ANIM_ICON_QUALITY, 1 / ANIM_ICON_QUALITY);
         icon.add_child(img);

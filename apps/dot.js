@@ -93,6 +93,8 @@ var xDot = GObject.registerClass(
     destroy() {}
 
     _draw_segmented(ctx, state) {
+      let count = state.count;
+      if (count > 4) count = 4;
       let height = this._barHeight;
       let width = size - this._padding * 2;
       ctx.translate(this._padding, size - height);
@@ -100,12 +102,12 @@ var xDot = GObject.registerClass(
       let sz = width / 20;
       let spacing = Math.ceil(width / 18); // separation between the dots
       let dashLength = Math.ceil(
-        (width - (state.count - 1) * spacing) / state.count
+        (width - (count - 1) * spacing) / count
       );
       let lineLength =
-        width - sz * (state.count - 1) - spacing * (state.count - 1);
+        width - sz * (count - 1) - spacing * (count - 1);
 
-      for (let i = 0; i < state.count; i++) {
+      for (let i = 0; i < count; i++) {
         ctx.newSubPath();
         ctx.rectangle(i * dashLength + i * spacing, 0, dashLength, height);
       }
@@ -120,6 +122,8 @@ var xDot = GObject.registerClass(
     }
 
     _draw_dashes(ctx, state) {
+      let count = state.count;
+      if (count > 4) count = 4;
       let height = this._barHeight + 2;
       let width = size - this._padding * 2;
 
@@ -129,12 +133,12 @@ var xDot = GObject.registerClass(
 
       ctx.translate(
         Math.floor(
-          (size - state.count * dashLength - (state.count - 1) * spacing) / 2
+          (size - count * dashLength - (count - 1) * spacing) / 2
         ),
         size - height
       );
 
-      for (let i = 0; i < state.count; i++) {
+      for (let i = 0; i < count; i++) {
         ctx.newSubPath();
         ctx.rectangle(i * dashLength + i * spacing, 0, dashLength, sz);
       }
@@ -145,6 +149,8 @@ var xDot = GObject.registerClass(
     }
 
     _draw_squares(ctx, state) {
+      let count = state.count;
+      if (count > 4) count = 4;
       let height = this._barHeight + 3;
       let width = size - this._padding * 2;
 
@@ -153,12 +159,12 @@ var xDot = GObject.registerClass(
 
       ctx.translate(
         Math.floor(
-          (size - state.count * dashLength - (state.count - 1) * spacing) / 2
+          (size - count * dashLength - (count - 1) * spacing) / 2
         ),
         size - height
       );
 
-      for (let i = 0; i < state.count; i++) {
+      for (let i = 0; i < count; i++) {
         ctx.newSubPath();
         ctx.rectangle(i * dashLength + i * spacing, 0, dashLength, height);
       }
@@ -169,6 +175,8 @@ var xDot = GObject.registerClass(
     }
 
     _draw_dots(ctx, state) {
+      let count = state.count;
+      if (count > 4) count = 4;
       let height = this._barHeight;
       let width = size - this._padding * 2;
 
@@ -177,12 +185,12 @@ var xDot = GObject.registerClass(
 
       ctx.translate(
         Math.floor(
-          (size - state.count * radius - (state.count - 1) * spacing) / 2
+          (size - count * radius - (count - 1) * spacing) / 2
         ),
         size - height
       );
 
-      for (let i = 0; i < state.count; i++) {
+      for (let i = 0; i < count; i++) {
         ctx.newSubPath();
         ctx.arc(
           (2 * i + 1) * radius + i * radius,

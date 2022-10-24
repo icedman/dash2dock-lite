@@ -141,5 +141,15 @@
         <summary>Running window indicator color</summary>
         <description>Customize the running window indicator color.</description>
     </key>
+    <key type="i" name="icon-effect">
+        <default>0</default>
+        <summary>Icon effect</summary>
+        <description>Set icon rendering effect.</description>
+    </key>
+    <key type="(dddd)" name="icon-effect-color">
+        <default>(1.,1.,1.,1.)</default>
+        <summary>Rendering effect color</summary>
+        <description>Set the icon rendering effect color.</description>
+    </key>
   </schema>
 </schemalist>

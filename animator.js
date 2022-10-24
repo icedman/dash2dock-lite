@@ -17,6 +17,7 @@ const clearTimeout = Me.imports.utils.clearTimeout;
 
 const TintEffect = Me.imports.effects.tint_effect.TintEffect;
 const MonochromeEffect = Me.imports.effects.monochrome_effect.MonochromeEffect;
+const TestEffect = Me.imports.effects.test_effect.TestEffect;
 
 const ANIM_INTERVAL = 15;
 const ANIM_INTERVAL_PAD = 15;
@@ -43,11 +44,12 @@ var Animator = class {
 
   enable() {
     if (this._enabled) return;
+
     this._iconsContainer = new St.Widget({ name: 'iconsContainer' });
-    Main.uiGroup.add_child(this._iconsContainer);
+    Main.uiGroup.insert_child_above(this._iconsContainer, this.dashContainer);
     this._dotsContainer = new St.Widget({ name: 'dotsContainer' });
-    Main.uiGroup.add_child(this._dotsContainer);
-    // log('enable animator');
+    Main.uiGroup.insert_child_above(this._dotsContainer, this.dashContainer);
+
     this._enabled = true;
     this._dragging = false;
     this._oneShotId = null;
@@ -57,13 +59,8 @@ var Animator = class {
 
     if (this.extension.icon_effect > 0) {
       let effect = null;
-      let effect_dash = null;
       switch(this.extension.icon_effect) {
         case 1: {
-          effect = new TintEffect({
-              name: 'color',
-              color: this.extension.icon_effect_color
-          });
           effect = new TintEffect({
               name: 'color',
               color: this.extension.icon_effect_color
@@ -72,6 +69,13 @@ var Animator = class {
         }
         case 2: {
           effect = new MonochromeEffect({
+              name: 'color',
+              color: this.extension.icon_effect_color
+          });
+          break;
+        }
+        case 3: {
+          effect = new TestEffect({
               name: 'color',
               color: this.extension.icon_effect_color
           });
@@ -109,8 +113,6 @@ var Animator = class {
     if (this.dashContainer) {
       this._restoreIcons();
     }
-
-    // log('disable animator');
   }
 
   preview() {
@@ -505,6 +507,8 @@ var Animator = class {
           icon._appwell &&
           icon._appwell.app.get_n_windows() > 0
         ) {
+          let o = this.extension.running_indicator_color && this.extension.running_indicator_color.length == 4 ? this.extension.running_indicator_color[3] : 1;
+          this._dotsContainer.opacity = 255 * o;
           let dot = this._dots[dotIndex++];
           if (dot) {
             dot.visible = true;

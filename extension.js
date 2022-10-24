@@ -55,6 +55,9 @@ class Extension {
       // this.dash.add_style_class_name('overview');
     }
 
+    this.dashContainer.visible = false;
+    this.dash.visible = false;
+
     this.dashContainer.dash = this.dash;
     if (this.dash.get_parent()) {
       this.dash.get_parent().remove_child(this.dash);
@@ -87,7 +90,11 @@ class Extension {
     this._updateBgDark();
     this._updateBgOpacity();
     this._updateLayout();
+
     this._updateAnimation();
+    this.animator._iconsContainer.visible = false;
+    this.animator._dotsContainer.visible = false;
+
     this._updateAutohide();
     this._updateTopBar();
     this._updateCss();
@@ -143,6 +150,11 @@ class Extension {
       this._updateLayout();
       this._onEnterEvent();
       this.oneShotStartupCompleteId = null;
+
+      this.dashContainer.visible = true;
+      this.dash.visible = true;
+      this.animator._iconsContainer.visible = true;
+      this.animator._dotsContainer.visible = true;
     }, 500);
   }
 
@@ -331,6 +343,10 @@ class Extension {
     );
 
     global.display.connectObject(
+      // 'window-demands-attention',
+      // () => { log('window-demands-attention') },
+      // 'window-marked-urgent',
+      // () => { log('window-marked-urgent') },
       'notify::focus-window',
       this._onFocusWindow.bind(this),
       'in-fullscreen-changed',

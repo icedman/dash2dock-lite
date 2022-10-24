@@ -81,6 +81,9 @@ var xDot = GObject.registerClass(
         case 5:
           this._draw_solid(ctx, this.state);
           break;
+        case 6:
+          this._draw_binary(ctx, this.state);
+          break;
         case 0: // default
         default:
           this._draw_default(ctx, this.state);
@@ -199,6 +202,45 @@ var xDot = GObject.registerClass(
           0,
           2 * Math.PI
         );
+      }
+
+      ctx.strokePreserve();
+      Drawing.set_color(ctx, state.color, 1.0);
+      ctx.fill();
+    }
+
+    _draw_binary(ctx, state) {
+      let count = 4;
+      let n = Math.min(15, state.count);
+      let binaryValue = String('0000' + (n >>> 0).toString(2)).slice(-4);
+
+      let height = this._barHeight + 2;
+      let width = size - this._padding * 2;
+
+      let spacing = Math.ceil(width / 14); // separation between the dots
+      let dashLength = height * 1.4;
+      let radius = height * 0.8;
+
+      ctx.translate(
+        Math.floor(
+          (size - count * dashLength - (count - 1) * spacing) / 2
+        ),
+        size - height - radius/2
+      );
+
+      for (let i = 0; i < count; i++) {
+        ctx.newSubPath();
+        if (binaryValue[i] == '1') {
+          ctx.arc(
+            i * dashLength + i * spacing + dashLength/2,
+            radius/2,
+            radius,
+            0,
+            2 * Math.PI
+          );
+        } else {
+          ctx.rectangle(i * dashLength + i * spacing, 0, dashLength, height-2);
+        }
       }
 
       ctx.strokePreserve();

@@ -270,6 +270,7 @@
       <item translatable="yes">Squares</item>
       <item translatable="yes">Segmented</item>
       <item translatable="yes">Solid</item>
+      <item translatable="yes">Binary</item>
     </items>
   </object>
 
@@ -278,6 +279,7 @@
       <item translatable="yes">Default</item>
       <item translatable="yes">Tint</item>
       <item translatable="yes">Monochrome</item>
+      <item translatable="yes">(Test)</item>
     </items>
   </object>
 </interface>

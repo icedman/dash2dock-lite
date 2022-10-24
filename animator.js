@@ -375,6 +375,10 @@ var Animator = class {
       this._preview = null;
     }
 
+    if (this.extension.animation_rise + this.extension.animation_magnify + this.extension.animation_spread == 0) {
+      nearestIcon = null;      
+    }
+
     //
     if (!this.extension.peek_hidden_icons) {
       if (

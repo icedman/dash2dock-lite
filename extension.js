@@ -175,7 +175,7 @@ class Extension {
     this.sh = this.monitor.height;
 
     if (this._last_monitor_count != Main.layoutManager.monitors.length) {
-      // save monitor count - for preference pages
+      // save monitor count - for preference pages (todo dbus?)
       let tmp = Gio.File.new_for_path(
         `${GLib.get_tmp_dir()}/monitors.dash2dock-lite`
       );

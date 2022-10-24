@@ -512,7 +512,6 @@ var Animator = class {
           icon._appwell.app.get_n_windows() > 0
         ) {
           let o = this.extension.running_indicator_color && this.extension.running_indicator_color.length == 4 ? this.extension.running_indicator_color[3] : 1;
-          this._dotsContainer.opacity = 255 * o;
           let dot = this._dots[dotIndex++];
           if (dot) {
             dot.visible = true;

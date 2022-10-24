@@ -342,6 +342,9 @@ class Extension {
       this
     );
 
+    Main.messageTray.connectObject('queue-changed', (count) => {
+    }, this);
+
     global.display.connectObject(
       // 'window-demands-attention',
       // () => { log('window-demands-attention') },
@@ -397,6 +400,7 @@ class Extension {
     this.dashContainer.set_track_hover(false);
     this.dashContainer.disconnectObject(this);
     Main.sessionMode.disconnectObject(this);
+    Main.messageTray.disconnectObject(this);
     Main.overview.disconnectObject(this);
     Main.layoutManager.disconnectObject(this);
     global.display.disconnectObject(this);

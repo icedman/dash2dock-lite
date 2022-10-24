@@ -288,18 +288,18 @@ var Services = class {
   }
 
   _pin(app) {
-    this.temporarilyMuteOverview();
     let favorites = Fav.getAppFavorites();
     if (!favorites._getIds().includes(app)) {
+      this.temporarilyMuteOverview();
       favorites.addFavorite(app);
       this.extension._onEnterEvent();
     }
   }
 
   _unpin(app) {
-    this.temporarilyMuteOverview();
     let favorites = Fav.getAppFavorites();
     if (favorites._getIds().includes(app)) {
+      this.temporarilyMuteOverview();
       favorites.removeFavorite(app);
       this.extension._onEnterEvent();
     }

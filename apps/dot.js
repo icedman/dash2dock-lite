@@ -70,23 +70,38 @@ var xDot = GObject.registerClass(
           this._draw_dots(ctx, this.state);
           break;
         case 2:
-          this._draw_dashes(ctx, this.state);
+          this._draw_dot(ctx, this.state);
           break;
         case 3:
-          this._draw_squares(ctx, this.state);
+          this._draw_dashes(ctx, this.state);
           break;
         case 4:
-          this._draw_segmented(ctx, this.state);
+          this._draw_dash(ctx, this.state);
           break;
         case 5:
-          this._draw_solid(ctx, this.state);
+          this._draw_squares(ctx, this.state);
           break;
         case 6:
+          this._draw_square(ctx, this.state);
+          break;
+        case 7:
+          this._draw_segmented(ctx, this.state);
+          break;
+        case 8:
+          this._draw_solid(ctx, this.state);
+          break;
+        case 9:
+          this._draw_triangles(ctx, this.state);
+          break
+        case 10:
+          this._draw_triangle(ctx, this.state);
+          break;
+        case 11:
           this._draw_binary(ctx, this.state);
           break;
         case 0: // default
         default:
-          this._draw_default(ctx, this.state);
+          this._draw_dot(ctx, this.state);
       }
       ctx.restore();
 
@@ -116,7 +131,7 @@ var xDot = GObject.registerClass(
       }
 
       ctx.strokePreserve();
-      Drawing.set_color(ctx, state.color, 1.0);
+      Drawing.set_color(ctx, state.color, state.color[3]);
       ctx.fill();
     }
 
@@ -147,14 +162,18 @@ var xDot = GObject.registerClass(
       }
 
       ctx.strokePreserve();
-      Drawing.set_color(ctx, state.color, 1.0);
+      Drawing.set_color(ctx, state.color, state.color[3]);
       ctx.fill();
+    }
+
+    _draw_dash(ctx, state) {
+      this._draw_dashes(ctx, { ...state, count: 1 });
     }
 
     _draw_squares(ctx, state) {
       let count = state.count;
       if (count > 4) count = 4;
-      let height = this._barHeight + 3;
+      let height = this._barHeight + 5;
       let width = size - this._padding * 2;
 
       let spacing = Math.ceil(width / 18); // separation between the dots
@@ -173,8 +192,44 @@ var xDot = GObject.registerClass(
       }
 
       ctx.strokePreserve();
-      Drawing.set_color(ctx, state.color, 1.0);
+      Drawing.set_color(ctx, state.color, state.color[3]);
       ctx.fill();
+    }
+
+    _draw_square(ctx, state) {
+      this._draw_squares(ctx, { ...state, count: 1 });
+    }
+
+    _draw_triangles(ctx, state) {
+      let count = state.count;
+      if (count > 4) count = 4;
+      let height = this._barHeight + 6;
+      let width = size - this._padding * 2;
+
+      let spacing = Math.ceil(width / 16); // separation between the dots
+      let dashLength = height + 8;
+
+      ctx.translate(
+        Math.floor(
+          (size - count * dashLength - (count - 1) * spacing) / 2
+        ),
+        size - height
+      );
+
+      for (let i = 0; i < count; i++) {
+        ctx.newSubPath();
+        ctx.moveTo(i * dashLength + i * spacing + dashLength/2, 0);
+        ctx.lineTo(i * dashLength + i * spacing, height);
+        ctx.lineTo(i * dashLength + i * spacing + dashLength, height);
+      }
+
+      ctx.strokePreserve();
+      Drawing.set_color(ctx, state.color, state.color[3]);
+      ctx.fill();
+    }
+
+    _draw_triangle(ctx, state) {
+      this._draw_triangles(ctx, { ...state, count: 1 });
     }
 
     _draw_dots(ctx, state) {
@@ -205,7 +260,7 @@ var xDot = GObject.registerClass(
       }
 
       ctx.strokePreserve();
-      Drawing.set_color(ctx, state.color, 1.0);
+      Drawing.set_color(ctx, state.color, state.color[3]);
       ctx.fill();
     }
 
@@ -219,7 +274,7 @@ var xDot = GObject.registerClass(
 
       let spacing = Math.ceil(width / 14); // separation between the dots
       let dashLength = height * 1.4;
-      let radius = height * 0.8;
+      let radius = height * 0.9;
 
       ctx.translate(
         Math.floor(
@@ -244,11 +299,11 @@ var xDot = GObject.registerClass(
       }
 
       ctx.strokePreserve();
-      Drawing.set_color(ctx, state.color, 1.0);
+      Drawing.set_color(ctx, state.color, state.color[3]);
       ctx.fill();
     }
 
-    _draw_default(ctx, state) {
+    _draw_dot(ctx, state) {
       this._draw_dots(ctx, { ...state, count: 1 });
     }
   }

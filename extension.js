@@ -18,7 +18,7 @@ const AutoHide = Me.imports.autohide.AutoHide;
 const Services = Me.imports.services.Services;
 const xDot = Me.imports.apps.dot.xDot;
 
-// const ColorEffect = Me.imports.effects.color_effect.ColorEffect;
+const ColorEffect = Me.imports.effects.color_effect.ColorEffect;
 
 const setTimeout = Me.imports.utils.setTimeout;
 const setInterval = Me.imports.utils.setInterval;
@@ -43,11 +43,19 @@ class Extension {
       vertical: true,
     });
     this.dashContainer.delegate = this;
-
     Main.layoutManager.addChrome(this.dashContainer, {
       affectsStruts: !this.autohide_dash,
       trackFullscreen: true,
     });
+
+    // setup the panel background
+    this.panelBackground = new St.Widget({
+      name: 'panelBackground',
+    });
+    Main.uiGroup.insert_child_below(
+      this.panelBackground,
+      Main.panel.get_parent()
+    );
 
     // todo
     this.reuseExistingDash = true;
@@ -61,6 +69,24 @@ class Extension {
 
     this.dashContainer.visible = false;
     this.dash.visible = false;
+
+    // color effects
+    this._backgroundEffect = new ColorEffect({
+      name: 'dash_background',
+      color: [0, 0, 0, 0.2],
+    });
+    this.dash._background.add_effect_with_name(
+      'dash_background',
+      this._backgroundEffect
+    );
+    this._panelBackgroundEffect = new ColorEffect({
+      name: 'panel_background',
+      color: [0, 0, 0, 0.2],
+    });
+    this.panelBackground.add_effect_with_name(
+      'panel_background',
+      this._panelBackgroundEffect
+    );
 
     this.dashContainer.dash = this.dash;
     if (this.dash.get_parent()) {
@@ -121,6 +147,9 @@ class Extension {
     this._updateAutohide(true);
     this._updateTopBar(true);
     this._updateCss(true);
+
+    this.dash._background.remove_effect_by_name('dash_background');
+    this.panelBackground.remove_effect_by_name('panel_background');
 
     this.dashContainer.remove_child(this.dash);
     if (this.reuseExistingDash) {
@@ -284,11 +313,12 @@ class Extension {
           break;
         }
         // case 'background-opacity':
-        // case 'background-color': {
-        //   this._updateBgDark();
-        //   this._updateBgOpacity();
-        //   break;
-        // }
+        case 'topbar-background-color':
+        case 'background-color': {
+          this._updateBgDark();
+          this._updateBgOpacity();
+          break;
+        }
         case 'pressure-sense': {
           this.disable();
           this.enable();
@@ -524,19 +554,16 @@ class Extension {
   _updateBgDark(disable) {
     if (!this.dashContainer) return;
 
-    if (this.background_dark && !disable) {
-      this.dash.add_style_class_name('dark');
-    } else {
-      this.dash.remove_style_class_name('dark');
-    }
+    this._backgroundEffect.color = this.background_color || [0, 0, 0, 0.5];
+    this._panelBackgroundEffect.color = this.topbar_background_color || [
+      0, 0, 0, 0.5,
+    ];
 
-    // this.dash._background.remove_effect_by_name('background');
-    // let effect = new ColorEffect({
-    //   name: 'color',
-    //   color: this.background_color,
-    //   opacity: this.background_opacity
-    // });
-    // this.dash._background.add_effect_with_name('background', effect);
+    // if (this.background_dark && !disable) {
+    //   this.dash.add_style_class_name('dark');
+    // } else {
+    //   this.dash.remove_style_class_name('dark');
+    // }
 
     this._updateCss();
   }
@@ -598,11 +625,16 @@ class Extension {
 
   _updateBgOpacity(disable) {
     if (!this.dash) return;
-    if (disable) {
-      this.dash._background.opacity = 255;
-    } else {
-      this.dash._background.opacity = 255 * this.background_opacity;
-    }
+
+    this._backgroundEffect.blend = this.background_color[3] || 0.5;
+    this._panelBackgroundEffect.blend = this._panelBackgroundEffect[3] || 0.5;
+
+    // if (disable) {
+    //   this.dash._background.opacity = 255;
+    // } else {
+    //   this.dash._background.opacity = 255 * this.background_opacity;
+    // }
+
     this._updateCss();
     this._updateTopBar();
   }
@@ -742,6 +774,13 @@ class Extension {
       );
       this.dashContainer._dockHeight = dockHeight * this.scaleFactor;
     }
+
+    this.panelBackground.set_position(
+      Main.panel.position.x,
+      Main.panel.position.y
+    );
+    this.panelBackground.width = Main.panel.width;
+    this.panelBackground.height = Main.panel.height;
 
     let iconChildren = this._findIcons();
 

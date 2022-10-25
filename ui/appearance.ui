@@ -131,11 +131,10 @@
           </object>
         </child>
 
-        <!--
         <child>
           <object class="AdwActionRow">
             <property name="title" translatable="yes">Background Color</property>
-            <property name="subtitle" translatable="yes">Set dock and panel background color.</property>
+            <property name="subtitle" translatable="yes">Set dock background color.</property>
             <property name="activatable-widget">background-color</property>
 
             <child>
@@ -150,7 +149,7 @@
             </child>
           </object>
         </child>
-        -->
+        <!--
 
         <child>
           <object class="AdwActionRow">
@@ -190,7 +189,8 @@
             </child>
           </object>
         </child>
-
+        -->
+        
       </object>
     </child>
 
@@ -281,6 +281,26 @@
 
         <child>
           <object class="AdwActionRow">
+            <property name="title" translatable="yes">Background Color</property>
+            <property name="subtitle" translatable="yes">Set topbar panel background color.</property>
+            <property name="activatable-widget">topbar-background-color</property>
+
+            <child>
+              <object class="GtkColorButton" id="topbar-background-color">
+                <property name="valign">center</property>
+                <property name="hexpand">false</property>
+                <property name="width-request">70px</property>
+                <property name="height-request">45px</property>
+                <property name="show-editor">true</property>
+                <property name="use-alpha">true</property>
+              </object>
+            </child>
+          </object>
+        </child>
+
+        <!--
+        <child>
+          <object class="AdwActionRow">
             <property name="title" translatable="yes"
               >Translucent Topbar</property
             >
@@ -295,6 +315,7 @@
             </child>
           </object>
         </child>
+      -->
 
       </object>
     </child>

@@ -71,15 +71,6 @@ var ColorEffect = new GObject.registerClass(
         1.0,
         0.4
       ),
-      opacity: GObject.ParamSpec.double(
-        `opacity`,
-        `Opacity`,
-        `Opacity.`,
-        GObject.ParamFlags.READWRITE,
-        0.0,
-        1.0,
-        0.4
-      ),
     },
   },
   class ColorShader extends Clutter.ShaderEffect {
@@ -88,7 +79,6 @@ var ColorEffect = new GObject.registerClass(
       this._green = null;
       this._blue = null;
       this._blend = null;
-      this._opacity = params.opacity;
 
       this._static = true;
 
@@ -157,19 +147,6 @@ var ColorEffect = new GObject.registerClass(
         this._blend = value;
 
         this.set_uniform_value('blend', parseFloat(this._blend - 1e-6));
-      }
-      this.update_enabled();
-    }
-
-    get opacity() {
-      return this._opacity;
-    }
-
-    set opacity(value) {
-      if (this._opacity !== value) {
-        this._opacity = value;
-
-        this.set_uniform_value('opacity', parseFloat(this._opacity - 1e-6));
       }
       this.update_enabled();
     }

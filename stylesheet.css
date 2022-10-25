@@ -4,6 +4,14 @@
      border: 2px solid magenta !important;
 }
 
+#panelBox #panel {
+  background: rgba(0,0,0,0);
+}
+#panelBackground {
+  background: rgba(255,255,255,255);
+}
+
+/*
 #panelBox.translucent-0 #panel {
   background: rgba(0,0,0,0);
 }
@@ -37,6 +45,7 @@
 #panelBox.translucent-10 #panel {
   background: rgba(0,0,0,1.0);
 }
+*/
 
 #dash.custom-dots StWidget.app-well-app-running-dot:insensitive {
   width: 0px !important;
@@ -60,16 +69,14 @@
   padding-left: 2px !important;
   padding-right: 2px !important;
 }
-
+/*
 #dash.dark > StWidget.dash-background {
   background-color: rgb(0,0,0) !important;
 }
-
-/*
+*/
 #dash > StWidget.dash-background {
   background-color: rgb(255,255,255) !important;
 }
-*/
 
 #dash.border-radius-0 .dash-item-container > StButton.show-apps > .overview-icon,
 #dash.border-radius-0 .dash-item-container > StWidget:hover .overview-icon,

@@ -59,7 +59,12 @@
     <key type="(dddd)" name="background-color">
         <default>(0.,0.,0.,0.25)</default>
         <summary>Background color</summary>
-        <description>Set dock and panel background color.</description>
+        <description>Set dock background color.</description>
+    </key>
+    <key type="(dddd)" name="topbar-background-color">
+        <default>(0.,0.,0.,0.25)</default>
+        <summary>Background color</summary>
+        <description>Set topbar panel background color.</description>
     </key>
     <key type="d" name="border-radius">
         <default>3</default>

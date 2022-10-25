@@ -347,7 +347,7 @@
                         <property name="visible">True</property>
                         <property name="can-focus">False</property>
                         <property name="valign">center</property>
-                        <property name="label" translatable="yes">Dark Background</property>
+                        <property name="label" translatable="yes">Background Color</property>
                         <property name="xalign">0</property>
                         <property name="hexpand">1</property>
                         <attributes>
@@ -356,8 +356,13 @@
                       </object>
                     </child>
                     <child>
-                      <object class="GtkSwitch" id="background-dark">
+                      <object class="GtkColorButton" id="background-color">
                         <property name="valign">center</property>
+                        <property name="hexpand">false</property>
+                        <property name="width-request">70px</property>
+                        <property name="height-request">45px</property>
+                        <property name="show-editor">true</property>
+                        <property name="use-alpha">true</property>
                       </object>
                     </child>
                   </object>
@@ -366,7 +371,7 @@
                   <object class="GtkLabel">
                     <property name="halign">start</property>
                     <property name="valign">center</property>
-                    <property name="label" translatable="yes">Use dark color as dash background.</property>
+                    <property name="label" translatable="yes">Set dock and panel background color.</property>
                   </object>
                 </child>
               </object>
@@ -396,63 +401,7 @@
                         <property name="visible">True</property>
                         <property name="can-focus">False</property>
                         <property name="valign">center</property>
-                        <property name="label" translatable="yes">Background Opacity</property>
-                        <property name="xalign">0</property>
-                        <property name="hexpand">1</property>
-                        <attributes>
-                          <attribute name="weight" value="PANGO_WEIGHT_BOLD"/>
-                        </attributes>
-                      </object>
-                    </child>
-                    <child>
-                      <object class="GtkScale" id="background-opacity">
-                        <property name="valign">center</property>
-                        <property name="hexpand">true</property>
-                        <property name="width-request">140px</property>
-                        <property name="draw-value">false</property>
-                        <property name="value-pos">right</property>
-                        <property name="orientation">horizontal</property>
-                        <property name="digits">2</property>
-                        <property name="adjustment">background-opacity-adjust</property>
-                      </object>
-                    </child>
-                  </object>
-                </child>
-                <child>
-                  <object class="GtkLabel">
-                    <property name="halign">start</property>
-                    <property name="valign">center</property>
-                    <property name="label" translatable="yes">Adjust dash background opacity.</property>
-                  </object>
-                </child>
-              </object>
-            </child>
-          </object>
-        </child>
-        <child>
-          <object class="GtkListBoxRow">
-            <property name="visible">True</property>
-            <property name="can-focus">True</property>
-            <child>
-              <object class="GtkBox">
-                <property name="visible">True</property>
-                <property name="can-focus">False</property>
-                <property name="margin-start">12</property>
-                <property name="margin-end">12</property>
-                <property name="margin-top">12</property>
-                <property name="margin-bottom">12</property>
-                <property name="orientation">vertical</property>
-                <child>
-                  <object class="GtkBox">
-                    <property name="visible">True</property>
-                    <property name="can-focus">False</property>
-                    <property name="spacing">32</property>
-                    <child>
-                      <object class="GtkLabel">
-                        <property name="visible">True</property>
-                        <property name="can-focus">False</property>
-                        <property name="valign">center</property>
-                        <property name="label" translatable="yes">Indicator Style</property>
+                        <property name="label" translatable="yes">Running Indicator Style</property>
                         <property name="xalign">0</property>
                         <property name="hexpand">1</property>
                         <attributes>
@@ -556,6 +505,110 @@
                         <property name="visible">True</property>
                         <property name="can-focus">False</property>
                         <property name="valign">center</property>
+                        <property name="label" translatable="yes">Notification Badge Style</property>
+                        <property name="xalign">0</property>
+                        <property name="hexpand">1</property>
+                        <attributes>
+                          <attribute name="weight" value="PANGO_WEIGHT_BOLD"/>
+                        </attributes>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkDropDown" id="notification-badge-style">
+                        <property name="valign">center</property>
+                        <property name="model">notification-badge-style-model</property>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkLabel">
+                    <property name="halign">start</property>
+                    <property name="valign">center</property>
+                    <property name="label" translatable="yes">Customize the notification badge style.</property>
+                  </object>
+                </child>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="GtkListBoxRow">
+            <property name="visible">True</property>
+            <property name="can-focus">True</property>
+            <child>
+              <object class="GtkBox">
+                <property name="visible">True</property>
+                <property name="can-focus">False</property>
+                <property name="margin-start">12</property>
+                <property name="margin-end">12</property>
+                <property name="margin-top">12</property>
+                <property name="margin-bottom">12</property>
+                <property name="orientation">vertical</property>
+                <child>
+                  <object class="GtkBox">
+                    <property name="visible">True</property>
+                    <property name="can-focus">False</property>
+                    <property name="spacing">32</property>
+                    <child>
+                      <object class="GtkLabel">
+                        <property name="visible">True</property>
+                        <property name="can-focus">False</property>
+                        <property name="valign">center</property>
+                        <property name="label" translatable="yes">Badge Color</property>
+                        <property name="xalign">0</property>
+                        <property name="hexpand">1</property>
+                        <attributes>
+                          <attribute name="weight" value="PANGO_WEIGHT_BOLD"/>
+                        </attributes>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkColorButton" id="notification-badge-color">
+                        <property name="valign">center</property>
+                        <property name="hexpand">false</property>
+                        <property name="width-request">70px</property>
+                        <property name="height-request">45px</property>
+                        <property name="show-editor">true</property>
+                        <property name="use-alpha">true</property>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkLabel">
+                    <property name="halign">start</property>
+                    <property name="valign">center</property>
+                    <property name="label" translatable="yes">Select indicator color.</property>
+                  </object>
+                </child>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="GtkListBoxRow">
+            <property name="visible">True</property>
+            <property name="can-focus">True</property>
+            <child>
+              <object class="GtkBox">
+                <property name="visible">True</property>
+                <property name="can-focus">False</property>
+                <property name="margin-start">12</property>
+                <property name="margin-end">12</property>
+                <property name="margin-top">12</property>
+                <property name="margin-bottom">12</property>
+                <property name="orientation">vertical</property>
+                <child>
+                  <object class="GtkBox">
+                    <property name="visible">True</property>
+                    <property name="can-focus">False</property>
+                    <property name="spacing">32</property>
+                    <child>
+                      <object class="GtkLabel">
+                        <property name="visible">True</property>
+                        <property name="can-focus">False</property>
+                        <property name="valign">center</property>
                         <property name="label" translatable="yes">Translucent Topbar</property>
                         <property name="xalign">0</property>
                         <property name="hexpand">1</property>
@@ -613,7 +666,19 @@
       <item translatable="yes">Solid</item>
       <item translatable="yes">Triangles</item>
       <item translatable="yes">Triangle</item>
+      <item translatable="yes">Diamonds</item>
+      <item translatable="yes">Diamond</item>
       <item translatable="yes">Binary</item>
+    </items>
+  </object>
+  <object class="GtkStringList" id="notification-badge-style-model">
+    <items>
+      <item translatable="yes">Default</item>
+      <item translatable="yes">Dot</item>
+      <item translatable="yes">Dash</item>
+      <item translatable="yes">Square</item>
+      <item translatable="yes">Triangle</item>
+      <item translatable="yes">Diamond</item>
     </items>
   </object>
   <object class="GtkStringList" id="icon-effect-model">

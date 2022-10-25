@@ -56,6 +56,11 @@
         <summary>Background opacity</summary>
         <description>Set dash background opacity.</description>
     </key>
+    <key type="(dddd)" name="background-color">
+        <default>(0.,0.,0.,0.25)</default>
+        <summary>Background color</summary>
+        <description>Set dock and panel background color.</description>
+    </key>
     <key type="d" name="border-radius">
         <default>3</default>
         <summary>Border radius</summary>
@@ -121,11 +126,6 @@
         <summary>Apps icon</summary>
         <description>Show the apps icon.</description>
     </key>
-    <key type="i" name="running-indicator-style">
-        <default>0</default>
-        <summary>Running window indicator</summary>
-        <description>Customize the running window indicator style.</description>
-    </key>
     <key type="i" name="preferred-monitor">
         <default>0</default>
         <summary>Preferred monitor to dock</summary>
@@ -136,10 +136,25 @@
         <summary>Dock location</summary>
         <description>Set dock position on the screen.</description>
     </key>
+    <key type="i" name="running-indicator-style">
+        <default>0</default>
+        <summary>Running window indicator</summary>
+        <description>Customize the running window indicator style.</description>
+    </key>
     <key type="(dddd)" name="running-indicator-color">
         <default>(1.,1.,1.,1.)</default>
         <summary>Running window indicator color</summary>
         <description>Customize the running window indicator color.</description>
+    </key>
+    <key type="i" name="notification-badge-style">
+        <default>0</default>
+        <summary>Notification badge</summary>
+        <description>Customize the notification badge style.</description>
+    </key>
+    <key type="(dddd)" name="notification-badge-color">
+        <default>(1.,1.,1.,1.)</default>
+        <summary>Notification badge color</summary>
+        <description>Customize the notification badge color.</description>
     </key>
     <key type="i" name="icon-effect">
         <default>0</default>

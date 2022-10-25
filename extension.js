@@ -18,6 +18,8 @@ const AutoHide = Me.imports.autohide.AutoHide;
 const Services = Me.imports.services.Services;
 const xDot = Me.imports.apps.dot.xDot;
 
+// const ColorEffect = Me.imports.effects.color_effect.ColorEffect;
+
 const setTimeout = Me.imports.utils.setTimeout;
 const setInterval = Me.imports.utils.setInterval;
 
@@ -219,6 +221,8 @@ class Extension {
           }
           break;
         }
+        case 'notification-badge-color':
+        case 'notification-badge-style':
         case 'running-indicator-color':
         case 'running-indicator-style':
           this._onEnterEvent();
@@ -279,6 +283,12 @@ class Extension {
           this._updateBgOpacity();
           break;
         }
+        // case 'background-opacity':
+        // case 'background-color': {
+        //   this._updateBgDark();
+        //   this._updateBgOpacity();
+        //   break;
+        // }
         case 'pressure-sense': {
           this.disable();
           this.enable();
@@ -519,6 +529,14 @@ class Extension {
     } else {
       this.dash.remove_style_class_name('dark');
     }
+
+    // this.dash._background.remove_effect_by_name('background');
+    // let effect = new ColorEffect({
+    //   name: 'color',
+    //   color: this.background_color,
+    //   opacity: this.background_opacity
+    // });
+    // this.dash._background.add_effect_with_name('background', effect);
 
     this._updateCss();
   }

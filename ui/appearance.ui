@@ -131,6 +131,27 @@
           </object>
         </child>
 
+        <!--
+        <child>
+          <object class="AdwActionRow">
+            <property name="title" translatable="yes">Background Color</property>
+            <property name="subtitle" translatable="yes">Set dock and panel background color.</property>
+            <property name="activatable-widget">background-color</property>
+
+            <child>
+              <object class="GtkColorButton" id="background-color">
+                <property name="valign">center</property>
+                <property name="hexpand">false</property>
+                <property name="width-request">70px</property>
+                <property name="height-request">45px</property>
+                <property name="show-editor">true</property>
+                <property name="use-alpha">true</property>
+              </object>
+            </child>
+          </object>
+        </child>
+        -->
+
         <child>
           <object class="AdwActionRow">
             <property name="title" translatable="yes">Dark Background</property>
@@ -169,17 +190,18 @@
             </child>
           </object>
         </child>
+
       </object>
     </child>
 
     <child>
       <object class="AdwPreferencesGroup">
-        <property name="title" translatable="yes">Running app indicator</property>
+        <property name="title" translatable="yes">App Indicators</property>
         <property name="description" translatable="yes"></property>
 
         <child>
           <object class="AdwActionRow">
-            <property name="title" translatable="yes">Indicator Style</property>
+            <property name="title" translatable="yes">Running Indicator Style</property>
             <property name="subtitle" translatable="yes"
               >Customize the running app indicator style.</property
             >
@@ -201,6 +223,41 @@
 
             <child>
               <object class="GtkColorButton" id="running-indicator-color">
+                <property name="valign">center</property>
+                <property name="hexpand">false</property>
+                <property name="width-request">70px</property>
+                <property name="height-request">45px</property>
+                <property name="show-editor">true</property>
+                <property name="use-alpha">true</property>
+              </object>
+            </child>
+          </object>
+        </child>
+
+        <child>
+          <object class="AdwActionRow">
+            <property name="title" translatable="yes">Notification Badge Style</property>
+            <property name="subtitle" translatable="yes"
+              >Customize the notification badge style.</property
+            >
+            <property name="activatable-widget">notification-badge-style</property>
+            <child>
+              <object class="GtkDropDown" id="notification-badge-style">
+                <property name="valign">center</property>
+                <property name="model">notification-badge-style-model</property>
+              </object>
+            </child>
+          </object>
+        </child>
+
+        <child>
+          <object class="AdwActionRow">
+            <property name="title" translatable="yes">Badge Color</property>
+            <property name="subtitle" translatable="yes">Select indicator color.</property>
+            <property name="activatable-widget">notification-badge-color</property>
+
+            <child>
+              <object class="GtkColorButton" id="notification-badge-color">
                 <property name="valign">center</property>
                 <property name="hexpand">false</property>
                 <property name="width-request">70px</property>
@@ -275,7 +332,20 @@
       <item translatable="yes">Solid</item>
       <item translatable="yes">Triangles</item>
       <item translatable="yes">Triangle</item>
+      <item translatable="yes">Diamonds</item>
+      <item translatable="yes">Diamond</item>
       <item translatable="yes">Binary</item>
+    </items>
+  </object>
+
+  <object class="GtkStringList" id="notification-badge-style-model">
+    <items>
+      <item translatable="yes">Default</item>
+      <item translatable="yes">Dot</item>
+      <item translatable="yes">Dash</item>
+      <item translatable="yes">Square</item>
+      <item translatable="yes">Triangle</item>
+      <item translatable="yes">Diamond</item>
     </items>
   </object>
 

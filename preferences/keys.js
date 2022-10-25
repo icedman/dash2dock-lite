@@ -52,6 +52,10 @@ SettingsKeys.setKeys({
     default_value: 0,
     widget_type: 'scale',
   },
+  'background-color': {
+    default_value: [0, 0, 0, 0.5],
+    widget_type: 'color',
+  },
   'translucent-topbar': {
     default_value: false,
     widget_type: 'switch',
@@ -109,6 +113,14 @@ SettingsKeys.setKeys({
     widget_type: 'dropdown',
   },
   'running-indicator-color': {
+    default_value: [1, 1, 1, 1],
+    widget_type: 'color',
+  },
+  'notification-badge-style': {
+    default_value: 0,
+    widget_type: 'dropdown',
+  },
+  'notification-badge-color': {
     default_value: [1, 1, 1, 1],
     widget_type: 'color',
   },

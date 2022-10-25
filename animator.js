@@ -127,8 +127,10 @@ var Animator = class {
     if (this.show_dots && this.extension.xDot) {
       for (let i = 0; i < count - this._dots.length; i++) {
         let dot = new this.extension.xDot(DOT_CANVAS_SIZE);
+        let pdot = new St.Widget();
+        pdot.add_child(dot);
         this._dots.push(dot);
-        this._dotsContainer.add_child(dot);
+        this._dotsContainer.add_child(pdot);
         dot.set_position(0, 0);
       }
     }
@@ -256,7 +258,7 @@ var Animator = class {
       }
     });
 
-    this._precreate_dots(visible_dots);
+    this._precreate_dots(visible_dots + icons.length);
 
     let pointer = global.get_pointer();
 
@@ -327,16 +329,6 @@ var Animator = class {
           }
         });
         icon._btn = btn;
-
-        let badge = new this.extension.xDot(DOT_CANVAS_SIZE);
-        icon._badge = badge;
-        icon.add_child(badge);
-        badge.set_position(8, -8);
-        badge.set_state({
-          count: 1,
-          color: [1, 0, 1, 1],
-          rotate: 180 + 45,
-        });
       }
 
       if (
@@ -520,6 +512,7 @@ var Animator = class {
         }
 
         // update the badge
+        let has_badge = false;
         if (
           icon._appwell &&
           icon._appwell.app &&
@@ -529,12 +522,48 @@ var Animator = class {
           this.extension.services._appNotices[icon._appwell.app.get_id()]
             .count > 0
         ) {
+          icon._badge = this._dots[dotIndex++];
+
+          let count =
+            this.extension.services._appNotices[icon._appwell.app.get_id()]
+              .count;
+
+          let badgeParent = icon._badge.get_parent();
+          badgeParent.set_position(
+            pos[0] + 4 * scaleFactor,
+            pos[1] - 4 * scaleFactor
+          );
+          badgeParent.width = iconSize;
+          badgeParent.height = iconSize;
+          badgeParent.pivot_point = pivot;
+          badgeParent.set_scale(scale, scale);
+
+          let style = [
+            'default',
+            'dot',
+            'dash',
+            'square',
+            'triangle',
+            'diamond',
+          ][this.extension.notification_badge_style];
+
+          icon._badge.visible = true;
+          icon._badge.set_state({
+            count: count,
+            color: this.extension.notification_badge_color || [1, 1, 1, 1],
+            rotate: 180,
+            translate: [0.4, 0],
+            style: style || 'default',
+          });
+
           icon._badge.set_scale(
             iconSize / DOT_CANVAS_SIZE,
             iconSize / DOT_CANVAS_SIZE
           );
-          icon._badge.visible = true;
-        } else {
+          has_badge = true;
+        }
+
+        if (icon._badge && !has_badge) {
           icon._badge.visible = false;
         }
 
@@ -548,15 +577,33 @@ var Animator = class {
           icon._dot = dot;
           if (dot) {
             dot.visible = true;
-            dot.set_position(pos[0], pos[1] + 8 * scaleFactor);
+            dot.get_parent().set_position(pos[0], pos[1] + 8 * scaleFactor);
             dot.set_scale(
               (iconSize * scaleFactor) / DOT_CANVAS_SIZE,
               (iconSize * scaleFactor) / DOT_CANVAS_SIZE
             );
+
+            let style = [
+              'default',
+              'dots',
+              'dot',
+              'dashes',
+              'dash',
+              'squares',
+              'square',
+              'segmented',
+              'solid',
+              'triangles',
+              'triangle',
+              'diamonds',
+              'diamond',
+              'binary',
+            ][this.extension.running_indicator_style];
+
             dot.set_state({
               count: icon._appwell.app.get_n_windows(),
-              color: this.extension.running_indicator_color || 'white',
-              style: this.extension.running_indicator_style,
+              color: this.extension.running_indicator_color || [1, 1, 1, 1],
+              style: style || 'default',
             });
           }
         }

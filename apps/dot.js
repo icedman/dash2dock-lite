@@ -65,6 +65,18 @@ var xDot = GObject.registerClass(
 
       ctx.save();
 
+      ctx.translate(width / 2, height / 2);
+      if (this.state.translate) {
+        ctx.translate(
+          this.state.translate[0] * width,
+          this.state.translate[1]
+        ) * height;
+      }
+      if (this.state.rotate) {
+        ctx.rotate((this.state.rotate * 3.14) / 180);
+      }
+      ctx.translate(-width / 2, -height / 2);
+
       switch (this.state.style) {
         case 1:
           this._draw_dots(ctx, this.state);
@@ -92,7 +104,7 @@ var xDot = GObject.registerClass(
           break;
         case 9:
           this._draw_triangles(ctx, this.state);
-          break
+          break;
         case 10:
           this._draw_triangle(ctx, this.state);
           break;
@@ -119,11 +131,8 @@ var xDot = GObject.registerClass(
 
       let sz = width / 20;
       let spacing = Math.ceil(width / 18); // separation between the dots
-      let dashLength = Math.ceil(
-        (width - (count - 1) * spacing) / count
-      );
-      let lineLength =
-        width - sz * (count - 1) - spacing * (count - 1);
+      let dashLength = Math.ceil((width - (count - 1) * spacing) / count);
+      let lineLength = width - sz * (count - 1) - spacing * (count - 1);
 
       for (let i = 0; i < count; i++) {
         ctx.newSubPath();
@@ -150,9 +159,7 @@ var xDot = GObject.registerClass(
       let dashLength = Math.floor(width / 4) - spacing;
 
       ctx.translate(
-        Math.floor(
-          (size - count * dashLength - (count - 1) * spacing) / 2
-        ),
+        Math.floor((size - count * dashLength - (count - 1) * spacing) / 2),
         size - height
       );
 
@@ -180,9 +187,7 @@ var xDot = GObject.registerClass(
       let dashLength = height;
 
       ctx.translate(
-        Math.floor(
-          (size - count * dashLength - (count - 1) * spacing) / 2
-        ),
+        Math.floor((size - count * dashLength - (count - 1) * spacing) / 2),
         size - height
       );
 
@@ -210,15 +215,13 @@ var xDot = GObject.registerClass(
       let dashLength = height + 8;
 
       ctx.translate(
-        Math.floor(
-          (size - count * dashLength - (count - 1) * spacing) / 2
-        ),
+        Math.floor((size - count * dashLength - (count - 1) * spacing) / 2),
         size - height
       );
 
       for (let i = 0; i < count; i++) {
         ctx.newSubPath();
-        ctx.moveTo(i * dashLength + i * spacing + dashLength/2, 0);
+        ctx.moveTo(i * dashLength + i * spacing + dashLength / 2, 0);
         ctx.lineTo(i * dashLength + i * spacing, height);
         ctx.lineTo(i * dashLength + i * spacing + dashLength, height);
       }
@@ -243,7 +246,7 @@ var xDot = GObject.registerClass(
 
       ctx.translate(
         Math.floor(
-          (size - count * radius - (count - 1) * spacing) / 2
+          (size - count * radius - (count - 1) * spacing) / 2 - radius / 2
         ),
         size - height
       );
@@ -277,24 +280,27 @@ var xDot = GObject.registerClass(
       let radius = height * 0.9;
 
       ctx.translate(
-        Math.floor(
-          (size - count * dashLength - (count - 1) * spacing) / 2
-        ),
-        size - height - radius/2
+        Math.floor((size - count * dashLength - (count - 1) * spacing) / 2),
+        size - height - radius / 2
       );
 
       for (let i = 0; i < count; i++) {
         ctx.newSubPath();
         if (binaryValue[i] == '1') {
           ctx.arc(
-            i * dashLength + i * spacing + dashLength/2,
-            radius/2,
+            i * dashLength + i * spacing + dashLength / 2,
+            radius / 2,
             radius,
             0,
             2 * Math.PI
           );
         } else {
-          ctx.rectangle(i * dashLength + i * spacing, 0, dashLength, height-2);
+          ctx.rectangle(
+            i * dashLength + i * spacing,
+            0,
+            dashLength,
+            height - 2
+          );
         }
       }
 

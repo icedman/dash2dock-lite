@@ -46,9 +46,9 @@ var Animator = class {
     if (this._enabled) return;
 
     this._iconsContainer = new St.Widget({ name: 'iconsContainer' });
-    Main.uiGroup.insert_child_above(this._iconsContainer, this.dashContainer);
     this._dotsContainer = new St.Widget({ name: 'dotsContainer' });
     Main.uiGroup.insert_child_above(this._dotsContainer, this.dashContainer);
+    Main.uiGroup.insert_child_below(this._iconsContainer, this._dotsContainer);
 
     this._enabled = true;
     this._dragging = false;
@@ -56,28 +56,29 @@ var Animator = class {
     this._relayout = 8;
 
     this.show_dots = true;
+    this.show_badge = true;
 
     if (this.extension.icon_effect > 0) {
       let effect = null;
-      switch(this.extension.icon_effect) {
+      switch (this.extension.icon_effect) {
         case 1: {
           effect = new TintEffect({
-              name: 'color',
-              color: this.extension.icon_effect_color
+            name: 'color',
+            color: this.extension.icon_effect_color,
           });
           break;
         }
         case 2: {
           effect = new MonochromeEffect({
-              name: 'color',
-              color: this.extension.icon_effect_color
+            name: 'color',
+            color: this.extension.icon_effect_color,
           });
           break;
         }
         case 3: {
           effect = new TestEffect({
-              name: 'color',
-              color: this.extension.icon_effect_color
+            name: 'color',
+            color: this.extension.icon_effect_color,
           });
           break;
         }
@@ -268,7 +269,7 @@ var Animator = class {
       if (this.extension.services) {
         this.extension.services.updateIcon(c.first_child);
       }
-      
+
       let orphan = true;
       for (let i = 0; i < icons.length; i++) {
         if (icons[i]._bin == c._bin) {
@@ -326,6 +327,16 @@ var Animator = class {
           }
         });
         icon._btn = btn;
+
+        let badge = new this.extension.xDot(DOT_CANVAS_SIZE);
+        icon._badge = badge;
+        icon.add_child(badge);
+        badge.set_position(8, -8);
+        badge.set_state({
+          count: 1,
+          color: [1, 0, 1, 1],
+          rotate: 180 + 45,
+        });
       }
 
       if (
@@ -375,8 +386,13 @@ var Animator = class {
       this._preview = null;
     }
 
-    if (this.extension.animation_rise + this.extension.animation_magnify + this.extension.animation_spread == 0) {
-      nearestIcon = null;      
+    if (
+      this.extension.animation_rise +
+        this.extension.animation_magnify +
+        this.extension.animation_spread ==
+      0
+    ) {
+      nearestIcon = null;
     }
 
     //
@@ -486,8 +502,6 @@ var Animator = class {
 
         // todo find appsButton._label
         if (icon._label) {
-          // icon._label.y = pos[1] - iconSize * scale * 0.95 * scaleFactor;
-
           switch (dock_position) {
             case 'left':
               icon._label.x = pos[0] + iconSize * scale * 1.1 * scaleFactor;
@@ -505,20 +519,39 @@ var Animator = class {
           }
         }
 
+        // update the badge
+        if (
+          icon._appwell &&
+          icon._appwell.app &&
+          this.show_badge &&
+          this.extension.services._appNotices &&
+          this.extension.services._appNotices[icon._appwell.app.get_id()] &&
+          this.extension.services._appNotices[icon._appwell.app.get_id()]
+            .count > 0
+        ) {
+          icon._badge.set_scale(
+            iconSize / DOT_CANVAS_SIZE,
+            iconSize / DOT_CANVAS_SIZE
+          );
+          icon._badge.visible = true;
+        } else {
+          icon._badge.visible = false;
+        }
+
         // update the dot
         if (
           this.show_dots &&
           icon._appwell &&
           icon._appwell.app.get_n_windows() > 0
         ) {
-          let o = this.extension.running_indicator_color && this.extension.running_indicator_color.length == 4 ? this.extension.running_indicator_color[3] : 1;
           let dot = this._dots[dotIndex++];
+          icon._dot = dot;
           if (dot) {
             dot.visible = true;
             dot.set_position(pos[0], pos[1] + 8 * scaleFactor);
             dot.set_scale(
-              iconSize / DOT_CANVAS_SIZE,
-              iconSize / DOT_CANVAS_SIZE
+              (iconSize * scaleFactor) / DOT_CANVAS_SIZE,
+              (iconSize * scaleFactor) / DOT_CANVAS_SIZE
             );
             dot.set_state({
               count: icon._appwell.app.get_n_windows(),

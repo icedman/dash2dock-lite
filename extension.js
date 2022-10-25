@@ -30,6 +30,8 @@ class Extension {
     this.scale_icons = 0.5;
     this.xDot = xDot;
 
+    Main._d2dl = this;
+
     this._enableSettings();
     this._queryDisplay();
 
@@ -342,8 +344,13 @@ class Extension {
       this
     );
 
-    Main.messageTray.connectObject('queue-changed', (count) => {
-    }, this);
+    Main.messageTray.connectObject(
+      'queue-changed',
+      (count) => {
+        this.services.checkNotifications();
+      },
+      this
+    );
 
     global.display.connectObject(
       // 'window-demands-attention',
@@ -703,10 +710,7 @@ class Extension {
     } else {
       if (this._vertical) {
         // left/right
-        this.dashContainer.set_position(
-          this.monitor.x,
-          this.monitor.y
-        );
+        this.dashContainer.set_position(this.monitor.x, this.monitor.y);
       } else {
         // top/bottom
         this.dashContainer.set_position(

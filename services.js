@@ -68,7 +68,6 @@ var Services = class {
         1000 * 5,
         () => {
           // deferred stuff is required when .desktop entry if first created
-
           // check for deferred mounts
           if (this._deferredMounts && this._deferredMounts.length) {
             let mounts = [...this._deferredMounts];
@@ -86,10 +85,15 @@ var Services = class {
             this.updateTrashIcon(true);
             this._deferredTrash = false;
           }
+
+          // notifications
+          this.checkNotifications();
         },
         0
       ),
     ];
+
+    this._disableNotifications = 0;
 
     this._deferredMounts = [];
     this._deferredTrash = false;
@@ -123,6 +127,7 @@ var Services = class {
 
     this.checkMounts();
     this.checkTrash();
+    this.checkNotifications();
   }
 
   disable() {
@@ -211,6 +216,62 @@ var Services = class {
       Main.notify('Preparing the mounted device icon...');
       this._deferredMounts.push(mount);
     }
+  }
+
+  checkNotifications() {
+    if (this._disableNotifications > 4) return;
+
+    let media;
+    let messages;
+
+    try {
+      let tryBox = [
+        Main.panel._centerBox,
+        Main.panel._leftBox,
+        Main.panel._rightBox,
+      ];
+      for (let i = 0; i < 3; i++) {
+        let cc = tryBox[i].get_children();
+        cc.forEach((c) => {
+          if (media && messages) {
+            return;
+          }
+          media =
+            c.child._delegate._messageList._scrollView.last_child.get_children()[0];
+          messages =
+            c.child._delegate._messageList._scrollView.last_child.get_children()[1];
+        });
+        if (media && messages) {
+          break;
+        }
+      }
+    } catch (err) {
+      // fail silently - don't crash
+      log(err);
+      this._disableNotifications++;
+    }
+
+    if (!media || !messages) {
+      return;
+    }
+
+    this._notifications = messages._messages || [];
+    if (!this._notifications.length) {
+      this._notifications = [];
+    }
+
+    this._appNotices = {};
+    this._notifications.forEach((n) => {
+      let appId = n.notification.source._appId;
+      if (!this._appNotices[appId]) {
+        this._appNotices[appId] = { count: 0, urgency: 0 };
+      }
+      this._appNotices[appId].count++;
+      if (this._appNotices[appId].urgency < n.notification.urgency) {
+        this._appNotices[appId].urgency = n.notification.urgency;
+      }
+      this._appNotices[`${appId}.desktop`] = this._appNotices[appId];
+    });
   }
 
   checkTrash() {

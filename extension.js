@@ -22,6 +22,10 @@ const ColorEffect = Me.imports.effects.color_effect.ColorEffect;
 
 const setTimeout = Me.imports.utils.setTimeout;
 const setInterval = Me.imports.utils.setInterval;
+const getPointer = Me.imports.utils.getPointer;
+const warpPointer = Me.imports.utils.warpPointer;
+const runTests = Me.imports.diagnostics.runTests;
+const runMotionTests = Me.imports.diagnostics.runMotionTests;
 
 const SERVICES_UPDATE_INTERVAL = 2500;
 
@@ -43,19 +47,6 @@ class Extension {
       vertical: true,
     });
     this.dashContainer.delegate = this;
-    Main.layoutManager.addChrome(this.dashContainer, {
-      affectsStruts: !this.autohide_dash,
-      trackFullscreen: true,
-    });
-
-    // setup the panel background
-    this.panelBackground = new St.Widget({
-      name: 'panelBackground',
-    });
-    Main.uiGroup.insert_child_below(
-      this.panelBackground,
-      Main.panel.get_parent()
-    );
 
     // todo
     this.reuseExistingDash = true;
@@ -78,14 +69,6 @@ class Extension {
     this.dash._background.add_effect_with_name(
       'dash_background',
       this._backgroundEffect
-    );
-    this._panelBackgroundEffect = new ColorEffect({
-      name: 'panel_background',
-      color: [0, 0, 0, 0.2],
-    });
-    this.panelBackground.add_effect_with_name(
-      'panel_background',
-      this._panelBackgroundEffect
     );
 
     this.dashContainer.dash = this.dash;
@@ -117,16 +100,14 @@ class Extension {
     this._onCheckServices();
 
     this._updateShrink();
-    this._updateBgDark();
-    this._updateBgOpacity();
+    this._updateBackgroundColors();
     this._updateLayout();
 
+    this._updateAutohide();
     this._updateAnimation();
     this.animator._iconsContainer.visible = false;
     this.animator._dotsContainer.visible = false;
 
-    this._updateAutohide();
-    this._updateTopBar();
     this._updateCss();
     this._updateTrashIcon();
 
@@ -140,16 +121,13 @@ class Extension {
     this._disableSettings();
 
     this._updateShrink(true);
-    this._updateBgDark(true);
-    this._updateBgOpacity(true);
+    this._updateBackgroundColors(true);
     this._updateLayout(true);
     this._updateAnimation(true);
     this._updateAutohide(true);
-    this._updateTopBar(true);
     this._updateCss(true);
 
     this.dash._background.remove_effect_by_name('dash_background');
-    this.panelBackground.remove_effect_by_name('panel_background');
 
     this.dashContainer.remove_child(this.dash);
     if (this.reuseExistingDash) {
@@ -186,8 +164,10 @@ class Extension {
 
       this.dashContainer.visible = true;
       this.dash.visible = true;
-      this.animator._iconsContainer.visible = true;
-      this.animator._dotsContainer.visible = true;
+      if (this.animator._iconsContainer) {
+        this.animator._iconsContainer.visible = true;
+        this.animator._dotsContainer.visible = true;
+      }
     }, 500);
   }
 
@@ -209,16 +189,20 @@ class Extension {
 
     if (this._last_monitor_count != Main.layoutManager.monitors.length) {
       // save monitor count - for preference pages (todo dbus?)
-      let tmp = Gio.File.new_for_path(
-        `${GLib.get_tmp_dir()}/monitors.dash2dock-lite`
-      );
-      let content = `${Main.layoutManager.monitors.length}\n`;
-      const [, etag] = tmp.replace_contents(
-        content,
-        null,
-        false,
-        Gio.FileCreateFlags.REPLACE_DESTINATION,
-        null
+      // let tmp = Gio.File.new_for_path(
+      //   `${GLib.get_tmp_dir()}/monitors.dash2dock-lite`
+      // );
+      // let content = `${Main.layoutManager.monitors.length}\n`;
+      // const [, etag] = tmp.replace_contents(
+      //   content,
+      //   null,
+      //   false,
+      //   Gio.FileCreateFlags.REPLACE_DESTINATION,
+      //   null
+      // );
+      this._settings.set_int(
+        'monitor-count',
+        Main.layoutManager.monitors.length
       );
       this._last_monitor_count = Main.layoutManager.monitors.length;
     }
@@ -235,6 +219,17 @@ class Extension {
       // log(`${n} ${value}`);
 
       switch (name) {
+        case 'msg-to-ext': {
+          if (value.length) {
+            try {
+              eval(value);
+            } catch (err) {
+              log(err);
+            }
+            this._settings.set_string('msg-to-ext', '');
+          }
+          break;
+        }
         case 'apps-icon': // hide this from justperfection (for now)
         case 'animation-fps':
         case 'mounted-icon':
@@ -261,13 +256,20 @@ class Extension {
           this._onEnterEvent();
           break;
         }
-        case 'icon-effect':
-        case 'icon-effect-color': {
+        case 'icon-effect': {
           if (this.animator._enabled) {
-            this.animator.enable();
             this.animator.disable();
+            this.animator.enable();
             this.startUp();
           }
+          break;
+        }
+        case 'icon-effect-color': {
+          if (this.animator._enabled && this.animator.iconEffect) {
+            this.animator.iconEffect.color = this.icon_effect_color;
+            this._onEnterEvent();
+          }
+          break;
         }
         case 'animate-icons': {
           this._updateAnimation();
@@ -278,15 +280,18 @@ class Extension {
           this._onEnterEvent();
           break;
         }
-        case 'preferred-monitor':
-        case 'autohide-dash': {
+        case 'preferred-monitor': {
+          // todo!
           this.disable();
           this.enable();
           break;
         }
+        case 'autohide-dash': {
+          this._updateAutohide();
+          break;
+        }
         case 'shrink-icons': {
-          this.disable();
-          this.enable();
+          this._updateShrink();
           this._onEnterEvent();
           break;
         }
@@ -296,32 +301,17 @@ class Extension {
         }
         case 'panel-mode': {
           this._updateCss();
+          this._updateBackgroundColors();
           this._updateLayout();
           this._onEnterEvent();
           break;
         }
-        case 'translucent-topbar': {
-          this._updateTopBar();
-          break;
-        }
-        case 'background-dark': {
-          this._updateBgDark();
-          break;
-        }
-        case 'background-opacity': {
-          this._updateBgOpacity();
-          break;
-        }
-        // case 'background-opacity':
         case 'topbar-background-color':
         case 'background-color': {
-          this._updateBgDark();
-          this._updateBgOpacity();
+          this._updateBackgroundColors();
           break;
         }
         case 'pressure-sense': {
-          this.disable();
-          this.enable();
           break;
         }
         case 'border-radius': {
@@ -520,9 +510,6 @@ class Extension {
 
   _updateScale() {
     this._updateShrink();
-    this.disable();
-    this.enable();
-    this._onEnterEvent();
     this._timeoutId = null;
   }
 
@@ -549,47 +536,57 @@ class Extension {
     }
 
     this._updateLayout();
-  }
 
-  _updateBgDark(disable) {
-    if (!this.dashContainer) return;
-
-    this._backgroundEffect.color = this.background_color || [0, 0, 0, 0.5];
-    this._panelBackgroundEffect.color = this.topbar_background_color || [
-      0, 0, 0, 0.5,
-    ];
-
-    // if (this.background_dark && !disable) {
-    //   this.dash.add_style_class_name('dark');
-    // } else {
-    //   this.dash.remove_style_class_name('dark');
-    // }
-
-    this._updateCss();
-  }
-
-  _updateTopBar(disable) {
-    if (!this.dashContainer) return;
-
-    let panelBox = Main.uiGroup.find_child_by_name('panelBox');
-    if (panelBox) {
-      let o = -1;
-      if (this.translucent_topbar && !disable) {
-        o = Math.floor(10 * this.background_opacity);
-        panelBox.add_style_class_name(`translucent-${o}`);
-      }
-      for (let i = 0; i < 11; i++) {
-        if (i != o) {
-          panelBox.remove_style_class_name(`translucent-${i}`);
-        }
-      }
+    if (this.animator._enabled) {
+      this.animator.disable();
+      this.animator.enable();
     }
   }
 
-  _updateCss(disable) {
-    if (!this.dashContainer) return;
+  _updateBackgroundColors(disable) {
+    if (!this.dash) return;
 
-    let background = this.dash ? this.dash._background : null;
+    this._backgroundEffect.color = this.background_color || [0, 0, 0, 0.5];
+    this._backgroundEffect.blend = this.background_color[3] || 0.5;
+
+    if (disable) {
+      Main.panel.background_color = Clutter.Color.from_pixel(0xffffff00);
+    } else {
+      let bg = Clutter.Color.from_pixel(0xffffffff);
+      bg.red = Math.floor(this.topbar_background_color[0] * 255);
+      bg.green = Math.floor(this.topbar_background_color[1] * 255);
+      bg.blue = Math.floor(this.topbar_background_color[2] * 255);
+      bg.alpha = Math.floor(this.topbar_background_color[3] * 255);
+      Main.panel.background_color = bg;
+    }
+
+    let background = this.dash._background || null;
+    if (background) {
+      if (this.panel_mode && !disable) {
+        let bg = Clutter.Color.from_pixel(0xffffffff);
+        bg.red = Math.floor(this.background_color[0] * 255);
+        bg.green = Math.floor(this.background_color[1] * 255);
+        bg.blue = Math.floor(this.background_color[2] * 255);
+        bg.alpha = Math.floor(this.background_color[3] * 255);
+        let clr = Clutter.Color.from_pixel(
+          this.background_dark ? 0x00000050 : 0x50505050
+        );
+        clr.alpha = this.background_opacity * 255;
+        this.dash.background_color = bg;
+        background.visible = false;
+      } else {
+        this.dash.background_color = Clutter.Color.from_pixel(0x00000000);
+        background.visible = true;
+      }
+    }
+
+    this._updateCss(disable);
+  }
+
+  _updateCss(disable) {
+    if (!this.dash || !this.dashContainer) return;
+
+    let background = this.dash._background || null;
     if (background && this.border_radius !== null) {
       let r = -1;
       if (!disable && !this.panel_mode) {
@@ -602,41 +599,12 @@ class Extension {
         }
       }
     }
-    if (background) {
-      if (this.panel_mode && !disable) {
-        let clr = Clutter.Color.from_pixel(
-          this.background_dark ? 0x00000050 : 0x50505050
-        );
-        clr.alpha = this.background_opacity * 255;
-        this.dash.set_background_color(clr);
-        background.visible = false;
-      } else {
-        this.dash.set_background_color(Clutter.Color.from_pixel(0x00000000));
-        background.visible = true;
-      }
-    }
 
     if (!disable && this.animate_icons) {
       this.dash.add_style_class_name('custom-dots');
     } else {
       this.dash.remove_style_class_name('custom-dots');
     }
-  }
-
-  _updateBgOpacity(disable) {
-    if (!this.dash) return;
-
-    this._backgroundEffect.blend = this.background_color[3] || 0.5;
-    this._panelBackgroundEffect.blend = this._panelBackgroundEffect[3] || 0.5;
-
-    // if (disable) {
-    //   this.dash._background.opacity = 255;
-    // } else {
-    //   this.dash._background.opacity = 255 * this.background_opacity;
-    // }
-
-    this._updateCss();
-    this._updateTopBar();
   }
 
   _findIcons() {
@@ -656,8 +624,7 @@ class Extension {
       );
     }
 
-    // Marker: possible breakage here
-    // should Gnome change this private variable, we won't find icons
+    // W: breakable
     let icons = this.dash._box.get_children().filter((actor) => {
       if (actor.child && actor.child._delegate && actor.child._delegate.icon) {
         return true;
@@ -666,6 +633,7 @@ class Extension {
     });
 
     icons.forEach((c) => {
+      // W: breakable
       let label = c.label;
       let appwell = c.first_child;
       let draggable = appwell._draggable;
@@ -716,7 +684,7 @@ class Extension {
     this._queryDisplay();
 
     let pos = this.dock_location || 0;
-    // be friendly with dash-to-dock
+    // See St position constants
     // remap [ bottom, left, right, top ] >> [ top, right, bottom, left ]
     this.dashContainer._position = [2, 3, 1, 0][pos];
     this._vertical =
@@ -725,18 +693,12 @@ class Extension {
     this.scaleFactor = St.ThemeContext.get_for_stage(global.stage).scale_factor;
     let iconSize = 64;
 
-    try {
-      this.dash._background;
-      this.dash._box.first_child.first_child._delegate.icon.height;
-    } catch (err) {
-      // dash might not yet be ready
-    }
-
     let scale = this.scale;
     let dockHeight = iconSize * (this.shrink_icons ? 1.8 : 1.6) * scale;
+
+    // panel mode adjustment
     if (this.panel_mode) {
       dockHeight -= 10 * this.scaleFactor;
-    } else {
     }
 
     if (this._vertical) {
@@ -746,6 +708,8 @@ class Extension {
       this.dash._box.layout_manager.orientation = 1;
       this.dash._box.height = -1;
       this.dash._box.width = dockHeight * this.scaleFactor;
+
+      this.dash.add_style_class_name('vertical');
     } else {
       // top/bottom
       this.dashContainer.set_size(this.sw, dockHeight * this.scaleFactor);
@@ -753,6 +717,8 @@ class Extension {
       this.dash._box.layout_manager.orientation = 0;
       this.dash._box.height = -1;
       this.dash._box.width = -1;
+
+      this.dash.remove_style_class_name('vertical');
     }
 
     if (this.autohider._enabled && !this.autohider._shown) {
@@ -775,18 +741,12 @@ class Extension {
       this.dashContainer._dockHeight = dockHeight * this.scaleFactor;
     }
 
-    this.panelBackground.set_position(
-      Main.panel.position.x,
-      Main.panel.position.y
-    );
-    this.panelBackground.width = Main.panel.width;
-    this.panelBackground.height = Main.panel.height;
-
     let iconChildren = this._findIcons();
 
     let iconHook = [...iconChildren];
     for (let i = 0; i < iconHook.length; i++) {
       if (!iconHook[i].child) continue;
+      // W: breakable
       let icon = iconHook[i].child._delegate.icon;
       if (!icon._setIconSize) {
         icon._setIconSize = icon.setIconSize;
@@ -822,6 +782,25 @@ class Extension {
       this.autohider.enable();
     } else {
       this.autohider.disable();
+    }
+
+    Main.layoutManager.removeChrome(this.dashContainer);
+    Main.layoutManager.addChrome(this.dashContainer, {
+      affectsStruts: !this.autohide_dash,
+      trackFullscreen: true,
+    });
+
+    if (this.animator._iconsContainer) {
+      Main.uiGroup.remove_child(this.animator._dotsContainer);
+      Main.uiGroup.remove_child(this.animator._iconsContainer);
+      Main.uiGroup.insert_child_above(
+        this.animator._dotsContainer,
+        this.dashContainer
+      );
+      Main.uiGroup.insert_child_below(
+        this.animator._iconsContainer,
+        this.animator._dotsContainer
+      );
     }
   }
 
@@ -875,6 +854,10 @@ class Extension {
     if (!this.services) return; // todo why does this happen?
     this.services.update(SERVICES_UPDATE_INTERVAL);
     this._updateTrashIcon();
+  }
+
+  runDiagnostics() {
+    runTests(this, SettingsKeys);
   }
 }
 

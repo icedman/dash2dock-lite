@@ -19,19 +19,23 @@ function init() {
   ExtensionUtils.initTranslations();
 }
 
-function updateMonitors(window, builder) {
+function updateMonitors(window, builder, settings) {
   // monitors
-  let count = 1;
-  try {
-    let tmp = Gio.File.new_for_path(
-      `${GLib.get_tmp_dir()}/monitors.dash2dock-lite`
-    );
-    const [, contents, etag] = tmp.load_contents(null);
-    count = Number(contents);
-  } catch (err) {
-    // fail silently
-    // print(err)
-  }
+  let count = settings.get_int('monitor-count') || 1;
+
+  // try {
+  //   let tmp = Gio.File.new_for_path(
+  //     `${GLib.get_tmp_dir()}/monitors.dash2dock-lite`
+  //   );
+  //   // makes noise
+  //   const [, contents, etag] = tmp.load_contents(null);
+  //   const ByteArray = imports.byteArray;
+  //   const contentsString = ByteArray.toString(contents);
+  //   count = Number(contentsString);
+  // } catch (err) {
+  //   // fail silently
+  //   // print(err)
+  // }
 
   // print(count);
   const monitors_model = builder.get_object('preferred-monitor-model');
@@ -80,6 +84,20 @@ function addMenu(window, builder) {
   window.remove(menu_util);
 }
 
+function addButtonEvents(window, builder, settings) {
+  // builder.get_object('static-animation').connect('clicked', () => {
+  //   builder.get_object('animation-spread').set_value(0);
+  //   builder.get_object('animation-rise').set_value(0);
+  //   builder.get_object('animation-magnify').set_value(0);
+  // });
+
+  if (builder.get_object('self-test')) {
+    builder.get_object('self-test').connect('clicked', () => {
+      settings.set_string('msg-to-ext', 'this.runDiagnostics()');
+    });
+  }
+}
+
 function buildPrefsWidget() {
   let notebook = new Gtk.Notebook();
 
@@ -106,14 +124,17 @@ function buildPrefsWidget() {
     new Gtk.Label({ label: _('Others') })
   );
 
+  let settings = ExtensionUtils.getSettings(schemaId);
+
   SettingsKeys.connectBuilder(builder);
-  SettingsKeys.connectSettings(ExtensionUtils.getSettings(schemaId));
+  SettingsKeys.connectSettings(settings);
 
   notebook.connect('realize', () => {
     let gtkVersion = Gtk.get_major_version();
     let w = gtkVersion === 3 ? notebook.get_toplevel() : notebook.get_root();
+    addButtonEvents(w, builder, settings);
     addMenu(w, builder);
-    updateMonitors(w, builder);
+    updateMonitors(w, builder, settings);
   });
   return notebook;
 }
@@ -133,17 +154,20 @@ function fillPreferencesWindow(window) {
   window.set_search_enabled(true);
 
   let settings = ExtensionUtils.getSettings(schemaId);
+  settings.set_string('msg-to-ext', '');
 
   SettingsKeys.connectBuilder(builder);
   SettingsKeys.connectSettings(settings);
 
-  updateMonitors(window, builder);
+  addButtonEvents(window, builder, settings);
+  updateMonitors(window, builder, settings);
   addMenu(window, builder);
 
   settings.connect('changed::debug-visual', () => {
     debugToggled++;
-    if (debugToggled > 4) {
+    if (debugToggled > 3) {
       builder.get_object('dock-location-row').visible = true;
+      builder.get_object('self-test-row').visible = true;
     }
   });
 }

@@ -171,5 +171,20 @@
         <summary>Rendering effect color</summary>
         <description>Set the icon rendering effect color.</description>
     </key>
+    <key type="i" name="monitor-count">
+        <default>1</default>
+        <summary>Monitors Count</summary>
+        <description>Monitors found by the extension.</description>
+    </key>
+    <key type="s" name="msg-to-pref">
+        <default>""</default>
+        <summary>MsgBus</summary>
+        <description>Preferences-Extension message bus</description>
+    </key>
+    <key type="s" name="msg-to-ext">
+        <default>""</default>
+        <summary>MsgBus</summary>
+        <description>Preferences-Extension message bus</description>
+    </key>
   </schema>
 </schemalist>

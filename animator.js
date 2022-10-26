@@ -36,6 +36,8 @@ const ANIM_PREVIEW_DURATION = 1500;
 
 const DOT_CANVAS_SIZE = 96;
 
+let pauseAnimation = false;
+
 var Animator = class {
   constructor() {
     this._enabled = false;
@@ -75,16 +77,18 @@ var Animator = class {
           });
           break;
         }
-        case 3: {
-          effect = new TestEffect({
-            name: 'color',
-            color: this.extension.icon_effect_color,
-          });
-          break;
-        }
+        // case 3: {
+        //   effect = new TestEffect({
+        //     name: 'color',
+        //     color: this.extension.icon_effect_color,
+        //   });
+        //   break;
+        // }
       }
-      this._iconsContainer.add_effect(effect);
-      this._lastEffect = effect;
+      if (effect) {
+        this._iconsContainer.add_effect(effect);
+      }
+      this.iconEffect = effect;
     }
   }
 
@@ -93,7 +97,7 @@ var Animator = class {
     this._enabled = false;
     this._endAnimation();
 
-    this._lastEffect = null;
+    this.iconEffect = null;
 
     if (this._oneShotId) {
       clearInterval(this._oneShotId);
@@ -511,6 +515,7 @@ var Animator = class {
           }
         }
 
+        // todo ... move dots and badges to service?
         // update the badge
         let has_badge = false;
         if (

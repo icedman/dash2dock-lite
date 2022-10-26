@@ -32,26 +32,29 @@ SettingsKeys.setKeys({
     default_value: true,
     widget_type: 'switch',
     key_maps: {},
+    test: { pointer: 'slide-through' },
   },
   'autohide-dash': {
     default_value: true,
     widget_type: 'switch',
     key_maps: {},
+    test: { pointer: 'slide-through' },
   },
   'pressure-sense': {
     default_value: true,
     widget_type: 'switch',
     key_maps: {},
+    test: { pointer: 'slide-down' },
   },
-  'background-dark': {
-    default_value: true,
-    widget_type: 'switch',
-    key_maps: {},
-  },
-  'background-opacity': {
-    default_value: 0,
-    widget_type: 'scale',
-  },
+  // 'background-dark': {
+  //   default_value: true,
+  //   widget_type: 'switch',
+  //   key_maps: {},
+  // },
+  // 'background-opacity': {
+  //   default_value: 0,
+  //   widget_type: 'scale',
+  // },
   'background-color': {
     default_value: [0, 0, 0, 0.5],
     widget_type: 'color',
@@ -60,10 +63,10 @@ SettingsKeys.setKeys({
     default_value: [0, 0, 0, 0.5],
     widget_type: 'color',
   },
-  'translucent-topbar': {
-    default_value: false,
-    widget_type: 'switch',
-  },
+  // 'translucent-topbar': {
+  //   default_value: false,
+  //   widget_type: 'switch',
+  // },
   'trash-icon': {
     default_value: false,
     widget_type: 'switch',
@@ -87,18 +90,22 @@ SettingsKeys.setKeys({
   'animation-fps': {
     default_value: 0,
     widget_type: 'dropdown',
+    test: { pointer: 'slide-through' },
   },
   'animation-magnify': {
     default_value: 0,
     widget_type: 'scale',
+    test: { pointer: 'slide-through' },
   },
   'animation-spread': {
     default_value: 0,
     widget_type: 'scale',
+    test: { pointer: 'slide-through' },
   },
   'animation-rise': {
     default_value: 0,
     widget_type: 'scale',
+    test: { pointer: 'slide-through' },
   },
   'border-radius': {
     default_value: 0,
@@ -115,6 +122,7 @@ SettingsKeys.setKeys({
   'running-indicator-style': {
     default_value: 0,
     widget_type: 'dropdown',
+    test: { values: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13] },
   },
   'running-indicator-color': {
     default_value: [1, 1, 1, 1],
@@ -123,6 +131,7 @@ SettingsKeys.setKeys({
   'notification-badge-style': {
     default_value: 0,
     widget_type: 'dropdown',
+    test: { values: [0, 1, 2, 3, 4, 5] },
   },
   'notification-badge-color': {
     default_value: [1, 1, 1, 1],
@@ -135,13 +144,19 @@ SettingsKeys.setKeys({
   'dock-location': {
     default_value: 0,
     widget_type: 'dropdown',
+    test: { values: [0, 1, 2, 3] },
   },
   'icon-effect': {
     default_value: 0,
     widget_type: 'dropdown',
+    test: { values: [0, 1, 2] },
   },
   'icon-effect-color': {
     default_value: [1, 1, 1, 1],
     widget_type: 'color',
+  },
+  'msg-to-ext': {
+    default_value: '',
+    widget_type: 'string',
   },
 });

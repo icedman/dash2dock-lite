@@ -157,6 +157,46 @@
           </object>
         </child>
 
+        <child>
+          <object class="AdwActionRow" id="self-test-row">
+            <property name="visible">false</property>
+            <property name="title" translatable="yes">Test</property>
+            <property name="subtitle" translatable="yes">Run self-test. Messages will be logged at journalctl.</property>
+            <property name="activatable-widget">self-test</property>
+            <child>
+
+            <object class="GtkButton" id="self-test">
+                <property name="halign">start</property>
+                <property name="valign">center</property>
+                <child>
+                  <object class="GtkBox">
+                    <property name="margin-start">20</property>
+                    <property name="margin-end">20</property>
+                    <property name="margin-top">6</property>
+                    <property name="margin-bottom">6</property>
+                    <child>
+                      <object class="GtkImage">
+                        <property name="margin-end">6</property>
+                        <property name="icon-name">pulse-symbolic</property>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkLabel">
+                        <property name="label" translatable="yes">Run</property>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+                <style>
+                  <class name="circular" />
+                  <class name="destructive-action" />
+                </style>
+              </object>
+
+            </child>
+          </object>
+        </child>
+
       </object>
     </child>
 

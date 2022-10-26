@@ -9,17 +9,24 @@ var PrefKeys = class {
   setKeys(keys) {
     Object.keys(keys).forEach((name) => {
       let key = keys[name];
-      this.setKey(name, key.default_value, key.widget_type, key.key_maps);
+      this.setKey(
+        name,
+        key.default_value,
+        key.widget_type,
+        key.key_maps,
+        key.test
+      );
     });
   }
 
-  setKey(name, default_value, widget_type, key_maps) {
+  setKey(name, default_value, widget_type, key_maps, key_test) {
     this._keys[name] = {
       name,
       default_value,
       widget_type,
       value: default_value,
       maps: key_maps,
+      test: key_test,
       object: null,
     };
   }
@@ -98,7 +105,11 @@ var PrefKeys = class {
         }
         case 'dropdown': {
           key.value = settings.get_int(name);
-          if (key.object) key.object.set_selected(key.value);
+          try {
+            if (key.object) key.object.set_selected(key.value);
+          } catch (err) {
+            //
+          }
           break;
         }
         case 'scale': {
@@ -108,15 +119,19 @@ var PrefKeys = class {
         }
         case 'color': {
           key.value = settings.get_value(name).deepUnpack();
-          if (key.object) {
-            key.object.set_rgba(
-              new Gdk.RGBA({
-                red: key.value[0],
-                green: key.value[1],
-                blue: key.value[2],
-                alpha: key.value[3],
-              })
-            );
+          try {
+            if (key.object) {
+              key.object.set_rgba(
+                new Gdk.RGBA({
+                  red: key.value[0],
+                  green: key.value[1],
+                  blue: key.value[2],
+                  alpha: key.value[3],
+                })
+              );
+            }
+          } catch (err) {
+            //
           }
           break;
         }
@@ -143,6 +158,10 @@ var PrefKeys = class {
               if (key.value.length != 4) {
                 key.value = [1, 1, 1, 0];
               }
+              break;
+            }
+            case 'string': {
+              key.value = settings.get_string(name);
               break;
             }
           }

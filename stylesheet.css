@@ -7,45 +7,6 @@
 #panelBox #panel {
   background: rgba(0,0,0,0);
 }
-#panelBackground {
-  background: rgba(255,255,255,255);
-}
-
-/*
-#panelBox.translucent-0 #panel {
-  background: rgba(0,0,0,0);
-}
-#panelBox.translucent-1 #panel {
-  background: rgba(0,0,0,0.1);
-}
-#panelBox.translucent-2 #panel {
-  background: rgba(0,0,0,0.2);
-}
-#panelBox.translucent-3 #panel {
-  background: rgba(0,0,0,0.3);
-}
-#panelBox.translucent-4 #panel {
-  background: rgba(0,0,0,0.4);
-}
-#panelBox.translucent-5 #panel {
-  background: rgba(0,0,0,0.5);
-}
-#panelBox.translucent-6 #panel {
-  background: rgba(0,0,0,0.6);
-}
-#panelBox.translucent-7 #panel {
-  background: rgba(0,0,0,0.7);
-}
-#panelBox.translucent-8 #panel {
-  background: rgba(0,0,0,0.8);
-}
-#panelBox.translucent-9 #panel {
-  background: rgba(0,0,0,0.9);
-}
-#panelBox.translucent-10 #panel {
-  background: rgba(0,0,0,1.0);
-}
-*/
 
 #dash.custom-dots StWidget.app-well-app-running-dot:insensitive {
   width: 0px !important;
@@ -69,11 +30,7 @@
   padding-left: 2px !important;
   padding-right: 2px !important;
 }
-/*
-#dash.dark > StWidget.dash-background {
-  background-color: rgb(0,0,0) !important;
-}
-*/
+
 #dash > StWidget.dash-background {
   background-color: rgb(255,255,255) !important;
 }

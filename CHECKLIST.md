@@ -3,6 +3,10 @@
 enable/disable - check log
 check each preference setting
 
+## general
+
+* sleep/lock
+
 ## animation
 
 * check animation against tweak settings

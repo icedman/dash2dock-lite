@@ -220,6 +220,14 @@ app.connect('activate', (me) => {
     print(prefKeys.getValue('running-indicator-color'));
     // print('reset');
   };
+  if (builder.get_object('static-animation'))
+    builder.get_object('static-animation').connect('clicked', () => {
+      print('zero');
+    });
+  if (builder.get_object('self-test'))
+    builder.get_object('self-test').connect('clicked', () => {
+      print('self-testing...');
+    });
 
   w.connect('close_request', () => {
     m.close();

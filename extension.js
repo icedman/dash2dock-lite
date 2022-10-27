@@ -274,7 +274,12 @@ class Extension {
           break;
         }
         case 'dock-location': {
+          if (this.animate_icons) {
+            this.animator.disable();
+            this.animator.enable();
+          }
           this._updateLayout();
+          this._updateBackgroundColors();
           this._onEnterEvent();
           break;
         }
@@ -738,15 +743,27 @@ class Extension {
       this.dash.remove_style_class_name('vertical');
     }
 
+    this._edge_distance = (this.edge_distance || 0) * 15 * this.scaleFactor;
+    if (this.panel_mode) {
+      this._edge_distance = 0;
+    }
+
     if (this.autohider._enabled && !this.autohider._shown) {
       // remain hidden
     } else {
       if (this._vertical) {
         // left/right
-        this.dashContainer.set_position(this.monitor.x, this.monitor.y);
+        let posx = this.monitor.x + this._edge_distance;
+        if (this.dashContainer._position == 1) {
+          this._edge_distance *= -1;
+          posx =
+            this.monitor.x +
+            this.sw -
+            dockHeight * this.scaleFactor +
+            this._edge_distance;
+        }
+        this.dashContainer.set_position(posx, this.monitor.y);
       } else {
-        this._edge_distance = (this.edge_distance || 0) * 15 * this.scaleFactor;
-
         // top/bottom
         this.dashContainer.set_position(
           this.monitor.x,
@@ -757,9 +774,22 @@ class Extension {
         );
       }
 
-      this.dashContainer._fixedPosition = this.animator._get_position(
-        this.dashContainer
-      );
+      this.dashContainer._fixedPosition = [
+        this.dashContainer.x,
+        this.dashContainer.y,
+      ];
+      this.dashContainer._hidePosition = [...this.dashContainer._fixedPosition];
+
+      let hidePad = 4 * this.scaleFactor;
+      if (this._vertical) {
+        this.dashContainer._hidePosition[0] -=
+          dockHeight * this.scaleFactor + hidePad;
+      } else {
+        this.dashContainer._hidePosition[1] +=
+          dockHeight * this.scaleFactor - hidePad;
+      }
+
+      // log(`${this.dashContainer._fixedPosition[1]} ${this.dashContainer._hidePosition[1]}`);
       this.dashContainer._dockHeight = dockHeight * this.scaleFactor;
     }
 

@@ -13,6 +13,12 @@
   height: 0px !important;
 }
 
+#dash.vertical .dash-item-container .app-well-app
+{
+  padding-top: 2px !important;
+  padding-bottom: 2px !important;
+}
+
 /* from gnome-shell
 // background of the dash behind app icons
 .dash-background {

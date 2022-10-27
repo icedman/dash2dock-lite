@@ -295,6 +295,10 @@ class Extension {
           this._onEnterEvent();
           break;
         }
+        case 'edge-distance': {
+          this._debounceRelayout();
+          break;
+        }
         case 'scale-icons': {
           this._debounceUpdateScale();
           break;
@@ -510,14 +514,28 @@ class Extension {
 
   _updateScale() {
     this._updateShrink();
-    this._timeoutId = null;
   }
 
   _debounceUpdateScale() {
     if (this._timeoutId) {
       clearInterval(this._timeoutId);
     }
-    this._timeoutId = setTimeout(this._updateScale.bind(this), 250);
+    this._timeoutId = setTimeout(() => {
+      this._updateScale();
+      this._timeoutId = null;
+    }, 250);
+  }
+
+  _debounceRelayout() {
+    if (this._timeoutId) {
+      clearInterval(this._timeoutId);
+    }
+
+    this._timeoutId = setTimeout(() => {
+      this._updateLayout();
+      this._onEnterEvent();
+      this._timeoutId = null;
+    }, 250);
   }
 
   _updateShrink(disable) {
@@ -727,10 +745,15 @@ class Extension {
         // left/right
         this.dashContainer.set_position(this.monitor.x, this.monitor.y);
       } else {
+        this._edge_distance = (this.edge_distance || 0) * 15 * this.scaleFactor;
+
         // top/bottom
         this.dashContainer.set_position(
           this.monitor.x,
-          this.monitor.y + this.sh - dockHeight * this.scaleFactor
+          this.monitor.y +
+            this.sh -
+            dockHeight * this.scaleFactor -
+            this._edge_distance
         );
       }
 

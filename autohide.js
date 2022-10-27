@@ -202,7 +202,10 @@ var AutoHide = class {
 
     // temporarily disable autohide
     if (this.animator && this.animator._enabled && this.animator._dragging) {
-      y = this.screenHeight - this.dashContainer.height;
+      y =
+        this.screenHeight -
+        this.dashContainer.height -
+        this.extension._edge_distance;
       this.dashContainer.set_position(x, y);
       this._endAnimation();
       this.animator._endAnimation();

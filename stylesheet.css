@@ -4,8 +4,8 @@
      border: 2px solid magenta !important;
 }
 
-#panelBox #panel {
-  /*background: rgba(0,0,0,0);*/
+#panelBox #panel * {
+  /*color: rgba(0,0,0,0.5);*/
 }
 
 #dash.custom-dots StWidget.app-well-app-running-dot:insensitive {

@@ -30,3 +30,9 @@ calendar._messages[1].notification.urgency
 calendar._messages[1]._iconBin.first_child.icon_name
 
 ```
+
+## gsettings
+
+S = imports.gi.Gio.Settings
+s = new S({schema_id: 'org.gnome.desktop.wm.preferences'})
+s.get_string('button-layout')

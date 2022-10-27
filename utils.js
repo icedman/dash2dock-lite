@@ -25,6 +25,15 @@ var clearInterval = (id) => {
 
 var getPointer = () => {
   let display = Gdk.Display.get_default();
+
+  // wayland?
+  if (!display) {
+    return {
+      get_position: () => {},
+      warp: () => {},
+    };
+  }
+
   let deviceManager = display.get_device_manager();
   let pointer = deviceManager.get_client_pointer();
   return pointer;

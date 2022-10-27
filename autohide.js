@@ -18,6 +18,7 @@ const HIDE_ANIMATION_INTERVAL = 15;
 const HIDE_ANIMATION_INTERVAL_PAD = 15;
 const DEBOUNCE_HIDE_TIMEOUT = 120;
 const PRESSURE_SENSE_DISTANCE = 20;
+const HIDE_PREVIEW_DURATION = 750;
 
 // some codes lifted from dash-to-dock intellihide
 const handledWindowTypes = [
@@ -74,7 +75,18 @@ var AutoHide = class {
 
     this._enabled = false;
 
-    this._untrack(this._currentTracked);
+    let actors = global.get_window_actors();
+    let windows = actors.map((a) => a.get_meta_window());
+    windows.forEach((w) => {
+      if (w._tracked) {
+        this._untrack(w);
+      }
+      if (w._parent && w._parent._close_btn) {
+        w._parent.remove_child(w._parent._close_btn);
+        delete w._parent._close_btn;
+        w._parent._close_btn = null;
+      }
+    });
 
     // log('disable autohide');
   }
@@ -181,6 +193,10 @@ var AutoHide = class {
   _animate() {
     if (!this.dashContainer) return false;
 
+    if (this._preview && this._preview > 0) {
+      this._preview -= this.animationInterval;
+    }
+
     let y = this.dashContainer.position.y;
     let x = this.dashContainer.position.x;
 
@@ -255,6 +271,15 @@ var AutoHide = class {
     }
   }
 
+  preview(do_preview) {
+    if (do_preview === false) {
+      this._preview = null;
+    } else {
+      this._preview = HIDE_PREVIEW_DURATION;
+    }
+    this._checkHide();
+  }
+
   _checkOverlap() {
     let pointer = global.get_pointer();
     let dash_position = this.dashContainer._fixedPosition;
@@ -268,9 +293,32 @@ var AutoHide = class {
 
     let monitor = this.dashContainer._monitor;
     let actors = global.get_window_actors();
-    let windows = actors.map((a) => a.get_meta_window());
-    windows = windows.filter((w) => w.get_monitor() == monitor.index);
+    let windows = actors.map((a) => {
+      let w = a.get_meta_window();
+      w._parent = a;
+      return w;
+    });
     windows = windows.filter((w) => w.can_close());
+
+    // add close button
+    // windows.forEach((_w) => {
+    //   let w = _w._parent;
+    //   if (!w._close_btn) {
+    //     let close_btn = new this.extension.xWMControl(200);
+    //     close_btn.set_scale(28/200, 28/200);
+    //     w.add_child(close_btn);
+    //     w._close_btn = close_btn;
+
+    //     let ox = 9;
+    //     let oy = 6;
+    //     let dw = w.width - _w.get_frame_rect().width;
+    //     let dh = w.height - _w.get_frame_rect().height;
+    //     w._close_btn.set_position(dw/2 + ox,dh/2 + oy);
+    //     w._close._btn.opacity = 60;
+    //   }
+    // });
+
+    windows = windows.filter((w) => w.get_monitor() == monitor.index);
 
     let workspace = global.workspace_manager.get_active_workspace_index();
     windows = windows.filter(
@@ -294,6 +342,10 @@ var AutoHide = class {
     // log(dash_position[1]);
     // log(isOverlapped);
     // log(windows);
+
+    if (this._preview && this._preview > 0) {
+      return true;
+    }
     return isOverlapped;
   }
 

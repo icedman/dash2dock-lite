@@ -23,6 +23,14 @@ const _drawing = class {
     ctx.restore();
   }
 
+  draw_circle(ctx, color, x, y, diameter) {
+    ctx.save();
+    this.set_color(ctx, color, 1);
+    ctx.arc(x, y, diameter / 2 - diameter / 20, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.restore();
+  }
+
   draw_rounded_rect(
     ctx,
     color,

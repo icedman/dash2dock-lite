@@ -2,6 +2,10 @@
 
 * Add preferred monitor
 * Add icon color effects
+* Add background color effects
+* Add show/hide apps icon
+* Add diagnostics/tests
+
 * Add dock position (on-hold)
 
 # Release 14

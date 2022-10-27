@@ -140,6 +140,7 @@ SettingsKeys.setKeys({
   'preferred-monitor': {
     default_value: 0,
     widget_type: 'dropdown',
+    test: { values: [0, 1, 2] },
   },
   'dock-location': {
     default_value: 0,

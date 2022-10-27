@@ -49,12 +49,14 @@ var xClock = GObject.registerClass(
       ctx.setOperator(Cairo.Operator.SOURCE);
 
       let bgSize = size * 0.84;
-      ctx.save();
-      // Drawing.set_color(ctx, back_color, 1.0);
-      Drawing.set_color_rgba(ctx, 0.2, 0.2, 0.2, 1.0);
-      ctx.arc(0, 0, bgSize / 2 - bgSize / 20, 0, 2 * Math.PI);
-      ctx.fill();
-      ctx.restore();
+      // ctx.save();
+      // // Drawing.set_color(ctx, back_color, 1.0);
+      // Drawing.set_color_rgba(ctx, 0.2, 0.2, 0.2, 1.0);
+      // ctx.arc(0, 0, bgSize / 2 - bgSize / 20, 0, 2 * Math.PI);
+      // ctx.fill();
+      // ctx.restore();
+
+      Drawing.draw_circle(ctx, [0.2, 0.2, 0.2, 1.0], 0, 0, bgSize);
 
       const d0 = new Date();
       let h0 = d0.getHours();

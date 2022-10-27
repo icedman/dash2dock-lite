@@ -141,15 +141,20 @@ function addMotionTests(_seqs, extension, settings) {
   // let _seqs = [];
 
   let anim = settings.getValue('animate-icons');
+  let hide = settings.getValue('autohide-dash');
 
   add_message(_seqs, 'begin motion tests', 0);
   _seqs.push({
     func: () => {
       settings.setValue('animate-icons', true);
+      settings.setValue('autohide-dash', false);
     },
     delay: 0.5,
   });
 
+  add_move_pointer(_seqs, 0, 0, 0.5);
+
+  // animation
   let x = extension.dashContainer.position.x;
   let y = extension.dashContainer.position.y;
   let w = extension.dashContainer.width;
@@ -158,9 +163,35 @@ function addMotionTests(_seqs, extension, settings) {
   add_slide_pointer(_seqs, x + w, y + h / 2, x, y + h / 2, 40, 1.8);
   add_move_pointer(_seqs, 0, 0, 0.5);
 
+  // autohide
+
   _seqs.push({
     func: () => {
+      settings.setValue('animate-icons', true);
+      settings.setValue('autohide-dash', true);
+    },
+    delay: 1.0,
+  });
+
+  _seqs.push({
+    func: () => {
+      extension.autohider.preview();
+    },
+    delay: 0.5,
+  });
+  add_move_pointer(_seqs, 0, 0, 1);
+
+  add_slide_pointer(_seqs, x, y + h / 2, x + w, y + h / 2, 40, 1.8);
+  add_slide_pointer(_seqs, x + w, y + h, x, y + h, 40, 1.8);
+  add_move_pointer(_seqs, 0, 0, 0.5);
+
+  // reset
+
+  _seqs.push({
+    func: () => {
+      extension.autohider.preview(false);
       settings.setValue('animate-icons', anim);
+      settings.setValue('autohide-dash', hide);
     },
     delay: 0.5,
   });

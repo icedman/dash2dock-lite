@@ -10,7 +10,6 @@
         <property name="title" translatable="yes">Special Icons</property>
         <property name="description" translatable="yes">Add dynamic effects that update or animate the dash icons. This requires Animate Icons enabled.</property>
 
-        <!-- hide this from justperfection
         <child>
           <object class="AdwActionRow">
             <property name="title" translatable="yes">Apps Icon</property>
@@ -25,7 +24,6 @@
             </child>
           </object>
         </child>
-        -->
 
         <child>
           <object class="AdwActionRow">

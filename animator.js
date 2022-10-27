@@ -120,8 +120,12 @@ var Animator = class {
     }
   }
 
-  preview() {
-    this._preview = ANIM_PREVIEW_DURATION;
+  preview(do_preview) {
+    if (do_preview === false) {
+      this._preview = null;
+    } else {
+      this._preview = ANIM_PREVIEW_DURATION;
+    }
   }
 
   _precreate_dots(count) {

@@ -17,24 +17,25 @@ const Animator = Me.imports.animator.Animator;
 const AutoHide = Me.imports.autohide.AutoHide;
 const Services = Me.imports.services.Services;
 const xDot = Me.imports.apps.dot.xDot;
+const xWMControl = Me.imports.apps.wmcontrol.xWMControl;
 
 const ColorEffect = Me.imports.effects.color_effect.ColorEffect;
 
 const setTimeout = Me.imports.utils.setTimeout;
 const setInterval = Me.imports.utils.setInterval;
-const getPointer = Me.imports.utils.getPointer;
-const warpPointer = Me.imports.utils.warpPointer;
 const runTests = Me.imports.diagnostics.runTests;
-const runMotionTests = Me.imports.diagnostics.runMotionTests;
 
 const SERVICES_UPDATE_INTERVAL = 2500;
 
 class Extension {
   enable() {
+    this._imports = Me.imports;
+
     this.listeners = [];
     this.scale = 1.0;
     this.scale_icons = 0.5;
     this.xDot = xDot;
+    this.xWMControl = xWMControl;
 
     Main._d2dl = this;
 
@@ -60,6 +61,9 @@ class Extension {
 
     this.dashContainer.visible = false;
     this.dash.visible = false;
+    if (this.dash._showAppsIcon) {
+      this.dash._showAppsIcon.visible = false;
+    }
 
     // color effects
     this._backgroundEffect = new ColorEffect({
@@ -230,7 +234,6 @@ class Extension {
           }
           break;
         }
-        case 'apps-icon': // hide this from justperfection (for now)
         case 'animation-fps':
         case 'mounted-icon':
         case 'peek-hidden-icons': {
@@ -239,7 +242,7 @@ class Extension {
         case 'animation-magnify':
         case 'animation-spread':
         case 'animation-rise': {
-          if (this.animator._enabled) {
+          if (this.animate_icons) {
             this.animator.preview();
             this.animator._onEnterEvent();
           }
@@ -251,13 +254,14 @@ class Extension {
         case 'running-indicator-style':
           this._onEnterEvent();
           break;
+        case 'apps-icon':
         case 'calendar-icon':
         case 'clock-icon': {
           this._onEnterEvent();
           break;
         }
         case 'icon-effect': {
-          if (this.animator._enabled) {
+          if (this.animate_icons) {
             this.animator.disable();
             this.animator.enable();
             this.startUp();
@@ -265,7 +269,7 @@ class Extension {
           break;
         }
         case 'icon-effect-color': {
-          if (this.animator._enabled && this.animator.iconEffect) {
+          if (this.animate_icons && this.animator.iconEffect) {
             this.animator.iconEffect.color = this.icon_effect_color;
             this._onEnterEvent();
           }
@@ -282,8 +286,10 @@ class Extension {
         }
         case 'preferred-monitor': {
           // todo!
-          this.disable();
-          this.enable();
+          // this.disable();
+          // this.enable();
+          this._updateLayout();
+          this._onEnterEvent();
           break;
         }
         case 'autohide-dash': {
@@ -445,7 +451,7 @@ class Extension {
   }
 
   _onIconThemeChanged() {
-    if (this.animator._enabled) {
+    if (this.animate_icons) {
       this.services.disable();
       this.services.enable();
     }
@@ -537,7 +543,7 @@ class Extension {
 
     this._updateLayout();
 
-    if (this.animator._enabled) {
+    if (this.animate_icons) {
       this.animator.disable();
       this.animator.enable();
     }
@@ -610,6 +616,10 @@ class Extension {
   _findIcons() {
     if (!this.dash) return [];
 
+    if (this.dash._showAppsIcon) {
+      this.dash._showAppsIcon.visible = this.apps_icon;
+    }
+
     // hook on showApps
     if (this.dash.showAppsButton && !this.dash.showAppsButton._checkEventId) {
       this.dash.showAppsButton._checkEventId = this.dash.showAppsButton.connect(
@@ -653,8 +663,9 @@ class Extension {
     });
 
     try {
-      // this.dash._showAppsIcon;
-      let apps = this.dash.last_child.last_child;
+      // W: breakable
+      let apps = this.dash._showAppsIcon;
+      //  this.dash.last_child.last_child;
       if (apps) {
         let widget = apps.child;
         if (widget && widget.width > 0 && widget.get_parent().visible) {
@@ -671,7 +682,7 @@ class Extension {
         }
       }
     } catch (err) {
-      // could happen if ShowApps is hidden
+      // could happen if ShowApps is hidden or not yet created?
     }
 
     this.dashContainer._icons = icons;
@@ -784,6 +795,10 @@ class Extension {
       this.autohider.disable();
     }
 
+    if (this.animate_icons) {
+      this.animator.disable();
+    }
+
     Main.layoutManager.removeChrome(this.dashContainer);
     Main.layoutManager.addChrome(this.dashContainer, {
       affectsStruts: !this.autohide_dash,
@@ -802,6 +817,10 @@ class Extension {
         this.animator._dotsContainer
       );
     }
+
+    if (this.animate_icons) {
+      this.animator.enable();
+    }
   }
 
   _updateTrashIcon() {
@@ -819,7 +838,7 @@ class Extension {
     }
 
     this.dashContainer.hide();
-    if (this.animator && this.animator._enabled) {
+    if (this.animator && this.animate_icons) {
       this.animator._beginAnimation();
       if (this.animator._iconsContainer) {
         this.animator._iconsContainer.hide();

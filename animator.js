@@ -55,7 +55,7 @@ var Animator = class {
     this._enabled = true;
     this._dragging = false;
     this._oneShotId = null;
-    this._relayout = 8;
+    this._relayout = 20;
 
     this.show_dots = true;
     this.show_badge = true;

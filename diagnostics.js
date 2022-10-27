@@ -21,7 +21,7 @@ const runSequence = Me.imports.utils.runSequence;
 
 var print = (msg) => {
   log(msg);
-  if (Main.lookingGlass.isOpen) {
+  if (Main.lookingGlass && Main.lookingGlass.isOpen) {
     Main.lookingGlass.close();
     // Main.lookingGlass._pushResult('d2dl', msg);
   }

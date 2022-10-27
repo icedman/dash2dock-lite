@@ -54,9 +54,9 @@ class Extension {
     if (this.reuseExistingDash) {
       this.dash = Main.overview.dash;
     } else {
-      // this.dash = new Dash();
-      // this.dash.set_name('dash');
-      // this.dash.add_style_class_name('overview');
+      this.dash = new Dash();
+      this.dash.set_name('dash');
+      this.dash.add_style_class_name('overview');
     }
 
     this.dashContainer.visible = false;
@@ -172,6 +172,17 @@ class Extension {
         this.animator._iconsContainer.visible = true;
         this.animator._dotsContainer.visible = true;
       }
+
+      // ubuntu
+      if (!this._didFirstRun) {
+        this.oneShotStartupCompleteId = setTimeout(() => {
+          this._updateLayout();
+          this._onEnterEvent();
+          this.oneShotStartupCompleteId = null;
+        }, 500);
+      }
+
+      // this._didFirstRun = true;
     }, 500);
   }
 
@@ -264,7 +275,8 @@ class Extension {
           if (this.animate_icons) {
             this.animator.disable();
             this.animator.enable();
-            this.startUp();
+            this._updateLayout();
+            this._onEnterEvent();
           }
           break;
         }
@@ -842,6 +854,7 @@ class Extension {
       this.animator._beginAnimation();
       if (this.animator._iconsContainer) {
         this.animator._iconsContainer.hide();
+        this.animator._dotsContainer.hide();
       }
     }
     // this._onEnterEvent();

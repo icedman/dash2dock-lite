@@ -5,7 +5,7 @@
 }
 
 #panelBox #panel {
-  background: rgba(0,0,0,0);
+  /*background: rgba(0,0,0,0);*/
 }
 
 #dash.custom-dots StWidget.app-well-app-running-dot:insensitive {
@@ -32,7 +32,7 @@
 }
 
 #dash > StWidget.dash-background {
-  background-color: rgb(255,255,255) !important;
+  /*background-color: rgb(255,255,255) !important;*/
 }
 
 #dash.border-radius-0 .dash-item-container > StButton.show-apps > .overview-icon,

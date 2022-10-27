@@ -19,8 +19,6 @@ const Services = Me.imports.services.Services;
 const xDot = Me.imports.apps.dot.xDot;
 const xWMControl = Me.imports.apps.wmcontrol.xWMControl;
 
-const ColorEffect = Me.imports.effects.color_effect.ColorEffect;
-
 const setTimeout = Me.imports.utils.setTimeout;
 const setInterval = Me.imports.utils.setInterval;
 const runTests = Me.imports.diagnostics.runTests;
@@ -61,19 +59,6 @@ class Extension {
 
     this.dashContainer.visible = false;
     this.dash.visible = false;
-    if (this.dash._showAppsIcon) {
-      this.dash._showAppsIcon.visible = false;
-    }
-
-    // color effects
-    this._backgroundEffect = new ColorEffect({
-      name: 'dash_background',
-      color: [0, 0, 0, 0.2],
-    });
-    this.dash._background.add_effect_with_name(
-      'dash_background',
-      this._backgroundEffect
-    );
 
     this.dashContainer.dash = this.dash;
     if (this.dash.get_parent()) {
@@ -109,8 +94,11 @@ class Extension {
 
     this._updateAutohide();
     this._updateAnimation();
-    this.animator._iconsContainer.visible = false;
-    this.animator._dotsContainer.visible = false;
+
+    if (this.animator._iconsContainer) {
+      this.animator._iconsContainer.visible = false;
+      this.animator._dotsContainer.visible = false;
+    }
 
     this._updateCss();
     this._updateTrashIcon();
@@ -130,8 +118,6 @@ class Extension {
     this._updateAnimation(true);
     this._updateAutohide(true);
     this._updateCss(true);
-
-    this.dash._background.remove_effect_by_name('dash_background');
 
     this.dashContainer.remove_child(this.dash);
     if (this.reuseExistingDash) {
@@ -173,16 +159,12 @@ class Extension {
         this.animator._dotsContainer.visible = true;
       }
 
-      // ubuntu
-      if (!this._didFirstRun) {
-        this.oneShotStartupCompleteId = setTimeout(() => {
-          this._updateLayout();
-          this._onEnterEvent();
-          this.oneShotStartupCompleteId = null;
-        }, 500);
-      }
-
-      // this._didFirstRun = true;
+      // ubuntu (otherwise, relayout is not done property)
+      this.oneShotStartupCompleteId = setTimeout(() => {
+        this._updateLayout();
+        this._onEnterEvent();
+        this.oneShotStartupCompleteId = null;
+      }, 500);
     }, 500);
   }
 
@@ -564,38 +546,32 @@ class Extension {
   _updateBackgroundColors(disable) {
     if (!this.dash) return;
 
-    this._backgroundEffect.color = this.background_color || [0, 0, 0, 0.5];
-    this._backgroundEffect.blend = this.background_color[3] || 0.5;
-
-    if (disable) {
-      Main.panel.background_color = Clutter.Color.from_pixel(0xffffff00);
-    } else {
-      let bg = Clutter.Color.from_pixel(0xffffffff);
-      bg.red = Math.floor(this.topbar_background_color[0] * 255);
-      bg.green = Math.floor(this.topbar_background_color[1] * 255);
-      bg.blue = Math.floor(this.topbar_background_color[2] * 255);
-      bg.alpha = Math.floor(this.topbar_background_color[3] * 255);
-      Main.panel.background_color = bg;
+    // dash background
+    if (this.dash._background) {
+      this.dash._background.style = '';
+      this.dash.style = '';
+      if (!disable) {
+        let bg = this.background_color || [0, 0, 0, 0.5];
+        let clr = bg.map((r) => Math.floor(255 * r));
+        clr[3] = bg[3];
+        let style = `background: rgba(${clr.join(',')})`;
+        if (!this.panel_mode) {
+          this.dash._background.style = style;
+        } else {
+          this.dash.style = style;
+          this.dash._background.style = 'background: rgba(0,0,0,0)';
+        }
+      }
     }
 
-    let background = this.dash._background || null;
-    if (background) {
-      if (this.panel_mode && !disable) {
-        let bg = Clutter.Color.from_pixel(0xffffffff);
-        bg.red = Math.floor(this.background_color[0] * 255);
-        bg.green = Math.floor(this.background_color[1] * 255);
-        bg.blue = Math.floor(this.background_color[2] * 255);
-        bg.alpha = Math.floor(this.background_color[3] * 255);
-        let clr = Clutter.Color.from_pixel(
-          this.background_dark ? 0x00000050 : 0x50505050
-        );
-        clr.alpha = this.background_opacity * 255;
-        this.dash.background_color = bg;
-        background.visible = false;
-      } else {
-        this.dash.background_color = Clutter.Color.from_pixel(0x00000000);
-        background.visible = true;
-      }
+    // panel background
+    Main.panel.style = '';
+    if (!disable) {
+      let bg = this.topbar_background_color || [0, 0, 0, 0.5];
+      let clr = bg.map((r) => Math.floor(255 * r));
+      clr[3] = bg[3];
+      let style = `background: rgba(${clr.join(',')})`;
+      Main.panel.style = style;
     }
 
     this._updateCss(disable);

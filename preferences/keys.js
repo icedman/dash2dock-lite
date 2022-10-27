@@ -90,22 +90,22 @@ SettingsKeys.setKeys({
   'animation-fps': {
     default_value: 0,
     widget_type: 'dropdown',
-    test: { pointer: 'slide-through' },
+    test: { pointer: 'slide-through', values: [0, 1, 2] },
   },
   'animation-magnify': {
     default_value: 0,
     widget_type: 'scale',
-    test: { pointer: 'slide-through' },
+    test: { pointer: 'slide-through', values: [0, 0.5, 1] },
   },
   'animation-spread': {
     default_value: 0,
     widget_type: 'scale',
-    test: { pointer: 'slide-through' },
+    test: { pointer: 'slide-through', values: [0, 0.5, 1] },
   },
   'animation-rise': {
     default_value: 0,
     widget_type: 'scale',
-    test: { pointer: 'slide-through' },
+    test: { pointer: 'slide-through', values: [0, 0.5, 1] },
   },
   'border-radius': {
     default_value: 0,

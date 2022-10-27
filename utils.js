@@ -23,19 +23,26 @@ var clearInterval = (id) => {
   GLib.source_remove(id);
 };
 
+const dummy_pointer = {
+  get_position: () => {
+    return [{}, 0, 0];
+  },
+  warp: (screen, x, y) => {},
+};
+
 var getPointer = () => {
   let display = Gdk.Display.get_default();
 
   // wayland?
   if (!display) {
-    return {
-      get_position: () => {},
-      warp: () => {},
-    };
+    return dummy_pointer;
   }
 
   let deviceManager = display.get_device_manager();
-  let pointer = deviceManager.get_client_pointer();
+  if (!deviceManager) {
+    return dummy_pointer;
+  }
+  let pointer = deviceManager.get_client_pointer() || dummy_pointer;
   return pointer;
 };
 

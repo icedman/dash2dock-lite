@@ -47,6 +47,24 @@
           </object>
         </child>
 
+        <!--
+        <child>
+          <object class="AdwActionRow">
+            <property name="title" translatable="yes">Icons Size</property>
+            <property name="subtitle" translatable="yes"
+              >Set icons base size.</property
+            >
+            <property name="activatable-widget">icon-size</property>
+            <child>
+              <object class="GtkDropDown" id="icon-size">
+                <property name="valign">center</property>
+                <property name="model">icon-size-model</property>
+              </object>
+            </child>
+          </object>
+        </child>
+        -->
+
         <child>
           <object class="AdwActionRow">
             <property name="title" translatable="yes">Icon Effect</property>
@@ -344,6 +362,18 @@
       <item translatable="yes">Tint</item>
       <item translatable="yes">Monochrome</item>
       <!-- <item translatable="yes">(Test)</item> -->
+    </items>
+  </object>
+
+  <object class="GtkStringList" id="icon-size-model">
+    <items>
+      <item translatable="yes">Default</item>
+      <item>16</item>
+      <item>22</item>
+      <item>24</item>
+      <item>32</item>
+      <item>48</item>
+      <item>64</item>
     </items>
   </object>
 </interface>

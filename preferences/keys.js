@@ -124,6 +124,11 @@ SettingsKeys.setKeys({
     default_value: true,
     widget_type: 'switch',
   },
+  'icon-size': {
+    default_value: 0,
+    widget_type: 'dropdown',
+    test: { values: [16, 22, 24, 32, 48, 64] },
+  },
   'running-indicator-style': {
     default_value: 0,
     widget_type: 'dropdown',

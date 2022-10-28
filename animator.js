@@ -30,8 +30,8 @@ const ANIM_ICON_SCALE = 0.9;
 const ANIM_ICON_HIT_AREA = 1.25;
 const ANIM_ICON_QUALITY = 2.0;
 const ANIM_REENABLE_DELAY = 750;
-const ANIM_DEBOUNCE_END_DELAY = 1000;
-const ANIM_PREVIEW_DURATION = 1500;
+const ANIM_DEBOUNCE_END_DELAY = 750;
+const ANIM_PREVIEW_DURATION = 1200;
 
 const DOT_CANVAS_SIZE = 96;
 
@@ -142,6 +142,11 @@ var Animator = class {
     this._dots.forEach((d) => {
       d.visible = false;
     });
+  }
+
+  relayout() {
+    this._relayout = 20;
+    this._onEnterEvent();
   }
 
   _animate() {
@@ -404,8 +409,12 @@ var Animator = class {
       }
     }
 
+    let didAnimate = false;
+
     // set animation behavior here
     if (nearestIcon && nearestDistance < iconSize * 2) {
+      didAnimate = true;
+
       let raise = ANIM_ICON_RAISE * (this.extension.animation_rise || 0);
       nearestIcon._target[iy] -= iconSize * raise * scaleFactor;
       nearestIcon._targetScale = magnification;
@@ -466,9 +475,12 @@ var Animator = class {
       }
     }
 
-    let didAnimate = false;
-
     let dotIndex = 0;
+
+    let start_x = -1;
+    let end_x = -1;
+    let start_y = -1;
+    let end_y = -1;
 
     // animate to target scale and position
     // todo .. make this velocity based
@@ -484,6 +496,16 @@ var Animator = class {
       icon.set_scale(1, 1);
       let from = this._get_position(icon);
       let dst = this._get_distance(from, icon._target);
+
+      // compute background size
+      if (start_x == -1) {
+        start_x = from[0];
+      }
+      end_x = from[0] + iconSize * scaleFactor;
+      if (start_y == -1) {
+        start_y = from[1];
+      }
+      end_y = from[1] + iconSize * scaleFactor;
 
       let _scale_coef = ANIM_SCALE_COEF;
       let _pos_coef = ANIM_POS_COEF;
@@ -524,6 +546,9 @@ var Animator = class {
             case 'top':
               icon._label.y = pos[1] + iconSize * scale * 0.9 * scaleFactor;
               break;
+          }
+          if (this.extension._vertical) {
+            icon._label.y = pos[1];
           }
         }
 
@@ -627,6 +652,26 @@ var Animator = class {
       }
     });
 
+    // resize background
+    if (this._relayout && this._relayout > 0) {
+      this.dash._background.width = -1;
+      this.dash._background.height = -1;
+    } else {
+      if (this.extension._vertical) {
+        let w = end_y - start_y + iconSize * 0.8;
+        if (!isNaN(w)) {
+          this.dash._background.height = w;
+          this.dash._background.width = -1;
+        }
+      } else {
+        let w = end_x - start_x + iconSize * 0.8;
+        if (!isNaN(w)) {
+          this.dash._background.width = w;
+          this.dash._background.height = -1;
+        }
+      }
+    }
+
     // todo... remove?
     if (validPosition && !this._isInFullscreen()) {
       this._iconsContainer.show();
@@ -642,6 +687,7 @@ var Animator = class {
     return this.extension._findIcons();
   }
 
+  // todo move to util
   _get_x(obj) {
     if (obj == null) return 0;
     return obj.get_transformed_position()[0];

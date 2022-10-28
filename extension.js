@@ -126,6 +126,11 @@ class Extension {
         .first_child.add_child(this.dash);
     }
 
+    if (this.dash && this.dash._background) {
+      this.dash._background.width = -1;
+      this.dash._background.height = -1;
+    }
+
     Main.layoutManager.removeChrome(this.dashContainer);
     delete this.dashContainer;
     this.dashContainer = null;
@@ -283,6 +288,7 @@ class Extension {
           this._onEnterEvent();
           break;
         }
+        case 'icon-size':
         case 'preferred-monitor': {
           // todo!
           // this.disable();
@@ -546,7 +552,7 @@ class Extension {
   _updateShrink(disable) {
     if (!this.dashContainer) return;
 
-    let rescale_modifier = 0.8 + 1.4 * this.scale_icons;
+    let rescale_modifier = 0.5 + 1.5 * this.scale_icons;
     if (this.scale_icons == 0) {
       rescale_modifier = 1;
     }
@@ -714,9 +720,10 @@ class Extension {
 
     this.scaleFactor = St.ThemeContext.get_for_stage(global.stage).scale_factor;
     let iconSize = 64;
+    let preferredIconSize = [32, 16, 22, 24, 32, 48, 64][this.icon_size || 0];
 
     let scale = this.scale;
-    let dockHeight = iconSize * (this.shrink_icons ? 1.8 : 1.6) * scale;
+    let dockHeight = iconSize * (this.shrink_icons ? 2.0 : 1.8) * scale;
 
     // panel mode adjustment
     if (this.panel_mode) {

@@ -591,9 +591,11 @@ class Extension {
         let style = `background: rgba(${clr.join(',')})`;
         if (!this.panel_mode) {
           this.dash._background.style = style;
+          this.dash._background.opacity = 255;
         } else {
           this.dash.style = style;
-          this.dash._background.style = 'background: rgba(0,0,0,0)';
+          this.dash._background.style = '';
+          this.dash._background.opacity = 0;
         }
       }
     }
@@ -794,11 +796,11 @@ class Extension {
 
       let hidePad = 4 * this.scaleFactor;
       if (this._vertical) {
-        this.dashContainer._hidePosition[0] -=
-          dockHeight * this.scaleFactor + hidePad;
+        this.dashContainer._hidePosition[0] = this.dashContainer._monitor.x -
+          (dockHeight * this.scaleFactor) + hidePad;
       } else {
-        this.dashContainer._hidePosition[1] +=
-          dockHeight * this.scaleFactor - hidePad;
+        this.dashContainer._hidePosition[1] = this.dashContainer._monitor.y +
+          this.dashContainer._monitor.height - hidePad;
       }
 
       // log(`${this.dashContainer._fixedPosition[1]} ${this.dashContainer._hidePosition[1]}`);

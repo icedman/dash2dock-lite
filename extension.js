@@ -47,6 +47,11 @@ class Extension {
     });
     this.dashContainer.delegate = this;
 
+    Main.layoutManager.addChrome(this.dashContainer, {
+      affectsStruts: false,
+      trackFullscreen: true,
+    });
+
     // todo
     this.reuseExistingDash = true;
     if (this.reuseExistingDash) {
@@ -100,7 +105,7 @@ class Extension {
       this.animator._dotsContainer.visible = false;
     }
 
-    this._updateCss();
+    // this._updateCss();
     this._updateTrashIcon();
 
     this._addEvents();

@@ -59,7 +59,7 @@ var runSequence = (tests) => {
   if (_tests.length == 0) return;
   let t = _tests[0];
   let d = Math.floor(t.delay * 1000);
-  setTimeout(() => {
+  t._id = setTimeout(() => {
     t.func(t);
   }, 10);
   _tests.splice(0, 1);

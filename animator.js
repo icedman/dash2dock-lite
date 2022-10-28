@@ -26,8 +26,7 @@ const ANIM_PULL_COEF = 1.8;
 const ANIM_SCALE_COEF = 2.5;
 const ANIM_ON_LEAVE_COEF = 1.4;
 const ANIM_ICON_RAISE = 0.25;
-const ANIM_ICON_SCALE = 1.8;
-const ANIM_ICON_SCALE_REDUCE = 0.5;
+const ANIM_ICON_SCALE = 0.9;
 const ANIM_ICON_HIT_AREA = 1.25;
 const ANIM_ICON_QUALITY = 2.0;
 const ANIM_REENABLE_DELAY = 750;
@@ -35,8 +34,6 @@ const ANIM_DEBOUNCE_END_DELAY = 1000;
 const ANIM_PREVIEW_DURATION = 1500;
 
 const DOT_CANVAS_SIZE = 96;
-
-let pauseAnimation = false;
 
 var Animator = class {
   constructor() {
@@ -162,7 +159,7 @@ var Animator = class {
     this._dotsContainer.height = 1;
 
     let magnification =
-      (this.extension.animation_magnify * 0.9 || 0) - ANIM_ICON_SCALE_REDUCE;
+      1 + ANIM_ICON_SCALE * (this.extension.animation_magnify || 0);
     let spread = 1 - (this.extension.animation_spread * 1 || 0);
 
     let existingIcons = this._iconsContainer.get_children();
@@ -309,6 +306,7 @@ var Animator = class {
       let bin = icon._bin;
       let pos = this._get_position(bin);
 
+      icon._fixedPosition = [...pos];
       bin.first_child.opacity = 0;
       // bin.set_size(iconSize, iconSize);
       icon.set_size(iconSize, iconSize);
@@ -408,16 +406,18 @@ var Animator = class {
 
     // set animation behavior here
     if (nearestIcon && nearestDistance < iconSize * 2) {
-      let raise = ANIM_ICON_RAISE;
-      raise -=
-        ANIM_ICON_RAISE * (1.0 - (this.extension.animation_rise || 0)) - 0.1;
+      let raise = ANIM_ICON_RAISE * (this.extension.animation_rise || 0);
       nearestIcon._target[iy] -= iconSize * raise * scaleFactor;
-      nearestIcon._targetScale = ANIM_ICON_SCALE + magnification;
+      nearestIcon._targetScale = magnification;
 
       let offset = nearestIcon._dx / 4;
       let offsetY = (offset < 0 ? -offset : offset) / 2;
       nearestIcon._target[ix] += offset;
       nearestIcon._target[iy] += offsetY;
+
+      if (this.extension.animation_spread == 0) {
+        nearestIcon._target[ix] = nearestIcon._fixedPosition[ix];
+      }
 
       let prevLeft = nearestIcon;
       let prevRight = nearestIcon;
@@ -439,6 +439,10 @@ var Animator = class {
             left._targetScale = sz;
           }
           prevLeft = left;
+
+          if (this.extension.animation_spread == 0) {
+            left._target[ix] = left._fixedPosition[ix];
+          }
         }
         if (nearestIdx + i < animateIcons.length) {
           right = animateIcons[nearestIdx + i];
@@ -450,6 +454,10 @@ var Animator = class {
             right._targetScale = sz;
           }
           prevRight = right;
+
+          if (this.extension.animation_spread == 0) {
+            right._target[ix] = right._fixedPosition[ix];
+          }
         }
 
         if (!left && !right) break;

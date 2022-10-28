@@ -110,7 +110,7 @@ SettingsKeys.setKeys({
   'edge-distance': {
     default_value: 0,
     widget_type: 'scale',
-    test: { pointer: 'slide-through', values: [-1, 0, 1] },
+    test: { values: [-1, 0, 1] },
   },
   'border-radius': {
     default_value: 0,

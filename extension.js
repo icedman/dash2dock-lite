@@ -796,11 +796,15 @@ class Extension {
 
       let hidePad = 4 * this.scaleFactor;
       if (this._vertical) {
-        this.dashContainer._hidePosition[0] = this.dashContainer._monitor.x -
-          (dockHeight * this.scaleFactor) + hidePad;
+        this.dashContainer._hidePosition[0] =
+          this.dashContainer._monitor.x -
+          dockHeight * this.scaleFactor +
+          hidePad;
       } else {
-        this.dashContainer._hidePosition[1] = this.dashContainer._monitor.y +
-          this.dashContainer._monitor.height - hidePad;
+        this.dashContainer._hidePosition[1] =
+          this.dashContainer._monitor.y +
+          this.dashContainer._monitor.height -
+          hidePad;
       }
 
       // log(`${this.dashContainer._fixedPosition[1]} ${this.dashContainer._hidePosition[1]}`);

@@ -653,6 +653,7 @@ var Animator = class {
     });
 
     // resize background
+    /*
     if (this._relayout && this._relayout > 0) {
       this.dash._background.width = -1;
       this.dash._background.height = -1;
@@ -671,6 +672,7 @@ var Animator = class {
         }
       }
     }
+    */
 
     // todo... remove?
     if (validPosition && !this._isInFullscreen()) {

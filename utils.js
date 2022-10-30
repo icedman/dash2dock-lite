@@ -61,6 +61,6 @@ var runSequence = (seq) => {
   seq.splice(0, 1);
 
   setTimeout(() => {
-    runSequence(seq)
+    runSequence(seq);
   }, d);
 };

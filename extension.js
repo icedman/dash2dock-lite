@@ -67,8 +67,11 @@ class Extension {
       this.dash.add_style_class_name('overview');
     }
 
-    this.dashContainer.visible = false;
-    this.dash.visible = false;
+    // this.dashContainer.visible = false;
+    // this.dash.visible = false;
+    pivot.x = 0.5;
+    pivot.y = 0.5;
+    this.dash.pivot_point = pivot;
 
     this.dashContainer.dash = this.dash;
     if (this.dash.get_parent()) {
@@ -104,10 +107,10 @@ class Extension {
     this._updateAutohide();
     this._updateAnimation();
 
-    if (this.animator._iconsContainer) {
-      this.animator._iconsContainer.visible = false;
-      this.animator._dotsContainer.visible = false;
-    }
+    // if (this.animator._iconsContainer) {
+    //   this.animator._iconsContainer.visible = false;
+    //   this.animator._dotsContainer.visible = false;
+    // }
 
     this._updateCss();
     this._updateTrashIcon();
@@ -161,17 +164,18 @@ class Extension {
 
   startUp() {
     this._updateLayout();
+    this._onEnterEvent();
     this.oneShotStartupCompleteId = setTimeout(() => {
       this._updateLayout();
       this._onEnterEvent();
       this.oneShotStartupCompleteId = null;
 
-      this.dashContainer.visible = true;
-      this.dash.visible = true;
-      if (this.animator._iconsContainer) {
-        this.animator._iconsContainer.visible = true;
-        this.animator._dotsContainer.visible = true;
-      }
+      // this.dashContainer.visible = true;
+      // this.dash.visible = true;
+      // if (this.animator._iconsContainer) {
+      //   this.animator._iconsContainer.visible = true;
+      //   this.animator._dotsContainer.visible = true;
+      // }
 
       // ubuntu (otherwise, relayout is not done property)
       this.oneShotStartupCompleteId = setTimeout(() => {
@@ -875,6 +879,10 @@ class Extension {
     this.dashContainer.show();
     this._onEnterEvent();
 
+    if (this.animator._iconsContainer) {
+      this.animator._iconsContainer.show();
+      this.animator._dotsContainer.show();
+    }
     // log('_onOverviewHidden');
   }
 

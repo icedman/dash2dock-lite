@@ -300,8 +300,6 @@ var AutoHide = class {
   }
 
   _checkOverlap() {
-    // if (this.extension._vertical) return false;
-
     let pointer = global.get_pointer();
     let dash_position = this.dashContainer._fixedPosition;
     // this.animator._get_position(this.dashContainer);
@@ -325,25 +323,6 @@ var AutoHide = class {
       return w;
     });
     windows = windows.filter((w) => w.can_close());
-
-    // add close button
-    // windows.forEach((_w) => {
-    //   let w = _w._parent;
-    //   if (!w._close_btn) {
-    //     let close_btn = new this.extension.xWMControl(200);
-    //     close_btn.set_scale(28/200, 28/200);
-    //     w.add_child(close_btn);
-    //     w._close_btn = close_btn;
-
-    //     let ox = 9;
-    //     let oy = 6;
-    //     let dw = w.width - _w.get_frame_rect().width;
-    //     let dh = w.height - _w.get_frame_rect().height;
-    //     w._close_btn.set_position(dw/2 + ox,dh/2 + oy);
-    //     w._close._btn.opacity = 60;
-    //   }
-    // });
-
     windows = windows.filter((w) => w.get_monitor() == monitor.index);
 
     let workspace = global.workspace_manager.get_active_workspace_index();

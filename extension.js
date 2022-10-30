@@ -24,6 +24,7 @@ const setInterval = Me.imports.utils.setInterval;
 const runTests = Me.imports.diagnostics.runTests;
 
 const SERVICES_UPDATE_INTERVAL = 2500;
+const EDGE_DISTANCE = 20;
 
 class Extension {
   enable() {
@@ -46,6 +47,10 @@ class Extension {
       vertical: true,
     });
     this.dashContainer.delegate = this;
+    let pivot = new Point();
+    pivot.x = 0.5;
+    pivot.y = 0.5;
+    this.dashContainer.pivot_point = pivot;
 
     Main.layoutManager.addChrome(this.dashContainer, {
       affectsStruts: false,
@@ -757,7 +762,9 @@ class Extension {
       this.dash.remove_style_class_name('vertical');
     }
 
-    this._edge_distance = (this.edge_distance || 0) * 15 * this.scaleFactor;
+    this._edge_distance =
+      (-EDGE_DISTANCE / 4 + (this.edge_distance || 0) * EDGE_DISTANCE) *
+      this.scaleFactor;
     if (this.panel_mode) {
       this._edge_distance = 0;
     }

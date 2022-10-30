@@ -19,15 +19,16 @@ const TintEffect = Me.imports.effects.tint_effect.TintEffect;
 const MonochromeEffect = Me.imports.effects.monochrome_effect.MonochromeEffect;
 const TestEffect = Me.imports.effects.test_effect.TestEffect;
 
+const xOverlay = Me.imports.apps.overlay.xOverlay;
+
 const ANIM_INTERVAL = 15;
 const ANIM_INTERVAL_PAD = 15;
 const ANIM_POS_COEF = 2;
-const ANIM_PULL_COEF = 1.8;
 const ANIM_SCALE_COEF = 2.5;
 const ANIM_ON_LEAVE_COEF = 1.4;
-const ANIM_ICON_RAISE = 0.25;
-const ANIM_ICON_SCALE = 0.9;
-const ANIM_ICON_HIT_AREA = 1.25;
+const ANIM_ICON_RAISE = 0.6;
+const ANIM_ICON_SCALE = 1.5;
+const ANIM_ICON_HIT_AREA = 1.5;
 const ANIM_ICON_QUALITY = 2.0;
 const ANIM_REENABLE_DELAY = 750;
 const ANIM_DEBOUNCE_END_DELAY = 750;
@@ -48,6 +49,12 @@ var Animator = class {
     this._dotsContainer = new St.Widget({ name: 'dotsContainer' });
     Main.uiGroup.insert_child_above(this._dotsContainer, this.dashContainer);
     Main.uiGroup.insert_child_below(this._iconsContainer, this._dotsContainer);
+
+    this._overlay = new xOverlay(
+      this.dashContainer._monitor.width,
+      this.dashContainer._monitor.height
+    );
+    Main.uiGroup.insert_child_above(this._overlay, this._iconsContainer);
 
     this._enabled = true;
     this._dragging = false;
@@ -108,6 +115,9 @@ var Animator = class {
       Main.uiGroup.remove_child(this._dotsContainer);
       delete this._dotsContainer;
       this._dotsContainer = null;
+      Main.uiGroup.remove_child(this._overlay);
+      delete this._overlay;
+      this._overlay = null;
     }
 
     this._dots = [];
@@ -162,10 +172,6 @@ var Animator = class {
     this._iconsContainer.height = 1;
     this._dotsContainer.width = 1;
     this._dotsContainer.height = 1;
-
-    let magnification =
-      1 + ANIM_ICON_SCALE * (this.extension.animation_magnify || 0);
-    let spread = 1 - (this.extension.animation_spread * 1 || 0);
 
     let existingIcons = this._iconsContainer.get_children();
     if (this._iconsCount != existingIcons.length) {
@@ -301,8 +307,10 @@ var Animator = class {
     // sort
     let cornerPos = this._get_position(this.dashContainer);
     animateIcons.sort((a, b) => {
-      let dstA = this._get_distance(cornerPos, this._get_position(a._bin));
-      let dstB = this._get_distance(cornerPos, this._get_position(b._bin));
+      a._pos = this._get_position(a._bin);
+      b._pos = this._get_position(b._bin);
+      let dstA = this._get_distance(cornerPos, a._pos);
+      let dstB = this._get_distance(cornerPos, b._pos);
       return dstA > dstB ? 1 : -1;
     });
 
@@ -371,6 +379,7 @@ var Animator = class {
       }
 
       icon._target = pos;
+      icon._target2 = pos;
       icon._targetScale = 1;
 
       if (pos[1] < this.extension.sh / 2) {
@@ -411,72 +420,118 @@ var Animator = class {
 
     let didAnimate = false;
 
-    // set animation behavior here
-    if (nearestIcon && nearestDistance < iconSize * 2) {
-      didAnimate = true;
+    let off = (iconSize * scaleFactor) / 2;
 
-      let raise = ANIM_ICON_RAISE * (this.extension.animation_rise || 0);
-      nearestIcon._target[iy] -= iconSize * raise * scaleFactor;
-      nearestIcon._targetScale = magnification;
+    animateIcons.forEach((i) => {
+      if (!i._pos) return;
+      let p = [...i._pos];
+      if (!p) return;
+      p[0] += off;
+      p[1] += off;
+      i._pos = p;
+    });
 
-      let offset = nearestIcon._dx / 4;
-      let offsetY = (offset < 0 ? -offset : offset) / 2;
-      nearestIcon._target[ix] += offset;
-      nearestIcon._target[iy] += offsetY;
+    if (!nearestIcon) {
+      this.dashContainer._targetScale = 1;
+      this._overlay.visible = false;
+    }
 
-      if (this.extension.animation_spread == 0) {
-        nearestIcon._target[ix] = nearestIcon._fixedPosition[ix];
+    if (animateIcons.length && nearestIcon) {
+      let px = pointer[0];
+      if (this._preview > 0) {
+        px = nearestIcon._pos[0];
       }
+      let first = animateIcons[0]._pos || [0, 0];
+      let last = animateIcons[animateIcons.length - 1]._pos || [0, 0];
+      let nsz = (iconSize + 16) * scaleFactor;
+      let sz = nsz * (4 + 2 * this.extension.animation_spread);
+      let center = [px, first[1]];
 
-      let prevLeft = nearestIcon;
-      let prevRight = nearestIcon;
-      let sz = nearestIcon._targetScale;
-      let pull_coef = ANIM_PULL_COEF;
+      animateIcons.forEach((i) => {
+        i._d = nsz;
+        let cr = sz / 2;
+        let p = i._pos;
+        if (!p) return;
+        let dx = p[0] - center[0];
+        let dst = Math.sqrt(dx * dx);
 
-      for (let i = 1; i < 80; i++) {
-        sz *= 0.8 - 0.2 * spread;
-
-        let left = null;
-        let right = null;
-        if (nearestIdx - i >= 0) {
-          left = animateIcons[nearestIdx - i];
-          left._target[ix] =
-            (left._target[ix] + prevLeft._target[ix] * pull_coef) /
-            (pull_coef + 1);
-          left._target[ix] -= iconSize * (sz + 0.2) * scaleFactor;
-          if (sz > 1) {
-            left._targetScale = sz;
-          }
-          prevLeft = left;
-
-          if (this.extension.animation_spread == 0) {
-            left._target[ix] = left._fixedPosition[ix];
-          }
-        }
-        if (nearestIdx + i < animateIcons.length) {
-          right = animateIcons[nearestIdx + i];
-          right._target[ix] =
-            (right._target[ix] + prevRight._target[ix] * pull_coef) /
-            (pull_coef + 1);
-          right._target[ix] += iconSize * (sz + 0.2) * scaleFactor;
-          if (sz > 1) {
-            right._targetScale = sz;
-          }
-          prevRight = right;
-
-          if (this.extension.animation_spread == 0) {
-            right._target[ix] = right._fixedPosition[ix];
-          }
+        // magnify
+        if (dst < sz / 2) {
+          let magnify = (cr - dst) / cr / 2;
+          i._d *=
+            1 + ANIM_ICON_SCALE * magnify * this.extension.animation_magnify;
+          i._targetScale = i._d / nsz;
         }
 
-        if (!left && !right) break;
+        // rise
+        p[1] -=
+          (i._d - nsz) * (ANIM_ICON_RAISE * this.extension.animation_rise);
+      });
 
-        pull_coef *= 0.9;
+      // spread
+      let pad = iconSize * 4 * scaleFactor * this.extension.animation_spread;
+      this.dashContainer._targetScale =
+        (this.dash.width + pad) / this.dash.width;
+
+      // commit
+      animateIcons.forEach((i) => {
+        i._target = [i._pos[0] - off, i._pos[1] - off];
+      });
+
+      if (this.extension.debug_visual) {
+        this._overlay.onDraw = (ctx) => {
+          this._overlay._drawing.draw_line(
+            ctx,
+            [1, 0, 0, 1],
+            1,
+            first[0],
+            first[1],
+            last[0],
+            last[1]
+          );
+
+          this._overlay._drawing.draw_circle(
+            ctx,
+            [1, 0, 0, 1],
+            center[0],
+            center[1],
+            sz,
+            true
+          );
+
+          animateIcons.forEach((i) => {
+            let p = i._pos;
+            if (!p) return;
+            this._overlay._drawing.draw_circle(
+              ctx,
+              [1, 0, 0, 1],
+              p[0],
+              p[1],
+              i._d,
+              true
+            );
+          });
+        };
+
+        if (this.extension.debug_visual) {
+          this._overlay.visible = this.extension.debug_visual;
+          this._overlay.redraw();
+        }
       }
     }
 
-    let dotIndex = 0;
+    // animate width
+    if (this.extension._vertical) {
+      this.dashContainer.scale_y =
+        (this.dashContainer.scale_y * 4 + this.dashContainer._targetScale) / 5;
+      this.dashContainer.scale_x = 1;
+    } else {
+      this.dashContainer.scale_x =
+        (this.dashContainer.scale_x * 4 + this.dashContainer._targetScale) / 5;
+      this.dashContainer.scale_y = 1;
+    }
 
+    let dotIndex = 0;
     let start_x = -1;
     let end_x = -1;
     let start_y = -1;
@@ -486,6 +541,10 @@ var Animator = class {
     // todo .. make this velocity based
     animateIcons.forEach((icon) => {
       let pos = icon._target;
+      // pos = [
+      //   (icon._target[0] * 2 + icon._target2[0]) / 3,
+      //   (icon._target[1] * 2 + icon._target2[1]) / 3,
+      // ];
       let scale = icon._targetScale;
       let fromScale = icon.get_scale()[0];
 
@@ -652,28 +711,6 @@ var Animator = class {
       }
     });
 
-    // resize background
-    /*
-    if (this._relayout && this._relayout > 0) {
-      this.dash._background.width = -1;
-      this.dash._background.height = -1;
-    } else {
-      if (this.extension._vertical) {
-        let w = end_y - start_y + iconSize * 0.8;
-        if (!isNaN(w)) {
-          this.dash._background.height = w;
-          this.dash._background.width = -1;
-        }
-      } else {
-        let w = end_x - start_x + iconSize * 0.8;
-        if (!isNaN(w)) {
-          this.dash._background.width = w;
-          this.dash._background.height = -1;
-        }
-      }
-    }
-    */
-
     // todo... remove?
     if (validPosition && !this._isInFullscreen()) {
       this._iconsContainer.show();
@@ -748,6 +785,7 @@ var Animator = class {
     this._timeoutId = null;
     if (this.dash) {
       this.dash.first_child.remove_style_class_name('hi');
+      this._overlay.visible = false;
     }
     this._relayout = 0;
   }

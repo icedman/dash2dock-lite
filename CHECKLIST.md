@@ -6,6 +6,8 @@ check each preference setting
 ## general
 
 * sleep/lock
+* check with scale factor
+* check with multi-monitor
 
 ## animation
 

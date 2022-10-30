@@ -23,11 +23,15 @@ const _drawing = class {
     ctx.restore();
   }
 
-  draw_circle(ctx, color, x, y, diameter) {
+  draw_circle(ctx, color, x, y, diameter, borderOnly) {
     ctx.save();
     this.set_color(ctx, color, 1);
     ctx.arc(x, y, diameter / 2 - diameter / 20, 0, 2 * Math.PI);
-    ctx.fill();
+    if (borderOnly) {
+      ctx.stroke();
+    } else {
+      ctx.fill();
+    }
     ctx.restore();
   }
 

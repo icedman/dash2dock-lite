@@ -101,7 +101,6 @@ class Extension {
     this._updateShrink();
     this._updateBackgroundColors();
     this._updateLayout();
-
     this._updateAutohide();
     this._updateAnimation();
 
@@ -110,7 +109,7 @@ class Extension {
       this.animator._dotsContainer.visible = false;
     }
 
-    // this._updateCss();
+    this._updateCss();
     this._updateTrashIcon();
 
     this._addEvents();
@@ -300,9 +299,6 @@ class Extension {
         }
         case 'icon-size':
         case 'preferred-monitor': {
-          // todo!
-          // this.disable();
-          // this.enable();
           this._updateLayout();
           this._onEnterEvent();
           break;
@@ -317,11 +313,11 @@ class Extension {
           break;
         }
         case 'edge-distance': {
-          this._debounceRelayout();
+          this._onEnterEvent();
           break;
         }
         case 'scale-icons': {
-          this._debounceUpdateScale();
+          this._updateShrink();
           break;
         }
         case 'panel-mode': {
@@ -533,32 +529,6 @@ class Extension {
       });
   }
 
-  _updateScale() {
-    this._updateShrink();
-  }
-
-  _debounceUpdateScale() {
-    if (this._timeoutId) {
-      clearInterval(this._timeoutId);
-    }
-    this._timeoutId = setTimeout(() => {
-      this._updateScale();
-      this._timeoutId = null;
-    }, 250);
-  }
-
-  _debounceRelayout() {
-    if (this._timeoutId) {
-      clearInterval(this._timeoutId);
-    }
-
-    this._timeoutId = setTimeout(() => {
-      this._updateLayout();
-      this._onEnterEvent();
-      this._timeoutId = null;
-    }, 250);
-  }
-
   _updateShrink(disable) {
     if (!this.dashContainer) return;
 
@@ -574,11 +544,8 @@ class Extension {
       this.dashContainer.remove_style_class_name('shrink');
     }
 
-    this._updateLayout();
-
     if (this.animate_icons) {
-      this.animator.disable();
-      this.animator.enable();
+      this.animator.relayout();
     }
   }
 
@@ -588,7 +555,7 @@ class Extension {
     // dash background
     if (this.dash._background) {
       this.dash._background.style = '';
-      this.dash.style = '';
+      this.dashContainer.style = '';
       if (!disable) {
         let bg = this.background_color || [0, 0, 0, 0.5];
         let clr = bg.map((r) => Math.floor(255 * r));
@@ -598,7 +565,7 @@ class Extension {
           this.dash._background.style = style;
           this.dash._background.opacity = 255;
         } else {
-          this.dash.style = style;
+          this.dashContainer.style = style;
           this.dash._background.style = '';
           this.dash._background.opacity = 0;
         }
@@ -633,6 +600,12 @@ class Extension {
           this.dash.remove_style_class_name(`border-radius-${i}`);
         }
       }
+    }
+
+    if (!disable && this.panel_mode) {
+      this.dash.add_style_class_name('panel-mode');
+    } else {
+      this.dash.remove_style_class_name('panel-mode');
     }
 
     if (!disable && this.animate_icons) {
@@ -739,7 +712,7 @@ class Extension {
 
     // panel mode adjustment
     if (this.panel_mode) {
-      dockHeight -= 10 * this.scaleFactor;
+      dockHeight -= 20 * this.scaleFactor;
     }
 
     if (this._vertical) {
@@ -765,9 +738,6 @@ class Extension {
     this._edge_distance =
       (-EDGE_DISTANCE / 4 + (this.edge_distance || 0) * EDGE_DISTANCE) *
       this.scaleFactor;
-    if (this.panel_mode) {
-      this._edge_distance = 0;
-    }
 
     if (this.autohider._enabled && !this.autohider._shown) {
       // remain hidden
@@ -817,29 +787,6 @@ class Extension {
       // log(`${this.dashContainer._fixedPosition[1]} ${this.dashContainer._hidePosition[1]}`);
       this.dashContainer._dockHeight = dockHeight * this.scaleFactor;
     }
-
-    let iconChildren = this._findIcons();
-
-    let iconHook = [...iconChildren];
-    for (let i = 0; i < iconHook.length; i++) {
-      if (!iconHook[i].child) continue;
-      // W: breakable
-      let icon = iconHook[i].child._delegate.icon;
-      if (!icon._setIconSize) {
-        icon._setIconSize = icon.setIconSize;
-      }
-
-      icon._scale = scale;
-      icon.setIconSize = ((sz) => {
-        sz *= icon._scale;
-        icon._setIconSize(sz);
-      }).bind(icon);
-    }
-
-    this.dash._maxWidth = this.sw;
-    this.dash._maxHeight = this.sh;
-    this.dash.iconSize--;
-    this.dash._adjustIconSize();
   }
 
   _updateAnimation(disable) {

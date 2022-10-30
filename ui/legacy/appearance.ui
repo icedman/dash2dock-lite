@@ -95,7 +95,7 @@
                         <property name="valign">center</property>
                         <property name="hexpand">true</property>
                         <property name="width-request">140px</property>
-                        <property name="draw-value">false</property>
+                        <property name="draw-value">true</property>
                         <property name="value-pos">right</property>
                         <property name="orientation">horizontal</property>
                         <property name="digits">2</property>
@@ -108,7 +108,7 @@
                   <object class="GtkLabel">
                     <property name="halign">start</property>
                     <property name="valign">center</property>
-                    <property name="label" translatable="yes">Adjust icon sizes with custom scale. This overrides the shrink option.</property>
+                    <property name="label" translatable="yes">Adjust icon sizes with custom scale. This overrides the shrink option. Set to zero for default scale.</property>
                   </object>
                 </child>
               </object>
@@ -262,6 +262,62 @@
                     <property name="halign">start</property>
                     <property name="valign">center</property>
                     <property name="label" translatable="yes">Dock the dash on a full-width panel.</property>
+                  </object>
+                </child>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="GtkListBoxRow">
+            <property name="visible">True</property>
+            <property name="can-focus">True</property>
+            <child>
+              <object class="GtkBox">
+                <property name="visible">True</property>
+                <property name="can-focus">False</property>
+                <property name="margin-start">12</property>
+                <property name="margin-end">12</property>
+                <property name="margin-top">12</property>
+                <property name="margin-bottom">12</property>
+                <property name="orientation">vertical</property>
+                <child>
+                  <object class="GtkBox">
+                    <property name="visible">True</property>
+                    <property name="can-focus">False</property>
+                    <property name="spacing">32</property>
+                    <child>
+                      <object class="GtkLabel">
+                        <property name="visible">True</property>
+                        <property name="can-focus">False</property>
+                        <property name="valign">center</property>
+                        <property name="label" translatable="yes">Edge Distance</property>
+                        <property name="xalign">0</property>
+                        <property name="hexpand">1</property>
+                        <attributes>
+                          <attribute name="weight" value="PANGO_WEIGHT_BOLD"/>
+                        </attributes>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkScale" id="edge-distance">
+                        <property name="valign">center</property>
+                        <property name="hexpand">true</property>
+                        <property name="width-request">140px</property>
+                        <property name="draw-value">false</property>
+                        <property name="value-pos">right</property>
+                        <property name="orientation">horizontal</property>
+                        <property name="digits">2</property>
+                        <property name="adjustment">edge-distance-adjust</property>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkLabel">
+                    <property name="halign">start</property>
+                    <property name="valign">center</property>
+                    <property name="label" translatable="yes">Adjust dock distance from edge of screen.</property>
                   </object>
                 </child>
               </object>
@@ -658,6 +714,11 @@
     <property name="upper">6</property>
     <property name="step-increment">1</property>
   </object>
+  <object class="GtkAdjustment" id="edge-distance-adjust">
+    <property name="lower">-1.0</property>
+    <property name="upper">1.0</property>
+    <property name="step-increment">0.01</property>
+  </object>
   <object class="GtkStringList" id="running-indicator-style-model">
     <items>
       <item translatable="yes">Default</item>
@@ -691,6 +752,17 @@
       <item translatable="yes">Default</item>
       <item translatable="yes">Tint</item>
       <item translatable="yes">Monochrome</item>
+    </items>
+  </object>
+  <object class="GtkStringList" id="icon-size-model">
+    <items>
+      <item translatable="yes">Default</item>
+      <item>16</item>
+      <item>22</item>
+      <item>24</item>
+      <item>32</item>
+      <item>48</item>
+      <item>64</item>
     </items>
   </object>
 </interface>

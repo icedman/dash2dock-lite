@@ -83,6 +83,6 @@
   border-radius: 32px !important;
 }
 
-#dash.panel-mode > StWidget.dash-background {
-  border-radius: 0px !important;
+#dash.panel-mode {
+  margin-top: 0px !important;
 }

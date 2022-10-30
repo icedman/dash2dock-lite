@@ -8,14 +8,14 @@ var schemaId = 'org.gnome.shell.extensions.dash2dock-lite';
 
 var SettingsKeys = new PrefKeys();
 SettingsKeys.setKeys({
-  debug: {
-    default_value: false,
-    widget_type: 'switch',
-  },
-  'debug-log': {
-    default_value: false,
-    widget_type: 'switch',
-  },
+  // debug: {
+  //   default_value: false,
+  //   widget_type: 'switch',
+  // },
+  // 'debug-log': {
+  //   default_value: false,
+  //   widget_type: 'switch',
+  // },
   'debug-visual': {
     default_value: false,
     widget_type: 'switch',
@@ -46,15 +46,6 @@ SettingsKeys.setKeys({
     key_maps: {},
     test: { pointer: 'slide-down' },
   },
-  // 'background-dark': {
-  //   default_value: true,
-  //   widget_type: 'switch',
-  //   key_maps: {},
-  // },
-  // 'background-opacity': {
-  //   default_value: 0,
-  //   widget_type: 'scale',
-  // },
   'background-color': {
     default_value: [0, 0, 0, 0.5],
     widget_type: 'color',
@@ -63,10 +54,10 @@ SettingsKeys.setKeys({
     default_value: [0, 0, 0, 0.5],
     widget_type: 'color',
   },
-  // 'translucent-topbar': {
-  //   default_value: false,
-  //   widget_type: 'switch',
-  // },
+  'apps-icon': {
+    default_value: true,
+    widget_type: 'switch',
+  },
   'trash-icon': {
     default_value: false,
     widget_type: 'switch',
@@ -118,10 +109,6 @@ SettingsKeys.setKeys({
   },
   'panel-mode': {
     default_value: false,
-    widget_type: 'switch',
-  },
-  'apps-icon': {
-    default_value: true,
     widget_type: 'switch',
   },
   'icon-size': {

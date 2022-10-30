@@ -51,18 +51,16 @@ var warpPointer = (pointer, x, y) => {
   pointer.warp(screen, x, y);
 };
 
-let _tests = [];
-var runSequence = (tests) => {
-  if (tests) {
-    _tests = tests;
-  }
-  if (_tests.length == 0) return;
-  let t = _tests[0];
+var runSequence = (seq) => {
+  if (seq.length == 0) return;
+  let t = seq[0];
   let d = Math.floor(t.delay * 1000);
   t._id = setTimeout(() => {
     t.func(t);
   }, 10);
-  _tests.splice(0, 1);
+  seq.splice(0, 1);
 
-  setTimeout(runSequence, d);
+  setTimeout(() => {
+    runSequence(seq)
+  }, d);
 };

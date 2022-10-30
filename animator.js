@@ -173,6 +173,15 @@ var Animator = class {
     this._dotsContainer.width = 1;
     this._dotsContainer.height = 1;
 
+    let pivot = new Point();
+    pivot.x = 0.5;
+    pivot.y = 1.0;
+
+    let dash_scale = this.extension.scale;
+    this.dash.scale_x = dash_scale;
+    this.dash.scale_y = dash_scale;
+    this.dash.translation_x = this.dashContainer._monitor.width/2 - (this.dash.width*this.dash.scale_x)/2;
+
     let existingIcons = this._iconsContainer.get_children();
     if (this._iconsCount != existingIcons.length) {
       this._relayout = 8;
@@ -185,10 +194,6 @@ var Animator = class {
     let iy = 1;
 
     let scaleFactor = St.ThemeContext.get_for_stage(global.stage).scale_factor;
-
-    let pivot = new Point();
-    pivot.x = 0.5;
-    pivot.y = 1.0;
 
     let iconSize = this.dash.iconSize * this.extension.scale;
 
@@ -333,9 +338,9 @@ var Animator = class {
           gicon: bin.first_child.gicon ? bin.first_child.gicon : null,
         });
         img._source = bin;
-        img.set_icon_size(iconSize * ANIM_ICON_QUALITY);
         img.set_scale(1 / ANIM_ICON_QUALITY, 1 / ANIM_ICON_QUALITY);
         icon.add_child(img);
+        icon._img = img;
 
         let btn = new St.Button({
           width: iconSize,
@@ -349,6 +354,8 @@ var Animator = class {
         });
         icon._btn = btn;
       }
+
+      icon._img.set_icon_size(iconSize * ANIM_ICON_QUALITY);
 
       if (
         this.extension.autohider &&
@@ -445,22 +452,36 @@ var Animator = class {
       let last = animateIcons[animateIcons.length - 1]._pos || [0, 0];
       let nsz = (iconSize + 16) * scaleFactor;
       let sz = nsz * (4 + 2 * this.extension.animation_spread);
+      let sz_push = nsz * 2;
       let center = [px, first[1]];
+      let center_push = [px, first[1] + sz_push*0.5];
 
       animateIcons.forEach((i) => {
         i._d = nsz;
         let cr = sz / 2;
         let p = i._pos;
         if (!p) return;
-        let dx = p[0] - center[0];
-        let dst = Math.sqrt(dx * dx);
-
+        
         // magnify
+        let dx = p[0] - center[0];
+        let dst = Math.sqrt(dx * dx); // expensive
         if (dst < sz / 2) {
           let magnify = (cr - dst) / cr / 2;
           i._d *=
             1 + ANIM_ICON_SCALE * magnify * this.extension.animation_magnify;
           i._targetScale = i._d / nsz;
+        }
+
+        // collide
+        let dxp = p[0] - center_push[0];
+        let dyp = p[1] - center_push[1];
+        let dstp = Math.sqrt((dxp * dxp) + (dyp * dyp)); // expensive
+        let pr = (nsz*i._targetScale)/2;
+        if (dstp < (sz_push/2+pr)) {
+          p[0] = center_push[0] + dxp/dstp*(sz_push/2+pr);
+          // let oy = p[1];
+          // p[1] = center_push[1] + dyp/dstp*(sz_push/2+pr);
+          // p[1] = (p[1] + oy*3)/4;
         }
 
         // rise
@@ -472,6 +493,21 @@ var Animator = class {
       let pad = iconSize * 4 * scaleFactor * this.extension.animation_spread;
       this.dashContainer._targetScale =
         (this.dash.width + pad) / this.dash.width;
+
+      // apply ease
+      for(let i=0; i<animateIcons.length; i++) {
+        let c = animateIcons[i];
+        let l = animateIcons[i-1] || c;
+        let r = animateIcons[i+1] || c;
+        c._pos2 = [...c._pos];
+        if (i != 0 && i != animateIcons.length -1) {
+          c._pos2[0] = (l._pos[0] + c._pos[0]*3 + r._pos[0])/5;
+        }
+        c._pos2[1] = (l._pos[1] + c._pos[1]*3 + r._pos[1])/5;
+      }
+      for(let i=0; i<animateIcons.length; i++) {
+        animateIcons[i]._pos = animateIcons[i]._pos2;
+      }
 
       // commit
       animateIcons.forEach((i) => {
@@ -496,6 +532,15 @@ var Animator = class {
             center[0],
             center[1],
             sz,
+            true
+          );
+
+          this._overlay._drawing.draw_circle(
+            ctx,
+            [1, 0, 0, 1],
+            center_push[0],
+            center_push[1],
+            sz_push,
             true
           );
 
@@ -532,19 +577,11 @@ var Animator = class {
     }
 
     let dotIndex = 0;
-    let start_x = -1;
-    let end_x = -1;
-    let start_y = -1;
-    let end_y = -1;
 
     // animate to target scale and position
     // todo .. make this velocity based
     animateIcons.forEach((icon) => {
       let pos = icon._target;
-      // pos = [
-      //   (icon._target[0] * 2 + icon._target2[0]) / 3,
-      //   (icon._target[1] * 2 + icon._target2[1]) / 3,
-      // ];
       let scale = icon._targetScale;
       let fromScale = icon.get_scale()[0];
 
@@ -555,16 +592,6 @@ var Animator = class {
       icon.set_scale(1, 1);
       let from = this._get_position(icon);
       let dst = this._get_distance(from, icon._target);
-
-      // compute background size
-      if (start_x == -1) {
-        start_x = from[0];
-      }
-      end_x = from[0] + iconSize * scaleFactor;
-      if (start_y == -1) {
-        start_y = from[1];
-      }
-      end_y = from[1] + iconSize * scaleFactor;
 
       let _scale_coef = ANIM_SCALE_COEF;
       let _pos_coef = ANIM_POS_COEF;

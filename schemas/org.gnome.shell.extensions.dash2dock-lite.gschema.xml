@@ -121,11 +121,6 @@
         <summary>Panel mode</summary>
         <description>Dock the dash on a full-width panel.</description>
     </key>
-    <key type="i" name="icon-size">
-        <default>0</default>
-        <summary>Icon size</summary>
-        <description>Set icons base size.</description>
-    </key>
     <key type="b" name="apps-icon">
         <default>true</default>
         <summary>Apps icon</summary>

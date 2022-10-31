@@ -16,8 +16,8 @@ const warpPointer = Me.imports.utils.warpPointer;
 
 const { schemaId, settingsKeys, SettingsKeys } = Me.imports.preferences.keys;
 
-const ColorEffect = Me.imports.effects.color_effect.ColorEffect;
 const runSequence = Me.imports.utils.runSequence;
+const beginTimer = Me.imports.utils.beginTimer;
 
 var print = (msg) => {
   log(msg);
@@ -228,13 +228,11 @@ function addPreferenceTests(_seqs, extension, settings) {
   });
 
   add_message(_seqs, 'done', 0);
-
-  // runSequence(_seqs);
 }
 
 var runTests = (extension, settings) => {
   let _seqs = [];
   addMotionTests(_seqs, extension, settings);
   addPreferenceTests(_seqs, extension, settings);
-  runSequence(_seqs);
+  beginTimer(runSequence(_seqs));
 };

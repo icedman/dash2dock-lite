@@ -754,15 +754,4 @@
       <item translatable="yes">Monochrome</item>
     </items>
   </object>
-  <object class="GtkStringList" id="icon-size-model">
-    <items>
-      <item translatable="yes">Default</item>
-      <item>16</item>
-      <item>22</item>
-      <item>24</item>
-      <item>32</item>
-      <item>48</item>
-      <item>64</item>
-    </items>
-  </object>
 </interface>

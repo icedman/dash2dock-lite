@@ -10,9 +10,16 @@ const Point = imports.gi.Graphene.Point;
 const ExtensionUtils = imports.misc.extensionUtils;
 const Me = ExtensionUtils.getCurrentExtension();
 
-const setTimeout = Me.imports.utils.setTimeout;
-const setInterval = Me.imports.utils.setInterval;
-const clearInterval = Me.imports.utils.clearInterval;
+// const setTimeout = Me.imports.utils.setTimeout;
+// const setInterval = Me.imports.utils.setInterval;
+// const clearInterval = Me.imports.utils.clearInterval;
+
+const runSequence = Me.imports.utils.runSequence;
+const runOneShot = Me.imports.utils.runOneShot;
+const runLoop = Me.imports.utils.runLoop;
+const runDebounce = Me.imports.utils.runDebounce;
+const beginTimer = Me.imports.utils.beginTimer;
+const clearSequence = Me.imports.utils.clearSequence;
 
 const HIDE_ANIMATION_INTERVAL = 15;
 const HIDE_ANIMATION_INTERVAL_PAD = 15;
@@ -44,32 +51,60 @@ var AutoHide = class {
     this._dwell = 0;
 
     this._debounceCheckHide();
-    this.oneShotStartupCompleteId = setTimeout(() => {
-      if (isNaN(this.dashContainer._fixedPosition)) {
-        this._checkHide();
-        this.extension._updateLayout();
-      }
-      this.oneShotStartupCompleteId = setTimeout(() => {
-        this._checkHide();
-        this.oneShotStartupCompleteId = null;
-      }, 500);
-    }, 500);
+
+    // this.oneShotStartupCompleteId = setTimeout(() => {
+    //   if (isNaN(this.dashContainer._fixedPosition)) {
+    //     this._checkHide();
+    //     this.extension._updateLayout();
+    //   }
+    //   this.oneShotStartupCompleteId = setTimeout(() => {
+    //     this._checkHide();
+    //     this.oneShotStartupCompleteId = null;
+    //   }, 500);
+    // }, 500);
+
+    beginTimer(
+      runSequence([
+        {
+          func: () => {
+            if (isNaN(this.dashContainer._fixedPosition)) {
+              this._checkHide();
+              this.extension._updateLayout();
+            }
+          },
+          delay: 0.5,
+        },
+        {
+          func: () => {
+            this._checkHide();
+          },
+          delay: 0.5,
+        },
+      ])
+    );
   }
 
   disable() {
-    if (this._intervalId) {
-      clearInterval(this._intervalId);
-      this._intervalId = null;
-    }
-    if (this._timeoutId) {
-      clearTimeout(this._timeoutId);
-      this._timeoutId = null;
+    // if (this._intervalId) {
+    //   clearInterval(this._intervalId);
+    //   this._intervalId = null;
+    // }
+
+    if (this._animationSeq && this._animationSeq._timeoutId) {
+      clearSequence(this._animationSeq);
     }
 
-    if (this.oneShotStartupCompleteId) {
-      clearInterval(this.oneShotStartupCompleteId);
-      this.oneShotStartupCompleteId = null;
-    }
+    // Extension class cleans up the timers at disable
+
+    // if (this._timeoutId) {
+    //   clearTimeout(this._timeoutId);
+    //   this._timeoutId = null;
+    // }
+
+    // if (this.oneShotStartupCompleteId) {
+    //   clearInterval(this.oneShotStartupCompleteId);
+    //   this.oneShotStartupCompleteId = null;
+    // }
 
     this.show();
 
@@ -91,10 +126,6 @@ var AutoHide = class {
     // log('disable autohide');
   }
 
-  isAnimating() {
-    return this._intervalId != null;
-  }
-
   _beginAnimation(t) {
     // let monitor = this.dashContainer._monitor;
     // let y = monitor.y;
@@ -107,24 +138,39 @@ var AutoHide = class {
       this.target = this.dashContainer._hidePosition;
     }
 
-    if (this._intervalId == null) {
+    // if (this._intervalId == null) {
+    if (!this._animationSeq || !this._animationSeq._timeoutId) {
       if (this.dashContainer && this.extension) {
         this.animationInterval =
           HIDE_ANIMATION_INTERVAL +
           (this.extension.animation_fps || 0) * HIDE_ANIMATION_INTERVAL_PAD;
       }
 
-      this._intervalId = setInterval(
-        this._animate.bind(this),
-        this.animationInterval
-      );
+      // this._intervalId = setInterval(
+      //   this._animate.bind(this),
+      //   this.animationInterval
+      // );
+
+      if (!this._animationSeq) {
+        this._animationSeq = beginTimer(
+          runLoop(() => {
+            this._animate();
+          }, this.animationInterval / 1000)
+        );
+      } else {
+        beginTimer(runLoop(this._animationSeq));
+      }
     }
   }
 
   _endAnimation() {
-    if (this._intervalId) {
-      clearInterval(this._intervalId);
-      this._intervalId = null;
+    // if (this._intervalId) {
+    //   clearInterval(this._intervalId);
+    //   this._intervalId = null;
+    // }
+
+    if (this._animationSeq && this._animationSeq._timeoutId) {
+      clearSequence(this._animationSeq);
     }
 
     if (this.dashContainer) {
@@ -250,7 +296,7 @@ var AutoHide = class {
       }
     }
 
-    this.dashContainer.set_position(x, y);
+    this.dashContainer.set_position(this.target[0], y);
     return true;
   }
 
@@ -302,12 +348,12 @@ var AutoHide = class {
     // log(pointer[1]);
     // log(dash_position[1]);
 
-    if (this.extension._vertical) {
-      if (pointer[0] < dash_position[1] + this.dashContainer.width)
-        return false;
-    } else {
-      if (pointer[1] > dash_position[1]) return false;
-    }
+    // if (this.extension._vertical) {
+    //   if (pointer[0] < dash_position[1] + this.dashContainer.width)
+    //     return false;
+    // } else {
+    if (pointer[1] > dash_position[1]) return false;
+    // }
 
     let monitor = this.dashContainer._monitor;
     let actors = global.get_window_actors();
@@ -332,15 +378,15 @@ var AutoHide = class {
     windows.forEach((w) => {
       let frame = w.get_frame_rect();
       // log (`${frame.y} + ${frame.height}`);
-      if (this.extension._vertical) {
-        if (frame.x <= dash_position[1] + this.dashContainer.width) {
-          isOverlapped = true;
-        }
-      } else {
-        if (frame.y + frame.height >= dash_position[1]) {
-          isOverlapped = true;
-        }
+      // if (this.extension._vertical) {
+      //   if (frame.x <= dash_position[0] + this.dashContainer.width) {
+      //     isOverlapped = true;
+      //   }
+      // } else {
+      if (frame.y + frame.height >= dash_position[1]) {
+        isOverlapped = true;
       }
+      // }
     });
 
     this.windows = windows;
@@ -356,6 +402,7 @@ var AutoHide = class {
   }
 
   _debounceCheckHide() {
+    /*
     if (this._timeoutId) {
       clearInterval(this._timeoutId);
     }
@@ -363,6 +410,18 @@ var AutoHide = class {
       this._timeoutId = null;
       this._checkHide();
     }, DEBOUNCE_HIDE_TIMEOUT);
+    */
+
+    // todo .. code is as verbose although exit cleanup is now automatic
+    if (!this._debounceCheckSeq) {
+      this._debounceCheckSeq = beginTimer(
+        runDebounce(() => {
+          this._checkHide();
+        }, DEBOUNCE_HIDE_TIMEOUT / 1000)
+      );
+    } else {
+      beginTimer(runDebounce(this._debounceCheckSeq));
+    }
   }
 
   _checkHide() {

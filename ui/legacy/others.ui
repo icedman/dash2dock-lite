@@ -101,7 +101,7 @@
                   <object class="GtkLabel">
                     <property name="halign">start</property>
                     <property name="valign">center</property>
-                    <property name="label" translatable="yes">Add a dynamic Trash icon which changes with its state and with a access to Empty Trash action.</property>
+                    <property name="label" translatable="yes">Add a dynamic Trash icon which changes with its state and which has access to Empty Trash action.</property>
                   </object>
                 </child>
               </object>
@@ -150,7 +150,7 @@
                   <object class="GtkLabel">
                     <property name="halign">start</property>
                     <property name="valign">center</property>
-                    <property name="label" translatable="yes">Show mounted device icons to quickly open or unmount devices.</property>
+                    <property name="label" translatable="yes">Show mounted device icons to quickly open or unmount volumes.</property>
                   </object>
                 </child>
               </object>
@@ -199,7 +199,7 @@
                   <object class="GtkLabel">
                     <property name="halign">start</property>
                     <property name="valign">center</property>
-                    <property name="label" translatable="yes">Show an analog clock widget. Requires Clocks app (gnome-clocks) pinned to the dash</property>
+                    <property name="label" translatable="yes">Show an analog clock widget. Requires Clocks app (gnome-clocks) pinned to the dash.</property>
                   </object>
                 </child>
               </object>
@@ -248,7 +248,7 @@
                   <object class="GtkLabel">
                     <property name="halign">start</property>
                     <property name="valign">center</property>
-                    <property name="label" translatable="yes">Show an calendar widget. Requires Calendar app (gnome-calendar) pinned to the dash</property>
+                    <property name="label" translatable="yes">Show an calendar widget. Requires Calendar app (gnome-calendar) pinned to the dash.</property>
                   </object>
                 </child>
               </object>

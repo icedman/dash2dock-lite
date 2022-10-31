@@ -21,6 +21,13 @@ const xWMControl = Me.imports.apps.wmcontrol.xWMControl;
 
 const setTimeout = Me.imports.utils.setTimeout;
 const setInterval = Me.imports.utils.setInterval;
+const runSequence = Me.imports.utils.runSequence;
+const runOneShot = Me.imports.utils.runOneShot;
+const runLoop = Me.imports.utils.runLoop;
+const beginTimer = Me.imports.utils.beginTimer;
+const clearAllTimers = Me.imports.utils.clearAllTimers;
+const getRunningTimers = Me.imports.utils.getRunningTimers;
+
 const runTests = Me.imports.diagnostics.runTests;
 
 const SERVICES_UPDATE_INTERVAL = 2500;
@@ -167,27 +174,55 @@ class Extension {
   }
 
   startUp() {
-    this._updateLayout();
-    this._onEnterEvent();
-    this.oneShotStartupCompleteId = setTimeout(() => {
-      this._updateLayout();
-      this._onEnterEvent();
-      this.oneShotStartupCompleteId = null;
+    beginTimer(
+      runSequence([
+        {
+          func: () => {
+            this._updateLayout();
+            this._onEnterEvent();
+          },
+          delay: 0.5,
+        },
+        // force startup layout on ubuntu >:!
+        {
+          func: () => {
+            this._updateLayout();
+            this._onEnterEvent();
+          },
+          delay: 0.5,
+        },
+        // make sure layout has been done on ubuntu >:!
+        {
+          func: () => {
+            this._updateLayout();
+            this._onEnterEvent();
+          },
+          delay: 0.5,
+        },
+      ])
+    );
 
-      // this.dashContainer.visible = true;
-      // this.dash.visible = true;
-      // if (this.animator._iconsContainer) {
-      //   this.animator._iconsContainer.visible = true;
-      //   this.animator._dotsContainer.visible = true;
-      // }
+    // this._updateLayout();
+    // this._onEnterEvent();
+    // this.oneShotStartupCompleteId = setTimeout(() => {
+    //   this._updateLayout();
+    //   this._onEnterEvent();
+    //   this.oneShotStartupCompleteId = null;
 
-      // ubuntu (otherwise, relayout is not done property)
-      this.oneShotStartupCompleteId = setTimeout(() => {
-        this._updateLayout();
-        this._onEnterEvent();
-        this.oneShotStartupCompleteId = null;
-      }, 500);
-    }, 500);
+    //   // this.dashContainer.visible = true;
+    //   // this.dash.visible = true;
+    //   // if (this.animator._iconsContainer) {
+    //   //   this.animator._iconsContainer.visible = true;
+    //   //   this.animator._dotsContainer.visible = true;
+    //   // }
+
+    //   // ubuntu (otherwise, relayout is not done property)
+    //   this.oneShotStartupCompleteId = setTimeout(() => {
+    //     this._updateLayout();
+    //     this._onEnterEvent();
+    //     this.oneShotStartupCompleteId = null;
+    //   }, 500);
+    // }, 500);
   }
 
   _queryDisplay() {
@@ -351,11 +386,19 @@ class Extension {
           this._updateTrashIcon();
           this._updateLayout();
           this._onEnterEvent();
-          this._timeoutId = setTimeout(() => {
-            this._updateLayout();
-            this._onEnterEvent();
-            this._timeoutId = null;
-          }, 250);
+
+          beginTimer(
+            runOneShot(() => {
+              this._updateLayout();
+              this._onEnterEvent();
+            }, 2.5)
+          );
+
+          // this._timeoutId = setTimeout(() => {
+          //   this._updateLayout();
+          //   this._onEnterEvent();
+          //   this._timeoutId = null;
+          // }, 250);
           break;
         }
       }
@@ -442,27 +485,36 @@ class Extension {
       this
     );
 
-    this._intervals = [];
-    this._intervals.push(
-      setInterval(this._onCheckServices.bind(this), SERVICES_UPDATE_INTERVAL)
+    // this._intervals = [];
+    // this._intervals.push(
+    //   setInterval(this._onCheckServices.bind(this), SERVICES_UPDATE_INTERVAL)
+    // );
+
+    beginTimer(
+      runLoop(() => {
+        this._onCheckServices();
+      }, SERVICES_UPDATE_INTERVAL / 1000)
     );
   }
 
   _removeEvents() {
-    if (this._timeoutId) {
-      clearInterval(this._timeoutId);
-      this._timeoutId = null;
-    }
-    if (this.oneShotStartupCompleteId) {
-      clearInterval(this.oneShotStartupCompleteId);
-      this.oneShotStartupCompleteId = null;
-    }
-    if (this._intervals) {
-      this._intervals.forEach((id) => {
-        clearInterval(id);
-      });
-      this._intervals = [];
-    }
+    // this cleans up all timers (this class, the animator, autohider, etc..)
+    clearAllTimers();
+
+    // if (this._timeoutId) {
+    //   clearInterval(this._timeoutId);
+    //   this._timeoutId = null;
+    // }
+    // if (this.oneShotStartupCompleteId) {
+    //   clearInterval(this.oneShotStartupCompleteId);
+    //   this.oneShotStartupCompleteId = null;
+    // }
+    // if (this._intervals) {
+    //   this._intervals.forEach((id) => {
+    //     clearInterval(id);
+    //   });
+    //   this._intervals = [];
+    // }
 
     this.dashContainer.set_reactive(false);
     this.dashContainer.set_track_hover(false);
@@ -607,8 +659,6 @@ class Extension {
 
   _updateCss(disable) {
     if (!this.dash || !this.dashContainer) return;
-
-    this.dashContainer.add_style_class_name('hi');
 
     let background = this.dash._background || null;
     if (background && this.border_radius !== null) {
@@ -912,7 +962,8 @@ class Extension {
 
   _onCheckServices() {
     if (!this.services) return; // todo why does this happen?
-    this.services.update(SERVICES_UPDATE_INTERVAL);
+    // todo convert services time in seconds
+    this.services.update(SERVICES_UPDATE_INTERVAL * 1000);
     this._updateTrashIcon();
   }
 

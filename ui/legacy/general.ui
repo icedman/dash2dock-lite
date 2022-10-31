@@ -92,7 +92,7 @@
                       </object>
                     </child>
                     <child>
-                      <object class="GtkSwitch" id="animate-icons">
+                      <object class="GtkSwitch" id="animate-icons-unmute">
                         <property name="valign">center</property>
                       </object>
                     </child>
@@ -102,7 +102,7 @@
                   <object class="GtkLabel">
                     <property name="halign">start</property>
                     <property name="valign">center</property>
-                    <property name="label" translatable="yes">Animate the dash icons the pointer enters and moves over the dock. Most features of this extension require animation turned on.</property>
+                    <property name="label" translatable="yes">Animate the dash icons the pointer enters and moves over the dock.</property>
                   </object>
                 </child>
               </object>

@@ -8,7 +8,7 @@
     <child>
       <object class="AdwPreferencesGroup">
         <property name="title" translatable="yes">Special Icons</property>
-        <property name="description" translatable="yes">Add dynamic effects that update or animate the dash icons.</property>
+        <property name="description" translatable="yes">Add dynamic effects or animationts to the dash icons.</property>
 
         <child>
           <object class="AdwActionRow">
@@ -29,7 +29,7 @@
           <object class="AdwActionRow">
             <property name="title" translatable="yes">Trash</property>
             <property name="subtitle" translatable="yes"
-              >Add a dynamic Trash icon which changes with its state and with a access to Empty Trash action.</property
+              >Add a dynamic Trash icon which changes with its state and which has access to Empty Trash action.</property
             >
             <property name="activatable-widget">trash-icon</property>
             <child>
@@ -44,7 +44,7 @@
           <object class="AdwActionRow">
             <property name="title" translatable="yes">Mounted Devices</property>
             <property name="subtitle" translatable="yes"
-              >Show mounted device icons to quickly open or unmount devices.</property
+              >Show mounted device icons to quickly open or unmount volumes.</property
             >
             <property name="activatable-widget">mounted-icon</property>
             <child>
@@ -59,7 +59,7 @@
           <object class="AdwActionRow">
             <property name="title" translatable="yes">Clock</property>
             <property name="subtitle" translatable="yes"
-              >Show an analog clock widget. Requires Clocks app (gnome-clocks) pinned to the dash</property
+              >Show an analog clock widget. Requires Clocks app (gnome-clocks) pinned to the dash.</property
             >
             <property name="activatable-widget">clock-icon</property>
             <child>
@@ -74,7 +74,7 @@
           <object class="AdwActionRow">
             <property name="title" translatable="yes">Calendar</property>
             <property name="subtitle" translatable="yes"
-              >Show an calendar widget. Requires Calendar app (gnome-calendar) pinned to the dash</property
+              >Show an calendar widget. Requires Calendar app (gnome-calendar) pinned to the dash.</property
             >
             <property name="activatable-widget">calendar-icon</property>
             <child>

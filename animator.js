@@ -11,10 +11,17 @@ const Point = imports.gi.Graphene.Point;
 const ExtensionUtils = imports.misc.extensionUtils;
 const Me = ExtensionUtils.getCurrentExtension();
 
-const setTimeout = Me.imports.utils.setTimeout;
-const setInterval = Me.imports.utils.setInterval;
-const clearInterval = Me.imports.utils.clearInterval;
-const clearTimeout = Me.imports.utils.clearTimeout;
+// const setTimeout = Me.imports.utils.setTimeout;
+// const setInterval = Me.imports.utils.setInterval;
+// const clearInterval = Me.imports.utils.clearInterval;
+// const clearTimeout = Me.imports.utils.clearTimeout;
+
+const runSequence = Me.imports.utils.runSequence;
+const runOneShot = Me.imports.utils.runOneShot;
+const runLoop = Me.imports.utils.runLoop;
+const runDebounce = Me.imports.utils.runDebounce;
+const beginTimer = Me.imports.utils.beginTimer;
+const clearSequence = Me.imports.utils.clearSequence;
 
 const TintEffect = Me.imports.effects.tint_effect.TintEffect;
 const MonochromeEffect = Me.imports.effects.monochrome_effect.MonochromeEffect;
@@ -59,7 +66,7 @@ var Animator = class {
 
     this._enabled = true;
     this._dragging = false;
-    this._oneShotId = null;
+    // this._oneShotId = null;
     this._relayout = 20;
 
     this.show_dots = true;
@@ -104,10 +111,10 @@ var Animator = class {
 
     this.iconEffect = null;
 
-    if (this._oneShotId) {
-      clearInterval(this._oneShotId);
-      this._oneShotId = null;
-    }
+    // if (this._oneShotId) {
+    //   clearInterval(this._oneShotId);
+    //   this._oneShotId = null;
+    // }
 
     if (this._iconsContainer) {
       Main.uiGroup.remove_child(this._iconsContainer);
@@ -279,9 +286,17 @@ var Animator = class {
         });
         draggable._dragEndId = draggable.connect('drag-end', () => {
           this._dragging = false;
-          this._oneShotId = setTimeout(
-            this.enable.bind(this),
-            ANIM_REENABLE_DELAY
+
+          // this._oneShotId = setTimeout(
+          //   this.enable.bind(this),
+          //   ANIM_REENABLE_DELAY
+          // );
+
+          beginTimer(
+            runOneShot(() => {
+              this.enable();
+              this._onEnterEvent();
+            }, ANIM_REENABLE_DELAY / 1000)
           );
         });
       }
@@ -757,7 +772,22 @@ var Animator = class {
   }
 
   _findIcons() {
-    return this.extension._findIcons();
+    let icons = this.extension._findIcons();
+    let app_ids = icons
+      .filter((i) => {
+        return i._appwell;
+      })
+      .map((i) => {
+        return i._appwell.app.get_id();
+      });
+    if (this._app_ids) {
+      let new_ids = app_ids.filter((x) => !this._app_ids.includes(x));
+      if (new_ids.length == 1) {
+        log(new_ids);
+      }
+    }
+    this._app_ids = app_ids;
+    return icons;
   }
 
   // todo move to util
@@ -790,21 +820,37 @@ var Animator = class {
   }
 
   _beginAnimation() {
-    if (this._timeoutId) {
-      clearInterval(this._timeoutId);
-      this._timeoutId = null;
+    // if (this._timeoutId) {
+    //   clearInterval(this._timeoutId);
+    //   this._timeoutId = null;
+    // }
+    if (this.debounceEndSeq) {
+      clearSequence(this.debounceEndSeq);
     }
-    if (this._intervalId == null) {
+
+    // if (this._intervalId == null)
+    if (!this._animationSeq || !this._animationSeq._timeoutId) {
       if (this.dashContainer && this.extension) {
         this.animationInterval =
           ANIM_INTERVAL +
           (this.extension.animation_fps || 0) * ANIM_INTERVAL_PAD;
       }
 
-      this._intervalId = setInterval(
-        this._animate.bind(this),
-        this.animationInterval
-      );
+      // convert to runLoop
+      // this._intervalId = setInterval(
+      //   this._animate.bind(this),
+      //   this.animationInterval
+      // );
+
+      if (!this._animationSeq) {
+        this._animationSeq = beginTimer(
+          runLoop(() => {
+            this._animate();
+          }, this.animationInterval / 1000)
+        );
+      } else {
+        beginTimer(runLoop(this._animationSeq));
+      }
     }
 
     if (this.dash && this.extension && this.extension.debug_visual) {
@@ -813,14 +859,23 @@ var Animator = class {
   }
 
   _endAnimation() {
-    if (this._intervalId) {
-      clearInterval(this._intervalId);
-      this._intervalId = null;
+    if (this._animationSeq && this._animationSeq._timeoutId) {
+      clearSequence(this._animationSeq);
     }
-    if (this._timeoutId) {
-      clearInterval(this._timeoutId);
+
+    // if (this._intervalId) {
+    //   clearInterval(this._intervalId);
+    //   this._intervalId = null;
+    // }
+
+    // if (this._timeoutId) {
+    //   clearInterval(this._timeoutId);
+    // }
+    // this._timeoutId = null;
+    if (this.debounceEndSeq) {
+      clearSequence(this.debounceEndSeq);
     }
-    this._timeoutId = null;
+
     if (this.dash) {
       this.dash.first_child.remove_style_class_name('hi');
       this._overlay.visible = false;
@@ -829,13 +884,23 @@ var Animator = class {
   }
 
   _debounceEndAnimation() {
-    if (this._timeoutId) {
-      clearInterval(this._timeoutId);
+    // if (this._timeoutId) {
+    //   clearInterval(this._timeoutId);
+    // }
+    // this._timeoutId = setTimeout(
+    //   this._endAnimation.bind(this),
+    //   ANIM_DEBOUNCE_END_DELAY + this.animationInterval
+    // );
+
+    if (!this.debounceEndSeq) {
+      this.debounceEndSeq = beginTimer(
+        runDebounce(() => {
+          this._endAnimation();
+        }, (ANIM_DEBOUNCE_END_DELAY + this.animationInterval) / 1000)
+      );
+    } else {
+      beginTimer(runDebounce(this.debounceEndSeq));
     }
-    this._timeoutId = setTimeout(
-      this._endAnimation.bind(this),
-      ANIM_DEBOUNCE_END_DELAY + this.animationInterval
-    );
   }
 
   _onButtonEvent(obj, evt) {
@@ -879,9 +944,27 @@ var Animator = class {
   }
 
   _onFocusWindow() {
-    this._endAnimation();
-    this._startAnimation();
-    this._relayout = 8;
+    // this._oneShotId = setTimeout(() => {
+    //   if (this._iconsCount != this._findIcons().length) {
+    //     this._endAnimation();
+    //     this._startAnimation();
+    //     this.relayout();
+    //     this._oneShotId = null;
+
+    //     // animate the added icon
+    //   }
+    // }, 150);
+
+    beginTimer(
+      runOneShot(() => {
+        if (this._iconsCount != this._findIcons().length) {
+          this._endAnimation();
+          this._startAnimation();
+          this.relayout();
+          // animate the added icon
+        }
+      }, 150 / 1000)
+    );
   }
 
   _onFullScreen() {

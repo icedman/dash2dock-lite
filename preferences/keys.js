@@ -145,6 +145,11 @@ SettingsKeys.setKeys({
     widget_type: 'dropdown',
     test: { values: [0, 1, 2, 3] },
   },
+  'icon-resolution': {
+    default_value: 0,
+    widget_type: 'dropdown',
+    test: { values: [0, 1, 2, 3] },
+  },
   'icon-effect': {
     default_value: 0,
     widget_type: 'dropdown',

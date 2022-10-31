@@ -32,6 +32,7 @@ const runTests = Me.imports.diagnostics.runTests;
 
 const SERVICES_UPDATE_INTERVAL = 2500;
 const EDGE_DISTANCE = 20;
+const ANIM_ICON_QUALITY = 2.0;
 
 class Extension {
   enable() {
@@ -42,6 +43,7 @@ class Extension {
     this.scale_icons = 0.5;
     this.xDot = xDot;
     this.xWMControl = xWMControl;
+    this.icon_quality = ANIM_ICON_QUALITY;
 
     Main._d2dl = this;
 
@@ -114,6 +116,7 @@ class Extension {
 
     this._updateShrink();
     this._updateBackgroundColors();
+    this._updateIconResolution();
     this._updateLayout();
     this._updateAutohide();
     this._updateAnimation();
@@ -201,28 +204,6 @@ class Extension {
         },
       ])
     );
-
-    // this._updateLayout();
-    // this._onEnterEvent();
-    // this.oneShotStartupCompleteId = setTimeout(() => {
-    //   this._updateLayout();
-    //   this._onEnterEvent();
-    //   this.oneShotStartupCompleteId = null;
-
-    //   // this.dashContainer.visible = true;
-    //   // this.dash.visible = true;
-    //   // if (this.animator._iconsContainer) {
-    //   //   this.animator._iconsContainer.visible = true;
-    //   //   this.animator._dotsContainer.visible = true;
-    //   // }
-
-    //   // ubuntu (otherwise, relayout is not done property)
-    //   this.oneShotStartupCompleteId = setTimeout(() => {
-    //     this._updateLayout();
-    //     this._onEnterEvent();
-    //     this.oneShotStartupCompleteId = null;
-    //   }, 500);
-    // }, 500);
   }
 
   _queryDisplay() {
@@ -242,18 +223,6 @@ class Extension {
     this.sh = this.monitor.height;
 
     if (this._last_monitor_count != Main.layoutManager.monitors.length) {
-      // save monitor count - for preference pages (todo dbus?)
-      // let tmp = Gio.File.new_for_path(
-      //   `${GLib.get_tmp_dir()}/monitors.dash2dock-lite`
-      // );
-      // let content = `${Main.layoutManager.monitors.length}\n`;
-      // const [, etag] = tmp.replace_contents(
-      //   content,
-      //   null,
-      //   false,
-      //   Gio.FileCreateFlags.REPLACE_DESTINATION,
-      //   null
-      // );
       this._settings.set_int(
         'monitor-count',
         Main.layoutManager.monitors.length
@@ -307,6 +276,14 @@ class Extension {
         case 'apps-icon':
         case 'calendar-icon':
         case 'clock-icon': {
+          this._onEnterEvent();
+          break;
+        }
+        case 'icon-resolution': {
+          this._updateIconResolution();
+          this.animator.disable();
+          this.animator.enable();
+          this._updateLayout();
           this._onEnterEvent();
           break;
         }
@@ -607,6 +584,10 @@ class Extension {
     }
   }
 
+  _updateIconResolution(disable) {
+    this.icon_quality = 1 + [2, 0, 1, 2, 3][this.icon_resolution || 0];
+  }
+
   _updateBackgroundColors(disable) {
     if (!this.dash) return;
 
@@ -848,12 +829,17 @@ class Extension {
   }
 
   _updateAnimation(disable) {
-    this.animate_icons = true; // force!
+    // force animation mode;
+    // virtually every feature requires animation enable
+    // animate-icons-unmute now controls where the icons move on hover
+    this.animate_icons = true;
+
     if (this.animate_icons && !disable) {
       this.animator.enable();
     } else {
       this.animator.disable();
     }
+
     this._updateCss();
   }
 
@@ -892,6 +878,7 @@ class Extension {
 
     if (this.animate_icons) {
       this.animator.enable();
+      this._onEnterEvent();
     }
   }
 

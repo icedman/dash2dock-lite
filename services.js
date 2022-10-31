@@ -19,7 +19,6 @@ const xClock = Me.imports.apps.clock.xClock;
 const xCalendar = Me.imports.apps.calendar.xCalendar;
 
 // sync with animator
-const ANIM_ICON_QUALITY = 2.0;
 const CANVAS_SIZE = 120;
 
 class ServiceCounter {
@@ -415,7 +414,8 @@ var Services = class {
           p.add_child(this.clock);
         }
         if (p.clock) {
-          let scale = icon.icon_size / ANIM_ICON_QUALITY / CANVAS_SIZE;
+          let scale =
+            icon.icon_size / this.extension.icon_quality / CANVAS_SIZE;
           scale *= this.scaleFactor;
           p.clock.set_scale(scale, scale);
           p.clock.show();
@@ -442,7 +442,8 @@ var Services = class {
           p.add_child(this.calendar);
         }
         if (p.calendar) {
-          let scale = icon.icon_size / ANIM_ICON_QUALITY / CANVAS_SIZE;
+          let scale =
+            icon.icon_size / this.extension.icon_quality / CANVAS_SIZE;
           scale *= this.scaleFactor;
           p.calendar.set_scale(scale, scale);
           p.calendar.show();

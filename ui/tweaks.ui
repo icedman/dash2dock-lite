@@ -75,46 +75,6 @@
             </child>
           </object>
         </child>
-        <!-- 
-        <child>
-          <object class="AdwActionRow">
-            <property name="title" translatable="yes">Static</property>
-            <property name="subtitle" translatable="yes">Mute icon animations while retaining other icon effects.</property>
-            <property name="activatable-widget">static-animation</property>
-            <child>
-
-            <object class="GtkButton" id="static-animation">
-                <property name="halign">start</property>
-                <property name="valign">center</property>
-                <child>
-                  <object class="GtkBox">
-                    <property name="margin-start">20</property>
-                    <property name="margin-end">20</property>
-                    <property name="margin-top">6</property>
-                    <property name="margin-bottom">6</property>
-                    <child>
-                      <object class="GtkImage">
-                        <property name="margin-end">6</property>
-                        <property name="icon-name">block-symbolic</property>
-                      </object>
-                    </child>
-                    <child>
-                      <object class="GtkLabel">
-                        <property name="label" translatable="yes">Mute</property>
-                      </object>
-                    </child>
-                  </object>
-                </child>
-                <style>
-                  <class name="circular" />
-                  <class name="destructive-action" />
-                </style>
-              </object>
-
-            </child>
-          </object>
-        </child>
-         -->
       </object>
     </child>
 
@@ -122,6 +82,22 @@
       <object class="AdwPreferencesGroup">
         <property name="title" translatable="yes">Performance</property>
         <property name="description" translatable="yes"></property>
+
+        <child>
+          <object class="AdwActionRow">
+            <property name="title" translatable="yes">Icon Quality</property>
+            <property name="subtitle" translatable="yes"
+              >Set icon resolution to improve rendering quality.</property
+            >
+            <property name="activatable-widget">icon-resolution</property>
+            <child>
+              <object class="GtkDropDown" id="icon-resolution">
+                <property name="valign">center</property>
+                <property name="model">icon-resolution-model</property>
+              </object>
+            </child>
+          </object>
+        </child>
 
         <child>
           <object class="AdwActionRow">
@@ -142,6 +118,16 @@
       </object>
     </child>
 
+  </object>
+
+  <object class="GtkStringList" id="icon-resolution-model">
+    <items>
+      <item translatable="yes">Default</item><!-- x2 -->
+      <item translatable="yes">x1</item>
+      <item translatable="yes">x2</item>
+      <item translatable="yes">x3</item>
+      <item translatable="yes">x4</item>
+    </items>
   </object>
 
   <object class="GtkStringList" id="animation-fps-model">

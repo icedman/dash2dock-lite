@@ -32,7 +32,6 @@ const ANIM_ON_LEAVE_COEF = 1.4;
 const ANIM_ICON_RAISE = 0.6;
 const ANIM_ICON_SCALE = 1.5;
 const ANIM_ICON_HIT_AREA = 1.5;
-const ANIM_ICON_QUALITY = 2.0;
 const ANIM_REENABLE_DELAY = 750;
 const ANIM_DEBOUNCE_END_DELAY = 750;
 const ANIM_PREVIEW_DURATION = 1200;
@@ -344,13 +343,15 @@ var Animator = class {
             : null,
           gicon: bin.first_child.gicon ? bin.first_child.gicon : null,
         });
+        img.set_scale(
+          1 / this.extension.icon_quality,
+          1 / this.extension.icon_quality
+        );
         img._source = bin;
-        img.set_scale(1 / ANIM_ICON_QUALITY, 1 / ANIM_ICON_QUALITY);
         icon.add_child(img);
         icon._img = img;
       }
-
-      icon._img.set_icon_size(iconSize * ANIM_ICON_QUALITY);
+      icon._img.set_icon_size(iconSize * this.extension.icon_quality);
 
       // get nearest
       let bposcenter = [...pos];

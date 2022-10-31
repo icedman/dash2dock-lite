@@ -10,10 +10,6 @@ const Point = imports.gi.Graphene.Point;
 const ExtensionUtils = imports.misc.extensionUtils;
 const Me = ExtensionUtils.getCurrentExtension();
 
-// const setTimeout = Me.imports.utils.setTimeout;
-// const setInterval = Me.imports.utils.setInterval;
-// const clearInterval = Me.imports.utils.clearInterval;
-
 const runSequence = Me.imports.utils.runSequence;
 const runOneShot = Me.imports.utils.runOneShot;
 const runLoop = Me.imports.utils.runLoop;
@@ -52,17 +48,6 @@ var AutoHide = class {
 
     this._debounceCheckHide();
 
-    // this.oneShotStartupCompleteId = setTimeout(() => {
-    //   if (isNaN(this.dashContainer._fixedPosition)) {
-    //     this._checkHide();
-    //     this.extension._updateLayout();
-    //   }
-    //   this.oneShotStartupCompleteId = setTimeout(() => {
-    //     this._checkHide();
-    //     this.oneShotStartupCompleteId = null;
-    //   }, 500);
-    // }, 500);
-
     beginTimer(
       runSequence([
         {
@@ -85,26 +70,9 @@ var AutoHide = class {
   }
 
   disable() {
-    // if (this._intervalId) {
-    //   clearInterval(this._intervalId);
-    //   this._intervalId = null;
-    // }
-
     if (this._animationSeq && this._animationSeq._timeoutId) {
       clearSequence(this._animationSeq);
     }
-
-    // Extension class cleans up the timers at disable
-
-    // if (this._timeoutId) {
-    //   clearTimeout(this._timeoutId);
-    //   this._timeoutId = null;
-    // }
-
-    // if (this.oneShotStartupCompleteId) {
-    //   clearInterval(this.oneShotStartupCompleteId);
-    //   this.oneShotStartupCompleteId = null;
-    // }
 
     this.show();
 
@@ -146,11 +114,6 @@ var AutoHide = class {
           (this.extension.animation_fps || 0) * HIDE_ANIMATION_INTERVAL_PAD;
       }
 
-      // this._intervalId = setInterval(
-      //   this._animate.bind(this),
-      //   this.animationInterval
-      // );
-
       if (!this._animationSeq) {
         this._animationSeq = beginTimer(
           runLoop(() => {
@@ -164,11 +127,6 @@ var AutoHide = class {
   }
 
   _endAnimation() {
-    // if (this._intervalId) {
-    //   clearInterval(this._intervalId);
-    //   this._intervalId = null;
-    // }
-
     if (this._animationSeq && this._animationSeq._timeoutId) {
       clearSequence(this._animationSeq);
     }
@@ -402,16 +360,6 @@ var AutoHide = class {
   }
 
   _debounceCheckHide() {
-    /*
-    if (this._timeoutId) {
-      clearInterval(this._timeoutId);
-    }
-    this._timeoutId = setTimeout(() => {
-      this._timeoutId = null;
-      this._checkHide();
-    }, DEBOUNCE_HIDE_TIMEOUT);
-    */
-
     // todo .. code is as verbose although exit cleanup is now automatic
     if (!this._debounceCheckSeq) {
       this._debounceCheckSeq = beginTimer(

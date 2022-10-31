@@ -498,23 +498,9 @@ class Extension {
   }
 
   _removeEvents() {
-    // this cleans up all timers (this class, the animator, autohider, etc..)
+    // This cleans up all timers.
+    // Timers in this class, the animator, autohider, etc.
     clearAllTimers();
-
-    // if (this._timeoutId) {
-    //   clearInterval(this._timeoutId);
-    //   this._timeoutId = null;
-    // }
-    // if (this.oneShotStartupCompleteId) {
-    //   clearInterval(this.oneShotStartupCompleteId);
-    //   this.oneShotStartupCompleteId = null;
-    // }
-    // if (this._intervals) {
-    //   this._intervals.forEach((id) => {
-    //     clearInterval(id);
-    //   });
-    //   this._intervals = [];
-    // }
 
     this.dashContainer.set_reactive(false);
     this.dashContainer.set_track_hover(false);

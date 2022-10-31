@@ -396,7 +396,7 @@ var Services = class {
         if (!p.clock) {
           let clock = new xClock(CANVAS_SIZE);
           clock.visible = false;
-          clock.reactive = true;
+          clock.reactive = false;
           this.clock = clock;
 
           p.clock = this.clock;
@@ -423,7 +423,7 @@ var Services = class {
         if (!p.calendar) {
           let calendar = new xCalendar(CANVAS_SIZE);
           calendar.visible = false;
-          calendar.reactive = true;
+          calendar.reactive = false;
           this.calendar = calendar;
 
           p.calendar = this.calendar;

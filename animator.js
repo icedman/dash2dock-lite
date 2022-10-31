@@ -4,6 +4,7 @@ const Layout = imports.ui.layout;
 const Shell = imports.gi.Shell;
 const Meta = imports.gi.Meta;
 const St = imports.gi.St;
+const Clutter = imports.gi.Clutter;
 const GLib = imports.gi.GLib;
 const Point = imports.gi.Graphene.Point;
 
@@ -50,24 +51,11 @@ var Animator = class {
     Main.uiGroup.insert_child_above(this._dotsContainer, this.dashContainer);
     Main.uiGroup.insert_child_below(this._iconsContainer, this._dotsContainer);
 
-    // this._iconsContainer.opacity = this._start_opacity;
-    // this._dotsContainer.opacity = this._start_opacity;
-
-    // this._oneShotId = setTimeout(() => {
-    //   this._iconsContainer.opacity = 255;
-    //   this._dotsContainer.opacity = 255;
-    //   this._start_opacity = 255;
-    //   if (this.dash) {
-    //     this.dash._background.opacity = 255;
-    //   }
-    //   this._oneShotId = null;
-    // }, 2800);
-
     this._overlay = new xOverlay(
       this.dashContainer._monitor.width,
       this.dashContainer._monitor.height
     );
-    Main.uiGroup.insert_child_above(this._overlay, this._iconsContainer);
+    Main.uiGroup.insert_child_below(this._overlay, this._iconsContainer);
 
     this._enabled = true;
     this._dragging = false;
@@ -157,12 +145,15 @@ var Animator = class {
         let dot = new this.extension.xDot(DOT_CANVAS_SIZE);
         let pdot = new St.Widget();
         pdot.add_child(dot);
+        // pdot.style = 'border:2px solid yellow';
         this._dots.push(dot);
         this._dotsContainer.add_child(pdot);
         dot.set_position(0, 0);
       }
     }
     this._dots.forEach((d) => {
+      d.get_parent().width = 1;
+      d.get_parent().height = 1;
       d.visible = false;
     });
   }
@@ -265,7 +256,6 @@ var Animator = class {
       }
 
       let icon = c._icon;
-
       let uiIcon = new St.Widget({
         name: 'icon',
         width: iconSize,
@@ -276,6 +266,7 @@ var Animator = class {
       uiIcon._bin = bin;
       uiIcon._appwell = c._appwell;
       uiIcon._label = c._label;
+      uiIcon.set_reactive(false);
 
       this._iconsContainer.add_child(uiIcon);
 
@@ -358,31 +349,9 @@ var Animator = class {
         img.set_scale(1 / ANIM_ICON_QUALITY, 1 / ANIM_ICON_QUALITY);
         icon.add_child(img);
         icon._img = img;
-
-        let btn = new St.Button({
-          width: iconSize,
-          height: iconSize / 2,
-        });
-        icon.add_child(btn);
-        btn.connect('clicked', (arg) => {
-          if (icon._appwell) {
-            icon._appwell.emit('clicked', arg);
-          }
-        });
-        icon._btn = btn;
       }
 
       icon._img.set_icon_size(iconSize * ANIM_ICON_QUALITY);
-
-      if (
-        this.extension.autohider &&
-        this.extension.autohider._enabled &&
-        !this.extension.autohider._shown
-      ) {
-        icon._btn.hide();
-      } else {
-        icon._btn.show();
-      }
 
       // get nearest
       let bposcenter = [...pos];
@@ -403,7 +372,6 @@ var Animator = class {
       }
 
       icon._target = pos;
-      icon._target2 = pos;
       icon._targetScale = 1;
 
       if (pos[1] < this.extension.sh / 2) {
@@ -423,10 +391,11 @@ var Animator = class {
     }
 
     if (
+      !this.extension.animate_icons_unmute ||
       this.extension.animation_rise +
         this.extension.animation_magnify +
         this.extension.animation_spread ==
-      0
+        0
     ) {
       nearestIcon = null;
     }
@@ -460,10 +429,14 @@ var Animator = class {
       this._overlay.visible = false;
     }
 
+    this._nearestIcon = nearestIcon;
+
     if (animateIcons.length && nearestIcon) {
       let px = pointer[0];
+      let py = pointer[1];
       if (this._preview > 0) {
         px = nearestIcon._pos[0];
+        py = nearestIcon._pos[1];
       }
       let first = animateIcons[0]._pos || [0, 0];
       let last = animateIcons[animateIcons.length - 1]._pos || [0, 0];
@@ -473,38 +446,41 @@ var Animator = class {
       let center = [px, first[1]];
       let center_push = [px, first[1] + sz_push * 0.5];
 
-      animateIcons.forEach((i) => {
-        i._d = nsz;
-        let cr = sz / 2;
-        let p = i._pos;
-        if (!p) return;
+      if (this.extension._vertical) {
+        center = [first[0], py];
+        center_push = [first[0] - sz_push * 0.5, py];
+      }
 
-        // magnify
-        let dx = p[0] - center[0];
-        let dst = Math.sqrt(dx * dx); // expensive
-        if (dst < sz / 2) {
-          let magnify = (cr - dst) / cr / 2;
-          i._d *=
-            1 + ANIM_ICON_SCALE * magnify * this.extension.animation_magnify;
-          i._targetScale = i._d / nsz;
-        }
+      if (nearestIcon)
+        animateIcons.forEach((i) => {
+          i._d = nsz;
+          let cr = sz / 2;
+          let p = i._pos;
+          if (!p) return;
 
-        // collide
-        let dxp = p[0] - center_push[0];
-        let dyp = p[1] - center_push[1];
-        let dstp = Math.sqrt(dxp * dxp + dyp * dyp); // expensive
-        let pr = (nsz * i._targetScale) / 2;
-        if (dstp < sz_push / 2 + pr) {
-          p[0] = center_push[0] + (dxp / dstp) * (sz_push / 2 + pr);
-          // let oy = p[1];
-          // p[1] = center_push[1] + dyp/dstp*(sz_push/2+pr);
-          // p[1] = (p[1] + oy*3)/4;
-        }
+          // magnify
+          let dx = p[0] - center[0];
+          let dst = Math.sqrt(dx * dx); // expensive
+          if (dst < sz / 2) {
+            let magnify = (cr - dst) / cr / 2;
+            i._d *=
+              1 + ANIM_ICON_SCALE * magnify * this.extension.animation_magnify;
+            i._targetScale = i._d / nsz;
+          }
 
-        // rise
-        p[1] -=
-          (i._d - nsz) * (ANIM_ICON_RAISE * this.extension.animation_rise);
-      });
+          // collide
+          let dxp = p[0] - center_push[0];
+          let dyp = p[1] - center_push[1];
+          let dstp = Math.sqrt(dxp * dxp + dyp * dyp); // expensive
+          let pr = (nsz * i._targetScale) / 2;
+          if (dstp < sz_push / 2 + pr) {
+            p[0] = center_push[0] + (dxp / dstp) * (sz_push / 2 + pr);
+          }
+
+          // rise
+          p[1] -=
+            (i._d - nsz) * (ANIM_ICON_RAISE * this.extension.animation_rise);
+        });
 
       // spread
       let pad =
@@ -732,8 +708,11 @@ var Animator = class {
           let dot = this._dots[dotIndex++];
           icon._dot = dot;
           if (dot) {
+            let dotParent = icon._dot.get_parent();
             dot.visible = true;
-            dot.get_parent().set_position(pos[0], pos[1] + 8 * scaleFactor);
+            dotParent.width = iconSize;
+            dotParent.height = iconSize;
+            dotParent.set_position(pos[0], pos[1] + 8 * scaleFactor);
             dot.set_scale(
               (iconSize * scaleFactor) / DOT_CANVAS_SIZE,
               (iconSize * scaleFactor) / DOT_CANVAS_SIZE
@@ -793,7 +772,11 @@ var Animator = class {
   }
 
   _get_position(obj) {
-    return [this._get_x(obj), this._get_y(obj)];
+    return [...obj.get_transformed_position()];
+  }
+
+  _get_frame_rect(obj) {
+    return [...obj.get_transformed_position(), ...obj.get_transformed_size()];
   }
 
   _get_distance_sqr(pos1, pos2) {
@@ -853,6 +836,32 @@ var Animator = class {
       this._endAnimation.bind(this),
       ANIM_DEBOUNCE_END_DELAY + this.animationInterval
     );
+  }
+
+  _onButtonEvent(obj, evt) {
+    Main._lastButtonEvent = evt;
+    let pressed = evt.type() == Clutter.EventType.BUTTON_PRESS;
+    let button1 = (evt.get_state() & Clutter.ModifierType.BUTTON1_MASK) != 0;
+    let button = button1 ? 'left' : 'right';
+    let pointer = global.get_pointer();
+
+    if (this._nearestIcon) {
+      let icon = this._nearestIcon;
+      // log(`${button} ${pressed} - (${icon._pos}) (${pointer})`);
+      // hit icon facade?
+      {
+        let dx = icon._pos[0] - pointer[0];
+        let dy = icon._pos[1] - pointer[1];
+        let dst = Math.sqrt(dx * dx + dy * dy);
+        if (dst < icon._d / 2) {
+          if (button == 'left') {
+            icon._appwell.emit('clicked', {});
+          } else {
+            icon._appwell.popupMenu();
+          }
+        }
+      }
+    }
   }
 
   _onMotionEvent() {

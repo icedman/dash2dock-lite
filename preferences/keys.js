@@ -28,6 +28,12 @@ SettingsKeys.setKeys({
     default_value: 0,
     widget_type: 'scale',
   },
+  'animate-icons-unmute': {
+    default_value: true,
+    widget_type: 'switch',
+    key_maps: {},
+    test: { pointer: 'slide-through' },
+  },
   'animate-icons': {
     default_value: true,
     widget_type: 'switch',

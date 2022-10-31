@@ -41,6 +41,10 @@ class Extension {
     this._enableSettings();
     this._queryDisplay();
 
+    if (!SettingsKeys.getValue('animate-icons')) {
+      SettingsKeys.setValue('animate-icons', true);
+    }
+
     // setup the dash container
     this.dashContainer = new St.BoxLayout({
       name: 'dashContainer',
@@ -372,6 +376,8 @@ class Extension {
     this.dashContainer.set_reactive(true);
     this.dashContainer.set_track_hover(true);
     this.dashContainer.connectObject(
+      'button-press-event',
+      this._onButtonEvent.bind(this),
       'motion-event',
       this._onMotionEvent.bind(this),
       'enter-event',
@@ -477,6 +483,16 @@ class Extension {
     this.animator.disable();
     this.animator.enable();
     this._onEnterEvent();
+  }
+
+  _onButtonEvent(obj, evt) {
+    this.listeners
+      .filter((l) => {
+        return l._enabled;
+      })
+      .forEach((l) => {
+        if (l._onButtonEvent) l._onButtonEvent(obj, evt);
+      });
   }
 
   _onMotionEvent() {
@@ -591,6 +607,8 @@ class Extension {
 
   _updateCss(disable) {
     if (!this.dash || !this.dashContainer) return;
+
+    this.dashContainer.add_style_class_name('hi');
 
     let background = this.dash._background || null;
     if (background && this.border_radius !== null) {
@@ -794,6 +812,7 @@ class Extension {
   }
 
   _updateAnimation(disable) {
+    this.animate_icons = true; // force!
     if (this.animate_icons && !disable) {
       this.animator.enable();
     } else {

@@ -51,16 +51,19 @@ var warpPointer = (pointer, x, y) => {
   pointer.warp(screen, x, y);
 };
 
+var beginSequence = (seq) => {};
+
 var runSequence = (seq) => {
   if (seq.length == 0) return;
   let t = seq[0];
   let d = Math.floor(t.delay * 1000);
-  t._id = setTimeout(() => {
-    t.func(t);
-  }, 10);
+  t.func(t);
   seq.splice(0, 1);
-
-  setTimeout(() => {
+  return setTimeout(() => {
     runSequence(seq);
   }, d);
 };
+
+var clearSequence = (seq) => {};
+
+var clearAllTimers = () => {};

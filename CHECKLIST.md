@@ -17,6 +17,7 @@ check each preference setting
 * check hide showAppsButton (through JustPerfection)
 * open non-favorite apps
 * mount volumes
+* check proxy button for scaled icons
 
 ## autohide
 

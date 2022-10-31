@@ -33,6 +33,11 @@
     </key>
     <key type="b" name="animate-icons">
         <default>true</default>
+        <summary>Animations and Effects</summary>
+        <description>Enable animations and effects.</description>
+    </key>
+    <key type="b" name="animate-icons-unmute">
+        <default>true</default>
         <summary>Animate Icons</summary>
         <description>Animate dash icons on hover.</description>
     </key>

@@ -111,7 +111,7 @@ var AutoHide = class {
       if (this.dashContainer && this.extension) {
         this.animationInterval =
           HIDE_ANIMATION_INTERVAL +
-          (this.extension.animationFps || 0) * HIDE_ANIMATION_INTERVAL_PAD;
+          (this.extension.animation_fps || 0) * HIDE_ANIMATION_INTERVAL_PAD;
       }
 
       this._intervalId = setInterval(
@@ -188,14 +188,12 @@ var AutoHide = class {
   show() {
     this.frameDelay = 0;
     this._shown = true;
-    // this._beginAnimation(this.dashContainer.height);
     this._beginAnimation(true);
   }
 
   hide() {
     this.frameDelay = 10;
     this._shown = false;
-    // this._beginAnimation(this.dashContainer.height / 8);
     this._beginAnimation(false);
   }
 
@@ -211,10 +209,6 @@ var AutoHide = class {
 
     // temporarily disable autohide
     if (this.animator && this.animator._enabled && this.animator._dragging) {
-      // y =
-      //   this.screenHeight -
-      //   this.dashContainer.height -
-      //   this.extension._edge_distance;
       x = this.dashContainer._fixedPosition.x;
       y = this.dashContainer._fixedPosition.y;
 

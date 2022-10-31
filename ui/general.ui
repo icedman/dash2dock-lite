@@ -54,11 +54,11 @@
           <object class="AdwActionRow">
             <property name="title" translatable="yes">Animate Icons</property>
             <property name="subtitle" translatable="yes"
-              >Animate the dash icons the pointer enters and moves over the dock. Most features of this extension require animation turned on.</property
+              >Animate the dash icons the pointer enters and moves over the dock.</property
             >
-            <property name="activatable-widget">animate-icons</property>
+            <property name="activatable-widget">animate-icons-unmute</property>
             <child>
-              <object class="GtkSwitch" id="animate-icons">
+              <object class="GtkSwitch" id="animate-icons-unmute">
                 <property name="valign">center</property>
               </object>
             </child>

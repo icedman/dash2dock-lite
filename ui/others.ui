@@ -8,7 +8,7 @@
     <child>
       <object class="AdwPreferencesGroup">
         <property name="title" translatable="yes">Special Icons</property>
-        <property name="description" translatable="yes">Add dynamic effects that update or animate the dash icons. This requires Animate Icons enabled.</property>
+        <property name="description" translatable="yes">Add dynamic effects that update or animate the dash icons.</property>
 
         <child>
           <object class="AdwActionRow">

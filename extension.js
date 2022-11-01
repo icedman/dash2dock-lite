@@ -80,8 +80,6 @@ class Extension {
       this.dash.add_style_class_name('overview');
     }
 
-    // this.dashContainer.visible = false;
-    // this.dash.visible = false;
     pivot.x = 0.5;
     pivot.y = 0.5;
     this.dash.pivot_point = pivot;
@@ -753,6 +751,9 @@ class Extension {
     if (this.panel_mode) {
       dockHeight -= 20 * this.scaleFactor;
     }
+
+    this.dash.height = dockHeight + 10 * this.scaleFactor;
+    this.dash.visible = true;
 
     if (this._vertical) {
       // left/right

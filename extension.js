@@ -299,6 +299,7 @@ class Extension {
         case 'icon-effect-color': {
           if (this.animate_icons && this.animator.iconEffect) {
             this.animator.iconEffect.color = this.icon_effect_color;
+            this.animator.dashIconEffect.color = this.icon_effect_color;
             this._onEnterEvent();
           }
           break;
@@ -655,7 +656,7 @@ class Extension {
   }
 
   _findIcons() {
-    if (!this.dash) return [];
+    if (!this.dash || !this.dashContainer) return [];
 
     if (this.dash._showAppsIcon) {
       this.dash._showAppsIcon.visible = this.apps_icon;
@@ -896,7 +897,7 @@ class Extension {
         .first_child.add_child(this.dash);
     }
 
-    this.dashContainer.hide();
+    // this.dashContainer.hide();
     if (this.animator && this.animate_icons) {
       this.animator._beginAnimation();
       if (this.animator._iconsContainer) {
@@ -918,7 +919,7 @@ class Extension {
       this.dashContainer.add_child(this.dash);
     }
 
-    this.dashContainer.show();
+    // this.dashContainer.show();
     this._onEnterEvent();
 
     if (this.animator._iconsContainer) {

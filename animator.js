@@ -32,7 +32,7 @@ const ANIM_ON_LEAVE_COEF = 1.4;
 const ANIM_ICON_RAISE = 0.6;
 const ANIM_ICON_SCALE = 1.5;
 const ANIM_ICON_HIT_AREA = 1.5;
-const ANIM_REENABLE_DELAY = 750;
+const ANIM_REENABLE_DELAY = 250;
 const ANIM_DEBOUNCE_END_DELAY = 750;
 const ANIM_PREVIEW_DURATION = 1200;
 
@@ -65,36 +65,13 @@ var Animator = class {
     this.show_dots = true;
     this.show_badge = true;
 
-    if (this.extension.icon_effect > 0) {
-      let effect = null;
-      switch (this.extension.icon_effect) {
-        case 1: {
-          effect = new TintEffect({
-            name: 'color',
-            color: this.extension.icon_effect_color,
-          });
-          break;
-        }
-        case 2: {
-          effect = new MonochromeEffect({
-            name: 'color',
-            color: this.extension.icon_effect_color,
-          });
-          break;
-        }
-        // case 3: {
-        //   effect = new TestEffect({
-        //     name: 'color',
-        //     color: this.extension.icon_effect_color,
-        //   });
-        //   break;
-        // }
-      }
-      if (effect) {
-        this._iconsContainer.add_effect(effect);
-      }
-      this.iconEffect = effect;
+    let effect = this._createEffect(this.extension.icon_effect);
+    if (effect) {
+      this._iconsContainer.add_effect(effect);
     }
+    this.iconEffect = effect;
+    effect = this._createEffect(this.extension.icon_effect);
+    this.dashIconEffect = effect;
   }
 
   disable() {
@@ -121,6 +98,34 @@ var Animator = class {
     if (this.dashContainer) {
       this._restoreIcons();
     }
+  }
+
+  _createEffect(idx) {
+    let effect = null;
+    switch (idx) {
+      case 1: {
+        effect = new TintEffect({
+          name: 'color',
+          color: this.extension.icon_effect_color,
+        });
+        break;
+      }
+      case 2: {
+        effect = new MonochromeEffect({
+          name: 'color',
+          color: this.extension.icon_effect_color,
+        });
+        break;
+      }
+      // case 3: {
+      //   effect = new TestEffect({
+      //     name: 'color',
+      //     color: this.extension.icon_effect_color,
+      //   });
+      //   break;
+      // }
+    }
+    return effect;
   }
 
   preview(do_preview) {
@@ -270,13 +275,19 @@ var Animator = class {
       if (draggable && !draggable._dragBeginId) {
         draggable._dragBeginId = draggable.connect('drag-begin', () => {
           this._dragging = true;
+          if (this.dashIconEffect) {
+            this.dashContainer.dash._box.add_effect_with_name(
+              'icon-effect',
+              this.dashIconEffect
+            );
+          }
           this.disable();
         });
         draggable._dragEndId = draggable.connect('drag-end', () => {
           this._dragging = false;
-
           beginTimer(
             runOneShot(() => {
+              this.dashContainer.dash._box.remove_effect_by_name('icon-effect');
               this.enable();
               this._onEnterEvent();
             }, ANIM_REENABLE_DELAY / 1000)
@@ -391,6 +402,7 @@ var Animator = class {
     }
 
     if (
+      this._dragging ||
       !this.extension.animate_icons_unmute ||
       this.extension.animation_rise +
         this.extension.animation_magnify +

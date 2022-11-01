@@ -60,7 +60,7 @@ var clearInterval = (id) => {
 let _running_sequences = [];
 let _seq_id = 0xff;
 
-var beginTimer = (seq) => {
+var beginTimer = (seq, name) => {
   if (_running_sequences.findIndex((s) => s._id == seq._id) == -1) {
     if (!seq._id) {
       seq._id = _seq_id++;
@@ -68,6 +68,9 @@ var beginTimer = (seq) => {
     _running_sequences.push(seq);
     // log(`push ${seq._id} ${seq._timeoutId}`);
     // log(`${_running_sequences.map((s)=>s._timeoutId).join(',')}`);
+  }
+  if (!seq.name) {
+    seq.name = name ? name : `timer_${seq._id}`;
   }
   return seq;
 };
@@ -123,7 +126,7 @@ var runLoop = (seq, interval) => {
 
   if (!seq._timeoutId) {
     seq._timeoutId = setInterval(() => {
-      seq.func(seq.seq);
+      seq.func(seq);
     }, Math.floor(1000 * seq.delay));
   }
 
@@ -182,8 +185,13 @@ var clearSequence = (seq) => {
   }
   let idx = _running_sequences.findIndex((s) => s._id == seq._id);
   // log(`remove ${seq._id} @ ${idx} ${seq._timeoutId}`);
+
   if (idx != -1) {
-    // log(`splice ${_running_sequences[idx]._id}`);
+    if (_running_sequences.length == 1) {
+      _running_sequences = [];
+      return;
+    }
+
     // _running_sequences.splice(seq, 1); << ugh?!!
     _running_sequences = [
       ..._running_sequences.slice(0, idx),
@@ -197,6 +205,7 @@ var clearSequence = (seq) => {
 
 var clearAllTimers = () => {
   let guard = 200;
+  log('clearing timers...');
   while (_running_sequences.length > 0 && guard-- > 0) {
     clearSequence(_running_sequences[0]);
   }

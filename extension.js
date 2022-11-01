@@ -130,6 +130,8 @@ class Extension {
     this._addEvents();
 
     this.startUp();
+
+    log('dash2dock-lite enabled');
   }
 
   disable() {
@@ -172,6 +174,8 @@ class Extension {
     this.services.disable();
     delete this.services;
     this.services = null;
+
+    log('dash2dock-lite disabled');
   }
 
   startUp() {
@@ -469,7 +473,8 @@ class Extension {
     beginTimer(
       runLoop(() => {
         this._onCheckServices();
-      }, SERVICES_UPDATE_INTERVAL / 1000)
+      }, SERVICES_UPDATE_INTERVAL / 1000),
+      'services'
     );
   }
 
@@ -676,11 +681,27 @@ class Extension {
 
     // W: breakable
     let icons = this.dash._box.get_children().filter((actor) => {
-      if (actor.child && actor.child._delegate && actor.child._delegate.icon) {
+      if (!actor.child) {
+        return false;
+      }
+
+      // actor._cls = actor.child.get_style_class_name();
+      // if (actor._cls != 'app-well-app') {
+      //   log(actor._cls);
+      // }
+
+      if (actor.child._delegate && actor.child._delegate.icon) {
+        // these have no icons... skipped
+        // if (actor._cls == 'placeholder' || actor._cls == 'empty-dash-drop-target') {
+        //   log('skip!');
+        //   return false;
+        // }
         return true;
       }
       return false;
     });
+
+    // icons = [...icons.splice(0,1)];
 
     icons.forEach((c) => {
       // W: breakable
@@ -878,7 +899,7 @@ class Extension {
       );
     }
 
-    if (this.animate_icons) {
+    if (this.animate_icons && !disable) {
       this.animator.enable();
       this._onEnterEvent();
     }
@@ -931,8 +952,24 @@ class Extension {
   }
 
   _onSessionUpdated() {
-    this._updateLayout();
-    this.autohider._debounceCheckHide();
+    // lock disables the entire extension. following code is not needed
+    // if (Main.sessionMode.isGreeter || Main.sessionMode.isLocked) {
+    //   if (this.animate_icons) {
+    //     this.animator.disable();
+    //     log('disable!');
+    //   }
+    // } else {
+    //   if (this.animate_icons) {
+    //     beginTimer(
+    //       runOneShot(() => {
+    //       this.animator.enable();
+    //       this._updateLayout();
+    //       this.autohider._debounceCheckHide();
+    //       log('enable!');
+    //     }),
+    //     1.5);
+    //   }
+    // }
   }
 
   _onCheckServices() {

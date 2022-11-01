@@ -47,6 +47,20 @@ var Animator = class {
   enable() {
     if (this._enabled) return;
 
+    // todo: why does this happen at lock
+    if (Main.uiGroup.find_child_by_name('iconsContainer')) {
+      Main.uiGroup.remove_child(
+        Main.uiGroup.find_child_by_name('iconsContainer')
+      );
+      Main.uiGroup.remove_child(
+        Main.uiGroup.find_child_by_name('dotsContainer')
+      );
+      Main.uiGroup.remove_child(
+        Main.uiGroup.find_child_by_name('debugOverlay')
+      );
+      log('warning! double entry');
+    }
+
     this._iconsContainer = new St.Widget({ name: 'iconsContainer' });
     this._dotsContainer = new St.Widget({ name: 'dotsContainer' });
     Main.uiGroup.insert_child_above(this._dotsContainer, this.dashContainer);
@@ -56,6 +70,7 @@ var Animator = class {
       this.dashContainer._monitor.width,
       this.dashContainer._monitor.height
     );
+    this._overlay.name = 'debugOverlay';
     Main.uiGroup.insert_child_below(this._overlay, this._iconsContainer);
 
     this._enabled = true;
@@ -72,11 +87,12 @@ var Animator = class {
     this.iconEffect = effect;
     effect = this._createEffect(this.extension.icon_effect);
     this.dashIconEffect = effect;
+
+    log('animator enabled');
   }
 
   disable() {
     if (!this._enabled) return;
-    this._enabled = false;
     this._endAnimation();
 
     this.iconEffect = null;
@@ -98,6 +114,10 @@ var Animator = class {
     if (this.dashContainer) {
       this._restoreIcons();
     }
+
+    this._enabled = false;
+
+    log('animator disabled');
   }
 
   _createEffect(idx) {
@@ -275,19 +295,20 @@ var Animator = class {
       if (draggable && !draggable._dragBeginId) {
         draggable._dragBeginId = draggable.connect('drag-begin', () => {
           this._dragging = true;
-          if (this.dashIconEffect) {
-            this.dashContainer.dash._box.add_effect_with_name(
-              'icon-effect',
-              this.dashIconEffect
-            );
-          }
+          // if (this.dashIconEffect && !this.dashContainer.dash._effect) {
+          //   this.dashContainer.dash._box.add_effect_with_name(
+          //     'icon-effect',
+          //     this.dashIconEffect
+          //   );
+          //   this.dashContainer.dash._effect = this.dashIconEffect;
+          // }
           this.disable();
         });
         draggable._dragEndId = draggable.connect('drag-end', () => {
           this._dragging = false;
           beginTimer(
             runOneShot(() => {
-              this.dashContainer.dash._box.remove_effect_by_name('icon-effect');
+              // this.dashContainer.dash._box.remove_effect_by_name('icon-effect');
               this.enable();
               this._onEnterEvent();
             }, ANIM_REENABLE_DELAY / 1000)
@@ -362,7 +383,10 @@ var Animator = class {
         icon.add_child(img);
         icon._img = img;
       }
-      icon._img.set_icon_size(iconSize * this.extension.icon_quality);
+
+      if (icon._img) {
+        icon._img.set_icon_size(iconSize * this.extension.icon_quality);
+      }
 
       // get nearest
       let bposcenter = [...pos];
@@ -763,7 +787,7 @@ var Animator = class {
       this._dotsContainer.show();
     }
 
-    if (didAnimate) {
+    if (didAnimate || this._dragging) {
       this._debounceEndAnimation();
     }
   }
@@ -832,7 +856,8 @@ var Animator = class {
         this._animationSeq = beginTimer(
           runLoop(() => {
             this._animate();
-          }, this.animationInterval / 1000)
+          }, this.animationInterval / 1000),
+          'animate'
         );
       } else {
         beginTimer(runLoop(this._animationSeq));

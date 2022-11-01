@@ -67,6 +67,8 @@ var AutoHide = class {
         },
       ])
     );
+
+    log('autohide enabled');
   }
 
   disable() {
@@ -91,7 +93,7 @@ var AutoHide = class {
       }
     });
 
-    // log('disable autohide');
+    log('autohide disabled');
   }
 
   _beginAnimation(t) {
@@ -118,7 +120,8 @@ var AutoHide = class {
         this._animationSeq = beginTimer(
           runLoop(() => {
             this._animate();
-          }, this.animationInterval / 1000)
+          }, this.animationInterval / 1000),
+          'autohide'
         );
       } else {
         beginTimer(runLoop(this._animationSeq));

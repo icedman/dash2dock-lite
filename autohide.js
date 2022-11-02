@@ -102,6 +102,10 @@ var AutoHide = class {
     // let height = monitor.height;
     // this.target = y + height - t;
 
+    if (this.extension.animator._dragging) {
+      return;
+    }
+
     if (t) {
       this.target = this.dashContainer._fixedPosition;
     } else {
@@ -206,6 +210,10 @@ var AutoHide = class {
 
   _animate() {
     if (!this.dashContainer) return false;
+
+    if (this.extension.animator._dragging) {
+      return false;
+    }
 
     if (this._preview && this._preview > 0) {
       this._preview -= this.animationInterval;

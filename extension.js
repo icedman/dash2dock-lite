@@ -686,12 +686,13 @@ class Extension {
       }
 
       actor._cls = actor.child.get_style_class_name();
-      switch (actor._cls) {
-        case 'app-well-app':
-          break;
-        case 'placeholder':
-          return true;
-      }
+
+      // switch (actor._cls) {
+      //   case 'app-well-app':
+      //     break;
+      //   case 'placeholder':
+      //     return true;
+      // }
 
       if (actor.child._delegate && actor.child._delegate.icon) {
         // these have no icons... skipped

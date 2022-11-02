@@ -301,24 +301,9 @@ var Animator = class {
       if (draggable && !draggable._dragBeginId) {
         draggable._dragBeginId = draggable.connect('drag-begin', () => {
           this._dragging = true;
-          // if (this.dashIconEffect && !this.dashContainer.dash._effect) {
-          //   this.dashContainer.dash._box.add_effect_with_name(
-          //     'icon-effect',
-          //     this.dashIconEffect
-          //   );
-          //   this.dashContainer.dash._effect = this.dashIconEffect;
-          // }
-          // this.disable();
         });
         draggable._dragEndId = draggable.connect('drag-end', () => {
           this._dragging = false;
-          beginTimer(
-            runOneShot(() => {
-              // this.dashContainer.dash._box.remove_effect_by_name('icon-effect');
-              // this.enable();
-              this._onEnterEvent();
-            }, ANIM_REENABLE_DELAY / 1000)
-          );
         });
       }
     });

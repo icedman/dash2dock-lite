@@ -196,6 +196,13 @@ var Animator = class {
       this._relayout--;
     }
 
+    if (this._throttleDown) {
+      this._throttleDown--;
+      if (this._throttleDown > 0) {
+        return;
+      }
+    }
+
     this._iconsContainer.width = 1;
     this._iconsContainer.height = 1;
     this._dotsContainer.width = 1;
@@ -710,6 +717,8 @@ var Animator = class {
 
     if (didAnimate || this._dragging) {
       this._debounceEndAnimation();
+    } else {
+      this._throttleDown = 20;
     }
   }
 
@@ -750,6 +759,8 @@ var Animator = class {
     if (this.debounceEndSeq) {
       clearSequence(this.debounceEndSeq);
     }
+
+    this._throttleDown = 0;
 
     if (!this._animationSeq || !this._animationSeq._timeoutId) {
       if (this.dashContainer && this.extension) {

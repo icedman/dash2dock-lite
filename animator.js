@@ -40,6 +40,9 @@ const ANIM_REENABLE_DELAY = 250;
 const ANIM_DEBOUNCE_END_DELAY = 750;
 const ANIM_PREVIEW_DURATION = 1200;
 
+const FIND_ICONS_SKIP_FRAMES = 8;
+const THROTTLE_DOWN_FRAMES = 20;
+
 const DOT_CANVAS_SIZE = 96;
 
 var Animator = class {
@@ -91,6 +94,9 @@ var Animator = class {
     this.iconEffect = effect;
     effect = this._createEffect(this.extension.icon_effect);
     this.dashIconEffect = effect;
+
+    this._throttleDown = 0;
+    this._previousFindIndex = 0;
 
     log('animator enabled');
   }
@@ -183,6 +189,8 @@ var Animator = class {
   }
 
   relayout() {
+    this._previousFind = 0;
+    this._throttleDown = 0;
     this._relayout = 20;
     this._onEnterEvent();
   }
@@ -270,7 +278,19 @@ var Animator = class {
 
     let visible_dots = 0;
 
-    let icons = this._findIcons();
+    let icons = this._previousFind;
+
+    if (!icons) {
+      icons = this._findIcons();
+      this._previousFind = icons;
+    } else {
+      if (this._previousFindIndex++ > FIND_ICONS_SKIP_FRAMES) {
+        this._previousFind = null;
+      } else {
+        this._previousFind = 0;
+      }
+    }
+
     icons.forEach((c) => {
       let bin = c._bin;
       if (!bin) return;
@@ -718,7 +738,7 @@ var Animator = class {
     if (didAnimate || this._dragging) {
       this._debounceEndAnimation();
     } else {
-      this._throttleDown = 20;
+      this._throttleDown = THROTTLE_DOWN_FRAMES;
     }
   }
 

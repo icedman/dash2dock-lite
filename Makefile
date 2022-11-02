@@ -42,10 +42,12 @@ test-shell: install
 		MUTTER_DEBUG_DUMMY_MODE_SPECS=1500x1000 \
 	 	MUTTER_DEBUG_DUMMY_MONITOR_SCALES=1 \
 		dbus-run-session -- gnome-shell --nested --wayland
+	rm /run/user/1000/gnome-shell-disable-extensions
 
 lint:
 	eslint ./
 
 pretty:
+	rm -rf ./build/*
 	prettier --single-quote --write "**/*.js"
 # 	prettier --print-width=800 --parser=html --single-quote --write "**/*.ui"

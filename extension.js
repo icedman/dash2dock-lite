@@ -179,12 +179,14 @@ class Extension {
   }
 
   startUp() {
+    // todo... refactor this
     beginTimer(
       runSequence([
         {
           func: () => {
             this._updateLayout();
             this._onEnterEvent();
+            this._updateBackgroundColors();
           },
           delay: 0.5,
         },
@@ -193,6 +195,7 @@ class Extension {
           func: () => {
             this._updateLayout();
             this._onEnterEvent();
+            this._updateBackgroundColors();
           },
           delay: 0.5,
         },
@@ -201,6 +204,7 @@ class Extension {
           func: () => {
             this._updateLayout();
             this._onEnterEvent();
+            this._updateBackgroundColors();
           },
           delay: 0.5,
         },

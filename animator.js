@@ -744,7 +744,32 @@ var Animator = class {
   }
 
   _findIcons() {
-    return this.extension._findIcons();
+    let icons = this.extension._findIcons();
+
+    // todo: fix: too elaborate a hack to suppress initial dock display- when icons are not yet ready
+    if (icons.length <= 1) {
+      // only the ShowAppsButton?... dash not yet ready
+
+      this.dashContainer.dash.opacity = 0;
+      this._iconsContainer.opacity = 0;
+      this._dotsContainer.opacity = 0;
+      if (!this.debounceReadySeq) {
+        this.debounceReadySeq = beginTimer(
+          runDebounce(() => {
+            this.dashContainer.dash.opacity = 255;
+            this._iconsContainer.opacity = 255;
+            this._dotsContainer.opacity = 255;
+            this._startAnimation();
+          }, 0.25),
+          'icons-wait-ready'
+        );
+      } else {
+        beginTimer(runDebounce(this.debounceReadySeq));
+      }
+
+      return [];
+    }
+    return icons;
   }
 
   // todo move to util

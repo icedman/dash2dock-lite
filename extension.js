@@ -924,14 +924,17 @@ class Extension {
     }
 
     // this.dashContainer.hide();
+
     if (this.animator && this.animate_icons) {
       this.animator._beginAnimation();
       if (this.animator._iconsContainer) {
+        this.animator.relayout();
         this.animator._iconsContainer.hide();
         this.animator._dotsContainer.hide();
       }
     }
-    // this._onEnterEvent();
+
+    this._onEnterEvent();
     // log('_onOverviewShowing');
   }
 

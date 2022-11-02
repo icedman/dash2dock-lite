@@ -40,8 +40,9 @@ const ANIM_REENABLE_DELAY = 250;
 const ANIM_DEBOUNCE_END_DELAY = 750;
 const ANIM_PREVIEW_DURATION = 1200;
 
-const FIND_ICONS_SKIP_FRAMES = 8;
+const FIND_ICONS_SKIP_FRAMES = 16;
 const THROTTLE_DOWN_FRAMES = 20;
+const THROTTLE_DOWN_DELAY_FRAMES = 10;
 
 const DOT_CANVAS_SIZE = 96;
 
@@ -189,7 +190,7 @@ var Animator = class {
   }
 
   relayout() {
-    this._previousFind = 0;
+    this._previousFind = null;
     this._throttleDown = 0;
     this._relayout = 20;
     this._onEnterEvent();
@@ -206,7 +207,7 @@ var Animator = class {
 
     if (this._throttleDown) {
       this._throttleDown--;
-      if (this._throttleDown > 0) {
+      if (this._throttleDown > 0 && this._throttleDown < THROTTLE_DOWN_FRAMES) {
         return;
       }
     }
@@ -737,8 +738,8 @@ var Animator = class {
 
     if (didAnimate || this._dragging) {
       this._debounceEndAnimation();
-    } else {
-      this._throttleDown = THROTTLE_DOWN_FRAMES;
+    } else if (this._throttleDown <= 0) {
+      this._throttleDown = THROTTLE_DOWN_FRAMES + THROTTLE_DOWN_DELAY_FRAMES;
     }
   }
 
@@ -912,8 +913,6 @@ var Animator = class {
     icons.forEach((c) => {
       let bin = c._bin;
       c._icon.opacity = 255;
-      // c._icon.get_parent().remove_child(c._icon);
-      // c._bin.add_child(c._icon);
     });
   }
 };

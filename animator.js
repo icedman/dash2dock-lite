@@ -22,13 +22,17 @@ const TintEffect = Me.imports.effects.tint_effect.TintEffect;
 const MonochromeEffect = Me.imports.effects.monochrome_effect.MonochromeEffect;
 const TestEffect = Me.imports.effects.test_effect.TestEffect;
 
+const _ANIMATE = Me.imports.effects.spread_magnify_animation.Animation;
+// const _ANIMATE = Me.imports.effects.obsessively_maclike_animation.Animation;
+// const _ANIMATE = Me.imports.effects.maclike_animation.Animation;
+
 const xOverlay = Me.imports.apps.overlay.xOverlay;
 
 const ANIM_INTERVAL = 15;
 const ANIM_INTERVAL_PAD = 15;
-const ANIM_POS_COEF = 2;
-const ANIM_SCALE_COEF = 2.5;
-const ANIM_ON_LEAVE_COEF = 1.4;
+const ANIM_POS_COEF = 1.5;
+const ANIM_SCALE_COEF = 2.0;
+const ANIM_ON_LEAVE_COEF = 2.5;
 const ANIM_ICON_RAISE = 0.6;
 const ANIM_ICON_SCALE = 1.5;
 const ANIM_ICON_HIT_AREA = 1.5;
@@ -197,6 +201,8 @@ var Animator = class {
     this._dotsContainer.width = 1;
     this._dotsContainer.height = 1;
 
+    let pointer = global.get_pointer();
+
     let pivot = new Point();
     pivot.x = 0.5;
     pivot.y = 1.0;
@@ -302,14 +308,14 @@ var Animator = class {
           //   );
           //   this.dashContainer.dash._effect = this.dashIconEffect;
           // }
-          this.disable();
+          // this.disable();
         });
         draggable._dragEndId = draggable.connect('drag-end', () => {
           this._dragging = false;
           beginTimer(
             runOneShot(() => {
               // this.dashContainer.dash._box.remove_effect_by_name('icon-effect');
-              this.enable();
+              // this.enable();
               this._onEnterEvent();
             }, ANIM_REENABLE_DELAY / 1000)
           );
@@ -318,8 +324,6 @@ var Animator = class {
     });
 
     this._precreate_dots(visible_dots + icons.length);
-
-    let pointer = global.get_pointer();
 
     let nearestIdx = -1;
     let nearestIcon = null;
@@ -346,12 +350,13 @@ var Animator = class {
     });
 
     animateIcons = this._iconsContainer.get_children();
+    animateIcons.forEach((icon) => {
+      icon._pos = this._get_position(icon._bin);
+    });
 
     // sort
     let cornerPos = this._get_position(this.dashContainer);
     animateIcons.sort((a, b) => {
-      a._pos = this._get_position(a._bin);
-      b._pos = this._get_position(b._bin);
       let dstA = this._get_distance(cornerPos, a._pos);
       let dstB = this._get_distance(cornerPos, b._pos);
       return dstA > dstB ? 1 : -1;
@@ -467,77 +472,22 @@ var Animator = class {
 
     this._nearestIcon = nearestIcon;
 
+    let px = pointer[0];
+    let py = pointer[1];
+    if (this._preview > 0 && nearestIcon) {
+      px = nearestIcon._pos[0];
+      py = nearestIcon._pos[1];
+    }
+
+    // animation behavior
     if (animateIcons.length && nearestIcon) {
-      let px = pointer[0];
-      let py = pointer[1];
-      if (this._preview > 0) {
-        px = nearestIcon._pos[0];
-        py = nearestIcon._pos[1];
-      }
-      let first = animateIcons[0]._pos || [0, 0];
-      let last = animateIcons[animateIcons.length - 1]._pos || [0, 0];
-      let nsz = (iconSize + 16) * scaleFactor;
-      let sz = nsz * (4 + 2 * this.extension.animation_spread);
-      let sz_push = nsz * 2;
-      let center = [px, first[1]];
-      let center_push = [px, first[1] + sz_push * 0.5];
-
-      if (this.extension._vertical) {
-        center = [first[0], py];
-        center_push = [first[0] - sz_push * 0.5, py];
-      }
-
-      if (nearestIcon)
-        animateIcons.forEach((i) => {
-          i._d = nsz;
-          let cr = sz / 2;
-          let p = i._pos;
-          if (!p) return;
-
-          // magnify
-          let dx = p[0] - center[0];
-          let dst = Math.sqrt(dx * dx); // expensive
-          if (dst < sz / 2) {
-            let magnify = (cr - dst) / cr / 2;
-            i._d *=
-              1 + ANIM_ICON_SCALE * magnify * this.extension.animation_magnify;
-            i._targetScale = i._d / nsz;
-          }
-
-          // collide
-          let dxp = p[0] - center_push[0];
-          let dyp = p[1] - center_push[1];
-          let dstp = Math.sqrt(dxp * dxp + dyp * dyp); // expensive
-          let pr = (nsz * i._targetScale) / 2;
-          if (dstp < sz_push / 2 + pr) {
-            p[0] = center_push[0] + (dxp / dstp) * (sz_push / 2 + pr);
-          }
-
-          // rise
-          p[1] -=
-            (i._d - nsz) * (ANIM_ICON_RAISE * this.extension.animation_rise);
-        });
-
-      // spread
-      let pad =
-        iconSize * 4 * scaleFactor * (this.extension.animation_spread / 2);
-      this.dashContainer._targetScale =
-        (this.dash.width + pad) / this.dash.width;
-
-      // apply ease
-      for (let i = 0; i < animateIcons.length; i++) {
-        let c = animateIcons[i];
-        let l = animateIcons[i - 1] || c;
-        let r = animateIcons[i + 1] || c;
-        c._pos2 = [...c._pos];
-        if (i != 0 && i != animateIcons.length - 1) {
-          c._pos2[0] = (l._pos[0] + c._pos[0] * 3 + r._pos[0]) / 5;
-        }
-        c._pos2[1] = (l._pos[1] + c._pos[1] * 3 + r._pos[1]) / 5;
-      }
-      for (let i = 0; i < animateIcons.length; i++) {
-        animateIcons[i]._pos = animateIcons[i]._pos2;
-      }
+      let anim = _ANIMATE(animateIcons, [px, py], this.dashContainer, {
+        iconSize,
+        scaleFactor,
+        animation_rise: this.extension.animation_rise * ANIM_ICON_RAISE,
+        animation_magnify: this.extension.animation_magnify * ANIM_ICON_SCALE,
+        animation_spread: this.extension.animation_spread,
+      });
 
       // commit
       animateIcons.forEach((i) => {
@@ -547,45 +497,31 @@ var Animator = class {
       // debug draw
       if (this.extension.debug_visual) {
         this._overlay.onDraw = (ctx) => {
-          this._overlay._drawing.draw_line(
-            ctx,
-            [1, 0, 0, 1],
-            1,
-            first[0],
-            first[1],
-            last[0],
-            last[1]
-          );
-
-          this._overlay._drawing.draw_circle(
-            ctx,
-            [1, 0, 0, 1],
-            center[0],
-            center[1],
-            sz,
-            true
-          );
-
-          this._overlay._drawing.draw_circle(
-            ctx,
-            [1, 0, 0, 1],
-            center_push[0],
-            center_push[1],
-            sz_push,
-            true
-          );
-
-          animateIcons.forEach((i) => {
-            let p = i._pos;
-            if (!p) return;
-            this._overlay._drawing.draw_circle(
-              ctx,
-              [1, 0, 0, 1],
-              p[0],
-              p[1],
-              i._d,
-              true
-            );
+          anim.debugDraw.forEach((d) => {
+            switch (d.t) {
+              case 'line':
+                this._overlay._drawing.draw_line(
+                  ctx,
+                  d.c,
+                  1,
+                  d.x,
+                  d.y,
+                  d.x2,
+                  d.y2,
+                  true
+                );
+                break;
+              case 'circle':
+                this._overlay._drawing.draw_circle(
+                  ctx,
+                  d.c,
+                  d.x,
+                  d.y,
+                  d.d,
+                  true
+                );
+                break;
+            }
           });
         };
 
@@ -793,22 +729,7 @@ var Animator = class {
   }
 
   _findIcons() {
-    let icons = this.extension._findIcons();
-    let app_ids = icons
-      .filter((i) => {
-        return i._appwell;
-      })
-      .map((i) => {
-        return i._appwell.app.get_id();
-      });
-    if (this._app_ids) {
-      let new_ids = app_ids.filter((x) => !this._app_ids.includes(x));
-      if (new_ids.length == 1) {
-        log(new_ids);
-      }
-    }
-    this._app_ids = app_ids;
-    return icons;
+    return this.extension._findIcons();
   }
 
   // todo move to util

@@ -685,10 +685,13 @@ class Extension {
         return false;
       }
 
-      // actor._cls = actor.child.get_style_class_name();
-      // if (actor._cls != 'app-well-app') {
-      //   log(actor._cls);
-      // }
+      actor._cls = actor.child.get_style_class_name();
+      switch (actor._cls) {
+        case 'app-well-app':
+          break;
+        case 'placeholder':
+          return true;
+      }
 
       if (actor.child._delegate && actor.child._delegate.icon) {
         // these have no icons... skipped

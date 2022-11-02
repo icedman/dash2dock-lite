@@ -272,7 +272,8 @@ var Services = class {
 
     this._appNotices = {};
     this._notifications.forEach((n) => {
-      let appId = n.notification.source._appId;
+      let appId =
+        n.notification.source._appId || n.notification.source.app.get_id();
       if (!this._appNotices[appId]) {
         this._appNotices[appId] = { count: 0, urgency: 0 };
       }

@@ -886,6 +886,7 @@ var Animator = class {
   }
 
   _onMotionEvent() {
+    this._preview = null;
     this._onEnterEvent();
   }
 

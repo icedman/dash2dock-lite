@@ -186,7 +186,6 @@ class Extension {
           func: () => {
             this._updateLayout();
             this._onEnterEvent();
-            this._updateBackgroundColors();
           },
           delay: 0.5,
         },
@@ -195,7 +194,6 @@ class Extension {
           func: () => {
             this._updateLayout();
             this._onEnterEvent();
-            this._updateBackgroundColors();
           },
           delay: 0.5,
         },
@@ -204,7 +202,6 @@ class Extension {
           func: () => {
             this._updateLayout();
             this._onEnterEvent();
-            this._updateBackgroundColors();
           },
           delay: 0.5,
         },
@@ -620,13 +617,25 @@ class Extension {
     }
 
     // panel background
-    Main.panel.style = '';
-    if (!disable) {
-      let bg = this.topbar_background_color || [0, 0, 0, 0.5];
-      let clr = bg.map((r) => Math.floor(255 * r));
-      clr[3] = bg[3];
-      let style = `background: rgba(${clr.join(',')})`;
-      Main.panel.style = style;
+    // this is simple.. but has overview show/hide artifcats
+    // Main.panel.style = '';
+    // if (!disable) {
+    //   let bg = this.topbar_background_color || [0, 0, 0, 0.5];
+    //   let clr = bg.map((r) => Math.floor(255 * r));
+    //   clr[3] = bg[3];
+    //   let style = `background: rgba(${clr.join(',')})`;
+    //   Main.panel.style = style;
+    // }
+
+    if (disable) {
+      Main.panel.background_color = Clutter.Color.from_pixel(0xffffff00);
+    } else {
+      let bg = Clutter.Color.from_pixel(0xffffffff);
+      bg.red = Math.floor(this.topbar_background_color[0] * 255);
+      bg.green = Math.floor(this.topbar_background_color[1] * 255);
+      bg.blue = Math.floor(this.topbar_background_color[2] * 255);
+      bg.alpha = Math.floor(this.topbar_background_color[3] * 255);
+      Main.panel.background_color = bg;
     }
 
     this._updateCss(disable);
@@ -959,6 +968,13 @@ class Extension {
       this.animator._iconsContainer.show();
       this.animator._dotsContainer.show();
     }
+
+    beginTimer(
+      runOneShot(() => {
+        this._updateBackgroundColors();
+      }, 0.25)
+    );
+
     // log('_onOverviewHidden');
   }
 

@@ -88,13 +88,7 @@ var Animator = class {
     this.show_dots = true;
     this.show_badge = true;
 
-    let effect = this._createEffect(this.extension.icon_effect);
-    if (effect) {
-      this._iconsContainer.add_effect(effect);
-    }
-    this.iconEffect = effect;
-    effect = this._createEffect(this.extension.icon_effect);
-    this.dashIconEffect = effect;
+    this._updateIconEffect();
 
     this._throttleDown = 0;
     this._previousFindIndex = 0;
@@ -157,6 +151,15 @@ var Animator = class {
       // }
     }
     return effect;
+  }
+
+  _updateIconEffect() {
+    this._iconsContainer.remove_effect_by_name('icon-effect');
+    let effect = this._createEffect(this.extension.icon_effect);
+    if (effect) {
+      this._iconsContainer.add_effect_with_name('icon-effect', effect);
+    }
+    this.iconEffect = effect;
   }
 
   preview(do_preview) {

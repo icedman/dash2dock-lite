@@ -292,8 +292,9 @@ class Extension {
         }
         case 'icon-effect': {
           if (this.animate_icons) {
-            this.animator.disable();
-            this.animator.enable();
+            this.animator._updateIconEffect();
+            // this.animator.disable();
+            // this.animator.enable();
             this._updateLayout();
             this._onEnterEvent();
           }
@@ -302,7 +303,6 @@ class Extension {
         case 'icon-effect-color': {
           if (this.animate_icons && this.animator.iconEffect) {
             this.animator.iconEffect.color = this.icon_effect_color;
-            this.animator.dashIconEffect.color = this.icon_effect_color;
             this._onEnterEvent();
           }
           break;

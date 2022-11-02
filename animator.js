@@ -381,7 +381,9 @@ var Animator = class {
       let pos = this._get_position(bin);
 
       icon._fixedPosition = [...pos];
-      bin.first_child.opacity = 0;
+      if (bin.first_child) {
+        bin.first_child.opacity = 0;
+      }
       // bin.set_size(iconSize, iconSize);
       icon.set_size(iconSize, iconSize);
 
@@ -937,8 +939,9 @@ var Animator = class {
   _restoreIcons() {
     let icons = this._findIcons();
     icons.forEach((c) => {
-      let bin = c._bin;
-      c._icon.opacity = 255;
+      if (c._icon) {
+        c._icon.opacity = 255;
+      }
     });
   }
 };

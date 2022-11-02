@@ -211,7 +211,7 @@ var AutoHide = class {
   _animate() {
     if (!this.dashContainer) return false;
 
-    if (this.extension.animator._dragging) {
+    if (this.extension.animator && this.extension.animator._dragging) {
       return false;
     }
 

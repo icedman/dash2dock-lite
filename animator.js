@@ -384,7 +384,7 @@ var Animator = class {
       let pos = this._get_position(bin);
 
       icon._fixedPosition = [...pos];
-      if (bin.first_child) {
+      if (!this._dragging && bin.first_child) {
         bin.first_child.opacity = 0;
       }
       // bin.set_size(iconSize, iconSize);
@@ -611,7 +611,7 @@ var Animator = class {
         icon.set_position(pos[0], pos[1]);
 
         // todo find appsButton._label
-        if (icon._label) {
+        if (icon._label && !this._dragging) {
           switch (dock_position) {
             case 'left':
               icon._label.x = pos[0] + iconSize * scale * 1.1 * scaleFactor;

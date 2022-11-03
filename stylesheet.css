@@ -35,6 +35,7 @@
   padding-bottom: 2px !important;
   padding-left: 2px !important;
   padding-right: 2px !important;
+  border-width: 0px !important;
 }
 
 #dash > StWidget.dash-background {

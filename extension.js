@@ -19,8 +19,6 @@ const Services = Me.imports.services.Services;
 const xDot = Me.imports.apps.dot.xDot;
 const xWMControl = Me.imports.apps.wmcontrol.xWMControl;
 
-const setTimeout = Me.imports.utils.setTimeout;
-const setInterval = Me.imports.utils.setInterval;
 const runSequence = Me.imports.utils.runSequence;
 const runOneShot = Me.imports.utils.runOneShot;
 const runLoop = Me.imports.utils.runLoop;
@@ -374,12 +372,6 @@ class Extension {
               this._onEnterEvent();
             }, 2.5)
           );
-
-          // this._timeoutId = setTimeout(() => {
-          //   this._updateLayout();
-          //   this._onEnterEvent();
-          //   this._timeoutId = null;
-          // }, 250);
           break;
         }
       }
@@ -465,11 +457,6 @@ class Extension {
       this._onIconThemeChanged.bind(this),
       this
     );
-
-    // this._intervals = [];
-    // this._intervals.push(
-    //   setInterval(this._onCheckServices.bind(this), SERVICES_UPDATE_INTERVAL)
-    // );
 
     beginTimer(
       runLoop(() => {

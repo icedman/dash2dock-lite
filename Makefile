@@ -5,7 +5,7 @@ all: build install lint
 build:
 	glib-compile-schemas --strict --targetdir=schemas/ schemas
 
-install:
+install: build
 	echo "installing..."
 	mkdir -p ~/.local/share/gnome-shell/extensions/dash2dock-lite@icedman.github.com/
 	cp -R ./* ~/.local/share/gnome-shell/extensions/dash2dock-lite@icedman.github.com/

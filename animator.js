@@ -79,7 +79,7 @@ var Animator = class {
       this.dashContainer._monitor.height
     );
     this._overlay.name = 'debugOverlay';
-    Main.uiGroup.insert_child_below(this._overlay, this._iconsContainer);
+    Main.uiGroup.insert_child_above(this._overlay, this._iconsContainer);
 
     this._enabled = true;
     this._dragging = false;
@@ -319,6 +319,7 @@ var Animator = class {
         height: iconSize,
       });
 
+      uiIcon._container = c;
       uiIcon.pivot_point = pivot;
       uiIcon._bin = bin;
       uiIcon._appwell = c._appwell;
@@ -574,16 +575,22 @@ var Animator = class {
       }
     }
 
-    // animate width
-    if (this.extension._vertical) {
-      this.dashContainer.scale_y =
-        (this.dashContainer.scale_y * 4 + this.dashContainer._targetScale) / 5;
-      this.dashContainer.scale_x = 1;
-    } else {
-      this.dashContainer.scale_x =
-        (this.dashContainer.scale_x * 4 + this.dashContainer._targetScale) / 5;
-      this.dashContainer.scale_y = 1;
+    if (!nearestIcon) {
+      animateIcons.forEach((i) => {
+        i._container.width = (i.width * 1.5);
+      });
     }
+
+    // animate width
+    // if (this.extension._vertical) {
+    //   this.dashContainer.scale_y =
+    //     (this.dashContainer.scale_y * 4 + this.dashContainer._targetScale) / 5;
+    //   this.dashContainer.scale_x = 1;
+    // } else {
+    //   this.dashContainer.scale_x =
+    //     (this.dashContainer.scale_x * 4 + this.dashContainer._targetScale) / 5;
+    //   this.dashContainer.scale_y = 1;
+    // }
 
     let dotIndex = 0;
 
@@ -629,6 +636,8 @@ var Animator = class {
       if (!isNaN(scale)) {
         icon.set_scale(scale, scale);
       }
+
+      icon._container.width = (icon.width * 1.5) * scale;
 
       if (!isNaN(pos[0]) && !isNaN(pos[1])) {
         // why does NaN happen?

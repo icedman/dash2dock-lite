@@ -506,11 +506,11 @@ var Animator = class {
       switch (this.extension.animation_type) {
         case 1:
           animate_class = _ANIMATE1;
-          this.dashContainer.dash._box.opacity = 0;
+          // this.dashContainer.dash._box.opacity = 0;
           break;
         case 2:
           animate_class = _ANIMATE2;
-          this.dashContainer.dash._box.opacity = 0;
+          // this.dashContainer.dash._box.opacity = 0;
           break;
         default:
           animate_class = _ANIMATE;
@@ -532,6 +532,7 @@ var Animator = class {
 
       // debug draw
       if (this.extension.debug_visual) {
+        let monitor = this.dashContainer._monitor;
         this._overlay.onDraw = (ctx) => {
           anim.debugDraw.forEach((d) => {
             switch (d.t) {
@@ -540,8 +541,8 @@ var Animator = class {
                   ctx,
                   d.c,
                   1,
-                  d.x,
-                  d.y,
+                  d.x - monitor.x,
+                  d.y - monitor.y,
                   d.x2,
                   d.y2,
                   true
@@ -551,8 +552,8 @@ var Animator = class {
                 this._overlay._drawing.draw_circle(
                   ctx,
                   d.c,
-                  d.x,
-                  d.y,
+                  d.x - monitor.x,
+                  d.y - monitor.y,
                   d.d,
                   true
                 );
@@ -562,8 +563,7 @@ var Animator = class {
         };
 
         if (
-          this.extension.debug_visual &&
-          this.dashContainer._monitorIsPrimary
+          this.extension.debug_visual
         ) {
           this._overlay.visible = this.extension.debug_visual;
           let monitor = this.dashContainer._monitor;

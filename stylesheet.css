@@ -19,6 +19,13 @@
   padding-bottom: 2px !important;
 }
 
+/*
+#dash .dash-item-container .app-well-app:hover > StWidget
+{
+  border: 2px solid yellow;
+}
+*/
+
 /* from gnome-shell
 // background of the dash behind app icons
 .dash-background {

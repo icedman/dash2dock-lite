@@ -167,7 +167,7 @@ function fillPreferencesWindow(window) {
     // let exp = SettingsKeys.getValue('experimental-features');
     let exp = true;
     builder.get_object('dock-location-row').visible = exp;
-    builder.get_object('animation-type-row').visible = exp;
+    // builder.get_object('animation-type-row').visible = exp;
     builder.get_object('self-test-row').visible = exp;
     builder.get_object('experimental-features-row').visible = exp;
   }

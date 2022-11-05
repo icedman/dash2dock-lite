@@ -7,7 +7,8 @@ var Animation = (animateIcons, pointer, container, settings) => {
   let first = _firstIcon._pos || [0, 0];
   let second = _secondIcon._pos || [0, 0];
   let last = _lastIcon._pos || [0, 0];
-  let nsz = second[0] - first[0];
+  let nsz = _firstIcon.width;
+  // second[0] - first[0];
 
   let sz = nsz * (4 + 2 * settings.animation_spread);
   let szr = sz / 2;
@@ -19,9 +20,8 @@ var Animation = (animateIcons, pointer, container, settings) => {
     4 *
     settings.scaleFactor *
     (settings.animation_spread / 2);
-  
-  // container._targetScale = 1;
-  // container._targetScale = (dash.width + pad) / dash.width;
+
+  container._targetScale = null;
 
   // compute diameter
   animateIcons.forEach((i) => {
@@ -38,38 +38,13 @@ var Animation = (animateIcons, pointer, container, settings) => {
     i._pos2 = [...i._pos];
     i._targetScale = i._d / nsz;
 
-    // distribute width
-    // i._container.width = (i.width * 1.5) * i._targetScale;
-
     // rise
-    i._pos2[1] -= (i._d - nsz) * settings.animation_rise;
+    i._pos2[1] -= (i._d - nsz) * 0.8 * settings.animation_rise;
   });
-
-  // collide
-  // let dd = 0;
-  // for (let idx = 0; idx < animateIcons.length - 1; idx++) {
-  //   let a = animateIcons[idx];
-  //   let b = animateIcons[idx + 1];
-  //   let dx = b._pos2[0] - a._pos2[0];
-  //   let dst = a._d / 2 + b._d / 2;
-  //   if (dx < dst) {
-  //     dd += a._pos2[0] + dst - b._pos2[0];
-  //     b._pos2[0] = a._pos2[0] + dst;
-  //   }
-  // }
 
   let w1 = last[0] - first[0];
   let w2 =
     animateIcons[animateIcons.length - 1]._pos2[0] - animateIcons[0]._pos2[0];
-
-  // distribute
-  // animateIcons.forEach((i) => {
-    // let x1 = i._pos[0] - first._pos[0];
-    // let p = (i._pos2[0] - first[0]) / w2;
-    // let x = p * w1;
-    // i._pos2[0] = first[0] + x;
-  // });
-
 
   animateIcons.forEach((i) => {
     i._pos = i._pos2;

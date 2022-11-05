@@ -23,8 +23,7 @@ const MonochromeEffect = Me.imports.effects.monochrome_effect.MonochromeEffect;
 const TestEffect = Me.imports.effects.test_effect.TestEffect;
 
 const _ANIMATE = Me.imports.effects.spread_magnify_animation.Animation;
-const _ANIMATE1 = Me.imports.effects.obsessively_maclike_animation.Animation;
-const _ANIMATE2 = Me.imports.effects.maclike_animation.Animation;
+const _ANIMATE1 = Me.imports.effects.maclike_animation.Animation;
 
 const xOverlay = Me.imports.apps.overlay.xOverlay;
 
@@ -507,11 +506,6 @@ var Animator = class {
       switch (this.extension.animation_type) {
         case 1:
           animate_class = _ANIMATE1;
-          // this.dashContainer.dash._box.opacity = 0;
-          break;
-        case 2:
-          animate_class = _ANIMATE2;
-          // this.dashContainer.dash._box.opacity = 0;
           break;
         default:
           animate_class = _ANIMATE;
@@ -563,9 +557,7 @@ var Animator = class {
           });
         };
 
-        if (
-          this.extension.debug_visual
-        ) {
+        if (this.extension.debug_visual) {
           this._overlay.visible = this.extension.debug_visual;
           let monitor = this.dashContainer._monitor;
           this._overlay.set_position(monitor.x, monitor.y);
@@ -577,20 +569,16 @@ var Animator = class {
 
     if (!nearestIcon) {
       animateIcons.forEach((i) => {
-        i._container.width = (i.width * 1.5);
+        i._container.width = i.width * 1.5;
       });
     }
 
     // animate width
-    // if (this.extension._vertical) {
-    //   this.dashContainer.scale_y =
-    //     (this.dashContainer.scale_y * 4 + this.dashContainer._targetScale) / 5;
-    //   this.dashContainer.scale_x = 1;
-    // } else {
-    //   this.dashContainer.scale_x =
-    //     (this.dashContainer.scale_x * 4 + this.dashContainer._targetScale) / 5;
-    //   this.dashContainer.scale_y = 1;
-    // }
+    if (this.dashContainer._targetScale) {
+      this.dashContainer.scale_x =
+        (this.dashContainer.scale_x * 4 + this.dashContainer._targetScale) / 5;
+      this.dashContainer.scale_y = 1;
+    }
 
     let dotIndex = 0;
 
@@ -637,7 +625,7 @@ var Animator = class {
         icon.set_scale(scale, scale);
       }
 
-      icon._container.width = (icon.width * 1.5) * scale;
+      icon._container.width = icon.width * 1.5 * scale;
 
       if (!isNaN(pos[0]) && !isNaN(pos[1])) {
         // why does NaN happen?

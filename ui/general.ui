@@ -67,7 +67,7 @@
 
         <child>
           <object class="AdwActionRow" id="animation-type-row">
-            <property name="visible">false</property>
+            <property name="visible">true</property>
             <property name="title" translatable="yes">Animation Type</property>
             <property name="subtitle" translatable="yes"
               >Set animation behavior.</property
@@ -258,8 +258,7 @@
   <object class="GtkStringList" id="animation-type-model">
     <items>
       <item translatable="yes">Default</item><!-- x2 -->
-      <item translatable="yes">Animation 1 (experimental)</item>
-      <item translatable="yes">Animation 2 (experimental)</item>
+      <item translatable="yes">Experimental</item>
     </items>
   </object>
 </interface>

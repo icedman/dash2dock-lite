@@ -51,43 +51,50 @@
 
 #dash.border-radius-0 .dash-item-container > StButton.show-apps > .overview-icon,
 #dash.border-radius-0 .dash-item-container > StWidget:hover .overview-icon,
-#dash.border-radius-0 > StWidget.dash-background {
+#dash.border-radius-0 > StWidget.dash-background,
+#d2dlBackground {
   border-radius: 0px !important;
 }
 
 #dash.border-radius-1 .dash-item-container > StButton.show-apps > .overview-icon,
 #dash.border-radius-1 .dash-item-container > StWidget:hover .overview-icon,
-#dash.border-radius-1 > StWidget.dash-background {
+#dash.border-radius-1 > StWidget.dash-background,
+#d2dlBackground.border-radius-1 {
   border-radius: 8px !important;
 }
 
 #dash.border-radius-2 .dash-item-container > StButton.show-apps > .overview-icon,
 #dash.border-radius-2 .dash-item-container > StWidget:hover .overview-icon,
-#dash.border-radius-2 > StWidget.dash-background {
+#dash.border-radius-2 > StWidget.dash-background,
+#d2dlBackground.border-radius-2 {
   border-radius: 16px !important;
 }
 
 #dash.border-radius-3 .dash-item-container > StButton.show-apps > .overview-icon,
 #dash.border-radius-3 .dash-item-container > StWidget:hover .overview-icon,
-#dash.border-radius-3 > StWidget.dash-background {
+#dash.border-radius-3 > StWidget.dash-background,
+#d2dlBackground.border-radius-3 {
   border-radius: 20px !important;
 }
 
 #dash.border-radius-4 .dash-item-container > StButton.show-apps > .overview-icon,
 #dash.border-radius-4 .dash-item-container > StWidget:hover .overview-icon,
-#dash.border-radius-4 > StWidget.dash-background {
+#dash.border-radius-4 > StWidget.dash-background,
+#d2dlBackground.border-radius-4 {
   border-radius: 24px !important;
 }
 
 #dash.border-radius-5 .dash-item-container > StButton.show-apps > .overview-icon,
 #dash.border-radius-5 .dash-item-container > StWidget:hover .overview-icon,
-#dash.border-radius-5 > StWidget.dash-background {
+#dash.border-radius-5 > StWidget.dash-background,
+#d2dlBackground.border-radius-5 {
   border-radius: 28px !important;
 }
 
 #dash.border-radius-6 .dash-item-container > StButton.show-apps > .overview-icon,
 #dash.border-radius-6 .dash-item-container > StWidget:hover .overview-icon,
-#dash.border-radius-6 > StWidget.dash-background {
+#dash.border-radius-6 > StWidget.dash-background,
+#d2dlBackground.border-radius-6 {
   border-radius: 32px !important;
 }
 

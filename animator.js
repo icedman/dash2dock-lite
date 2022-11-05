@@ -40,8 +40,8 @@ const ANIM_DEBOUNCE_END_DELAY = 750;
 const ANIM_PREVIEW_DURATION = 1200;
 
 const FIND_ICONS_SKIP_FRAMES = 16;
-const THROTTLE_DOWN_FRAMES = 20;
-const THROTTLE_DOWN_DELAY_FRAMES = 10;
+const THROTTLE_DOWN_FRAMES = 30;
+const THROTTLE_DOWN_DELAY_FRAMES = 20;
 
 const DOT_CANVAS_SIZE = 96;
 
@@ -54,24 +54,12 @@ var Animator = class {
   enable() {
     if (this._enabled) return;
 
-    // todo: why does this happen at lock
-    if (Main.uiGroup.find_child_by_name('iconsContainer')) {
-      Main.uiGroup.remove_child(
-        Main.uiGroup.find_child_by_name('iconsContainer')
-      );
-      Main.uiGroup.remove_child(
-        Main.uiGroup.find_child_by_name('dotsContainer')
-      );
-      Main.uiGroup.remove_child(
-        Main.uiGroup.find_child_by_name('debugOverlay')
-      );
-      log('warning! double entry');
-    }
-
-    this._iconsContainer = new St.Widget({ name: 'iconsContainer' });
-    this._dotsContainer = new St.Widget({ name: 'dotsContainer' });
+    this._iconsContainer = new St.Widget({ name: 'd2dlIconsContainer' });
+    this._dotsContainer = new St.Widget({ name: 'd2dldotsContainer' });
+    this._background = new St.Widget({ name: 'd2dlBackground' });
     Main.uiGroup.insert_child_above(this._dotsContainer, this.dashContainer);
     Main.uiGroup.insert_child_below(this._iconsContainer, this._dotsContainer);
+    Main.uiGroup.insert_child_below(this._background, this._iconsContainer);
 
     this._overlay = new xOverlay(
       this.dashContainer._monitor.width,
@@ -107,6 +95,8 @@ var Animator = class {
       this._iconsContainer = null;
       Main.uiGroup.remove_child(this._dotsContainer);
       delete this._dotsContainer;
+      Main.uiGroup.remove_child(this._background);
+      delete this._background;
       this._dotsContainer = null;
       Main.uiGroup.remove_child(this._overlay);
       delete this._overlay;
@@ -117,10 +107,11 @@ var Animator = class {
 
     if (this.dashContainer) {
       this._restoreIcons();
+      this.dashContainer.dash.opacity = 255;
+      this.dashContainer.dash._background.visible = true;
     }
 
     this._enabled = false;
-
     log('animator disabled');
   }
 
@@ -141,13 +132,6 @@ var Animator = class {
         });
         break;
       }
-      // case 3: {
-      //   effect = new TestEffect({
-      //     name: 'color',
-      //     color: this.extension.icon_effect_color,
-      //   });
-      //   break;
-      // }
     }
     return effect;
   }
@@ -178,7 +162,6 @@ var Animator = class {
         let dot = new this.extension.xDot(DOT_CANVAS_SIZE);
         let pdot = new St.Widget();
         pdot.add_child(dot);
-        // pdot.style = 'border:2px solid yellow';
         this._dots.push(dot);
         this._dotsContainer.add_child(pdot);
         dot.set_position(0, 0);
@@ -214,22 +197,16 @@ var Animator = class {
       }
     }
 
-    this._iconsContainer.width = 1;
-    this._iconsContainer.height = 1;
-    this._dotsContainer.width = 1;
-    this._dotsContainer.height = 1;
+    this._iconsContainer.width = 0;
+    this._iconsContainer.height = 0;
+    this._dotsContainer.width = 0;
+    this._dotsContainer.height = 0;
 
     let pointer = global.get_pointer();
 
     let pivot = new Point();
     pivot.x = 0.5;
     pivot.y = 1.0;
-
-    // icon scaling
-    let dash_scale = this.extension.scale;
-    // todo clamp to monitor
-    this.dash.scale_x = dash_scale;
-    this.dash.scale_y = dash_scale;
 
     let existingIcons = this._iconsContainer.get_children();
     if (this._iconsCount != existingIcons.length) {
@@ -243,8 +220,10 @@ var Animator = class {
     let iy = 1;
 
     let scaleFactor = St.ThemeContext.get_for_stage(global.stage).scale_factor;
+    let iconSize = this.extension.iconSize;
 
-    let iconSize = this.dash.iconSize * this.extension.scale;
+    this.dashContainer.dash.opacity = 0;
+    this.dashContainer.dash._background.visible = false;
 
     switch (this.dashContainer._position) {
       case 0:
@@ -387,7 +366,6 @@ var Animator = class {
       if (!this._dragging && bin.first_child) {
         bin.first_child.opacity = 0;
       }
-      // bin.set_size(iconSize, iconSize);
       icon.set_size(iconSize, iconSize);
 
       if (!icon.first_child && bin.first_child) {
@@ -497,21 +475,14 @@ var Animator = class {
       py = nearestIcon._pos[1];
     }
 
+    let icon_spacing =
+      iconSize * (1.2 + this.extension.animation_spread / 4) * scaleFactor;
+
     // animation behavior
     if (animateIcons.length && nearestIcon) {
-      let animate_class = null;
-      let animation_type = this.extension.experimental_features
-        ? this.extension.animation_type
-        : 0;
-      switch (this.extension.animation_type) {
-        case 1:
-          animate_class = _ANIMATE1;
-          break;
-        default:
-          animate_class = _ANIMATE;
-          this.dashContainer.dash._box.opacity = 255;
-          break;
-      }
+      let animate_class = _ANIMATE1;
+      let animation_type = this.extension.animation_type;
+      this.dashContainer._targetScale = null;
       let anim = animate_class(animateIcons, [px, py], this.dashContainer, {
         iconSize,
         scaleFactor,
@@ -569,15 +540,8 @@ var Animator = class {
 
     if (!nearestIcon) {
       animateIcons.forEach((i) => {
-        i._container.width = i.width * 1.5;
+        i._container.width = icon_spacing;
       });
-    }
-
-    // animate width
-    if (this.dashContainer._targetScale) {
-      this.dashContainer.scale_x =
-        (this.dashContainer.scale_x * 4 + this.dashContainer._targetScale) / 5;
-      this.dashContainer.scale_y = 1;
     }
 
     let dotIndex = 0;
@@ -588,7 +552,7 @@ var Animator = class {
     // todo .. make this velocity based
     animateIcons.forEach((icon) => {
       let pos = icon._target;
-      let scale = icon._targetScale;
+      let scale = (iconSize / icon.width) * icon._targetScale;
       let fromScale = icon.get_scale()[0];
 
       // could happen at login? < recheck
@@ -625,7 +589,7 @@ var Animator = class {
         icon.set_scale(scale, scale);
       }
 
-      icon._container.width = icon.width * 1.5 * scale;
+      icon._container.width = icon_spacing * scale;
 
       if (!isNaN(pos[0]) && !isNaN(pos[1])) {
         // why does NaN happen?
@@ -756,11 +720,30 @@ var Animator = class {
       }
     });
 
-    // show when ready
-    if (validPosition && !this._isInFullscreen()) {
-      this._iconsContainer.show();
-      this._dotsContainer.show();
+    // background
+    if (validPosition && animateIcons.length > 1) {
+      let first = animateIcons[0];
+      let last = animateIcons[animateIcons.length - 1];
+      let p1 = this._get_position(first);
+      let p2 = this._get_position(last);
+      if (!isNaN(p1[0]) && !isNaN(p1[1])) {
+        let padding = 8 * scaleFactor;
+        this._background.x = p1[0] - padding;
+        this._background.y = p1[1] - padding;
+        if (p2[1] > p1[1]) {
+          this._background.y = p2[1] - padding;
+        }
+        this._background.width =
+          p2[0] - p1[0] + iconSize * last._targetScale + padding * 2;
+        this._background.height = iconSize + padding * 2;
+      }
     }
+
+    // show when ready
+    // if (validPosition && !this._isInFullscreen()) {
+    //   this._iconsContainer.show();
+    //   this._dotsContainer.show();
+    // }
 
     if (didAnimate || this._dragging) {
       this._debounceEndAnimation();
@@ -944,9 +927,11 @@ var Animator = class {
     if (!this._isInFullscreen()) {
       this._iconsContainer.show();
       this._dotsContainer.show();
+      this._background.show();
     } else {
       this._iconsContainer.hide();
       this._dotsContainer.hide();
+      this._background.hide();
     }
   }
 

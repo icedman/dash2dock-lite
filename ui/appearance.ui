@@ -27,9 +27,9 @@
 
         <child>
           <object class="AdwActionRow">
-            <property name="title" translatable="yes">Scale Icons</property>
+            <property name="title" translatable="yes">Icon Size</property>
             <property name="subtitle" translatable="yes"
-              >Adjust icon sizes with custom scale. This overrides the shrink option. Set to zero for default scale.</property
+              >Adjust icon sizes with custom scale. Set to zero for default scale.</property
             >
             <property name="activatable-widget">scale-icons</property>
             <child>
@@ -37,7 +37,7 @@
                 <property name="valign">center</property>
                 <property name="hexpand">true</property>
                 <property name="width-request">140px</property>
-                <property name="draw-value">true</property>
+                <property name="draw-value">false</property>
                 <property name="value-pos">right</property>
                 <property name="orientation">horizontal</property>
                 <property name="digits">2</property>

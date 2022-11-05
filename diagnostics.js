@@ -202,14 +202,13 @@ function addMotionTests(_seqs, extension, settings) {
 }
 
 function addPreferenceTests(_seqs, extension, settings) {
-  // let _seqs = [];
-
   add_message(_seqs, 'begin tests', 0);
 
   let keys = settings.keys();
   Object.keys(keys).forEach((name) => {
     let k = keys[name];
     k._value = k.value;
+
     add_message(_seqs, `${k.name} ${k.value}`, 0);
     switch (k.widget_type) {
       case 'switch':

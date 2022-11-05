@@ -64,6 +64,24 @@
             </child>
           </object>
         </child>
+
+        <child>
+          <object class="AdwActionRow" id="animation-type-row">
+            <property name="visible">false</property>
+            <property name="title" translatable="yes">Animation Type</property>
+            <property name="subtitle" translatable="yes"
+              >Set animation behavior.</property
+            >
+            <property name="activatable-widget">animation-type</property>
+            <child>
+              <object class="GtkDropDown" id="animation-type">
+                <property name="valign">center</property>
+                <property name="model">animation-type-model</property>
+              </object>
+            </child>
+          </object>
+        </child>
+
       </object>
     </child>
 
@@ -143,6 +161,22 @@
       -->
 
         <child>
+          <object class="AdwActionRow" id="experimental-features-row">
+            <property name="visible">false</property>
+            <property name="title" translatable="yes">Experimental Features</property>
+            <property name="subtitle" translatable="yes"
+              >Enable settings for experimental features. These features may likely still contain bugs.</property
+            >
+            <property name="activatable-widget">experimental-features</property>
+            <child>
+              <object class="GtkSwitch" id="experimental-features">
+                <property name="valign">center</property>
+              </object>
+            </child>
+          </object>
+        </child>
+
+        <child>
           <object class="AdwActionRow">
             <property name="title" translatable="yes">Visual Indicators</property>
             <property name="subtitle" translatable="yes"
@@ -161,7 +195,7 @@
           <object class="AdwActionRow" id="self-test-row">
             <property name="visible">false</property>
             <property name="title" translatable="yes">Test</property>
-            <property name="subtitle" translatable="yes">Run self-test. Messages will be logged at journalctl.</property>
+            <property name="subtitle" translatable="yes">Run self-test. Messages will be logged at the terminal running journalctl -f.</property>
             <property name="activatable-widget">self-test</property>
             <child>
 
@@ -216,8 +250,16 @@
   <object class="GtkStringList" id="dock-location-model">
     <items>
       <item translatable="yes">Bottom</item>
-      <item translatable="yes">Left</item>
-      <item translatable="yes">Right</item>
+      <item translatable="yes">Left (experimental)</item>
+      <item translatable="yes">Right (experimental)</item>
+    </items>
+  </object>
+
+  <object class="GtkStringList" id="animation-type-model">
+    <items>
+      <item translatable="yes">Default</item><!-- x2 -->
+      <item translatable="yes">Animation 1 (experimental)</item>
+      <item translatable="yes">Animation 2 (experimental)</item>
     </items>
   </object>
 </interface>

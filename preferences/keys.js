@@ -16,6 +16,10 @@ SettingsKeys.setKeys({
   //   default_value: false,
   //   widget_type: 'switch',
   // },
+  'experimental-features': {
+    default_value: false,
+    widget_type: 'switch',
+  },
   'debug-visual': {
     default_value: false,
     widget_type: 'switch',
@@ -162,5 +166,10 @@ SettingsKeys.setKeys({
   'msg-to-ext': {
     default_value: '',
     widget_type: 'string',
+  },
+  'animation-type': {
+    default_value: 0,
+    widget_type: 'dropdown',
+    test: { values: [0, 1, 2] },
   },
 });

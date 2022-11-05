@@ -377,8 +377,14 @@ var Services = class {
   _unpin(app) {
     let favorites = Fav.getAppFavorites();
     if (favorites._getIds().includes(app)) {
+      // thread safety hack
+      this.extension.animator._endAnimation();
+      this.extension.animator._previousFind = null;
+      this.extension.animator._throttleDown = 19;
+
       this.temporarilyMuteOverview();
       favorites.removeFavorite(app);
+
       this.extension._onEnterEvent();
     }
   }

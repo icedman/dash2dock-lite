@@ -23,8 +23,8 @@ const MonochromeEffect = Me.imports.effects.monochrome_effect.MonochromeEffect;
 const TestEffect = Me.imports.effects.test_effect.TestEffect;
 
 const _ANIMATE = Me.imports.effects.spread_magnify_animation.Animation;
-// const _ANIMATE = Me.imports.effects.obsessively_maclike_animation.Animation;
-// const _ANIMATE = Me.imports.effects.maclike_animation.Animation;
+const _ANIMATE1 = Me.imports.effects.obsessively_maclike_animation.Animation;
+const _ANIMATE2 = Me.imports.effects.maclike_animation.Animation;
 
 const xOverlay = Me.imports.apps.overlay.xOverlay;
 
@@ -381,7 +381,7 @@ var Animator = class {
     let idx = 0;
     animateIcons.forEach((icon) => {
       let bin = icon._bin;
-      let pos = this._get_position(bin);
+      let pos = icon._pos;
 
       icon._fixedPosition = [...pos];
       if (!this._dragging && bin.first_child) {
@@ -499,7 +499,25 @@ var Animator = class {
 
     // animation behavior
     if (animateIcons.length && nearestIcon) {
-      let anim = _ANIMATE(animateIcons, [px, py], this.dashContainer, {
+      let animate_class = null;
+      let animation_type = this.extension.experimental_features
+        ? this.extension.animation_type
+        : 0;
+      switch (this.extension.animation_type) {
+        case 1:
+          animate_class = _ANIMATE1;
+          this.dashContainer.dash._box.opacity = 0;
+          break;
+        case 2:
+          animate_class = _ANIMATE2;
+          this.dashContainer.dash._box.opacity = 0;
+          break;
+        default:
+          animate_class = _ANIMATE;
+          this.dashContainer.dash._box.opacity = 255;
+          break;
+      }
+      let anim = animate_class(animateIcons, [px, py], this.dashContainer, {
         iconSize,
         scaleFactor,
         animation_rise: this.extension.animation_rise * ANIM_ICON_RAISE,
@@ -543,8 +561,14 @@ var Animator = class {
           });
         };
 
-        if (this.extension.debug_visual) {
+        if (
+          this.extension.debug_visual &&
+          this.dashContainer._monitorIsPrimary
+        ) {
           this._overlay.visible = this.extension.debug_visual;
+          let monitor = this.dashContainer._monitor;
+          this._overlay.set_position(monitor.x, monitor.y);
+          this._overlay.set_size(monitor.width, monitor.height);
           this._overlay.redraw();
         }
       }
@@ -765,7 +789,7 @@ var Animator = class {
             this._iconsContainer.opacity = 255;
             this._dotsContainer.opacity = 255;
             this._startAnimation();
-          }, 0.25),
+          }, 0.1),
           'icons-wait-ready'
         );
       } else {
@@ -875,7 +899,7 @@ var Animator = class {
     if (this._nearestIcon) {
       let icon = this._nearestIcon;
       // log(`${button} ${pressed} - (${icon._pos}) (${pointer})`);
-      {
+      if (icon._appwell) {
         let dx = icon._pos[0] - pointer[0];
         let dy = icon._pos[1] - pointer[1];
         let dst = Math.sqrt(dx * dx + dy * dy);

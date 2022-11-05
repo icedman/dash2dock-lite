@@ -219,6 +219,8 @@ class Extension {
 
     if (this.dashContainer) {
       this.dashContainer._monitor = this.monitor;
+      this.dashContainer._monitorIsPrimary =
+        this.monitor == Main.layoutManager.primaryMonitor;
     }
     this.sw = this.monitor.width;
     this.sh = this.monitor.height;
@@ -363,9 +365,15 @@ class Extension {
         }
         case 'trash-icon': {
           this._updateTrashIcon();
+          // this.animator._pause = true;
+          // this.animator._previousFind = null;
           this._updateLayout();
           this._onEnterEvent();
-
+          // beginTimer(
+          //   runOneShot(() => {
+          //     this.animator._pause = false;
+          //   }, 0.1)
+          // );
           beginTimer(
             runOneShot(() => {
               this._updateLayout();
@@ -425,6 +433,7 @@ class Extension {
       'queue-changed',
       (count) => {
         this.services.checkNotifications();
+        this._onEnterEvent();
       },
       this
     );
@@ -760,6 +769,9 @@ class Extension {
     this._queryDisplay();
 
     let pos = this.dock_location || 0;
+    if (!this.experimental_features) {
+      pos = 0;
+    }
     // See St position constants
     // remap [ bottom, left, right, top ] >> [ top, right, bottom, left ]
     this.dashContainer._position = [2, 3, 1, 0][pos];
@@ -965,26 +977,7 @@ class Extension {
     // log('_onOverviewHidden');
   }
 
-  _onSessionUpdated() {
-    // lock disables the entire extension. following code is not needed
-    // if (Main.sessionMode.isGreeter || Main.sessionMode.isLocked) {
-    //   if (this.animate_icons) {
-    //     this.animator.disable();
-    //     log('disable!');
-    //   }
-    // } else {
-    //   if (this.animate_icons) {
-    //     beginTimer(
-    //       runOneShot(() => {
-    //       this.animator.enable();
-    //       this._updateLayout();
-    //       this.autohider._debounceCheckHide();
-    //       log('enable!');
-    //     }),
-    //     1.5);
-    //   }
-    // }
-  }
+  _onSessionUpdated() {}
 
   _onCheckServices() {
     if (!this.services) return; // todo why does this happen?

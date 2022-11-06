@@ -38,7 +38,7 @@ class Extension {
 
     this.listeners = [];
     this.scale = 1.0;
-    this.scale_icons = 0.5;
+    this.icon_size = 0;
     this.xDot = xDot;
     this.xWMControl = xWMControl;
     this.icon_quality = ANIM_ICON_QUALITY;
@@ -111,7 +111,6 @@ class Extension {
     this._onCheckServices();
 
     this._updateShrink();
-    this._updateBackgroundColors();
     this._updateIconResolution();
     this._updateLayout();
     this._updateAutohide();
@@ -150,11 +149,6 @@ class Extension {
         .first_child.add_child(this.dash);
     }
 
-    if (this.dash && this.dash._background) {
-      this.dash._background.width = -1;
-      this.dash._background.height = -1;
-    }
-
     Main.layoutManager.removeChrome(this.dashContainer);
     delete this.dashContainer;
     this.dashContainer = null;
@@ -173,6 +167,7 @@ class Extension {
     delete this.services;
     this.services = null;
 
+    this.dash.opacity = 255;
     log('dash2dock-lite disabled');
   }
 
@@ -256,7 +251,13 @@ class Extension {
           }
           break;
         }
-        case 'animation-fps':
+        case 'animation-fps': {
+          if (this.animator && this.animate_icons) {
+            this.animator._endAnimation();
+            this.animator._animationSeq = null;
+          }
+          break;
+        }
         case 'mounted-icon':
         case 'peek-hidden-icons': {
           break;
@@ -331,17 +332,14 @@ class Extension {
           this._updateAutohide();
           break;
         }
-        case 'shrink-icons': {
-          this._updateShrink();
-          this._onEnterEvent();
-          break;
-        }
         case 'edge-distance': {
           this._onEnterEvent();
           break;
         }
-        case 'scale-icons': {
+        case 'shrink-icons':
+        case 'icon-size': {
           this._updateShrink();
+          this._onEnterEvent();
           break;
         }
         case 'panel-mode': {
@@ -568,15 +566,11 @@ class Extension {
   _updateShrink(disable) {
     if (!this.dashContainer) return;
 
-    let rescale_modifier = 0.5 + 1.5 * this.scale_icons;
-    if (this.scale_icons == 0) {
-      rescale_modifier = 1;
-    }
     if (this.shrink_icons && !disable) {
-      this.scale = 0.8 * rescale_modifier;
+      this.scale = 0.8; // * rescale_modifier;
       this.dashContainer.add_style_class_name('shrink');
     } else {
-      this.scale = 1.0 * rescale_modifier;
+      this.scale = 1.0; // * rescale_modifier;
       this.dashContainer.remove_style_class_name('shrink');
     }
 
@@ -593,22 +587,17 @@ class Extension {
     if (!this.dash) return;
 
     // dash background
-    if (this.dash._background) {
-      this.dash._background.style = '';
-      this.dashContainer.style = '';
+    let background = this.animator._background;
+    if (background) {
       if (!disable) {
         let bg = this.background_color || [0, 0, 0, 0.5];
         let clr = bg.map((r) => Math.floor(255 * r));
         clr[3] = bg[3];
         let style = `background: rgba(${clr.join(',')})`;
-        if (!this.panel_mode) {
-          this.dash._background.style = style;
-          this.dash._background.opacity = 255;
-        } else {
-          this.dashContainer.style = style;
-          this.dash._background.style = '';
-          this.dash._background.opacity = 0;
-        }
+        background.style = style;
+        background.opacity = 255;
+      } else {
+        background.style = '';
       }
     }
 
@@ -640,16 +629,16 @@ class Extension {
   _updateCss(disable) {
     if (!this.dash || !this.dashContainer) return;
 
-    let background = this.dash._background || null;
+    let background = this.animator._background || null;
     if (background && this.border_radius !== null) {
       let r = -1;
       if (!disable && !this.panel_mode) {
         r = Math.floor(this.border_radius);
-        this.dash.add_style_class_name(`border-radius-${r}`);
+        background.add_style_class_name(`border-radius-${r}`);
       }
       for (let i = 0; i < 7; i++) {
         if (i != r) {
-          this.dash.remove_style_class_name(`border-radius-${i}`);
+          background.remove_style_class_name(`border-radius-${i}`);
         }
       }
     }
@@ -695,20 +684,7 @@ class Extension {
       }
 
       actor._cls = actor.child.get_style_class_name();
-
-      // switch (actor._cls) {
-      //   case 'app-well-app':
-      //     break;
-      //   case 'placeholder':
-      //     return true;
-      // }
-
       if (actor.child._delegate && actor.child._delegate.icon) {
-        // these have no icons... skipped
-        // if (actor._cls == 'placeholder' || actor._cls == 'empty-dash-drop-target') {
-        //   log('skip!');
-        //   return false;
-        // }
         return true;
       }
       return false;
@@ -738,17 +714,17 @@ class Extension {
 
     try {
       // W: breakable
+      let appsIcon = this.dash._showAppsIcon;
       let apps = this.dash._showAppsIcon;
-      //  this.dash.last_child.last_child;
       if (apps) {
-        let widget = apps.child;
+        let widget = appsIcon.child;
         if (widget && widget.width > 0 && widget.get_parent().visible) {
           let icongrid = widget.first_child;
           let boxlayout = icongrid.first_child;
           let bin = boxlayout.first_child;
           let icon = bin.first_child;
-          let c = {};
-          c.child = widget;
+          let c = apps;
+          // c.child = widget;
           c._bin = bin;
           c._icon = icon;
           c._label = widget._delegate.label;
@@ -769,6 +745,7 @@ class Extension {
     this._queryDisplay();
 
     let pos = this.dock_location || 0;
+    // dock position -- [left, right] are experimental
     if (!this.experimental_features) {
       pos = 0;
     }
@@ -780,17 +757,29 @@ class Extension {
 
     this.scaleFactor = St.ThemeContext.get_for_stage(global.stage).scale_factor;
     let iconSize = 64;
-    let preferredIconSize = [32, 16, 22, 24, 32, 48, 64][this.icon_size || 0];
+    if (!this._preferredIconSizes) {
+      this._preferredIconSizes = [32];
+      for(let i=16; i<128; i+=4) {
+        this._preferredIconSizes.push(i);
+      }
+    }
+    iconSize =
+      2 *
+      (this._preferredIconSizes[
+        Math.floor(this.icon_size * this._preferredIconSizes.length)
+      ] || 64);
+    iconSize *= this.scale;
 
-    let scale = this.scale;
-    let dockHeight = iconSize * (this.shrink_icons ? 2.0 : 1.8) * scale;
+    let scale = 0.5 + this.scale / 2;
+    let dockHeight = iconSize * (this.shrink_icons ? 1.8 : 1.6) * scale;
+    this.iconSize = iconSize;
 
     // panel mode adjustment
     if (this.panel_mode) {
-      dockHeight -= 20 * this.scaleFactor;
+      // dockHeight -= 8 * this.scaleFactor;
     }
 
-    this.dash.height = dockHeight + 10 * this.scaleFactor;
+    this.dash.height = dockHeight * this.scaleFactor;
     this.dash.visible = true;
 
     if (this._vertical) {
@@ -813,8 +802,12 @@ class Extension {
       this.dash.remove_style_class_name('vertical');
     }
 
+    // this._edge_distance =
+    //   (-EDGE_DISTANCE / 4 + (this.edge_distance || 0) * EDGE_DISTANCE) *
+    //   this.scaleFactor;
+    let padding = 0;
     this._edge_distance =
-      (-EDGE_DISTANCE / 4 + (this.edge_distance || 0) * EDGE_DISTANCE) *
+      (this.edge_distance || 0) * (EDGE_DISTANCE - padding) *
       this.scaleFactor;
 
     if (this.autohider._enabled && !this.autohider._shown) {
@@ -833,13 +826,14 @@ class Extension {
         }
         this.dashContainer.set_position(posx, this.monitor.y);
       } else {
+        let distance = this.panel_mode ? 0 : this._edge_distance;
         // top/bottom
         this.dashContainer.set_position(
           this.monitor.x,
           this.monitor.y +
             this.sh -
             dockHeight * this.scaleFactor -
-            this._edge_distance
+            distance
         );
       }
 
@@ -880,6 +874,7 @@ class Extension {
     }
 
     this._updateCss();
+    this._updateBackgroundColors();
   }
 
   _updateAutohide(disable) {
@@ -905,6 +900,7 @@ class Extension {
     if (this.animator._iconsContainer) {
       Main.uiGroup.remove_child(this.animator._dotsContainer);
       Main.uiGroup.remove_child(this.animator._iconsContainer);
+      Main.uiGroup.remove_child(this.animator._background);
       Main.uiGroup.insert_child_above(
         this.animator._dotsContainer,
         this.dashContainer
@@ -913,10 +909,15 @@ class Extension {
         this.animator._iconsContainer,
         this.animator._dotsContainer
       );
+      Main.uiGroup.insert_child_below(
+        this.animator._background,
+        this.animator.dashContainer
+      );
     }
 
     if (this.animate_icons && !disable) {
       this.animator.enable();
+      this._updateBackgroundColors();
       this._onEnterEvent();
     }
   }
@@ -940,9 +941,9 @@ class Extension {
     if (this.animator && this.animate_icons) {
       this.animator._beginAnimation();
       if (this.animator._iconsContainer) {
-        this.animator.relayout();
         this.animator._iconsContainer.hide();
         this.animator._dotsContainer.hide();
+        this.animator.relayout();
       }
     }
 

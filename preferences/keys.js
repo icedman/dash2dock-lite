@@ -32,6 +32,10 @@ SettingsKeys.setKeys({
     default_value: 0,
     widget_type: 'scale',
   },
+  'icon-size': {
+    default_value: 0,
+    widget_type: 'scale',
+  },
   'animate-icons-unmute': {
     default_value: true,
     widget_type: 'switch',

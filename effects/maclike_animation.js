@@ -48,6 +48,7 @@ var Animation = (animateIcons, pointer, container, settings) => {
 
   animateIcons.forEach((i) => {
     i._pos = i._pos2;
+    i._previousPos = [...i._pos];
   });
 
   let debugDraw = [];

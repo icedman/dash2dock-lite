@@ -30,7 +30,7 @@ const xOverlay = Me.imports.apps.overlay.xOverlay;
 const ANIM_INTERVAL = 15;
 const ANIM_INTERVAL_PAD = 15;
 const ANIM_POS_COEF = 1.5;
-const ANIM_SCALE_COEF = 2.0;
+const ANIM_SCALE_COEF = 2.5;
 const ANIM_ON_LEAVE_COEF = 2.5;
 const ANIM_ICON_RAISE = 0.6;
 const ANIM_ICON_SCALE = 1.5;
@@ -59,7 +59,7 @@ var Animator = class {
     this._background = new St.Widget({ name: 'd2dlBackground' });
     Main.uiGroup.insert_child_above(this._dotsContainer, this.dashContainer);
     Main.uiGroup.insert_child_below(this._iconsContainer, this._dotsContainer);
-    Main.uiGroup.insert_child_below(this._background, this._iconsContainer);
+    Main.uiGroup.insert_child_below(this._background, this.dashContainer);
 
     this._overlay = new xOverlay(
       this.dashContainer._monitor.width,
@@ -107,7 +107,6 @@ var Animator = class {
 
     if (this.dashContainer) {
       this._restoreIcons();
-      this.dashContainer.dash.opacity = 255;
       this.dashContainer.dash._background.visible = true;
     }
 
@@ -203,6 +202,7 @@ var Animator = class {
     this._dotsContainer.height = 0;
 
     let pointer = global.get_pointer();
+    let monitor = this.dashContainer._monitor;
 
     let pivot = new Point();
     pivot.x = 0.5;
@@ -221,6 +221,7 @@ var Animator = class {
 
     let scaleFactor = St.ThemeContext.get_for_stage(global.stage).scale_factor;
     let iconSize = this.extension.iconSize;
+    let iconSpacing = iconSize * (1.2 + this.extension.animation_spread / 4);
 
     this.dashContainer.dash.opacity = 0;
     this.dashContainer.dash._background.visible = false;
@@ -417,6 +418,7 @@ var Animator = class {
       idx++;
     });
 
+    // simulate animation at hovering middle icon
     if (this._preview && this._preview > 0) {
       nearestIdx = Math.floor(animateIcons.length / 2);
       nearestIcon = animateIcons[nearestIdx];
@@ -426,6 +428,10 @@ var Animator = class {
       this._preview = null;
     }
 
+    //---------------------
+    // disable animation when:
+    //---------------------
+    // dragging
     if (
       this._dragging ||
       !this.extension.animate_icons_unmute ||
@@ -437,7 +443,7 @@ var Animator = class {
       nearestIcon = null;
     }
 
-    //
+    // when hidden and not peeking
     if (!this.extension.peek_hidden_icons) {
       if (
         this.extension.autohider &&
@@ -451,18 +457,19 @@ var Animator = class {
     let didAnimate = false;
 
     let off = (iconSize * scaleFactor) / 2;
+    let offX = (iconSpacing / 2 - iconSize / 2) * scaleFactor;
 
     animateIcons.forEach((i) => {
       if (!i._pos) return;
       let p = [...i._pos];
       if (!p) return;
-      p[0] += off;
+      p[0] += off + offX;
       p[1] += off;
       i._pos = p;
     });
 
     if (!nearestIcon) {
-      this.dashContainer._targetScale = 1;
+      // this.dashContainer._targetScale = 1;
       this._overlay.visible = false;
     }
 
@@ -482,7 +489,6 @@ var Animator = class {
     if (animateIcons.length && nearestIcon) {
       let animate_class = _ANIMATE1;
       let animation_type = this.extension.animation_type;
-      this.dashContainer._targetScale = null;
       let anim = animate_class(animateIcons, [px, py], this.dashContainer, {
         iconSize,
         scaleFactor,
@@ -498,7 +504,6 @@ var Animator = class {
 
       // debug draw
       if (this.extension.debug_visual) {
-        let monitor = this.dashContainer._monitor;
         this._overlay.onDraw = (ctx) => {
           anim.debugDraw.forEach((d) => {
             switch (d.t) {
@@ -540,12 +545,11 @@ var Animator = class {
 
     if (!nearestIcon) {
       animateIcons.forEach((i) => {
-        i._container.width = icon_spacing;
+        i._container.width = iconSpacing * scaleFactor;
       });
     }
 
     let dotIndex = 0;
-
     let has_errors = false;
 
     // animate to target scale and position
@@ -567,6 +571,10 @@ var Animator = class {
 
       let _scale_coef = ANIM_SCALE_COEF;
       let _pos_coef = ANIM_POS_COEF;
+      if (this.extension.animation_fps > 0) {
+        _pos_coef /= 1 + this.extension.animation_fps / 2;
+        _scale_coef /= 1 + this.extension.animation_fps / 2;
+      }
       if (!nearestIcon) {
         _scale_coef *= ANIM_ON_LEAVE_COEF;
         _pos_coef *= ANIM_ON_LEAVE_COEF;
@@ -589,7 +597,7 @@ var Animator = class {
         icon.set_scale(scale, scale);
       }
 
-      icon._container.width = icon_spacing * scale;
+      icon._container.width = iconSpacing * scaleFactor * scale;
 
       if (!isNaN(pos[0]) && !isNaN(pos[1])) {
         // why does NaN happen?
@@ -664,8 +672,8 @@ var Animator = class {
           });
 
           icon._badge.set_scale(
-            iconSize / DOT_CANVAS_SIZE,
-            iconSize / DOT_CANVAS_SIZE
+            (iconSize * scaleFactor) / DOT_CANVAS_SIZE,
+            (iconSize * scaleFactor) / DOT_CANVAS_SIZE
           );
           has_badge = true;
         }
@@ -727,16 +735,31 @@ var Animator = class {
       let p1 = this._get_position(first);
       let p2 = this._get_position(last);
       if (!isNaN(p1[0]) && !isNaN(p1[1])) {
-        let padding = 8 * scaleFactor;
+        let padding = iconSize * 0.25 * scaleFactor;
         this._background.x = p1[0] - padding;
         this._background.y = p1[1] - padding;
         if (p2[1] > p1[1]) {
           this._background.y = p2[1] - padding;
         }
         this._background.width =
-          p2[0] - p1[0] + iconSize * last._targetScale + padding * 2;
-        this._background.height = iconSize + padding * 2;
+          p2[0] -
+          p1[0] +
+          iconSize * scaleFactor * last._targetScale +
+          padding * 2;
+        this._background.height = iconSize * scaleFactor + padding * 2;
+        this._padding = padding;
+
+        if (this.extension.panel_mode) {
+          this._background.x = this.dashContainer.x;
+          this._background.width = this.dashContainer.width;
+        }
       }
+    }
+
+    // show when ready
+    if (validPosition && !this._isInFullscreen()) {
+      this._iconsContainer.show();
+      this._dotsContainer.show();
     }
 
     // show when ready
@@ -835,10 +858,6 @@ var Animator = class {
         beginTimer(runLoop(this._animationSeq));
       }
     }
-
-    if (this.dash && this.extension && this.extension.debug_visual) {
-      this.dash.first_child.add_style_class_name('hi');
-    }
   }
 
   _endAnimation() {
@@ -848,11 +867,6 @@ var Animator = class {
 
     if (this.debounceEndSeq) {
       clearSequence(this.debounceEndSeq);
-    }
-
-    if (this.dash) {
-      this.dash.first_child.remove_style_class_name('hi');
-      this._overlay.visible = false;
     }
     this._relayout = 0;
   }
@@ -878,18 +892,18 @@ var Animator = class {
 
     if (this._nearestIcon) {
       let icon = this._nearestIcon;
-      // log(`${button} ${pressed} - (${icon._pos}) (${pointer})`);
+      log(`${button} ${pressed} - (${icon._pos}) (${pointer})`);
       if (icon._appwell) {
-        let dx = icon._pos[0] - pointer[0];
-        let dy = icon._pos[1] - pointer[1];
-        let dst = Math.sqrt(dx * dx + dy * dy);
-        if (dst < icon._d / 2) {
-          if (button == 'left') {
-            icon._appwell.emit('clicked', {});
-          } else {
-            icon._appwell.popupMenu();
-          }
+        // let dx = icon._pos[0] - pointer[0];
+        // let dy = icon._pos[1] - pointer[1];
+        // let dst = Math.sqrt(dx * dx + dy * dy);
+        // if (dst < icon._d / 2) {
+        if (button == 'left') {
+          icon._appwell.emit('clicked', {});
+        } else {
+          icon._appwell.popupMenu();
         }
+        // }
       }
     }
   }

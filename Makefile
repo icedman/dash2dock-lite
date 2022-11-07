@@ -48,6 +48,10 @@ test-shell: install
 lint:
 	eslint ./
 
+xml-lint:
+	cd ui ; \
+	find . -name "*.ui" -type f -exec xmllint --output '{}' --format '{}' \;
+
 pretty:
 	rm -rf ./build/*
 	prettier --single-quote --write "**/*.js"

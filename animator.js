@@ -552,11 +552,14 @@ var Animator = class {
     let dotIndex = 0;
     let has_errors = false;
 
+    // todo scaleJump 0.08 when cursor within hover area
+    let scaleJump = 0; // this._inDash ? 0.08 : 0; 
+
     // animate to target scale and position
     // todo .. make this velocity based
     animateIcons.forEach((icon) => {
       let pos = icon._target;
-      let scale = (iconSize / icon.width) * icon._targetScale;
+      let scale = (iconSize / icon.width) * (icon._targetScale);
       let fromScale = icon.get_scale()[0];
 
       // could happen at login? < recheck
@@ -593,11 +596,12 @@ var Animator = class {
         has_errors = true;
       }
 
-      if (!isNaN(scale)) {
-        icon.set_scale(scale, scale);
-      }
-
       icon._container.width = iconSpacing * scaleFactor * scale;
+
+      // scale
+      if (!isNaN(scale)) {
+        icon.set_scale(scale + scaleJump, scale + scaleJump);
+      }
 
       if (!isNaN(pos[0]) && !isNaN(pos[1])) {
         // why does NaN happen?
@@ -737,7 +741,7 @@ var Animator = class {
       if (!isNaN(p1[0]) && !isNaN(p1[1])) {
         let padding = iconSize * 0.25 * scaleFactor;
         this._background.x = p1[0] - padding;
-        this._background.y = p1[1] - padding;
+        this._background.y = animateIcons[0]._fixedPosition[1] - padding; // p1[1] - padding
         if (p2[1] > p1[1]) {
           this._background.y = p2[1] - padding;
         }
@@ -910,11 +914,11 @@ var Animator = class {
 
   _onMotionEvent() {
     this._preview = null;
+    this._inDash = true;
     this._onEnterEvent();
   }
 
   _onEnterEvent() {
-    this._inDash = true;
     this._startAnimation();
   }
 

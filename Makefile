@@ -23,6 +23,7 @@ publish:
 	cp -R ui ./build
 	cp -R apps ./build
 	cp -R preferences ./build
+	cp -R effects ./build
 	rm -rf ./*.zip
 	rm build/apps/*.desktop
 	cd build ; \

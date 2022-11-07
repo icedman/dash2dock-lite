@@ -363,15 +363,8 @@ class Extension {
         }
         case 'trash-icon': {
           this._updateTrashIcon();
-          // this.animator._pause = true;
-          // this.animator._previousFind = null;
           this._updateLayout();
           this._onEnterEvent();
-          // beginTimer(
-          //   runOneShot(() => {
-          //     this.animator._pause = false;
-          //   }, 0.1)
-          // );
           beginTimer(
             runOneShot(() => {
               this._updateLayout();
@@ -975,7 +968,12 @@ class Extension {
     // log('_onOverviewHidden');
   }
 
-  _onSessionUpdated() {}
+  _onSessionUpdated() {
+    if (this.animator) {
+      this.animator._previousFind = null;
+      this.animator.relayout();
+    }
+  }
 
   _onCheckServices() {
     if (!this.services) return; // todo why does this happen?

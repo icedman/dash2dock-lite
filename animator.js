@@ -54,7 +54,7 @@ var Animator = class {
   enable() {
     if (this._enabled) return;
 
-    this._iconsContainer = new St.Widget({ name: 'd2dlIconsContainer' });
+    this._iconsContainer = new St.Widget({ name: 'd2dlIconsContainer', offscreen_redirect: Clutter.OffscreenRedirect.ALWAYS });
     this._dotsContainer = new St.Widget({ name: 'd2dldotsContainer' });
     this._background = new St.Widget({ name: 'd2dlBackground' });
     Main.uiGroup.insert_child_above(this._dotsContainer, this.dashContainer);

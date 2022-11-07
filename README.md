@@ -22,10 +22,12 @@
 * Autohide/intellihide
 * Translucent top panel
 * Panel mode
+* Show/Hide Apps icon
 * Analog clock
 * Dynamic calendar
 * Dynamic trash icon
 * Mounted devices
+* Icon color effects(Tint, Monochrome)
 
 ### Prerequisites
 

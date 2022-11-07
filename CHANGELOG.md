@@ -1,10 +1,13 @@
-# Target Release 
+# Release 15
 
 * Add preferred monitor
 * Add icon color effects
+* Icon Effect: Tint
+* Icon Effect: Monochrome
 * Add background color effects
 * Add show/hide apps icon
 * Add diagnostics/tests
+* Improved animation and icon scaling
 
 * Add dock position (on-hold)
 

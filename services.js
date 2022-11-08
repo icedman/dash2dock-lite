@@ -1,3 +1,5 @@
+'use strict';
+
 const Main = imports.ui.main;
 const Gio = imports.gi.Gio;
 const St = imports.gi.St;
@@ -6,14 +8,6 @@ const Weather = imports.misc.weather;
 const ExtensionUtils = imports.misc.extensionUtils;
 const Me = ExtensionUtils.getCurrentExtension();
 const AppsFolderPath = Me.dir.get_child('apps').get_path();
-
-// const setTimeout = Me.imports.utils.setTimeout;
-// const setInterval = Me.imports.utils.setInterval;
-const runSequence = Me.imports.utils.runSequence;
-const runOneShot = Me.imports.utils.runOneShot;
-const runLoop = Me.imports.utils.runLoop;
-const beginTimer = Me.imports.utils.beginTimer;
-const clearAllTimers = Me.imports.utils.clearAllTimers;
 
 const xClock = Me.imports.apps.clock.xClock;
 const xCalendar = Me.imports.apps.calendar.xCalendar;
@@ -143,10 +137,6 @@ var Services = class {
     this._trashMonitor = null;
     this._trashDir = null;
 
-    // if (this._oneShotId) {
-    //   clearInterval(this._oneShotId);
-    //   this._oneShotId = null;
-    // }
   }
 
   temporarilyMuteOverview() {
@@ -155,16 +145,9 @@ var Services = class {
     }
     Main.overview.setMessage = (msg, obj) => {};
 
-    // this._oneShotId = setTimeout(() => {
-    //   Main.overview.setMessage = Main.overview._setMessage;
-    //   this._oneShotId = null;
-    // }, 1000);
-
-    beginTimer(
-      runOneShot(() => {
-        Main.overview.setMessage = Main.overview._setMessage;
-      }, 1.0)
-    );
+    this.extension._loTimer.runOnce(() => {
+      Main.overview.setMessage = Main.overview._setMessage;
+    }, 750);
   }
 
   _onMountAdded(monitor, mount) {

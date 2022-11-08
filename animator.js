@@ -1,3 +1,5 @@
+'use strict';
+
 const Main = imports.ui.main;
 const Dash = imports.ui.dash.Dash;
 const Layout = imports.ui.layout;
@@ -11,24 +13,13 @@ const Point = imports.gi.Graphene.Point;
 const ExtensionUtils = imports.misc.extensionUtils;
 const Me = ExtensionUtils.getCurrentExtension();
 
-const runSequence = Me.imports.utils.runSequence;
-const runOneShot = Me.imports.utils.runOneShot;
-const runLoop = Me.imports.utils.runLoop;
-const runDebounce = Me.imports.utils.runDebounce;
-const beginTimer = Me.imports.utils.beginTimer;
-const clearSequence = Me.imports.utils.clearSequence;
-
 const TintEffect = Me.imports.effects.tint_effect.TintEffect;
 const MonochromeEffect = Me.imports.effects.monochrome_effect.MonochromeEffect;
 const TestEffect = Me.imports.effects.test_effect.TestEffect;
-
-const _ANIMATE = Me.imports.effects.spread_magnify_animation.Animation;
-const _ANIMATE1 = Me.imports.effects.maclike_animation.Animation;
+const Animation = Me.imports.effects.maclike_animation.Animation;
 
 const xOverlay = Me.imports.apps.overlay.xOverlay;
 
-const ANIM_INTERVAL = 15;
-const ANIM_INTERVAL_PAD = 15;
 const ANIM_POS_COEF = 1.5;
 const ANIM_SCALE_COEF = 2.5;
 const ANIM_ON_LEAVE_COEF = 2.5;
@@ -48,14 +39,17 @@ const DOT_CANVAS_SIZE = 96;
 var Animator = class {
   constructor() {
     this._enabled = false;
-    this.animationInterval = ANIM_INTERVAL;
   }
 
   enable() {
     if (this._enabled) return;
 
-    this._iconsContainer = new St.Widget({ name: 'd2dlIconsContainer', offscreen_redirect: Clutter.OffscreenRedirect.ALWAYS });
-    this._dotsContainer = new St.Widget({ name: 'd2dldotsContainer' });
+    this._iconsContainer = new St.Widget({
+      name: 'd2dlIconsContainer',
+      offscreen_redirect: Clutter.OffscreenRedirect.ALWAYS,
+      reactive: false,
+    });
+    this._dotsContainer = new St.Widget({ name: 'd2dldotsContainer', reactive: false });
     this._background = new St.Widget({ name: 'd2dlBackground' });
     Main.uiGroup.insert_child_above(this._dotsContainer, this.dashContainer);
     Main.uiGroup.insert_child_below(this._iconsContainer, this._dotsContainer);
@@ -71,14 +65,12 @@ var Animator = class {
     this._enabled = true;
     this._dragging = false;
     this._relayout = 20;
-
-    this.show_dots = true;
-    this.show_badge = true;
-
-    this._updateIconEffect();
-
+    this._showDots = true;
+    this._showBadge = true;
     this._throttleDown = 0;
     this._previousFindIndex = 0;
+
+    this._updateIconEffect();
 
     log('animator enabled');
   }
@@ -156,7 +148,7 @@ var Animator = class {
     if (!this._dots) {
       this._dots = [];
     }
-    if (this.show_dots && this.extension.xDot) {
+    if (this._showDots && this.extension.xDot) {
       for (let i = 0; i < count - this._dots.length; i++) {
         let dot = new this.extension.xDot(DOT_CANVAS_SIZE);
         let pdot = new St.Widget();
@@ -487,9 +479,8 @@ var Animator = class {
 
     // animation behavior
     if (animateIcons.length && nearestIcon) {
-      let animate_class = _ANIMATE1;
       let animation_type = this.extension.animation_type;
-      let anim = animate_class(animateIcons, [px, py], this.dashContainer, {
+      let anim = Animation(animateIcons, [px, py], this.dashContainer, {
         iconSize,
         scaleFactor,
         animation_rise: this.extension.animation_rise * ANIM_ICON_RAISE,
@@ -553,13 +544,13 @@ var Animator = class {
     let has_errors = false;
 
     // todo scaleJump 0.08 when cursor within hover area
-    let scaleJump = 0; // this._inDash ? 0.08 : 0; 
+    let scaleJump = 0; // this._inDash ? 0.08 : 0;
 
     // animate to target scale and position
     // todo .. make this velocity based
     animateIcons.forEach((icon) => {
       let pos = icon._target;
-      let scale = (iconSize / icon.width) * (icon._targetScale);
+      let scale = (iconSize / icon.width) * icon._targetScale;
       let fromScale = icon.get_scale()[0];
 
       // could happen at login? < recheck
@@ -635,7 +626,7 @@ var Animator = class {
         if (
           icon._appwell &&
           icon._appwell.app &&
-          this.show_badge &&
+          this._showBadge &&
           this.extension.services._appNotices &&
           this.extension.services._appNotices[icon._appwell.app.get_id()] &&
           this.extension.services._appNotices[icon._appwell.app.get_id()]
@@ -688,7 +679,7 @@ var Animator = class {
 
         // update the dot
         if (
-          this.show_dots &&
+          this._showDots &&
           icon._appwell &&
           icon._appwell.app.get_n_windows() > 0
         ) {
@@ -766,12 +757,6 @@ var Animator = class {
       this._dotsContainer.show();
     }
 
-    // show when ready
-    // if (validPosition && !this._isInFullscreen()) {
-    //   this._iconsContainer.show();
-    //   this._dotsContainer.show();
-    // }
-
     if (didAnimate || this._dragging) {
       this._debounceEndAnimation();
     } else if (this._throttleDown <= 0) {
@@ -789,18 +774,16 @@ var Animator = class {
       this.dashContainer.dash.opacity = 0;
       this._iconsContainer.opacity = 0;
       this._dotsContainer.opacity = 0;
+
       if (!this.debounceReadySeq) {
-        this.debounceReadySeq = beginTimer(
-          runDebounce(() => {
-            this.dashContainer.dash.opacity = 255;
-            this._iconsContainer.opacity = 255;
-            this._dotsContainer.opacity = 255;
-            this._startAnimation();
-          }, 0.1),
-          'icons-wait-ready'
-        );
+        this.debounceReadySeq = this.extension._loTimer.runDebounced(() => {
+          this.dashContainer.dash.opacity = 255;
+          this._iconsContainer.opacity = 255;
+          this._dotsContainer.opacity = 255;
+          this._startAnimation();
+        }, 100);
       } else {
-        beginTimer(runDebounce(this.debounceReadySeq));
+        this.extension._loTimer.runDebounced(this.debounceReadySeq);
       }
 
       return [];
@@ -839,51 +822,40 @@ var Animator = class {
 
   _beginAnimation() {
     if (this.debounceEndSeq) {
-      clearSequence(this.debounceEndSeq);
+      this.extension._loTimer.cancel(this.debounceEndSeq);
     }
 
     this._throttleDown = 0;
 
-    if (!this._animationSeq || !this._animationSeq._timeoutId) {
-      if (this.dashContainer && this.extension) {
-        this.animationInterval =
-          ANIM_INTERVAL +
-          (this.extension.animation_fps || 0) * ANIM_INTERVAL_PAD;
-      }
-
+    this.animationInterval = this.extension.animationInterval;
+    if (this.extension._hiTimer) {
       if (!this._animationSeq) {
-        this._animationSeq = beginTimer(
-          runLoop(() => {
-            this._animate();
-          }, this.animationInterval / 1000),
-          'animate'
-        );
+        this._animationSeq = this.extension._hiTimer.runLoop(() => {
+          this._animate();
+        }, this.animationInterval);
       } else {
-        beginTimer(runLoop(this._animationSeq));
+        this.extension._hiTimer.runLoop(this._animationSeq);
       }
     }
   }
 
   _endAnimation() {
-    if (this._animationSeq && this._animationSeq._timeoutId) {
-      clearSequence(this._animationSeq);
-    }
-
-    if (this.debounceEndSeq) {
-      clearSequence(this.debounceEndSeq);
+    if (this.extension._hiTimer) {
+      this.extension._hiTimer.cancel(this._animationSeq);
+      this.extension._loTimer.cancel(this.debounceEndSeq);
     }
     this._relayout = 0;
   }
 
   _debounceEndAnimation() {
-    if (!this.debounceEndSeq) {
-      this.debounceEndSeq = beginTimer(
-        runDebounce(() => {
+    if (this.extension._loTimer) {
+      if (!this.debounceEndSeq) {
+        this.debounceEndSeq = this.extension._loTimer.runDebounced(() => {
           this._endAnimation();
-        }, (ANIM_DEBOUNCE_END_DELAY + this.animationInterval) / 1000)
-      );
-    } else {
-      beginTimer(runDebounce(this.debounceEndSeq));
+        }, ANIM_DEBOUNCE_END_DELAY + this.animationInterval);
+      } else {
+        this.extension._loTimer.runDebounced(this.debounceEndSeq);
+      }
     }
   }
 
@@ -928,16 +900,14 @@ var Animator = class {
   }
 
   _onFocusWindow() {
-    beginTimer(
-      runOneShot(() => {
-        if (this._iconsCount != this._findIcons().length) {
-          this._endAnimation();
-          this._startAnimation();
-          this.relayout();
-          // animate the added icon
-        }
-      }, 150 / 1000)
-    );
+    this.extension._loTimer.runOnce(() => {
+      if (this._iconsCount != this._findIcons().length) {
+        this._endAnimation();
+        this._startAnimation();
+        this.relayout();
+        // animate the added icon
+      }
+    }, 150);
   }
 
   _onFullScreen() {

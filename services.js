@@ -276,18 +276,23 @@ var Services = class {
       if (n.notification.source.app) {
         appId = n.notification.source.app.get_id();
       }
+      if (!appId && n.notification.source._app) {
+        appId = n.notification.source._app.get_id();
+      }
       if (!appId) {
         appId = n.notification.source._appId;
       }
       if (!this._appNotices[appId]) {
-        this._appNotices[appId] = { count: 0, urgency: 0 };
+        this._appNotices[appId] = { count: 0, urgency: 0, source: n.notification.source };
       }
       this._appNotices[appId].count++;
       if (this._appNotices[appId].urgency < n.notification.urgency) {
         this._appNotices[appId].urgency = n.notification.urgency;
       }
       this._appNotices[`${appId}`] = this._appNotices[appId];
-      this._appNotices[`${appId}.desktop`] = this._appNotices[appId];
+      if (!appId.endsWith('desktop')) {
+        this._appNotices[`${appId}.desktop`] = this._appNotices[appId];
+      }
     });
   }
 

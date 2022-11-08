@@ -125,7 +125,6 @@ function buildPrefsWidget() {
   );
 
   let settings = ExtensionUtils.getSettings(schemaId);
-
   SettingsKeys.connectBuilder(builder);
   SettingsKeys.connectSettings(settings);
 

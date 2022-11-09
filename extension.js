@@ -77,7 +77,8 @@ class Extension {
     this.dashContainer.pivot_point = pivot;
 
     Main.layoutManager.addChrome(this.dashContainer, {
-      affectsStruts: false,
+      affectsStruts: true,
+      affectsInputRegion: true,
       trackFullscreen: true,
     });
 
@@ -797,8 +798,15 @@ class Extension {
       ] || 64);
     iconSize *= this.scale;
 
+    let distance = this.panel_mode ? 0 : this._edge_distance;
+    this._effective_edge_distance = distance;
+    let dockPadding = 10 + distance;
+    if (this.panel_mode) {
+      this._effective_edge_distance = -dockPadding;
+    }
+
     let scale = 0.5 + this.scale / 2;
-    let dockHeight = iconSize * (this.shrink_icons ? 1.8 : 1.6) * scale;
+    let dockHeight = (iconSize + dockPadding) * (this.shrink_icons ? 1.8 : 1.6) * scale;
     this.iconSize = iconSize;
 
     // panel mode adjustment
@@ -851,12 +859,11 @@ class Extension {
             this._edge_distance;
         }
         this.dashContainer.set_position(posx, this.monitor.y);
-      } else {
-        let distance = this.panel_mode ? 0 : this._edge_distance;
+      } else {;
         // top/bottom
         this.dashContainer.set_position(
           this.monitor.x,
-          this.monitor.y + this.sh - dockHeight * this.scaleFactor - distance
+          this.monitor.y + this.sh - dockHeight * this.scaleFactor // - distance
         );
       }
 
@@ -917,6 +924,7 @@ class Extension {
     Main.layoutManager.removeChrome(this.dashContainer);
     Main.layoutManager.addChrome(this.dashContainer, {
       affectsStruts: !this.autohide_dash,
+      affectsInputRegion: !this.autohide_dash,
       trackFullscreen: true,
     });
 

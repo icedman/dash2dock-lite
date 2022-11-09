@@ -352,8 +352,10 @@ var Animator = class {
 
     let idx = 0;
     animateIcons.forEach((icon) => {
+      icon._pos[1] -= this.extension._effective_edge_distance;
+
       let bin = icon._bin;
-      let pos = icon._pos;
+      let pos = [...icon._pos];
 
       icon._fixedPosition = [...pos];
       if (!this._dragging && bin.first_child) {
@@ -788,6 +790,7 @@ var Animator = class {
 
       return [];
     }
+
     return icons;
   }
 

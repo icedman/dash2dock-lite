@@ -1,4 +1,4 @@
-<?xml version="1.0"?>
+<?xml version="1.0" ?>
 <interface>
   <object class="GtkBox" id="appearance">
     <property name="visible">True</property>
@@ -82,7 +82,7 @@
                         <property name="visible">True</property>
                         <property name="can-focus">False</property>
                         <property name="valign">center</property>
-                        <property name="label" translatable="yes">Scale Icons</property>
+                        <property name="label" translatable="yes">Icon Size</property>
                         <property name="xalign">0</property>
                         <property name="hexpand">1</property>
                         <attributes>
@@ -91,15 +91,15 @@
                       </object>
                     </child>
                     <child>
-                      <object class="GtkScale" id="scale-icons">
+                      <object class="GtkScale" id="icon-size">
                         <property name="valign">center</property>
                         <property name="hexpand">true</property>
                         <property name="width-request">140px</property>
-                        <property name="draw-value">true</property>
+                        <property name="draw-value">false</property>
                         <property name="value-pos">right</property>
                         <property name="orientation">horizontal</property>
                         <property name="digits">2</property>
-                        <property name="adjustment">scale-icons-adjust</property>
+                        <property name="adjustment">icon-size-adjust</property>
                       </object>
                     </child>
                   </object>
@@ -108,7 +108,7 @@
                   <object class="GtkLabel">
                     <property name="halign">start</property>
                     <property name="valign">center</property>
-                    <property name="label" translatable="yes">Adjust icon sizes with custom scale. This overrides the shrink option. Set to zero for default scale.</property>
+                    <property name="label" translatable="yes">Adjust icon sizes with custom scale. Set to zero for default scale.</property>
                   </object>
                 </child>
               </object>
@@ -699,7 +699,7 @@
       </object>
     </child>
   </object>
-  <object class="GtkAdjustment" id="scale-icons-adjust">
+  <object class="GtkAdjustment" id="icon-size-adjust">
     <property name="lower">0.0</property>
     <property name="upper">1.0</property>
     <property name="step-increment">0.01</property>
@@ -721,7 +721,7 @@
   </object>
   <object class="GtkStringList" id="running-indicator-style-model">
     <items>
-      <item translatable="yes">Default</item>
+      <item translatable="yes">None</item>
       <item translatable="yes">Dots</item>
       <item translatable="yes">Dot</item>
       <item translatable="yes">Dashes</item>
@@ -739,7 +739,7 @@
   </object>
   <object class="GtkStringList" id="notification-badge-style-model">
     <items>
-      <item translatable="yes">Default</item>
+      <item translatable="yes">None</item>
       <item translatable="yes">Dot</item>
       <item translatable="yes">Dash</item>
       <item translatable="yes">Square</item>
@@ -749,7 +749,7 @@
   </object>
   <object class="GtkStringList" id="icon-effect-model">
     <items>
-      <item translatable="yes">Default</item>
+      <item translatable="yes">None</item>
       <item translatable="yes">Tint</item>
       <item translatable="yes">Monochrome</item>
     </items>

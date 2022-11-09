@@ -136,7 +136,6 @@ var Services = class {
     this._trashMonitor.disconnectObject(this);
     this._trashMonitor = null;
     this._trashDir = null;
-
   }
 
   temporarilyMuteOverview() {
@@ -160,16 +159,17 @@ var Services = class {
     let appname = `mount-${basename}-dash2dock-lite.desktop`;
     this.setupMountIcon(mount);
     let favorites = Fav.getAppFavorites();
+    let favorite_ids = favorites._getIds();
 
     this.temporarilyMuteOverview();
     favorites.addFavoriteAtPos(
       appname,
-      this.extension.trash_icon ? favorites._getIds().length - 1 : -1
+      this.extension.trash_icon ? favorite_ids.length - 1 : -1
     );
     this.extension._onEnterEvent();
 
     // re-try later
-    if (!favorites._getIds().includes(appname)) {
+    if (!favorite_ids.includes(appname)) {
       this._deferredMounts.push(mount);
     }
     return true;
@@ -266,7 +266,11 @@ var Services = class {
         appId = n.notification.source._appId;
       }
       if (!this._appNotices[appId]) {
-        this._appNotices[appId] = { count: 0, urgency: 0, source: n.notification.source };
+        this._appNotices[appId] = {
+          count: 0,
+          urgency: 0,
+          source: n.notification.source,
+        };
       }
       this._appNotices[appId].count++;
       if (this._appNotices[appId].urgency < n.notification.urgency) {

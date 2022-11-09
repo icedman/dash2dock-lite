@@ -292,15 +292,24 @@ class Extension {
         case 'notification-badge-color':
         case 'notification-badge-style':
         case 'running-indicator-color':
-        case 'running-indicator-style':
+        case 'running-indicator-style': {
           this._onEnterEvent();
           break;
+        }
         case 'apps-icon':
         case 'calendar-icon':
         case 'clock-icon': {
           this._onEnterEvent();
           break;
         }
+        case 'favorites-only': {
+          this.animator.relayout();
+          this._updateLayout();
+          this._onEnterEvent();
+          break;
+        }
+        // problematic settings needing animator restart
+        case 'dock-location':
         case 'icon-resolution': {
           this._updateIconResolution();
           this.animator.disable();
@@ -327,16 +336,6 @@ class Extension {
         }
         case 'animate-icons': {
           this._updateAnimation();
-          break;
-        }
-        case 'dock-location': {
-          if (this.animate_icons) {
-            this.animator.disable();
-            this.animator.enable();
-          }
-          this._updateLayout();
-          this._updateBackgroundColors();
-          this._onEnterEvent();
           break;
         }
         case 'icon-size':
@@ -718,7 +717,19 @@ class Extension {
       return false;
     });
 
-    // icons = [...icons.splice(0,1)];
+    // hide running apps
+    // this.dash.
+    if (this.favorites_only) {
+      let favorites = Fav.getAppFavorites();
+      let favorite_ids = favorites._getIds();
+      icons = icons.filter((i) => {
+        let app = i.child.app;
+        let appId = app ? app.get_id() : '';
+        let shouldInclude = favorite_ids.includes(appId);
+        i.child.visible = shouldInclude;
+        return shouldInclude;
+      });
+    }
 
     icons.forEach((c) => {
       // W: breakable
@@ -806,7 +817,8 @@ class Extension {
     }
 
     let scale = 0.5 + this.scale / 2;
-    let dockHeight = (iconSize + dockPadding) * (this.shrink_icons ? 1.8 : 1.6) * scale;
+    let dockHeight =
+      (iconSize + dockPadding) * (this.shrink_icons ? 1.8 : 1.6) * scale;
     this.iconSize = iconSize;
 
     // panel mode adjustment
@@ -859,7 +871,7 @@ class Extension {
             this._edge_distance;
         }
         this.dashContainer.set_position(posx, this.monitor.y);
-      } else {;
+      } else {
         // top/bottom
         this.dashContainer.set_position(
           this.monitor.x,
@@ -1009,7 +1021,6 @@ class Extension {
 
   _onSessionUpdated() {
     if (this.animator) {
-      this.animator._previousFind = null;
       this.animator.relayout();
     }
   }

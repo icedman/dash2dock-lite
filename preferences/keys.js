@@ -68,6 +68,10 @@ SettingsKeys.setKeys({
     default_value: [0, 0, 0, 0.5],
     widget_type: 'color',
   },
+  'favorites-only': {
+    default_value: false,
+    widget_type: 'switch',
+  },
   'apps-icon': {
     default_value: true,
     widget_type: 'switch',

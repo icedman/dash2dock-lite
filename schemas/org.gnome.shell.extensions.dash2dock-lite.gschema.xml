@@ -131,6 +131,11 @@
         <summary>Panel mode</summary>
         <description>Dock the dash on a full-width panel.</description>
     </key>
+    <key type="b" name="favorites-only">
+        <default>false</default>
+        <summary>Favorits apps only</summary>
+        <description>Show only icons of favorite apps.</description>
+    </key>
     <key type="b" name="apps-icon">
         <default>true</default>
         <summary>Apps icon</summary>

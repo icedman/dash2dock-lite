@@ -49,7 +49,10 @@ var Animator = class {
       offscreen_redirect: Clutter.OffscreenRedirect.ALWAYS,
       reactive: false,
     });
-    this._dotsContainer = new St.Widget({ name: 'd2dldotsContainer', reactive: false });
+    this._dotsContainer = new St.Widget({
+      name: 'd2dldotsContainer',
+      reactive: false,
+    });
     this._background = new St.Widget({ name: 'd2dlBackground' });
     Main.uiGroup.insert_child_above(this._dotsContainer, this.dashContainer);
     Main.uiGroup.insert_child_below(this._iconsContainer, this._dotsContainer);
@@ -350,6 +353,15 @@ var Animator = class {
       return dstA > dstB ? 1 : -1;
     });
 
+    // hack for last icon (appsButton)
+    {
+      let p = animateIcons[animateIcons.length - 2];
+      let l = animateIcons[animateIcons.length - 1];
+      if (l && !l._appwell && p && p._container) {
+        l._pos[0] = p._pos[0] + p._container.width * 0.9 * scaleFactor;
+      }
+    }
+
     let idx = 0;
     animateIcons.forEach((icon) => {
       icon._pos[1] -= this.extension._effective_edge_distance;
@@ -463,7 +475,6 @@ var Animator = class {
     });
 
     if (!nearestIcon) {
-      // this.dashContainer._targetScale = 1;
       this._overlay.visible = false;
     }
 
@@ -476,6 +487,7 @@ var Animator = class {
       py = nearestIcon._pos[1];
     }
 
+    // icons will spreadout when pointer hovers over the dash
     let icon_spacing =
       iconSize * (1.2 + this.extension.animation_spread / 4) * scaleFactor;
 
@@ -545,7 +557,8 @@ var Animator = class {
     let dotIndex = 0;
     let has_errors = false;
 
-    // todo scaleJump 0.08 when cursor within hover area
+    // todo
+    // all icons scale up (scaleJump 0.08) when cursor within hover area
     let scaleJump = 0; // this._inDash ? 0.08 : 0;
 
     // animate to target scale and position

@@ -1,4 +1,4 @@
-<?xml version="1.0"?>
+<?xml version="1.0" ?>
 <interface>
   <object class="GtkBox" id="general">
     <property name="visible">True</property>
@@ -321,8 +321,14 @@
   <object class="GtkStringList" id="dock-location-model">
     <items>
       <item translatable="yes">Bottom</item>
-      <item translatable="yes">Left</item>
-      <item translatable="yes">Right</item>
+      <item translatable="yes">Left (experimental)</item>
+      <item translatable="yes">Right (experimental)</item>
+    </items>
+  </object>
+  <object class="GtkStringList" id="animation-type-model">
+    <items>
+      <item translatable="yes">Default</item>
+      <item translatable="yes">Experimental</item>
     </items>
   </object>
 </interface>

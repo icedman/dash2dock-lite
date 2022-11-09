@@ -1,3 +1,5 @@
+'use strict';
+
 const Main = imports.ui.main;
 const Dash = imports.ui.dash.Dash;
 const Layout = imports.ui.layout;
@@ -9,13 +11,6 @@ const Point = imports.gi.Graphene.Point;
 
 const ExtensionUtils = imports.misc.extensionUtils;
 const Me = ExtensionUtils.getCurrentExtension();
-
-const runSequence = Me.imports.utils.runSequence;
-const runOneShot = Me.imports.utils.runOneShot;
-const runLoop = Me.imports.utils.runLoop;
-const runDebounce = Me.imports.utils.runDebounce;
-const beginTimer = Me.imports.utils.beginTimer;
-const clearSequence = Me.imports.utils.clearSequence;
 
 const HIDE_ANIMATION_INTERVAL = 15;
 const HIDE_ANIMATION_INTERVAL_PAD = 15;
@@ -36,10 +31,6 @@ const handledWindowTypes = [
 ];
 
 var AutoHide = class {
-  constructor() {
-    this.animationInterval = HIDE_ANIMATION_INTERVAL;
-  }
-
   enable() {
     // log('enable autohide');
     this._enabled = true;
@@ -48,32 +39,30 @@ var AutoHide = class {
 
     this._debounceCheckHide();
 
-    beginTimer(
-      runSequence([
-        {
-          func: () => {
-            if (isNaN(this.dashContainer._fixedPosition)) {
-              this._checkHide();
-              this.extension._updateLayout();
-            }
-          },
-          delay: 0.5,
-        },
-        {
-          func: () => {
+    this.extension._loTimer.runSequence([
+      {
+        func: () => {
+          if (isNaN(this.dashContainer._fixedPosition)) {
             this._checkHide();
-          },
-          delay: 0.5,
+            this.extension._updateLayout();
+          }
         },
-      ])
-    );
+        delay: 500,
+      },
+      {
+        func: () => {
+          this._checkHide();
+        },
+        delay: 500,
+      },
+    ]);
 
     log('autohide enabled');
   }
 
   disable() {
-    if (this._animationSeq && this._animationSeq._timeoutId) {
-      clearSequence(this._animationSeq);
+    if (this.extension._hiTimer) {
+      this.extension._hiTimer.cancel(this._animationSeq);
     }
 
     this.show();
@@ -112,30 +101,21 @@ var AutoHide = class {
       this.target = this.dashContainer._hidePosition;
     }
 
-    // if (this._intervalId == null) {
-    if (!this._animationSeq || !this._animationSeq._timeoutId) {
-      if (this.dashContainer && this.extension) {
-        this.animationInterval =
-          HIDE_ANIMATION_INTERVAL +
-          (this.extension.animation_fps || 0) * HIDE_ANIMATION_INTERVAL_PAD;
-      }
-
+    this.animationInterval = this.extension.animationInterval;
+    if (this.extension._hiTimer) {
       if (!this._animationSeq) {
-        this._animationSeq = beginTimer(
-          runLoop(() => {
-            this._animate();
-          }, this.animationInterval / 1000),
-          'autohide'
-        );
+        this._animationSeq = this.extension._hiTimer.runLoop(() => {
+          this._animate();
+        }, this.animationInterval);
       } else {
-        beginTimer(runLoop(this._animationSeq));
+        this.extension._hiTimer.runLoop(this._animationSeq);
       }
     }
   }
 
   _endAnimation() {
-    if (this._animationSeq && this._animationSeq._timeoutId) {
-      clearSequence(this._animationSeq);
+    if (this.extension._hiTimer) {
+      this.extension._hiTimer.cancel(this._animationSeq);
     }
 
     if (this.dashContainer) {
@@ -371,15 +351,14 @@ var AutoHide = class {
   }
 
   _debounceCheckHide() {
-    // todo .. code is as verbose although exit cleanup is now automatic
-    if (!this._debounceCheckSeq) {
-      this._debounceCheckSeq = beginTimer(
-        runDebounce(() => {
+    if (this.extension._loTimer) {
+      if (!this._debounceCheckSeq) {
+        this._debounceCheckSeq = this.extension._loTimer.runDebounced(() => {
           this._checkHide();
-        }, DEBOUNCE_HIDE_TIMEOUT / 1000)
-      );
-    } else {
-      beginTimer(runDebounce(this._debounceCheckSeq));
+        }, DEBOUNCE_HIDE_TIMEOUT);
+      } else {
+        this.extension._loTimer.runDebounced(this._debounceCheckSeq);
+      }
     }
   }
 

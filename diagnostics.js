@@ -16,9 +16,6 @@ const warpPointer = Me.imports.utils.warpPointer;
 
 const { schemaId, settingsKeys, SettingsKeys } = Me.imports.preferences.keys;
 
-const runSequence = Me.imports.utils.runSequence;
-const beginTimer = Me.imports.utils.beginTimer;
-
 var print = (msg) => {
   log(msg);
   if (Main.lookingGlass && Main.lookingGlass.isOpen) {
@@ -79,7 +76,7 @@ function add_test_values(seqs, extension, settings, name, value, values) {
       func: () => {
         settings.setValue(name, c);
       },
-      delay: 1.0,
+      delay: 1000,
     });
 
     if (k.test) {
@@ -100,7 +97,7 @@ function add_test_values(seqs, extension, settings, name, value, values) {
     func: () => {
       settings.setValue(name, value);
     },
-    delay: 0.5,
+    delay: 500,
   });
 }
 
@@ -149,7 +146,7 @@ function addMotionTests(_seqs, extension, settings) {
       settings.setValue('animate-icons', true);
       settings.setValue('autohide-dash', false);
     },
-    delay: 0.5,
+    delay: 500,
   });
 
   add_move_pointer(_seqs, 0, 0, 0.5);
@@ -170,14 +167,14 @@ function addMotionTests(_seqs, extension, settings) {
       settings.setValue('animate-icons', true);
       settings.setValue('autohide-dash', true);
     },
-    delay: 1.0,
+    delay: 1000,
   });
 
   _seqs.push({
     func: () => {
       extension.autohider.preview();
     },
-    delay: 0.5,
+    delay: 500,
   });
   add_move_pointer(_seqs, 0, 0, 1);
 
@@ -193,7 +190,7 @@ function addMotionTests(_seqs, extension, settings) {
       settings.setValue('animate-icons', anim);
       settings.setValue('autohide-dash', hide);
     },
-    delay: 0.5,
+    delay: 500,
   });
 
   add_message(_seqs, 'done', 0);
@@ -233,5 +230,5 @@ var runTests = (extension, settings) => {
   let _seqs = [];
   addMotionTests(_seqs, extension, settings);
   addPreferenceTests(_seqs, extension, settings);
-  beginTimer(runSequence(_seqs));
+  extension._diagnosticTimer.runSequence(_seqs);
 };

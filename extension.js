@@ -16,25 +16,36 @@ const { schemaId, settingsKeys, SettingsKeys } = Me.imports.preferences.keys;
 const Animator = Me.imports.animator.Animator;
 const AutoHide = Me.imports.autohide.AutoHide;
 const Services = Me.imports.services.Services;
+const Timer = Me.imports.timer.Timer;
 const xDot = Me.imports.apps.dot.xDot;
 const xWMControl = Me.imports.apps.wmcontrol.xWMControl;
-
-const runSequence = Me.imports.utils.runSequence;
-const runOneShot = Me.imports.utils.runOneShot;
-const runLoop = Me.imports.utils.runLoop;
-const beginTimer = Me.imports.utils.beginTimer;
-const clearAllTimers = Me.imports.utils.clearAllTimers;
-const getRunningTimers = Me.imports.utils.getRunningTimers;
 
 const runTests = Me.imports.diagnostics.runTests;
 
 const SERVICES_UPDATE_INTERVAL = 2500;
+
 const EDGE_DISTANCE = 20;
 const ANIM_ICON_QUALITY = 2.0;
+
+const ANIM_INTERVAL = 15;
+const ANIM_INTERVAL_PAD = 15;
 
 class Extension {
   enable() {
     this._imports = Me.imports;
+
+    // three available timers
+    // for persistent persistent runs
+    this._timer = new Timer();
+    this._timer.warmup(3500);
+
+    // for animation runs
+    this._hiTimer = new Timer();
+    this._hiTimer.warmup(15);
+
+    // for deferred or debounced runs
+    this._loTimer = new Timer();
+    this._loTimer.warmup(500);
 
     this.listeners = [];
     this.scale = 1.0;
@@ -52,6 +63,8 @@ class Extension {
       SettingsKeys.setValue('animate-icons', true);
     }
 
+    this._updateAnimationFPS();
+
     // setup the dash container
     this.dashContainer = new St.BoxLayout({
       name: 'dashContainer',
@@ -64,7 +77,8 @@ class Extension {
     this.dashContainer.pivot_point = pivot;
 
     Main.layoutManager.addChrome(this.dashContainer, {
-      affectsStruts: false,
+      affectsStruts: true,
+      affectsInputRegion: true,
       trackFullscreen: true,
     });
 
@@ -116,12 +130,6 @@ class Extension {
     this._updateAutohide();
     this._updateAnimation();
     this._updateBackgroundColors();
-
-    // if (this.animator._iconsContainer) {
-    //   this.animator._iconsContainer.visible = false;
-    //   this.animator._dotsContainer.visible = false;
-    // }
-
     this._updateCss();
     this._updateTrashIcon();
 
@@ -169,19 +177,29 @@ class Extension {
     this.services = null;
 
     this.dash.opacity = 255;
+
+    this._timer = null;
+    this._hiTimer = null;
+    this._loTimer = null;
+
+    if (this._diagnosticTimer) {
+      this._diagnosticTimer.stop();
+      this._diagnosticTimer = null;
+    }
+
     log('dash2dock-lite disabled');
   }
 
   startUp() {
     // todo... refactor this
-    beginTimer(
-      runSequence([
+    if (!this._startupSeq) {
+      this._startupSeq = this._loTimer.runSequence([
         {
           func: () => {
             this._updateLayout();
             this._onEnterEvent();
           },
-          delay: 0.5,
+          delay: 500,
         },
         // force startup layout on ubuntu >:!
         {
@@ -189,7 +207,7 @@ class Extension {
             this._updateLayout();
             this._onEnterEvent();
           },
-          delay: 0.5,
+          delay: 500,
         },
         // make sure layout has been done on ubuntu >:!
         {
@@ -197,10 +215,12 @@ class Extension {
             this._updateLayout();
             this._onEnterEvent();
           },
-          delay: 0.5,
+          delay: 500,
         },
-      ])
-    );
+      ]);
+    } else {
+      this._loTimer.runSequence(this._startupSeq);
+    }
   }
 
   _queryDisplay() {
@@ -253,10 +273,7 @@ class Extension {
           break;
         }
         case 'animation-fps': {
-          if (this.animator && this.animate_icons) {
-            this.animator._endAnimation();
-            this.animator._animationSeq = null;
-          }
+          this._updateAnimationFPS();
           break;
         }
         case 'mounted-icon':
@@ -365,12 +382,12 @@ class Extension {
           this._updateTrashIcon();
           this._updateLayout();
           this._onEnterEvent();
-          beginTimer(
-            runOneShot(() => {
-              this._updateLayout();
-              this._onEnterEvent();
-            }, 2.5)
-          );
+
+          this._loTimer.runOnce(() => {
+            this._updateLayout();
+            this._onEnterEvent();
+          }, 250);
+
           break;
         }
       }
@@ -458,18 +475,20 @@ class Extension {
       this
     );
 
-    beginTimer(
-      runLoop(() => {
+    // move to services.js
+    this._timer.runLoop(
+      () => {
         this._onCheckServices();
-      }, SERVICES_UPDATE_INTERVAL / 1000),
+      },
+      SERVICES_UPDATE_INTERVAL,
       'services'
     );
   }
 
   _removeEvents() {
-    // This cleans up all timers.
-    // Timers in this class, the animator, autohider, etc.
-    clearAllTimers();
+    this._timer.stop();
+    this._hiTimer.stop();
+    this._loTimer.stop();
 
     this.dashContainer.set_reactive(false);
     this.dashContainer.set_track_hover(false);
@@ -555,6 +574,21 @@ class Extension {
       .forEach((l) => {
         if (l._onFullScreen) l._onFullScreen();
       });
+  }
+
+  _updateAnimationFPS() {
+    if (this.animator) {
+      this._hiTimer.cancel(this.animator._animationSeq);
+      this.animator._animationSeq = null;
+    }
+    if (this.autohider) {
+      this._hiTimer.cancel(this.autohider._animationSeq);
+      this.autohider._animationSeq = null;
+    }
+    this.animationInterval =
+      ANIM_INTERVAL + (this.animation_fps || 0) * ANIM_INTERVAL_PAD;
+    this._hiTimer.stop();
+    this._hiTimer.warmup(this.animationInterval);
   }
 
   _updateShrink(disable) {
@@ -764,8 +798,15 @@ class Extension {
       ] || 64);
     iconSize *= this.scale;
 
+    let distance = this.panel_mode ? 0 : this._edge_distance;
+    this._effective_edge_distance = distance;
+    let dockPadding = 10 + distance;
+    if (this.panel_mode) {
+      this._effective_edge_distance = -dockPadding;
+    }
+
     let scale = 0.5 + this.scale / 2;
-    let dockHeight = iconSize * (this.shrink_icons ? 1.8 : 1.6) * scale;
+    let dockHeight = (iconSize + dockPadding) * (this.shrink_icons ? 1.8 : 1.6) * scale;
     this.iconSize = iconSize;
 
     // panel mode adjustment
@@ -818,12 +859,11 @@ class Extension {
             this._edge_distance;
         }
         this.dashContainer.set_position(posx, this.monitor.y);
-      } else {
-        let distance = this.panel_mode ? 0 : this._edge_distance;
+      } else {;
         // top/bottom
         this.dashContainer.set_position(
           this.monitor.x,
-          this.monitor.y + this.sh - dockHeight * this.scaleFactor - distance
+          this.monitor.y + this.sh - dockHeight * this.scaleFactor // - distance
         );
       }
 
@@ -884,6 +924,7 @@ class Extension {
     Main.layoutManager.removeChrome(this.dashContainer);
     Main.layoutManager.addChrome(this.dashContainer, {
       affectsStruts: !this.autohide_dash,
+      affectsInputRegion: !this.autohide_dash,
       trackFullscreen: true,
     });
 
@@ -959,11 +1000,9 @@ class Extension {
       this.animator._dotsContainer.show();
     }
 
-    beginTimer(
-      runOneShot(() => {
-        this._updateBackgroundColors();
-      }, 0.25)
-    );
+    this._loTimer.runOnce(() => {
+      this._updateBackgroundColors();
+    }, 250);
 
     // log('_onOverviewHidden');
   }
@@ -978,12 +1017,25 @@ class Extension {
   _onCheckServices() {
     if (!this.services) return; // todo why does this happen?
     // todo convert services time in seconds
-    this.services.update(SERVICES_UPDATE_INTERVAL * 1000);
+    this.services.update(SERVICES_UPDATE_INTERVAL);
     this._updateTrashIcon();
   }
 
   runDiagnostics() {
+    if (!this._diagnosticTimer) {
+      this._diagnosticTimer = new Timer();
+      this._diagnosticTimer.warmup(50);
+    }
     runTests(this, SettingsKeys);
+  }
+
+  dumpTimers() {
+    this._timer.dumpSubscribers();
+    this._hiTimer.dumpSubscribers();
+    this._loTimer.dumpSubscribers();
+    if (this._diagnosticTimer) {
+      this._diagnosticTimer.dumpSubscribers();
+    }
   }
 }
 

@@ -64,6 +64,15 @@ SettingsKeys.setKeys({
     default_value: [0, 0, 0, 0.5],
     widget_type: 'color',
   },
+  'topbar-border-thickness': {
+    default_value: 0,
+    widget_type: 'dropdown',
+    test: { values: [0, 1, 2, 3] },
+  },
+  'topbar-border-color': {
+    default_value: [1, 1, 1, 1],
+    widget_type: 'color',
+  },
   'topbar-background-color': {
     default_value: [0, 0, 0, 0.5],
     widget_type: 'color',
@@ -125,6 +134,15 @@ SettingsKeys.setKeys({
     default_value: 0,
     widget_type: 'scale',
   },
+  'border-thickness': {
+    default_value: 0,
+    widget_type: 'dropdown',
+    test: { values: [0, 1, 2, 3] },
+  },
+  'border-color': {
+    default_value: [1, 1, 1, 1],
+    widget_type: 'color',
+  },
   'panel-mode': {
     default_value: false,
     widget_type: 'switch',
@@ -132,6 +150,22 @@ SettingsKeys.setKeys({
   'running-indicator-style': {
     default_value: 0,
     widget_type: 'dropdown',
+    options: [
+      'default',
+      'dots',
+      'dot',
+      'dashes',
+      'dash',
+      'squares',
+      'square',
+      'segmented',
+      'solid',
+      'triangles',
+      'triangle',
+      'diamonds',
+      'diamond',
+      'binary',
+    ],
     test: { values: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13] },
   },
   'running-indicator-color': {
@@ -141,6 +175,7 @@ SettingsKeys.setKeys({
   'notification-badge-style': {
     default_value: 0,
     widget_type: 'dropdown',
+    options: ['default', 'dot', 'dash', 'square', 'triangle', 'diamond'],
     test: { values: [0, 1, 2, 3, 4, 5] },
   },
   'notification-badge-color': {

@@ -8,6 +8,10 @@
   background: rgba(0,0,0,0);
 }
 
+#panelBox #panel.light * {
+  color: black!important;
+}
+
 #dash * {
   margin: 0px !important;
   padding: 0px !important;
@@ -30,7 +34,6 @@
   margin-bottom: $dash_padding;
 }
 */
-
 
 #d2dlBackground.border-radius-0 {
   border-radius: 0px !important;

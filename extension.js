@@ -59,6 +59,8 @@ class Extension {
     this._enableSettings();
     this._queryDisplay();
 
+    this._disable_borders = this.border_radius > 0;
+
     if (!SettingsKeys.getValue('animate-icons')) {
       SettingsKeys.setValue('animate-icons', true);
     }
@@ -129,8 +131,8 @@ class Extension {
     this._updateLayout();
     this._updateAutohide();
     this._updateAnimation();
-    this._updateBackgroundColors();
     this._updateCss();
+    this._updateBackgroundColors();
     this._updateTrashIcon();
 
     this._addEvents();
@@ -145,11 +147,11 @@ class Extension {
     this._disableSettings();
 
     this._updateShrink(true);
-    this._updateBackgroundColors(true);
     this._updateLayout(true);
     this._updateAnimation(true);
     this._updateAutohide(true);
     this._updateCss(true);
+    this._updateBackgroundColors(true);
 
     this.dashContainer.remove_child(this.dash);
     if (this.reuseExistingDash) {
@@ -206,6 +208,8 @@ class Extension {
           func: () => {
             this._updateLayout();
             this._onEnterEvent();
+
+            // hack - rounded corners are messed up
           },
           delay: 500,
         },
@@ -314,6 +318,7 @@ class Extension {
           this._updateIconResolution();
           this.animator.disable();
           this.animator.enable();
+          this._updatecss();
           this._updateBackgroundColors();
           this._updateLayout();
           this._onEnterEvent();
@@ -358,6 +363,10 @@ class Extension {
           this._onEnterEvent();
           break;
         }
+        case 'border-color':
+        case 'border-thickness':
+        case 'topbar-border-color':
+        case 'topbar-border-thickness':
         case 'panel-mode': {
           this._updateCss();
           this._updateBackgroundColors();
@@ -367,14 +376,18 @@ class Extension {
         }
         case 'topbar-background-color':
         case 'background-color': {
+          this._updateCss();
           this._updateBackgroundColors();
           break;
         }
         case 'pressure-sense': {
           break;
         }
+        case 'border-thickness':
+        case 'border-color':
         case 'border-radius': {
           this._updateCss();
+          this._updateBackgroundColors();
           break;
         }
         case 'trash-icon': {
@@ -396,6 +409,9 @@ class Extension {
       let key = SettingsKeys.getKey(k);
       let name = k.replace(/-/g, '_');
       this[name] = key.value;
+      if (key.options) {
+        this[`${name}_options`] = key.options;
+      }
     });
   }
 
@@ -507,6 +523,7 @@ class Extension {
     }
     this.animator.disable();
     this.animator.enable();
+    this._updateCss();
     this._updateBackgroundColors();
     this._onEnterEvent();
   }
@@ -615,17 +632,37 @@ class Extension {
 
     // dash background
     let background = this.animator._background;
+
     if (background) {
+      background.style = '';
+      let border_style = '';
+      if (this.border_thickness && !this._disable_borders) {
+        let bg = this.border_color || [1, 1, 1, 1];
+        let clr = bg.map((r) => Math.floor(255 * r));
+        clr[3] = bg[3];
+        if (this.panel_mode) {
+          border_style = `border-top: ${
+            this.border_thickness
+          }px solid rgba(${clr.join(',')});`;
+        } else {
+          border_style = `border: ${
+            this.border_thickness
+          }px solid rgba(${clr.join(',')});`;
+        }
+      }
+
       if (!disable) {
         let bg = this.background_color || [0, 0, 0, 0.5];
         let clr = bg.map((r) => Math.floor(255 * r));
         clr[3] = bg[3];
-        let style = `background: rgba(${clr.join(',')})`;
+        let style = `${border_style} background: rgba(${clr.join(',')});`;
         background.style = style;
         background.opacity = 255;
       } else {
-        background.style = '';
+        background.style = `${border_style}`;
       }
+
+      log(`style:${background.style}`);
     }
 
     // panel background
@@ -639,8 +676,11 @@ class Extension {
     //   Main.panel.style = style;
     // }
 
+    Main.panel.style = '';
+
     if (disable) {
       Main.panel.background_color = Clutter.Color.from_pixel(0xffffff00);
+      Main.panel.remove_style_class_name('light');
     } else {
       let bg = Clutter.Color.from_pixel(0xffffffff);
       bg.red = Math.floor(this.topbar_background_color[0] * 255);
@@ -648,24 +688,42 @@ class Extension {
       bg.blue = Math.floor(this.topbar_background_color[2] * 255);
       bg.alpha = Math.floor(this.topbar_background_color[3] * 255);
       Main.panel.background_color = bg;
-    }
 
-    this._updateCss(disable);
+      if (this.topbar_border_thickness) {
+        let bg = this.topbar_border_color || [1, 1, 1, 1];
+        let clr = bg.map((r) => Math.floor(255 * r));
+        clr[3] = bg[3];
+        Main.panel.style = `border: ${
+          this.topbar_border_thickness
+        }px solid rgba(${clr.join(
+          ','
+        )}); border-top: 0px; border-left: 0px; border-right: 0px;`;
+      }
+
+      let _bg = this.topbar_background_color;
+      if (0.3 * _bg[0] + 0.59 * _bg[1] + 0.11 * _bg[2] < 0.5) {
+        Main.panel.remove_style_class_name('light');
+      } else {
+        Main.panel.add_style_class_name('light');
+      }
+    }
   }
 
   _updateCss(disable) {
     if (!this.dash || !this.dashContainer) return;
 
     let background = this.animator._background || null;
-    if (background && this.border_radius !== null) {
-      let r = -1;
-      if (!disable && !this.panel_mode) {
-        r = Math.floor(this.border_radius);
-        background.add_style_class_name(`border-radius-${r}`);
-      }
-      for (let i = 0; i < 7; i++) {
-        if (i != r) {
-          background.remove_style_class_name(`border-radius-${i}`);
+    if (background) {
+      if (this.border_radius !== null) {
+        let r = -1;
+        if (!disable && !this.panel_mode) {
+          r = Math.floor(this.border_radius);
+          background.add_style_class_name(`border-radius-${r}`);
+        }
+        for (let i = 0; i < 7; i++) {
+          if (i != r) {
+            background.remove_style_class_name(`border-radius-${i}`);
+          }
         }
       }
     }
@@ -960,6 +1018,7 @@ class Extension {
 
     if (this.animate_icons && !disable) {
       this.animator.enable();
+      this._updateCss();
       this._updateBackgroundColors();
       this._onEnterEvent();
     }
@@ -1013,6 +1072,7 @@ class Extension {
     }
 
     this._loTimer.runOnce(() => {
+      this._updateCss();
       this._updateBackgroundColors();
     }, 250);
 

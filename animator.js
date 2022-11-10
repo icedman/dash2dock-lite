@@ -354,13 +354,13 @@ var Animator = class {
     });
 
     // hack for last icon (appsButton)
-    {
-      let p = animateIcons[animateIcons.length - 2];
-      let l = animateIcons[animateIcons.length - 1];
-      if (l && !l._appwell && p && p._container) {
-        l._pos[0] = p._pos[0] + p._container.width * 0.9 * scaleFactor;
-      }
-    }
+    // {
+    //   let p = animateIcons[animateIcons.length - 2];
+    //   let l = animateIcons[animateIcons.length - 1];
+    //   if (l && !l._appwell && p && p._container) {
+    //     l._pos[0] = p._pos[0] + p._container.width * 0.9 * scaleFactor;
+    //   }
+    // }
 
     let idx = 0;
     animateIcons.forEach((icon) => {
@@ -663,14 +663,10 @@ var Animator = class {
           badgeParent.pivot_point = pivot;
           badgeParent.set_scale(scale, scale);
 
-          let style = [
-            'default',
-            'dot',
-            'dash',
-            'square',
-            'triangle',
-            'diamond',
-          ][this.extension.notification_badge_style];
+          let style =
+            this.extension.notification_badge_style_options[
+              this.extension.notification_badge_style
+            ];
 
           icon._badge.visible = true;
           icon._badge.set_state({
@@ -711,22 +707,10 @@ var Animator = class {
               (iconSize * scaleFactor) / DOT_CANVAS_SIZE
             );
 
-            let style = [
-              'default',
-              'dots',
-              'dot',
-              'dashes',
-              'dash',
-              'squares',
-              'square',
-              'segmented',
-              'solid',
-              'triangles',
-              'triangle',
-              'diamonds',
-              'diamond',
-              'binary',
-            ][this.extension.running_indicator_style];
+            let style =
+              this.extension.running_indicator_style_options[
+                this.extension.running_indicator_style
+              ];
 
             dot.set_state({
               count: icon._appwell.app.get_n_windows(),
@@ -763,6 +747,12 @@ var Animator = class {
           this._background.x = this.dashContainer.x;
           this._background.width = this.dashContainer.width;
         }
+      }
+
+      if (this.extension._disable_borders && this._background.width > 0) {
+        this.extension._disable_borders = false;
+        this.extension._updateCss();
+        this.extension._updateBackgroundColors();
       }
     }
 

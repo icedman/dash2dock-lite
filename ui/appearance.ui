@@ -127,6 +127,19 @@
         </child>
         <child>
           <object class="AdwActionRow">
+            <property name="title" translatable="yes">Border Thickness</property>
+            <property name="subtitle" translatable="yes">Set border thickness.</property>
+            <property name="activatable-widget">border-thickness</property>
+            <child>
+              <object class="GtkDropDown" id="border-thickness">
+                <property name="valign">center</property>
+                <property name="model">border-thickness-model</property>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="AdwActionRow">
             <property name="title" translatable="yes">Border Color</property>
             <property name="subtitle" translatable="yes">Select border color.</property>
             <property name="activatable-widget">border-color</property>
@@ -138,19 +151,6 @@
                 <property name="height-request">45px</property>
                 <property name="show-editor">true</property>
                 <property name="use-alpha">true</property>
-              </object>
-            </child>
-          </object>
-        </child>
-        <child>
-          <object class="AdwActionRow">
-            <property name="title" translatable="yes">Border Thickness</property>
-            <property name="subtitle" translatable="yes">Set border thickness.</property>
-            <property name="activatable-widget">border-thickness</property>
-            <child>
-              <object class="GtkDropDown" id="border-thickness">
-                <property name="valign">center</property>
-                <property name="model">border-thickness-model</property>
               </object>
             </child>
           </object>
@@ -353,9 +353,9 @@
   <object class="GtkStringList" id="border-thickness-model">
     <items>
       <item translatable="yes">None</item>
-      <item>1</item>
-      <item>2</item>
-      <item>3</item>
+      <item>1px</item>
+      <item>2px</item>
+      <item>3px</item>
     </items>
   </object>
 </interface>

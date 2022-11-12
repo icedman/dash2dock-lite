@@ -29,6 +29,9 @@ const MessageTray = imports.ui.messageTray;
 calendar._messages[1].notification.urgency
 calendar._messages[1]._iconBin.first_child.icon_name
 
+// calendar events
+// org.gnome.Evolution-alarm-notify.desktop
+
 ```
 
 ## gsettings

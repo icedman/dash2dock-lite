@@ -351,7 +351,11 @@ var Animator = class {
 
     let idx = 0;
     animateIcons.forEach((icon) => {
-      icon._pos[1] -= this.extension._effective_edge_distance;
+      if (this.extension._vertical) {
+        icon._pos[0] -= this.extension._effective_edge_distance;
+      } else {
+        icon._pos[1] -= this.extension._effective_edge_distance;
+      }
 
       let bin = icon._bin;
       let pos = [...icon._pos];
@@ -462,8 +466,14 @@ var Animator = class {
       if (!i._pos) return;
       let p = [...i._pos];
       if (!p) return;
-      p[0] += off + offX;
+      p[0] += off;
       p[1] += off;
+
+      if (this.extension._vertical) {
+        p[1] += offX;
+      } else {
+        p[0] += offX;
+      }
       i._pos = p;
     });
 
@@ -487,12 +497,15 @@ var Animator = class {
     // animation behavior
     if (animateIcons.length && nearestIcon) {
       let animation_type = this.extension.animation_type;
-      let anim = Animation(animateIcons, [px, py], this.dashContainer, {
+      let anim = {};
+
+      anim = Animation(animateIcons, [px, py], this.dashContainer, {
         iconSize,
         scaleFactor,
         animation_rise: this.extension.animation_rise * ANIM_ICON_RAISE,
         animation_magnify: this.extension.animation_magnify * ANIM_ICON_SCALE,
         animation_spread: this.extension.animation_spread,
+        vertical: this.extension._vertical
       });
 
       // commit
@@ -543,7 +556,11 @@ var Animator = class {
 
     if (!nearestIcon) {
       animateIcons.forEach((i) => {
-        i._container.width = iconSpacing * scaleFactor;
+        if (this.extension._vertical) {
+          i._container.height = iconSpacing * scaleFactor;
+        } else {
+          i._container.width = iconSpacing * scaleFactor;
+        }
       });
     }
 
@@ -595,7 +612,11 @@ var Animator = class {
         has_errors = true;
       }
 
-      icon._container.width = iconSpacing * scaleFactor * scale;
+      if (this.extension._vertical) {
+        icon._container.height = iconSpacing * scaleFactor * scale;
+      } else {
+        icon._container.width = iconSpacing * scaleFactor * scale;
+      }
 
       // scale
       if (!isNaN(scale)) {
@@ -694,7 +715,12 @@ var Animator = class {
             dot.visible = true;
             dotParent.width = iconSize;
             dotParent.height = iconSize;
-            dotParent.set_position(pos[0], pos[1] + 8 * scaleFactor);
+
+            if (this.extension._vertical) {
+              dotParent.set_position(pos[0] - 8 * scaleFactor, pos[1]);
+            } else {
+              dotParent.set_position(pos[0], pos[1] + 8 * scaleFactor);
+            }
             dot.set_scale(
               (iconSize * scaleFactor) / DOT_CANVAS_SIZE,
               (iconSize * scaleFactor) / DOT_CANVAS_SIZE
@@ -709,6 +735,7 @@ var Animator = class {
               count: icon._appwell.app.get_n_windows(),
               color: this.extension.running_indicator_color || [1, 1, 1, 1],
               style: style || 'default',
+              rotate: this.extension._vertical ? 90 : 0,
             });
           }
         }
@@ -759,10 +786,11 @@ var Animator = class {
         }
 
         if (this.extension.panel_mode) {
-          this._background.x = this.dashContainer.x;
           if (this.extension._vertical) {
+            this._background.y = this.dashContainer.y;
             this._background.height = this.dashContainer.height;
           } else {
+            this._background.x = this.dashContainer.x;
             this._background.width = this.dashContainer.width;
           }
         }

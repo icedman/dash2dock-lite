@@ -753,10 +753,15 @@ class Extension {
     // W: breakable
     let icons = this.dash._box.get_children().filter((actor) => {
       if (!actor.child) {
+        let cls = actor.get_style_class_name();
+        if (cls === 'dash-separator') {
+          actor.width = 0;
+          actor.height = 0;
+        }
         return false;
       }
 
-      actor._cls = actor.child.get_style_class_name();
+      actor._cls = actor.get_style_class_name();
       if (actor.child._delegate && actor.child._delegate.icon) {
         return true;
       }
@@ -867,37 +872,23 @@ class Extension {
       (iconSize + dockPadding) * (this.shrink_icons ? 1.8 : 1.6) * scale;
     this.iconSize = iconSize;
 
-    // panel mode adjustment
-    if (this.panel_mode) {
-      // dockHeight -= 8 * this.scaleFactor;
-    }
-
-    this.dash.height = dockHeight * this.scaleFactor;
+    // this.dash.height = dockHeight * this.scaleFactor;
     this.dash.visible = true;
 
     if (this._vertical) {
       // left/right
       this.dashContainer.set_size(dockHeight * this.scaleFactor, this.sh);
+      this.dashContainer.layout_manager.orientation = 1;
       this.dash.last_child.layout_manager.orientation = 1;
       this.dash._box.layout_manager.orientation = 1;
-      this.dash._box.height = -1;
-      this.dash._box.width = dockHeight * this.scaleFactor;
-
-      this.dash.add_style_class_name('vertical');
     } else {
       // top/bottom
       this.dashContainer.set_size(this.sw, dockHeight * this.scaleFactor);
+      this.dashContainer.layout_manager.orientation = 0;
       this.dash.last_child.layout_manager.orientation = 0;
       this.dash._box.layout_manager.orientation = 0;
-      this.dash._box.height = -1;
-      this.dash._box.width = -1;
-
-      this.dash.remove_style_class_name('vertical');
     }
 
-    // this._edge_distance =
-    //   (-EDGE_DISTANCE / 4 + (this.edge_distance || 0) * EDGE_DISTANCE) *
-    //   this.scaleFactor;
     let padding = 0;
     this._edge_distance =
       (this.edge_distance || 0) * (EDGE_DISTANCE - padding) * this.scaleFactor;
@@ -906,22 +897,13 @@ class Extension {
       // remain hidden
     } else {
       if (this._vertical) {
-        // left/right
-        // let posx = this.monitor.x + this._edge_distance;
-        // if (this.dashContainer._position == 1) {
-        //   this._edge_distance *= -1;
-        //   posx =
-        //     this.monitor.x +
-        //     this.sw -
-        //     dockHeight * this.scaleFactor +
-        //     this._edge_distance;
-        // }
+        // left/ (-right)
         this.dashContainer.set_position(this.monitor.x, this.monitor.y);
       } else {
         // top/bottom
         this.dashContainer.set_position(
           this.monitor.x,
-          this.monitor.y + this.sh - dockHeight * this.scaleFactor // - distance
+          this.monitor.y + this.sh - dockHeight * this.scaleFactor
         );
       }
 

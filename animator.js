@@ -743,6 +743,7 @@ var Animator = class {
     });
 
     // background
+    this._background.visible = false;
     if (validPosition && animateIcons.length > 1) {
       let first = animateIcons[0];
       let last = animateIcons[animateIcons.length - 1];
@@ -750,6 +751,7 @@ var Animator = class {
       let p2 = this._get_position(last);
       if (!isNaN(p1[0]) && !isNaN(p1[1])) {
         let padding = iconSize * 0.25 * scaleFactor;
+        this._background.visible = true;
 
         // bottom
         this._background.x = p1[0] - padding;

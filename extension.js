@@ -872,7 +872,6 @@ class Extension {
       (iconSize + dockPadding) * (this.shrink_icons ? 1.8 : 1.6) * scale;
     this.iconSize = iconSize;
 
-    // this.dash.height = dockHeight * this.scaleFactor;
     this.dash.visible = true;
 
     if (this._vertical) {
@@ -881,12 +880,16 @@ class Extension {
       this.dashContainer.layout_manager.orientation = 1;
       this.dash.last_child.layout_manager.orientation = 1;
       this.dash._box.layout_manager.orientation = 1;
+      this.dash.height = -1;
+      this.dash.width = dockHeight * this.scaleFactor;
     } else {
       // top/bottom
       this.dashContainer.set_size(this.sw, dockHeight * this.scaleFactor);
       this.dashContainer.layout_manager.orientation = 0;
       this.dash.last_child.layout_manager.orientation = 0;
       this.dash._box.layout_manager.orientation = 0;
+      this.dash.height = dockHeight * this.scaleFactor;
+      this.dash.width = -1;
     }
 
     let padding = 0;

@@ -16,7 +16,7 @@ var Timer = class {
 
     this._hibernating = false;
     this._hibernatCounter = 0;
-    this._hibernateWait = 250 + (this._resolution * 2);
+    this._hibernateWait = 250 + this._resolution * 2;
   }
 
   shutdown() {
@@ -146,7 +146,7 @@ var Timer = class {
     if (this._autoHibernate) {
       if (!this._subscribers.length) {
         this._hibernatCounter += this._resolution;
-        if (this._hibernatCounter >= (this._hibernateWait)) {
+        if (this._hibernatCounter >= this._hibernateWait) {
           this.hibernate();
         }
       } else {

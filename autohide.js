@@ -104,9 +104,13 @@ var AutoHide = class {
     this.animationInterval = this.extension.animationInterval;
     if (this.extension._hiTimer && this._animate()) {
       if (!this._animationSeq) {
-        this._animationSeq = this.extension._hiTimer.runLoop(() => {
-          this._animate();
-        }, this.animationInterval, 'autohideTimer');
+        this._animationSeq = this.extension._hiTimer.runLoop(
+          () => {
+            this._animate();
+          },
+          this.animationInterval,
+          'autohideTimer'
+        );
       } else {
         this.extension._hiTimer.runLoop(this._animationSeq);
       }
@@ -353,9 +357,13 @@ var AutoHide = class {
   _debounceCheckHide() {
     if (this.extension._loTimer) {
       if (!this._debounceCheckSeq) {
-        this._debounceCheckSeq = this.extension._loTimer.runDebounced(() => {
-          this._checkHide();
-        }, DEBOUNCE_HIDE_TIMEOUT, 'debounceCheckHide');
+        this._debounceCheckSeq = this.extension._loTimer.runDebounced(
+          () => {
+            this._checkHide();
+          },
+          DEBOUNCE_HIDE_TIMEOUT,
+          'debounceCheckHide'
+        );
       } else {
         this.extension._loTimer.runDebounced(this._debounceCheckSeq);
       }

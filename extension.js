@@ -144,7 +144,6 @@ class Extension {
   }
 
   disable() {
-
     if (this._timer) {
       this._timer.stop();
       this._hiTimer.stop();
@@ -510,7 +509,6 @@ class Extension {
   }
 
   _removeEvents() {
-
     this.dashContainer.set_reactive(false);
     this.dashContainer.set_track_hover(false);
     this.dashContainer.disconnectObject(this);
@@ -922,16 +920,16 @@ class Extension {
     } else {
       if (this._vertical) {
         // left/right
-        let posx = this.monitor.x + this._edge_distance;
-        if (this.dashContainer._position == 1) {
-          this._edge_distance *= -1;
-          posx =
-            this.monitor.x +
-            this.sw -
-            dockHeight * this.scaleFactor +
-            this._edge_distance;
-        }
-        this.dashContainer.set_position(posx, this.monitor.y);
+        // let posx = this.monitor.x + this._edge_distance;
+        // if (this.dashContainer._position == 1) {
+        //   this._edge_distance *= -1;
+        //   posx =
+        //     this.monitor.x +
+        //     this.sw -
+        //     dockHeight * this.scaleFactor +
+        //     this._edge_distance;
+        // }
+        this.dashContainer.set_position(this.monitor.x, this.monitor.y);
       } else {
         // top/bottom
         this.dashContainer.set_position(

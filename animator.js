@@ -404,8 +404,14 @@ var Animator = class {
       icon._target = pos;
       icon._targetScale = 1;
 
-      if (pos[1] < this.extension.sh / 2) {
-        validPosition = false;
+      if (this.extension._vertical) {
+        if (pos[0] > this.extension.sw / 2) {
+          validPosition = false;
+        }
+      } else {
+        if (pos[1] < this.extension.sh / 2) {
+          validPosition = false;
+        }
       }
 
       idx++;
@@ -717,8 +723,11 @@ var Animator = class {
       let p2 = this._get_position(last);
       if (!isNaN(p1[0]) && !isNaN(p1[1])) {
         let padding = iconSize * 0.25 * scaleFactor;
+
+        // bottom
         this._background.x = p1[0] - padding;
         this._background.y = animateIcons[0]._fixedPosition[1] - padding; // p1[1] - padding
+
         if (p2[1] > p1[1]) {
           this._background.y = p2[1] - padding;
         }
@@ -730,9 +739,32 @@ var Animator = class {
         this._background.height = iconSize * scaleFactor + padding * 2;
         this._padding = padding;
 
+        // left
+        if (this.extension._vertical) {
+          this._background.x = p1[0] - padding;
+          this._background.y = animateIcons[0]._fixedPosition[1] - padding; // p1[1] - padding
+
+          if (p2[0] < p1[0]) {
+            this._background.x = p2[0] - padding;
+          }
+
+          this._background.width = iconSize * scaleFactor + padding * 2;
+          this._background.height =
+            p2[1] -
+            p1[1] +
+            iconSize * scaleFactor * last._targetScale +
+            padding * 2;
+
+          log(`${this._background.width} ${this._background.height}`);
+        }
+
         if (this.extension.panel_mode) {
           this._background.x = this.dashContainer.x;
-          this._background.width = this.dashContainer.width;
+          if (this.extension._vertical) {
+            this._background.height = this.dashContainer.height;
+          } else {
+            this._background.width = this.dashContainer.width;
+          }
         }
       }
 
@@ -761,7 +793,7 @@ var Animator = class {
 
     this._dotsCount = 0;
     this._iconsCount = icons.length;
-    
+
     icons.forEach((c) => {
       if (c._appwell) {
         let wc = c._appwell.app.get_n_windows();
@@ -840,9 +872,13 @@ var Animator = class {
     this.animationInterval = this.extension.animationInterval;
     if (this.extension._hiTimer) {
       if (!this._animationSeq) {
-        this._animationSeq = this.extension._hiTimer.runLoop(() => {
-          this._animate();
-        }, this.animationInterval, 'animationTimer');
+        this._animationSeq = this.extension._hiTimer.runLoop(
+          () => {
+            this._animate();
+          },
+          this.animationInterval,
+          'animationTimer'
+        );
       } else {
         this.extension._hiTimer.runLoop(this._animationSeq);
       }
@@ -860,9 +896,13 @@ var Animator = class {
   _debounceEndAnimation() {
     if (this.extension._loTimer) {
       if (!this.debounceEndSeq) {
-        this.debounceEndSeq = this.extension._loTimer.runDebounced(() => {
-          this._endAnimation();
-        }, ANIM_DEBOUNCE_END_DELAY + this.animationInterval, 'debounceEndAnimation');
+        this.debounceEndSeq = this.extension._loTimer.runDebounced(
+          () => {
+            this._endAnimation();
+          },
+          ANIM_DEBOUNCE_END_DELAY + this.animationInterval,
+          'debounceEndAnimation'
+        );
       } else {
         this.extension._loTimer.runDebounced(this.debounceEndSeq);
       }
@@ -914,7 +954,10 @@ var Animator = class {
       let prevDots = this._dotsCount;
       let prevIconsCount = this._iconsCount;
       log(`${prevDots} ${prevIconsCount}`);
-      if (this._iconsCount != this._findIcons().length || prevDots != this._dotsCount) {
+      if (
+        this._iconsCount != this._findIcons().length ||
+        prevDots != this._dotsCount
+      ) {
         this._endAnimation();
         this._startAnimation();
         this.relayout();

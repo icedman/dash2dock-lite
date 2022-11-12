@@ -755,7 +755,7 @@ var Animator = class {
             iconSize * scaleFactor * last._targetScale +
             padding * 2;
 
-          log(`${this._background.width} ${this._background.height}`);
+          // log(`${this._background.width} ${this._background.height}`);
         }
 
         if (this.extension.panel_mode) {
@@ -953,7 +953,6 @@ var Animator = class {
     this.extension._loTimer.runOnce(() => {
       let prevDots = this._dotsCount;
       let prevIconsCount = this._iconsCount;
-      log(`${prevDots} ${prevIconsCount}`);
       if (
         this._iconsCount != this._findIcons().length ||
         prevDots != this._dotsCount
@@ -965,7 +964,6 @@ var Animator = class {
       }
       prevDots = this._dotsCount;
       prevIconsCount = this._iconsCount;
-      // log(`::${prevDots} ${prevIconsCount}`);
     }, 150);
   }
 

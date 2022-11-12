@@ -326,10 +326,7 @@ class Extension {
           this.animator.enable();
           this.autohider.disable();
           this.autohider.enable();
-          this._updatecss();
-          this._updateBackgroundColors();
-          this._updateLayout();
-          this._onEnterEvent();
+          this.startUp();
           break;
         }
         case 'icon-effect': {
@@ -371,10 +368,13 @@ class Extension {
           this._onEnterEvent();
           break;
         }
+        case 'border-radius':
         case 'border-color':
         case 'border-thickness':
         case 'topbar-border-color':
         case 'topbar-border-thickness':
+        case 'topbar-background-color':
+        case 'background-color':
         case 'panel-mode': {
           this._updateCss();
           this._updateBackgroundColors();
@@ -382,20 +382,7 @@ class Extension {
           this._onEnterEvent();
           break;
         }
-        case 'topbar-background-color':
-        case 'background-color': {
-          this._updateCss();
-          this._updateBackgroundColors();
-          break;
-        }
         case 'pressure-sense': {
-          break;
-        }
-        case 'border-thickness':
-        case 'border-color':
-        case 'border-radius': {
-          this._updateCss();
-          this._updateBackgroundColors();
           break;
         }
         case 'trash-icon': {

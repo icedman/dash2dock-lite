@@ -102,11 +102,11 @@ var AutoHide = class {
     }
 
     this.animationInterval = this.extension.animationInterval;
-    if (this.extension._hiTimer) {
+    if (this.extension._hiTimer && this._animate()) {
       if (!this._animationSeq) {
         this._animationSeq = this.extension._hiTimer.runLoop(() => {
           this._animate();
-        }, this.animationInterval);
+        }, this.animationInterval, 'autohideTimer');
       } else {
         this.extension._hiTimer.runLoop(this._animationSeq);
       }
@@ -241,12 +241,12 @@ var AutoHide = class {
 
       // animate the icons if needed
       if (this.animator && this.animator._enabled) {
-        this.animator._beginAnimation();
+        this.animator._beginAnimation('autohider');
       }
     }
 
     this.dashContainer.set_position(this.target[0], y);
-    return true;
+    return this._animating;
   }
 
   _track(window) {
@@ -355,7 +355,7 @@ var AutoHide = class {
       if (!this._debounceCheckSeq) {
         this._debounceCheckSeq = this.extension._loTimer.runDebounced(() => {
           this._checkHide();
-        }, DEBOUNCE_HIDE_TIMEOUT);
+        }, DEBOUNCE_HIDE_TIMEOUT, 'debounceCheckHide');
       } else {
         this.extension._loTimer.runDebounced(this._debounceCheckSeq);
       }

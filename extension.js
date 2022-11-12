@@ -36,16 +36,17 @@ class Extension {
 
     // three available timers
     // for persistent persistent runs
-    this._timer = new Timer();
-    this._timer.warmup(3500);
+    this._timer = new Timer('loop timer');
+    this._timer.initialize(3500);
 
     // for animation runs
-    this._hiTimer = new Timer();
-    this._hiTimer.warmup(15);
+    // resolution (15) will be modified by animation-fps
+    this._hiTimer = new Timer('hi-res timer');
+    this._hiTimer.initialize(15);
 
     // for deferred or debounced runs
-    this._loTimer = new Timer();
-    this._loTimer.warmup(500);
+    this._loTimer = new Timer('lo-res timer');
+    this._loTimer.initialize(750);
 
     this.listeners = [];
     this.scale = 1.0;
@@ -143,6 +144,17 @@ class Extension {
   }
 
   disable() {
+
+    if (this._timer) {
+      this._timer.stop();
+      this._hiTimer.stop();
+      this._loTimer.stop();
+    }
+    if (this._diagnosticTimer) {
+      this._diagnosticTimer.stop();
+      this._diagnosticTimer = null;
+    }
+
     this._removeEvents();
     this._disableSettings();
 
@@ -183,11 +195,6 @@ class Extension {
     this._timer = null;
     this._hiTimer = null;
     this._loTimer = null;
-
-    if (this._diagnosticTimer) {
-      this._diagnosticTimer.stop();
-      this._diagnosticTimer = null;
-    }
 
     log('dash2dock-lite disabled');
   }
@@ -318,6 +325,8 @@ class Extension {
           this._updateIconResolution();
           this.animator.disable();
           this.animator.enable();
+          this.autohider.disable();
+          this.autohider.enable();
           this._updatecss();
           this._updateBackgroundColors();
           this._updateLayout();
@@ -501,9 +510,6 @@ class Extension {
   }
 
   _removeEvents() {
-    this._timer.stop();
-    this._hiTimer.stop();
-    this._loTimer.stop();
 
     this.dashContainer.set_reactive(false);
     this.dashContainer.set_track_hover(false);
@@ -578,7 +584,6 @@ class Extension {
       .forEach((l) => {
         if (l._onFocusWindow) l._onFocusWindow();
       });
-
     this._onCheckServices();
   }
 
@@ -603,8 +608,8 @@ class Extension {
     }
     this.animationInterval =
       ANIM_INTERVAL + (this.animation_fps || 0) * ANIM_INTERVAL_PAD;
-    this._hiTimer.stop();
-    this._hiTimer.warmup(this.animationInterval);
+    this._hiTimer.shutdown();
+    this._hiTimer.initialize(this.animationInterval);
   }
 
   _updateShrink(disable) {
@@ -661,8 +666,6 @@ class Extension {
       } else {
         background.style = `${border_style}`;
       }
-
-      log(`style:${background.style}`);
     }
 
     // panel background
@@ -1094,8 +1097,8 @@ class Extension {
 
   runDiagnostics() {
     if (!this._diagnosticTimer) {
-      this._diagnosticTimer = new Timer();
-      this._diagnosticTimer.warmup(50);
+      this._diagnosticTimer = new Timer('diagnostics');
+      this._diagnosticTimer.initialize(50);
     }
     runTests(this, SettingsKeys);
   }

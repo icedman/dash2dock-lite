@@ -204,10 +204,6 @@ var Animator = class {
     pivot.y = 1.0;
 
     let existingIcons = this._iconsContainer.get_children();
-    if (this._iconsCount != existingIcons.length) {
-      this._relayout = 8;
-      this._iconsCount = existingIcons.length;
-    }
 
     let validPosition = true;
     let dock_position = 'bottom';
@@ -254,8 +250,6 @@ var Animator = class {
     pivot.x *= scaleFactor;
     pivot.y *= scaleFactor;
 
-    let visible_dots = 0;
-
     let icons = this._previousFind;
 
     if (!icons) {
@@ -272,13 +266,6 @@ var Animator = class {
     icons.forEach((c) => {
       let bin = c._bin;
       if (!bin) return;
-
-      if (c._appwell) {
-        let wc = c._appwell.app.get_n_windows();
-        if (wc > 0) {
-          visible_dots++;
-        }
-      }
 
       for (let i = 0; i < existingIcons.length; i++) {
         if (existingIcons[i]._bin == bin) {
@@ -314,7 +301,7 @@ var Animator = class {
       }
     });
 
-    this._precreate_dots(visible_dots + icons.length);
+    this._precreate_dots(this._dotsCount + icons.length);
 
     let nearestIdx = -1;
     let nearestIcon = null;
@@ -772,6 +759,18 @@ var Animator = class {
   _findIcons() {
     let icons = this.extension._findIcons();
 
+    this._dotsCount = 0;
+    this._iconsCount = icons.length;
+    
+    icons.forEach((c) => {
+      if (c._appwell) {
+        let wc = c._appwell.app.get_n_windows();
+        if (wc > 0) {
+          this._dotsCount++;
+        }
+      }
+    });
+
     // todo: fix: too elaborate a hack to suppress initial dock display- when icons are not yet ready
     if (icons.length <= 1) {
       // only the ShowAppsButton?... dash not yet ready
@@ -826,9 +825,14 @@ var Animator = class {
     return Math.sqrt(this._get_distance_sqr(pos1, pos2));
   }
 
-  _beginAnimation() {
-    if (this.debounceEndSeq) {
-      this.extension._loTimer.cancel(this.debounceEndSeq);
+  _beginAnimation(caller) {
+    // if (caller) {
+    //   log(`animation triggered by ${caller}`);
+    // }
+
+    if (this.extension._hiTimer && this.debounceEndSeq) {
+      this.extension._loTimer.runDebounced(this.debounceEndSeq);
+      // this.extension._loTimer.cancel(this.debounceEndSeq);
     }
 
     this._throttleDown = 0;
@@ -838,7 +842,7 @@ var Animator = class {
       if (!this._animationSeq) {
         this._animationSeq = this.extension._hiTimer.runLoop(() => {
           this._animate();
-        }, this.animationInterval);
+        }, this.animationInterval, 'animationTimer');
       } else {
         this.extension._hiTimer.runLoop(this._animationSeq);
       }
@@ -858,7 +862,7 @@ var Animator = class {
       if (!this.debounceEndSeq) {
         this.debounceEndSeq = this.extension._loTimer.runDebounced(() => {
           this._endAnimation();
-        }, ANIM_DEBOUNCE_END_DELAY + this.animationInterval);
+        }, ANIM_DEBOUNCE_END_DELAY + this.animationInterval, 'debounceEndAnimation');
       } else {
         this.extension._loTimer.runDebounced(this.debounceEndSeq);
       }
@@ -907,12 +911,18 @@ var Animator = class {
 
   _onFocusWindow() {
     this.extension._loTimer.runOnce(() => {
-      if (this._iconsCount != this._findIcons().length) {
+      let prevDots = this._dotsCount;
+      let prevIconsCount = this._iconsCount;
+      log(`${prevDots} ${prevIconsCount}`);
+      if (this._iconsCount != this._findIcons().length || prevDots != this._dotsCount) {
         this._endAnimation();
         this._startAnimation();
         this.relayout();
         // animate the added icon
       }
+      prevDots = this._dotsCount;
+      prevIconsCount = this._iconsCount;
+      // log(`::${prevDots} ${prevIconsCount}`);
     }, 150);
   }
 
@@ -934,9 +944,10 @@ var Animator = class {
     return monitor.inFullscreen;
   }
 
+  // todo: drop and just use beginAnimation which debouncesEndAnimation?
   _startAnimation() {
     this._beginAnimation();
-    this._debounceEndAnimation();
+    // this._debounceEndAnimation();
   }
 
   _restoreIcons() {

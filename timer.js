@@ -3,15 +3,25 @@
 const { GLib } = imports.gi;
 
 var Timer = class {
-  constructor() {
+  constructor(name) {
+    this._name = name;
     this._subscribers = [];
     this._subscriberId = 0xff;
-    this._autoStart = true;
-    this._autoHibernate = true;
   }
 
-  warmup(resolution) {
+  initialize(resolution) {
     this._resolution = resolution || 1000;
+    this._autoStart = true;
+    this._autoHibernate = true;
+
+    this._hibernating = false;
+    this._hibernatCounter = 0;
+    this._hibernateWait = 250 + (this._resolution * 2);
+  }
+
+  shutdown() {
+    this._autoStart = false;
+    this.stop();
   }
 
   start(resolution) {
@@ -68,6 +78,7 @@ var Timer = class {
 
     this.stop();
     this._hibernating = true;
+    this._hibernatCounter = 0;
   }
 
   is_running() {
@@ -86,6 +97,7 @@ var Timer = class {
   }
 
   onStart() {
+    // print(`started timer ${this._name} [${this.subscriberNames().join(',')}]`);
     this._subscribers.forEach((s) => {
       if (s.onStart) {
         s.onStart(s);
@@ -99,6 +111,7 @@ var Timer = class {
         s.onStop(s);
       }
     });
+    // print(`stopped timer ${this._name}`);
   }
 
   onPause() {
@@ -129,6 +142,18 @@ var Timer = class {
     });
 
     this._time += this._resolution;
+
+    if (this._autoHibernate) {
+      if (!this._subscribers.length) {
+        this._hibernatCounter += this._resolution;
+        if (this._hibernatCounter >= (this._hibernateWait)) {
+          this.hibernate();
+        }
+      } else {
+        this._hibernatCounter = 0;
+      }
+    }
+
     // print(`${this._time/1000} subs:${this._subscribers.length}`);
     return true;
   }
@@ -173,13 +198,22 @@ var Timer = class {
         ];
       }
     }
+  }
 
-    if (this._autoHibernate && !this._subscribers.length) {
-      this.hibernate();
-    }
+  subscriberNames() {
+    return this._subscribers.map((s) => {
+      if (s._name) {
+        return s._name;
+      }
+      return `${s._id}`;
+    });
   }
 
   dumpSubscribers() {
+    if (this._name) {
+      print('--------');
+      print(this._name);
+    }
     this._subscribers.forEach((s) => {
       print('--------');
       Object.keys(s).forEach((k) => {

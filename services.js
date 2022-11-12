@@ -265,6 +265,9 @@ var Services = class {
       if (!appId) {
         appId = n.notification.source._appId;
       }
+      if (!appId) {
+        appId = '?';
+      }
       if (!this._appNotices[appId]) {
         this._appNotices[appId] = {
           count: 0,

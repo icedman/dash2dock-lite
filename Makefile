@@ -18,6 +18,7 @@ publish:
 	cp *.js ./build
 	cp metadata.json ./build
 	cp stylesheet.css ./build
+	cp CHANGELOG.md ./build
 	cp README.md ./build
 	cp -R schemas ./build
 	cp -R ui ./build

@@ -1,13 +1,16 @@
-# Release 15
+# Release 16
 
 * Add preferred monitor
 * Add icon color effects
 * Icon Effect: Tint
 * Icon Effect: Monochrome
 * Add background color effects
+* Add border settings color and thickness
 * Add show/hide apps icon
+* Add show/hide running app icons
 * Add diagnostics/tests
 * Improved animation and icon scaling
+* Refactor timers (use less timers)
 
 * Add dock position (on-hold)
 

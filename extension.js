@@ -123,7 +123,7 @@ class Extension {
     // todo follow animator and autohider protocol
     this.services.enable();
 
-    this.listeners = [this.animator, this.autohider, this.services];
+    this.listeners = [this.services, this.autohider, this.animator];
 
     this._onCheckServices();
 

@@ -561,7 +561,7 @@
                         <property name="visible">True</property>
                         <property name="can-focus">False</property>
                         <property name="valign">center</property>
-                        <property name="label" translatable="yes">Border Color</property>
+                        <property name="label" translatable="yes">Border Thickness</property>
                         <property name="xalign">0</property>
                         <property name="hexpand">1</property>
                         <attributes>
@@ -570,13 +570,9 @@
                       </object>
                     </child>
                     <child>
-                      <object class="GtkColorButton" id="topbar-border-color">
+                      <object class="GtkDropDown" id="topbar-border-thickness">
                         <property name="valign">center</property>
-                        <property name="hexpand">false</property>
-                        <property name="width-request">70px</property>
-                        <property name="height-request">45px</property>
-                        <property name="show-editor">true</property>
-                        <property name="use-alpha">true</property>
+                        <property name="model">border-thickness-model</property>
                       </object>
                     </child>
                   </object>
@@ -585,7 +581,7 @@
                   <object class="GtkLabel">
                     <property name="halign">start</property>
                     <property name="valign">center</property>
-                    <property name="label" translatable="yes">Select border color.</property>
+                    <property name="label" translatable="yes">Set border thickness.</property>
                   </object>
                 </child>
               </object>
@@ -615,7 +611,7 @@
                         <property name="visible">True</property>
                         <property name="can-focus">False</property>
                         <property name="valign">center</property>
-                        <property name="label" translatable="yes">Border Thickness</property>
+                        <property name="label" translatable="yes">Border Color</property>
                         <property name="xalign">0</property>
                         <property name="hexpand">1</property>
                         <attributes>
@@ -624,9 +620,13 @@
                       </object>
                     </child>
                     <child>
-                      <object class="GtkDropDown" id="topbar-border-thickness">
+                      <object class="GtkColorButton" id="topbar-border-color">
                         <property name="valign">center</property>
-                        <property name="model">border-thickness-model</property>
+                        <property name="hexpand">false</property>
+                        <property name="width-request">70px</property>
+                        <property name="height-request">45px</property>
+                        <property name="show-editor">true</property>
+                        <property name="use-alpha">true</property>
                       </object>
                     </child>
                   </object>
@@ -635,7 +635,7 @@
                   <object class="GtkLabel">
                     <property name="halign">start</property>
                     <property name="valign">center</property>
-                    <property name="label" translatable="yes">Set border thickness.</property>
+                    <property name="label" translatable="yes">Select border color.</property>
                   </object>
                 </child>
               </object>

@@ -180,6 +180,19 @@
         <property name="description" translatable="yes"/>
         <child>
           <object class="AdwActionRow">
+            <property name="title" translatable="yes">Border Thickness</property>
+            <property name="subtitle" translatable="yes">Set border thickness.</property>
+            <property name="activatable-widget">topbar-border-thickness</property>
+            <child>
+              <object class="GtkDropDown" id="topbar-border-thickness">
+                <property name="valign">center</property>
+                <property name="model">border-thickness-model</property>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="AdwActionRow">
             <property name="title" translatable="yes">Border Color</property>
             <property name="subtitle" translatable="yes">Select border color.</property>
             <property name="activatable-widget">topbar-border-color</property>
@@ -191,19 +204,6 @@
                 <property name="height-request">45px</property>
                 <property name="show-editor">true</property>
                 <property name="use-alpha">true</property>
-              </object>
-            </child>
-          </object>
-        </child>
-        <child>
-          <object class="AdwActionRow">
-            <property name="title" translatable="yes">Border Thickness</property>
-            <property name="subtitle" translatable="yes">Set border thickness.</property>
-            <property name="activatable-widget">topbar-border-thickness</property>
-            <child>
-              <object class="GtkDropDown" id="topbar-border-thickness">
-                <property name="valign">center</property>
-                <property name="model">border-thickness-model</property>
               </object>
             </child>
           </object>

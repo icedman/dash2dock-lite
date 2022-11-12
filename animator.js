@@ -505,7 +505,7 @@ var Animator = class {
         animation_rise: this.extension.animation_rise * ANIM_ICON_RAISE,
         animation_magnify: this.extension.animation_magnify * ANIM_ICON_SCALE,
         animation_spread: this.extension.animation_spread,
-        vertical: this.extension._vertical
+        vertical: this.extension._vertical,
       });
 
       // commit

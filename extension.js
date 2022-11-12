@@ -326,7 +326,11 @@ class Extension {
           this.animator.enable();
           this.autohider.disable();
           this.autohider.enable();
-          this.startUp();
+          this.animator._background.visible = false;
+          this._updateCss();
+          this._updateBackgroundColors();
+          this._updateLayout();
+          this._onEnterEvent();
           break;
         }
         case 'icon-effect': {
@@ -836,9 +840,9 @@ class Extension {
 
     let pos = this.dock_location || 0;
     // dock position -- [left, right] are experimental
-    if (!this.experimental_features) {
-      pos = 0;
-    }
+    // if (!this.experimental_features) {
+    //   pos = 0;
+    // }
     // See St position constants
     // remap [ bottom, left, right, top ] >> [ top, right, bottom, left ]
     this.dashContainer._position = [2, 3, 1, 0][pos];
@@ -877,7 +881,7 @@ class Extension {
     if (this._vertical) {
       // left/right
       this.dashContainer.set_size(dockHeight * this.scaleFactor, this.sh);
-      this.dashContainer.layout_manager.orientation = 1;
+      // this.dashContainer.layout_manager.orientation = 1;
       this.dash.last_child.layout_manager.orientation = 1;
       this.dash._box.layout_manager.orientation = 1;
       this.dash.height = -1;
@@ -885,7 +889,7 @@ class Extension {
     } else {
       // top/bottom
       this.dashContainer.set_size(this.sw, dockHeight * this.scaleFactor);
-      this.dashContainer.layout_manager.orientation = 0;
+      // this.dashContainer.layout_manager.orientation = 0;
       this.dash.last_child.layout_manager.orientation = 0;
       this.dash._box.layout_manager.orientation = 0;
       this.dash.height = dockHeight * this.scaleFactor;

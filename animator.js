@@ -34,6 +34,9 @@ const FIND_ICONS_SKIP_FRAMES = 16;
 const THROTTLE_DOWN_FRAMES = 30;
 const THROTTLE_DOWN_DELAY_FRAMES = 20;
 
+const MIN_SCROLL_RESOLUTION = 4;
+const MAX_SCROLL_RESOLUTION = 10;
+
 const DOT_CANVAS_SIZE = 96;
 
 var Animator = class {
@@ -943,18 +946,21 @@ var Animator = class {
     if (this._nearestIcon) {
       let icon = this._nearestIcon;
       // log(`scroll - (${icon._pos}) (${pointer})`);
-      let SCROLL_RESOLUTION = 8;
+      let SCROLL_RESOLUTION =
+        MIN_SCROLL_RESOLUTION +
+        MAX_SCROLL_RESOLUTION -
+        (MAX_SCROLL_RESOLUTION * this.extension.scroll_sensitivity || 0);
       if (icon._appwell && icon._appwell.app) {
         this._lastScrollObject = icon;
         switch (evt.direction) {
-        case Clutter.ScrollDirection.UP:
-        case Clutter.ScrollDirection.LEFT:
-          this._scrollCounter += 1/SCROLL_RESOLUTION;
-          break;
-        case Clutter.ScrollDirection.DOWN:
-        case Clutter.ScrollDirection.RIGHT:
-          this._scrollCounter -= 1/SCROLL_RESOLUTION;
-          break;
+          case Clutter.ScrollDirection.UP:
+          case Clutter.ScrollDirection.LEFT:
+            this._scrollCounter += 1 / SCROLL_RESOLUTION;
+            break;
+          case Clutter.ScrollDirection.DOWN:
+          case Clutter.ScrollDirection.RIGHT:
+            this._scrollCounter -= 1 / SCROLL_RESOLUTION;
+            break;
         }
         this._cycleWindows(icon._appwell.app, evt);
       }
@@ -1036,7 +1042,7 @@ var Animator = class {
     if (evt.modifier_state & Clutter.ModifierType.CONTROL_MASK) {
       windows = windows.filter((w) => {
         return activeWs == w.get_workspace();
-      }); 
+      });
     }
 
     let nw = windows.length;
@@ -1044,14 +1050,14 @@ var Animator = class {
     if (evt.modifier_state & Clutter.ModifierType.SHIFT_MASK) {
       windows.forEach((w) => {
         switch (evt.direction) {
-        case Clutter.ScrollDirection.UP:
-        case Clutter.ScrollDirection.LEFT:
-          w.minimize();
-          break;
-        case Clutter.ScrollDirection.DOWN:
-        case Clutter.ScrollDirection.RIGHT:
-          w.unminimize();
-          break;
+          case Clutter.ScrollDirection.UP:
+          case Clutter.ScrollDirection.LEFT:
+            w.minimize();
+            break;
+          case Clutter.ScrollDirection.DOWN:
+          case Clutter.ScrollDirection.RIGHT:
+            w.unminimize();
+            break;
         }
       });
       return;
@@ -1061,10 +1067,12 @@ var Animator = class {
     });
 
     if (nw > 1) {
-      for(let i=0; i<nw; i++) {
+      for (let i = 0; i < nw; i++) {
         if (windows[i].has_focus()) {
           focusId = i;
-          break;
+        }
+        if (windows[i].is_hidden()) {
+          windows[i].unminimize();
         }
       }
 
@@ -1073,7 +1081,7 @@ var Animator = class {
       if (this._scrollCounter < -1 || this._scrollCounter > 1) {
         focusId += Math.round(this._scrollCounter);
         if (focusId < 0) {
-          focusId = nw-1;
+          focusId = nw - 1;
         }
         if (focusId >= nw) {
           focusId = 0;

@@ -215,6 +215,7 @@ var Animator = class {
     let iconSpacing = iconSize * (1.2 + this.extension.animation_spread / 4);
 
     this.dashContainer.dash.opacity = 0;
+    this._iconsContainer.opacity = 255;
     this.dashContainer.dash._background.visible = false;
 
     switch (this.dashContainer._position) {
@@ -340,19 +341,14 @@ var Animator = class {
       return dstA > dstB ? 1 : -1;
     });
 
-    // hack for last icon (appsButton)
-    // {
-    //   let p = animateIcons[animateIcons.length - 2];
-    //   let l = animateIcons[animateIcons.length - 1];
-    //   if (l && !l._appwell && p && p._container) {
-    //     l._pos[0] = p._pos[0] + p._container.width * 0.9 * scaleFactor;
-    //   }
-    // }
-
     let idx = 0;
     animateIcons.forEach((icon) => {
       if (this.extension._vertical) {
-        icon._pos[0] -= this.extension._effective_edge_distance;
+        if (this.dashContainer._position == 1) {
+          icon._pos[0] -= this.extension._effective_edge_distance;
+        } else {
+          icon._pos[0] += this.extension._effective_edge_distance;
+        }
       } else {
         icon._pos[1] -= this.extension._effective_edge_distance;
       }
@@ -409,9 +405,12 @@ var Animator = class {
       icon._targetScale = 1;
 
       if (this.extension._vertical) {
-        if (pos[0] > this.extension.sw / 2) {
-          validPosition = false;
-        }
+        // if (this.dashContainer._position == 1 &&
+        //     pos[0] < this.extension.sw / 2) {
+        //   validPosition = false;
+        // } else if (pos[0] > this.extension.sw / 2) {
+        //   validPosition = false;
+        // }
       } else {
         if (pos[1] < this.extension.sh / 2) {
           validPosition = false;
@@ -505,7 +504,7 @@ var Animator = class {
         animation_rise: this.extension.animation_rise * ANIM_ICON_RAISE,
         animation_magnify: this.extension.animation_magnify * ANIM_ICON_SCALE,
         animation_spread: this.extension.animation_spread,
-        vertical: this.extension._vertical,
+        vertical: this.extension._vertical ? this.dashContainer._position : 0,
       });
 
       // commit
@@ -717,7 +716,11 @@ var Animator = class {
             dotParent.height = iconSize;
 
             if (this.extension._vertical) {
-              dotParent.set_position(pos[0] - 8 * scaleFactor, pos[1]);
+              if (this.dashContainer._position == 1) {
+                dotParent.set_position(pos[0] + 8 * scaleFactor, pos[1]);
+              } else {
+                dotParent.set_position(pos[0] - 8 * scaleFactor, pos[1]);
+              }
             } else {
               dotParent.set_position(pos[0], pos[1] + 8 * scaleFactor);
             }
@@ -735,7 +738,11 @@ var Animator = class {
               count: icon._appwell.app.get_n_windows(),
               color: this.extension.running_indicator_color || [1, 1, 1, 1],
               style: style || 'default',
-              rotate: this.extension._vertical ? 90 : 0,
+              rotate: this.extension._vertical
+                ? this.dashContainer._position == 1
+                  ? -90
+                  : 90
+                : 0,
             });
           }
         }
@@ -743,7 +750,6 @@ var Animator = class {
     });
 
     // background
-    this._background.visible = false;
     if (validPosition && animateIcons.length > 1) {
       let first = animateIcons[0];
       let last = animateIcons[animateIcons.length - 1];
@@ -751,7 +757,6 @@ var Animator = class {
       let p2 = this._get_position(last);
       if (!isNaN(p1[0]) && !isNaN(p1[1])) {
         let padding = iconSize * 0.25 * scaleFactor;
-        this._background.visible = true;
 
         // bottom
         this._background.x = p1[0] - padding;
@@ -768,12 +773,15 @@ var Animator = class {
         this._background.height = iconSize * scaleFactor + padding * 2;
         this._padding = padding;
 
-        // left
+        // vertical
         if (this.extension._vertical) {
           this._background.x = p1[0] - padding;
           this._background.y = animateIcons[0]._fixedPosition[1] - padding; // p1[1] - padding
 
-          if (p2[0] < p1[0]) {
+          if (this.dashContainer._position == 1 && p2[0] > p1[0]) {
+            this._background.x = p2[0] - padding;
+          }
+          if (this.dashContainer._position == 3 && p2[0] < p1[0]) {
             this._background.x = p2[0] - padding;
           }
 

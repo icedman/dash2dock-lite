@@ -249,7 +249,11 @@ var AutoHide = class {
       }
     }
 
-    this.dashContainer.set_position(this.target[0], y);
+    if (this.extension._vertical) {
+      this.dashContainer.set_position(x, this.target[1]);
+    } else {
+      this.dashContainer.set_position(this.target[0], y);
+    }
     return this._animating;
   }
 
@@ -301,12 +305,12 @@ var AutoHide = class {
     // log(pointer[1]);
     // log(dash_position[1]);
 
-    // if (this.extension._vertical) {
-    //   if (pointer[0] < dash_position[1] + this.dashContainer.width)
-    //     return false;
-    // } else {
-    if (pointer[1] > dash_position[1]) return false;
-    // }
+    if (this.extension._vertical) {
+      if (pointer[0] < dash_position[1] + this.dashContainer.width)
+        return false;
+    } else {
+      if (pointer[1] > dash_position[1]) return false;
+    }
 
     let monitor = this.dashContainer._monitor;
     let actors = global.get_window_actors();
@@ -331,15 +335,15 @@ var AutoHide = class {
     windows.forEach((w) => {
       let frame = w.get_frame_rect();
       // log (`${frame.y} + ${frame.height}`);
-      // if (this.extension._vertical) {
-      //   if (frame.x <= dash_position[0] + this.dashContainer.width) {
-      //     isOverlapped = true;
-      //   }
-      // } else {
-      if (frame.y + frame.height >= dash_position[1]) {
-        isOverlapped = true;
+      if (this.extension._vertical) {
+        if (frame.x <= dash_position[0] + this.dashContainer.width) {
+          isOverlapped = true;
+        }
+      } else {
+        if (frame.y + frame.height >= dash_position[1]) {
+          isOverlapped = true;
+        }
       }
-      // }
     });
 
     this.windows = windows;

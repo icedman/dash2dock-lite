@@ -634,7 +634,7 @@ class Extension {
         let bg = this.border_color || [1, 1, 1, 1];
         let clr = bg.map((r) => Math.floor(255 * r));
         clr[3] = bg[3];
-        if (this.panel_mode) {
+        if (this.panel_mode && !this._vertical) {
           border_style = `border-top: ${
             this.border_thickness
           }px solid rgba(${clr.join(',')});`;
@@ -877,23 +877,29 @@ class Extension {
     this.iconSize = iconSize;
 
     this.dash.visible = true;
+    this.dashContainer.vertical = !this.dashContainer._vertical;
 
     if (this._vertical) {
       // left/right
-      this.dashContainer.set_size(dockHeight * this.scaleFactor, this.sh);
-      // this.dashContainer.layout_manager.orientation = 1;
+      this.dashContainer.set_size(
+        dockHeight * this.scaleFactor,
+        this.sh - Main.panel.height
+      );
+      // this.dashContainer.layout_manager.orientation = 1; // messes up
       this.dash.last_child.layout_manager.orientation = 1;
       this.dash._box.layout_manager.orientation = 1;
       this.dash.height = -1;
       this.dash.width = dockHeight * this.scaleFactor;
+      this.dash.add_style_class_name('vertical');
     } else {
       // top/bottom
       this.dashContainer.set_size(this.sw, dockHeight * this.scaleFactor);
-      // this.dashContainer.layout_manager.orientation = 0;
+      // this.dashContainer.layout_manager.orientation = 0; // messes up
       this.dash.last_child.layout_manager.orientation = 0;
       this.dash._box.layout_manager.orientation = 0;
       this.dash.height = dockHeight * this.scaleFactor;
       this.dash.width = -1;
+      this.dash.remove_style_class_name('vertical');
     }
 
     let padding = 0;
@@ -904,8 +910,17 @@ class Extension {
       // remain hidden
     } else {
       if (this._vertical) {
-        // left/ (-right)
-        this.dashContainer.set_position(this.monitor.x, this.monitor.y);
+        // left
+        this.dashContainer.set_position(
+          this.monitor.x,
+          this.monitor.y + Main.panel.height
+        );
+
+        // right
+        if (this.dashContainer._position == 1) {
+          this.dashContainer.x += this.dashContainer._monitor.width;
+          this.dashContainer.x -= dockHeight * this.scaleFactor;
+        }
       } else {
         // top/bottom
         this.dashContainer.set_position(
@@ -918,6 +933,7 @@ class Extension {
         this.dashContainer.x,
         this.dashContainer.y,
       ];
+
       this.dashContainer._hidePosition = [...this.dashContainer._fixedPosition];
 
       let hidePad = 4 * this.scaleFactor;
@@ -926,6 +942,14 @@ class Extension {
           this.dashContainer._monitor.x -
           dockHeight * this.scaleFactor +
           hidePad;
+
+        // right
+        if (this.dashContainer._position == 1) {
+          this.dashContainer._hidePosition[0] =
+            this.dashContainer._monitor.x +
+            this.dashContainer._monitor.width -
+            hidePad;
+        }
       } else {
         this.dashContainer._hidePosition[1] =
           this.dashContainer._monitor.y +

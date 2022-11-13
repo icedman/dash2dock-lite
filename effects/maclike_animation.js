@@ -47,7 +47,11 @@ var Animation = (animateIcons, pointer, container, settings) => {
 
     // rise
     if (settings.vertical) {
-      i._pos2[0] += (i._d - nsz) * 0.8 * settings.animation_rise;
+      if (settings.vertical == 1) {
+        i._pos2[0] -= (i._d - nsz) * 0.8 * settings.animation_rise;
+      } else {
+        i._pos2[0] += (i._d - nsz) * 0.8 * settings.animation_rise;
+      }
     } else {
       i._pos2[1] -= (i._d - nsz) * 0.8 * settings.animation_rise;
     }

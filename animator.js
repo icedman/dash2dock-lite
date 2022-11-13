@@ -938,14 +938,14 @@ var Animator = class {
   }
 
   _onScrollEvent(obj, evt) {
-    Main._lastScrollEvent = evt;
+    this._lastScrollEvent = evt;
     let pointer = global.get_pointer();
     if (this._nearestIcon) {
       let icon = this._nearestIcon;
       // log(`scroll - (${icon._pos}) (${pointer})`);
       let SCROLL_RESOLUTION = 8;
       if (icon._appwell && icon._appwell.app) {
-        Main._lastScrollObject = icon;
+        this._lastScrollObject = icon;
         switch (evt.direction) {
         case Clutter.ScrollDirection.UP:
         case Clutter.ScrollDirection.LEFT:
@@ -956,7 +956,7 @@ var Animator = class {
           this._scrollCounter -= 1/SCROLL_RESOLUTION;
           break;
         }
-        this._cycleWindows(icon._appwell.app);
+        this._cycleWindows(icon._appwell.app, evt);
       }
     }
   }
@@ -1027,22 +1027,39 @@ var Animator = class {
     });
   }
 
-  _cycleWindows(app) {
+  _cycleWindows(app, evt) {
     let focusId = 0;
     let workspaceManager = global.workspace_manager;
     let activeWs = workspaceManager.get_active_workspace();
 
-    // Main._lastScrollEvent.modifier_state
-
     let windows = app.get_windows();
-    // windows = windows.filter((w) => {
-    //   return activeWs == w.get_workspace();
-    // });
+    if (evt.modifier_state & Clutter.ModifierType.CONTROL_MASK) {
+      windows = windows.filter((w) => {
+        return activeWs == w.get_workspace();
+      }); 
+    }
+
+    let nw = windows.length;
+
+    if (evt.modifier_state & Clutter.ModifierType.SHIFT_MASK) {
+      windows.forEach((w) => {
+        switch (evt.direction) {
+        case Clutter.ScrollDirection.UP:
+        case Clutter.ScrollDirection.LEFT:
+          w.minimize();
+          break;
+        case Clutter.ScrollDirection.DOWN:
+        case Clutter.ScrollDirection.RIGHT:
+          w.unminimize();
+          break;
+        }
+      });
+      return;
+    }
     windows.sort((w1, w2) => {
       return w1.get_id() > w2.get_id() ? -1 : 1;
     });
 
-    let nw = windows.length;
     if (nw > 1) {
       for(let i=0; i<nw; i++) {
         if (windows[i].has_focus()) {

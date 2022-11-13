@@ -44,6 +44,8 @@ var Animator = class {
   enable() {
     if (this._enabled) return;
 
+    this._scrollCounter = 0;
+
     this._iconsContainer = new St.Widget({
       name: 'd2dlIconsContainer',
       offscreen_redirect: Clutter.OffscreenRedirect.ALWAYS,
@@ -918,8 +920,9 @@ var Animator = class {
 
     if (this._nearestIcon) {
       let icon = this._nearestIcon;
-      log(`${button} ${pressed} - (${icon._pos}) (${pointer})`);
+      // log(`${button} ${pressed} - (${icon._pos}) (${pointer})`);
       if (icon._appwell) {
+        Main._lastButtonObject = icon;
         // let dx = icon._pos[0] - pointer[0];
         // let dy = icon._pos[1] - pointer[1];
         // let dst = Math.sqrt(dx * dx + dy * dy);
@@ -930,6 +933,30 @@ var Animator = class {
           icon._appwell.popupMenu();
         }
         // }
+      }
+    }
+  }
+
+  _onScrollEvent(obj, evt) {
+    Main._lastScrollEvent = evt;
+    let pointer = global.get_pointer();
+    if (this._nearestIcon) {
+      let icon = this._nearestIcon;
+      // log(`scroll - (${icon._pos}) (${pointer})`);
+      let SCROLL_RESOLUTION = 8;
+      if (icon._appwell && icon._appwell.app) {
+        Main._lastScrollObject = icon;
+        switch (evt.direction) {
+        case Clutter.ScrollDirection.UP:
+        case Clutter.ScrollDirection.LEFT:
+          this._scrollCounter += 1/SCROLL_RESOLUTION;
+          break;
+        case Clutter.ScrollDirection.DOWN:
+        case Clutter.ScrollDirection.RIGHT:
+          this._scrollCounter -= 1/SCROLL_RESOLUTION;
+          break;
+        }
+        this._cycleWindows(icon._appwell.app);
       }
     }
   }
@@ -998,5 +1025,59 @@ var Animator = class {
         c._icon.opacity = 255;
       }
     });
+  }
+
+  _cycleWindows(app) {
+    let focusId = 0;
+    let workspaceManager = global.workspace_manager;
+    let activeWs = workspaceManager.get_active_workspace();
+
+    // Main._lastScrollEvent.modifier_state
+
+    let windows = app.get_windows();
+    // windows = windows.filter((w) => {
+    //   return activeWs == w.get_workspace();
+    // });
+    windows.sort((w1, w2) => {
+      return w1.get_id() > w2.get_id() ? -1 : 1;
+    });
+
+    let nw = windows.length;
+    if (nw > 1) {
+      for(let i=0; i<nw; i++) {
+        if (windows[i].has_focus()) {
+          focusId = i;
+          break;
+        }
+      }
+
+      let current_focus = focusId;
+
+      if (this._scrollCounter < -1 || this._scrollCounter > 1) {
+        focusId += Math.round(this._scrollCounter);
+        if (focusId < 0) {
+          focusId = nw-1;
+        }
+        if (focusId >= nw) {
+          focusId = 0;
+        }
+        this._scrollCounter = 0;
+      }
+
+      if (current_focus == focusId) return;
+    }
+
+    let window = windows[focusId];
+
+    // log(`${focusId}/${window.get_id()}`);
+
+    if (window) {
+      if (activeWs == window.get_workspace()) {
+        window.raise();
+        window.focus(0);
+      } else {
+        activeWs.activate_with_focus(window, global.get_current_time());
+      }
+    }
   }
 };

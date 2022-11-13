@@ -1,6 +1,6 @@
 'use strict';
 
-const { St, Shell, Gio, GLib, Gtk, Meta, Clutter } = imports.gi;
+const { St, Shell, GObject, Gio, GLib, Gtk, Meta, Clutter } = imports.gi;
 
 const Main = imports.ui.main;
 const Dash = imports.ui.dash.Dash;
@@ -29,6 +29,22 @@ const ANIM_ICON_QUALITY = 2.0;
 
 const ANIM_INTERVAL = 15;
 const ANIM_INTERVAL_PAD = 15;
+
+var DashContainer = GObject.registerClass({
+}, class DashContainer extends St.BoxLayout {
+  _init() {
+    super._init();
+    this.name = 'dashContainer';
+    this.vertical = true;
+  }
+
+  vfunc_scroll_event(scrollEvent) {
+    if (this.delegate) {
+      this.delegate._onScrollEvent(this, scrollEvent);
+    }
+    return Clutter.EVENT_PROPAGATE;
+  }
+});
 
 class Extension {
   enable() {
@@ -69,10 +85,11 @@ class Extension {
     this._updateAnimationFPS();
 
     // setup the dash container
-    this.dashContainer = new St.BoxLayout({
-      name: 'dashContainer',
-      vertical: true,
-    });
+    // this.dashContainer = new St.BoxLayout({
+    //   name: 'dashContainer',
+    //   vertical: true,
+    // });
+    this.dashContainer = new DashContainer();
     this.dashContainer.delegate = this;
     let pivot = new Point();
     pivot.x = 0.5;
@@ -517,6 +534,16 @@ class Extension {
     this._updateCss();
     this._updateBackgroundColors();
     this._onEnterEvent();
+  }
+
+  _onScrollEvent(obj, evt) {
+    this.listeners
+      .filter((l) => {
+        return l._enabled;
+      })
+      .forEach((l) => {
+        if (l._onScrollEvent) l._onScrollEvent(obj, evt);
+      });
   }
 
   _onButtonEvent(obj, evt) {

@@ -30,21 +30,23 @@ const ANIM_ICON_QUALITY = 2.0;
 const ANIM_INTERVAL = 15;
 const ANIM_INTERVAL_PAD = 15;
 
-var DashContainer = GObject.registerClass({
-}, class DashContainer extends St.BoxLayout {
-  _init() {
-    super._init();
-    this.name = 'dashContainer';
-    this.vertical = true;
-  }
-
-  vfunc_scroll_event(scrollEvent) {
-    if (this.delegate) {
-      this.delegate._onScrollEvent(this, scrollEvent);
+var DashContainer = GObject.registerClass(
+  {},
+  class DashContainer extends St.BoxLayout {
+    _init() {
+      super._init();
+      this.name = 'dashContainer';
+      this.vertical = true;
     }
-    return Clutter.EVENT_PROPAGATE;
+
+    vfunc_scroll_event(scrollEvent) {
+      if (this.delegate) {
+        this.delegate._onScrollEvent(this, scrollEvent);
+      }
+      return Clutter.EVENT_PROPAGATE;
+    }
   }
-});
+);
 
 class Extension {
   enable() {

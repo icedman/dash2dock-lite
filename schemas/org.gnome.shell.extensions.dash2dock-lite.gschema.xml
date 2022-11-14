@@ -216,6 +216,11 @@
         <summary>Monitors Count</summary>
         <description>Monitors found by the extension.</description>
     </key>
+    <key type="d" name="scroll-sensitivity">
+        <default>0.4</default>
+        <summary>Scroll sensitivity</summary>
+        <description>Scroll sensitivity</description>
+    </key>
     <key type="s" name="msg-to-pref">
         <default>""</default>
         <summary>MsgBus</summary>

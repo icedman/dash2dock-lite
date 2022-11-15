@@ -1,5 +1,4 @@
-var Animation = (animateIcons, pointer, container, settings) => {
-  let dash = container.dash;
+var Animation = (animateIcons, pointer, settings) => {
   let [px, py] = pointer;
   let _firstIcon = animateIcons[0];
   let _secondIcon = animateIcons[1];
@@ -20,8 +19,6 @@ var Animation = (animateIcons, pointer, container, settings) => {
     4 *
     settings.scaleFactor *
     (settings.animation_spread / 2);
-
-  container._targetScale = null;
 
   // compute diameter
   animateIcons.forEach((i) => {

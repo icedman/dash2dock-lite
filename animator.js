@@ -492,7 +492,7 @@ var Animator = class {
     // animation behavior
     if (animateIcons.length && nearestIcon) {
       let animation_type = this.extension.animation_type;
-      let anim = Animation(animateIcons, [px, py], this.dashContainer, {
+      let anim = Animation(animateIcons, [px, py], {
         iconSize,
         scaleFactor,
         animation_rise: this.extension.animation_rise * ANIM_ICON_RAISE,

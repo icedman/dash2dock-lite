@@ -17,6 +17,7 @@ const Animator = Me.imports.animator.Animator;
 const AutoHide = Me.imports.autohide.AutoHide;
 const Services = Me.imports.services.Services;
 const Timer = Me.imports.timer.Timer;
+const Dock = Me.imports.dock.DockedDash;
 const xDot = Me.imports.apps.dot.xDot;
 const xWMControl = Me.imports.apps.wmcontrol.xWMControl;
 
@@ -34,9 +35,10 @@ var DashContainer = GObject.registerClass(
   {},
   class DashContainer extends St.BoxLayout {
     _init() {
-      super._init();
-      this.name = 'dashContainer';
-      this.vertical = true;
+      super._init({
+        name: 'd2dldotsContainer',
+        vertical: true,
+      });
     }
 
     vfunc_scroll_event(scrollEvent) {
@@ -51,6 +53,9 @@ var DashContainer = GObject.registerClass(
 class Extension {
   enable() {
     this._imports = Me.imports;
+
+    this._dock = new Dock();
+    this._dock.dock(Main.layoutManager.primaryMonitor, St.DirectionType.LEFT);
 
     // three available timers
     // for persistent persistent runs
@@ -163,6 +168,12 @@ class Extension {
   }
 
   disable() {
+
+    if (this._dock) {
+      this._dock.undock();
+      this._dock = null;
+    }
+
     if (this._timer) {
       this._timer.stop();
       this._hiTimer.stop();
@@ -225,6 +236,7 @@ class Extension {
           func: () => {
             this._updateLayout();
             this._onEnterEvent();
+            this._dock.updateIconSize(48);
           },
           delay: 500,
         },
@@ -233,7 +245,7 @@ class Extension {
           func: () => {
             this._updateLayout();
             this._onEnterEvent();
-
+            this._dock._layout();
             // hack - rounded corners are messed up
           },
           delay: 500,
@@ -243,6 +255,7 @@ class Extension {
           func: () => {
             this._updateLayout();
             this._onEnterEvent();
+            this._dock._layout();
           },
           delay: 500,
         },
@@ -863,7 +876,7 @@ class Extension {
     if (!this.experimental_features) {
       pos = 0;
     }
-    // See St position constants
+    // See St.Direction position constants
     // remap [ bottom, left, right, top ] >> [ top, right, bottom, left ]
     this.dashContainer._position = [2, 3, 1, 0][pos];
     this._vertical =

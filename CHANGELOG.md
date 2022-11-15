@@ -1,3 +1,9 @@
+# Release 17 (target)
+
+* Refactor Dock / Code cleanup
+* Add multiple-docks support
+* Add left, right, top layout
+
 # Release 16
 
 * Add preferred monitor

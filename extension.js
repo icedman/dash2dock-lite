@@ -54,8 +54,7 @@ class Extension {
   enable() {
     this._imports = Me.imports;
 
-    this._dock = new Dock();
-    this._dock.dock(Main.layoutManager.primaryMonitor, St.DirectionType.LEFT);
+    // this.addDock();
 
     // three available timers
     // for persistent persistent runs
@@ -168,7 +167,6 @@ class Extension {
   }
 
   disable() {
-
     if (this._dock) {
       this._dock.undock();
       this._dock = null;
@@ -228,6 +226,14 @@ class Extension {
     log('dash2dock-lite disabled');
   }
 
+  addDock() {
+    if (!this._dock) {
+      this._dock = new Dock();
+      this._dock.extension = this;
+    }
+    this._dock.dock(Main.layoutManager.primaryMonitor, St.DirectionType.LEFT);
+  }
+
   startUp() {
     // todo... refactor this
     if (!this._startupSeq) {
@@ -236,7 +242,7 @@ class Extension {
           func: () => {
             this._updateLayout();
             this._onEnterEvent();
-            this._dock.updateIconSize(48);
+            this._dock?.updateIconSize(48);
           },
           delay: 500,
         },
@@ -245,7 +251,7 @@ class Extension {
           func: () => {
             this._updateLayout();
             this._onEnterEvent();
-            this._dock._layout();
+            this._dock?.updateIconSize(48);
             // hack - rounded corners are messed up
           },
           delay: 500,
@@ -255,7 +261,7 @@ class Extension {
           func: () => {
             this._updateLayout();
             this._onEnterEvent();
-            this._dock._layout();
+            this._dock?.updateIconSize(48);
           },
           delay: 500,
         },

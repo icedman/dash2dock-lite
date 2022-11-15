@@ -13,7 +13,7 @@ var DockIcon = GObject.registerClass(
   {},
   class DockIcon extends St.Widget {
     _init() {
-      super._init({name: 'DockIcon'});
+      super._init({ name: 'DockIcon' });
       // this._dot
       // this._badge
     }
@@ -40,9 +40,7 @@ var RenderArea = GObject.registerClass(
       return Clutter.EVENT_PROPAGATE;
     }
 
-    draw(params) {
-
-    } 
+    draw(params) {}
   }
 );
 
@@ -104,6 +102,11 @@ var Dock = GObject.registerClass(
         this.undock();
       }
 
+      // UP is troublesome... because of panel?
+      if (position == St.DirectionType.UP) {
+        position = St.DirectionType.DOWN;
+      }
+
       this._monitor = monitor;
       this._position = position;
 
@@ -111,8 +114,8 @@ var Dock = GObject.registerClass(
 
       Main.layoutManager.addChrome(this, {
         affectsStruts: this._affect_struts,
-        affectsInputRegion: true,
-        trackFullscreen: true,
+        affectsInputRegion: false,
+        trackFullscreen: false,
       });
       Main.uiGroup.insert_child_below(this._background, this);
       Main.uiGroup.insert_child_above(this._render_area, this._background);
@@ -124,7 +127,7 @@ var Dock = GObject.registerClass(
       if (this._position) {
         Main.layoutManager.removeChrome(this);
         this._position = null;
-        
+
         if (this._background.get_parent()) {
           this._background.get_parent().remove_child(this._background);
         }
@@ -134,7 +137,6 @@ var Dock = GObject.registerClass(
 
         this.onUndock();
       }
-
     }
 
     _layout(monitor, position) {
@@ -146,29 +148,40 @@ var Dock = GObject.registerClass(
       let w = this._preferred_size[0];
       let h = this._preferred_size[1];
 
+      // monitor scale
+      let scaleFactor = St.ThemeContext.get_for_stage(
+        global.stage
+      ).scale_factor;
+
       this.set_size(w, h);
 
-      let panelHeight = monitor == Main.layoutManager.primaryMonitor ? Main.panel.height : 0;
+      let panelHeight =
+        monitor == Main.layoutManager.primaryMonitor ? Main.panel.height : 0;
 
       switch (position) {
         case St.DirectionType.UP: {
           w = monitor.width;
           this.vertical = true;
-          if (this.first_child) {
-            h = this.first_child.height;
-          }
           h += this._edge_distance;
+          y += panelHeight;
+          this._fixed_position = [x, y, w, h];
+          this._hidden_position = [...this._fixed_position];
+          this._hidden_position[1] -= h;
+          this._hidden_position[1] -= this._edge_distance;
+          this._hidden_position[1] -= panelHeight;
           break;
         }
         case St.DirectionType.DOWN: {
           y += monitor.height;
           w = monitor.width;
           this.vertical = true;
-          if (this.first_child) {
-            h = this.first_child.height;
-          }
           h += this._edge_distance;
           y -= h;
+
+          this._fixed_position = [x, y, w, h];
+          this._hidden_position = [...this._fixed_position];
+          this._hidden_position[1] += h;
+          this._hidden_position[1] += this._edge_distance;
           break;
         }
         case St.DirectionType.LEFT: {
@@ -176,10 +189,12 @@ var Dock = GObject.registerClass(
           h -= panelHeight;
           y += panelHeight;
           this.vertical = false;
-          if (this.first_child) {
-            w = this.first_child.width;
-          }
           w += this._edge_distance;
+
+          this._fixed_position = [x, y, w, h];
+          this._hidden_position = [...this._fixed_position];
+          this._hidden_position[0] -= w;
+          this._hidden_position[0] -= this._edge_distance;
           break;
         }
         case St.DirectionType.RIGHT: {
@@ -188,23 +203,33 @@ var Dock = GObject.registerClass(
           h -= panelHeight;
           y += panelHeight;
           this.vertical = false;
-          if (this.first_child) {
-            w = this.first_child.width;
-          }
           w += this._edge_distance;
           x -= w;
+
+          this._fixed_position = [x, y, w, h];
+          this._hidden_position = [...this._fixed_position];
+          this._hidden_position[0] += w;
+          this._hidden_position[0] += this._edge_distance;
           break;
         }
       }
-
-      this._fixedPosition = [x, y, w, h];
 
       this.set_position(x, y);
       this.set_size(w, h);
 
       this.style = '';
 
-      // reposition attached areas
+      this._layout_attached();
+    }
+
+    _layout_attached(position_only) {
+      let pos = [this.x, this.y];
+      let x = pos[0];
+      let y = pos[1];
+      let w = this.width;
+      let h = this.height;
+      let position = this._position;
+
       let rx = x;
       let ry = y;
       let rw = w;
@@ -244,9 +269,11 @@ var Dock = GObject.registerClass(
         }
       }
       this._background.set_position(bx, by);
-      this._background.set_size(bw, bh);
       this._render_area.set_position(rx, ry);
-      this._render_area.set_size(rw, rh);
+      if (!position_only) {
+        this._background.set_size(bw, bh);
+        this._render_area.set_size(rw, rh);
+      }
     }
 
     onDock() {}
@@ -255,6 +282,14 @@ var Dock = GObject.registerClass(
     onMotionEvent() {}
     onEnterEvent() {}
     onLeaveEvent() {}
+
+    _show() {
+      this._target_position = this._fixed_position;
+    }
+
+    _hide() {
+      this._target_position = this._hidden_position;
+    }
   }
 );
 
@@ -289,7 +324,14 @@ var DockedDash = GObject.registerClass(
       let icon = bin.first_child;
 
       return {
-        appwell, draggable, label, widget, icongrid, boxlayout, bin, icon
+        appwell,
+        draggable,
+        label,
+        widget,
+        icongrid,
+        boxlayout,
+        bin,
+        icon,
       };
     }
 
@@ -357,48 +399,162 @@ var DockedDash = GObject.registerClass(
     }
 
     updateIconSize(sz) {
+      // monitor scale
+      let scaleFactor = St.ThemeContext.get_for_stage(
+        global.stage
+      ).scale_factor;
+
+      let hpad = 10 * scaleFactor;
+      let vpad = 15 * scaleFactor;
+
+      this._preferred_size = [sz + hpad * 2, sz + vpad * 2];
       this._resizeIcons(sz);
       this._layout();
     }
 
-    onMotionEvent() {
-      let icons = this._findIcons();
+    _startAnimation() {
+      if (!this._t) {
+        this._t = this.extension._hiTimer.runLoop(this.animate.bind(this), 15);
+      }
+      this._debounceEndAnimation();
+    }
 
-      let scaleFactor = St.ThemeContext.get_for_stage(global.stage).scale_factor;
+    _endAnimation() {
+      if (this._t) {
+        this.extension._hiTimer.cancel(this._t);
+        this._t = null;
+      }
+      if (this._dt) {
+        this.extension._loTimer.runDebounced(this._dt);
+      }
+    }
+
+    _debounceEndAnimation() {
+      if (this._t) {
+        if (!this._dt) {
+          this._dt = this.extension._loTimer.runDebounced(() => {
+            this._endAnimation();
+          }, 2500);
+        } else {
+          this.extension._loTimer.runDebounced(this._dt);
+        }
+      }
+    }
+
+    animate() {
+      let pointer = global.get_pointer();
+
+      let withinBounds = true;
+      let bounds = [
+        ...this._render_area.get_transformed_position(),
+        this._render_area.width,
+        this._render_area.height,
+      ];
+      if (
+        pointer[0] < bounds[0] ||
+        pointer[0] > bounds[0] + bounds[2] ||
+        pointer[1] < bounds[1] ||
+        pointer[1] > bounds[1] + bounds[3]
+      ) {
+        withinBounds = false;
+      } else {
+        this._debounceEndAnimation();
+      }
+
+      let icons = this._findIcons();
+      if (icons.length < 2) return;
+
+      // monitor scale
+      let scaleFactor = St.ThemeContext.get_for_stage(
+        global.stage
+      ).scale_factor;
+
       let iconSize = this._iconSize;
       let iconSpacing = iconSize * (1.2 + 0.8 / 4);
+      let vertical =
+        this._position == St.DirectionType.LEFT ||
+        this._position == St.DirectionType.RIGHT;
 
+      if (vertical) {
+        iconSpacing = iconSize * (1.2 + 0.8 / 6);
+      }
       // gather fixed positions
       icons.forEach((i) => {
         let { bin } = this._explodeDashIcon(i);
-        i._pos =[...bin.get_transformed_position()]
+        i._pos = [...bin.get_transformed_position()];
         i._targetScale = 1.0;
       });
 
-      let pointer = global.get_pointer();
-      let anim = Animation(icons, pointer, {
-        iconSize,
-        scaleFactor,
-        animation_rise: 0.3,
-        animation_magnify: 1.2,
-        animation_spread: 0.8,
+      if (withinBounds) {
+        let anim = Animation(icons, pointer, {
+          iconSize,
+          scaleFactor,
+          animation_rise: 0.3,
+          animation_magnify: 1.2,
+          animation_spread: 0.8,
+          vertical,
+          position: this._position,
+        });
+      }
+
+      // animate containers
+      icons.forEach((i) => {
+        if (vertical) {
+          i.height =
+            (i.height * 4 + i._targetScale * iconSpacing * scaleFactor) / 5;
+        } else {
+          i.width =
+            (i.width * 4 + i._targetScale * iconSpacing * scaleFactor) / 5;
+        }
       });
 
-      icons.forEach((i) => {
-        i.height = i._targetScale * iconSpacing * scaleFactor;
+      this._render_area.draw({
+        icons,
+        vertical,
+        position: this._position,
       });
+
+      if (this._target_position) {
+        let x = (this._target_position[0] + this.x * 4) / 5;
+        let y = (this._target_position[1] + this.y * 4) / 5;
+        this.set_position(x, y);
+        this._layout_attached(true);
+      }
+    }
+
+    onUndock() {
+      if (this._t) {
+        this.extension._hiTimer.cancel(this._t);
+        this._t = null;
+      }
+    }
+
+    onButtonEvent() {}
+    onMotionEvent() {
+      this._startAnimation();
+    }
+    onEnterEvent() {}
+
+    _show() {
+      super._show();
+      this._startAnimation();
+    }
+
+    _hide() {
+      super._hide();
+      this._startAnimation();
     }
   }
 );
 
 var DockTest = () => {
-  let dock = new Dock({name:'Dock'});
+  let dock = new Dock({ name: 'Dock' });
   dock.dock(Main.layoutManager.primaryMonitor, St.DirectionType.LEFT);
   return dock;
-}
+};
 
 var DockedDashTest = () => {
-  let dock = new DockedDash({name:'Dock'});
+  let dock = new DockedDash({ name: 'Dock' });
   dock.dock(Main.layoutManager.primaryMonitor, St.DirectionType.LEFT);
   return dock;
-}
+};

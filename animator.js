@@ -918,18 +918,17 @@ var Animator = class {
     Main._lastButtonEvent = evt;
     let pressed = evt.type() == Clutter.EventType.BUTTON_PRESS;
     let button1 = (evt.get_state() & Clutter.ModifierType.BUTTON1_MASK) != 0;
+    let shift = (evt.get_state() & Clutter.ModifierType.SHIFT_MASK) != 0;
     let button = button1 ? 'left' : 'right';
     let pointer = global.get_pointer();
+
+    log(evt.get_button());
 
     if (this._nearestIcon) {
       let icon = this._nearestIcon;
       // log(`${button} ${pressed} - (${icon._pos}) (${pointer})`);
       if (icon._appwell) {
         Main._lastButtonObject = icon;
-        // let dx = icon._pos[0] - pointer[0];
-        // let dy = icon._pos[1] - pointer[1];
-        // let dst = Math.sqrt(dx * dx + dy * dy);
-        // if (dst < icon._d / 2) {
         if (button == 'left') {
           icon._appwell.emit('clicked', {});
         } else {
@@ -1033,6 +1032,14 @@ var Animator = class {
     });
   }
 
+  _lockCycle() {
+    if (this._lockedCycle) return;
+    this._lockedCycle = true;
+    this.extension._hiTimer.runOnce(() => {
+      this._lockedCycle = false;
+    }, 500);
+  }
+
   _cycleWindows(app, evt) {
     let focusId = 0;
     let workspaceManager = global.workspace_manager;
@@ -1047,18 +1054,45 @@ var Animator = class {
 
     let nw = windows.length;
 
-    if (evt.modifier_state & Clutter.ModifierType.SHIFT_MASK) {
+    if (
+      !this._lockedCycle &&
+      evt.modifier_state & Clutter.ModifierType.SHIFT_MASK
+    ) {
       windows.forEach((w) => {
         switch (evt.direction) {
           case Clutter.ScrollDirection.UP:
-          case Clutter.ScrollDirection.LEFT:
-            w.minimize();
+          case Clutter.ScrollDirection.LEFT: {
+            this._lockCycle();
+            if (w.has_focus()) {
+              if (w.get_maximized() == 3) {
+                w.unmaximize(3);
+                return;
+              }
+            }
+            if (w.is_hidden()) {
+              w.unminimize();
+              w.raise();
+            } else {
+              w.minimize();
+            }
             break;
+          }
           case Clutter.ScrollDirection.DOWN:
-          case Clutter.ScrollDirection.RIGHT:
-            w.unminimize();
-            w.raise();
+          case Clutter.ScrollDirection.RIGHT: {
+            this._lockCycle();
+            if (w.is_hidden()) {
+              w.unminimize();
+            }
+            if (w.has_focus()) {
+              if (w.get_maximized() == 3) {
+                w.unmaximize(3);
+                w.raise();
+              } else {
+                w.maximize(3);
+              }
+            }
             break;
+          }
         }
       });
       return;

@@ -10,7 +10,11 @@ const Me = ExtensionUtils.getCurrentExtension();
 const Animation = Me.imports.effects.maclike_animation.Animation;
 const xOverlay = Me.imports.apps.overlay.xOverlay;
 
-const ICON_QUALITY = 1;
+const ICON_QUALITY = 3;
+
+function _tween(from, to, weight) {
+  return (from * weight + to * (1-weight));
+}
 
 function _explodeDashIcon(c) {
   let appwell = c.first_child;
@@ -41,7 +45,7 @@ var DockIcon = GObject.registerClass(
   class DockIcon extends St.Widget {
     _init() {
       super._init({ name: 'DockIcon' });
-      this.style = 'border: 1px solid red';
+      // this.style = 'border: 1px solid red';
     }
 
     draw(params) {
@@ -53,24 +57,22 @@ var DockIcon = GObject.registerClass(
       if (!this._icon) {
         this._icon = new St.Icon({
           icon_name: params.icon?.icon_name || null,
-          // gicon: params.icon?.gicon || null
+          gicon: params.icon?.gicon || null,
         });
-        this._icon.set_icon_size(48 * ICON_QUALITY);
         this.add_child(this._icon);
       }
-      if (this._icon && params.targetScale) {
-        // this._icon.set_scale(params.targetScale/2/ICON_QUALITY, params.targetScale/2/ICON_QUALITY);
-      }
+      
+      this._icon.set_icon_size(params.iconSize * ICON_QUALITY);
     }
   }
 );
 
-var RenderArea = GObject.registerClass(
+var IconsContainer = GObject.registerClass(
   {},
-  class RenderArea extends St.Widget {
+  class IconsContainer extends St.Widget {
     _init() {
       super._init({
-        name: 'RenderArea',
+        name: 'IconsContainer',
       });
 
       this._icons = [];
@@ -95,6 +97,13 @@ var RenderArea = GObject.registerClass(
       this._icons.forEach((icon) => {
         icon.visible = false;
       });
+    }
+
+    clear() {
+      this._icons.forEach((i) => {
+        this.remove_child(i);
+      });
+      this._icons = [];
     }
 
     draw(params) {
@@ -146,6 +155,10 @@ var RenderArea = GObject.registerClass(
             targetScale: source._targetScale,
           });
           target.visible = true;
+          let new_scale = _tween(target._icon.scale_x, source._targetScale/ICON_QUALITY, 0.9);
+          if (target._icon) {
+            target._icon.set_scale(new_scale, new_scale);
+          }
         }
       }
     }
@@ -182,8 +195,8 @@ var Dock = GObject.registerClass(
       this._render_padding = 20;
 
       this._background = new Background();
-      this._render_area = new RenderArea();
-      this._render_area.opacity = 150;
+      this._iconsContainer = new IconsContainer();
+      this._iconsContainer.opacity = 255;
 
       this._position = -1;
       Main.layoutManager.addChrome(this, {
@@ -192,7 +205,7 @@ var Dock = GObject.registerClass(
         trackFullscreen: false,
       });
 
-      this._render_area.connectObject(
+      this._iconsContainer.connectObject(
         'button-press-event',
         this.onButtonEvent.bind(this),
         'motion-event',
@@ -215,7 +228,7 @@ var Dock = GObject.registerClass(
 
       this.onDock(monitor, position);
 
-      [this._background, this._render_area, this].forEach((c) => {
+      [this._background, this._iconsContainer, this].forEach((c) => {
         Main.layoutManager.addChrome(c, {
           affectsStruts: c == this ? this._affect_struts : false,
           affectsInputRegion: false,
@@ -228,7 +241,7 @@ var Dock = GObject.registerClass(
 
     undock() {
       if (this._position) {
-        [this._background, this, this._render_area].forEach((c) => {
+        [this._background, this, this._iconsContainer].forEach((c) => {
           Main.layoutManager.removeChrome(c);
         });
         this._position = null;
@@ -361,10 +374,10 @@ var Dock = GObject.registerClass(
         }
       }
       this._background.set_position(bx, by);
-      this._render_area.set_position(rx, ry);
+      this._iconsContainer.set_position(rx, ry);
       if (!position_only) {
         this._background.set_size(bw, bh);
-        this._render_area.set_size(rw, rh);
+        this._iconsContainer.set_size(rw, rh);
       }
     }
 
@@ -398,8 +411,8 @@ var DockedDash = GObject.registerClass(
       if (!this._dash) {
         this._dash = new Dash();
         this._dash._adjustIconSize = () => {};
-        // this._dash._background.visible = false;
-        this._dash.opacity = 50;
+        this._dash._background.visible = false;
+        this._dash.opacity = 0;
         this.add_child(this._dash);
       }
     }
@@ -527,9 +540,9 @@ var DockedDash = GObject.registerClass(
 
       let withinBounds = true;
       let bounds = [
-        ...this._render_area.get_transformed_position(),
-        this._render_area.width,
-        this._render_area.height,
+        ...this._background.get_transformed_position(),
+        this._background.width,
+        this._background.height,
       ];
       if (
         pointer[0] < bounds[0] ||
@@ -578,23 +591,21 @@ var DockedDash = GObject.registerClass(
       // animate containers
       icons.forEach((i) => {
         if (vertical) {
-          i.height =
-            (i.height * 4 + i._targetScale * iconSpacing * scaleFactor) / 5;
+          i.height = _tween(i.height, i._targetScale * iconSpacing * scaleFactor, 0.9);
         } else {
-          i.width =
-            (i.width * 4 + i._targetScale * iconSpacing * scaleFactor) / 5;
+          i.width = _tween(i.width, i._targetScale * iconSpacing * scaleFactor, 0.9);
         }
       });
 
       // animate show/hide
       if (this._target_position) {
-        let x = (this._target_position[0] + this.x * 4) / 5;
-        let y = (this._target_position[1] + this.y * 4) / 5;
+        let x = _tween(this.x, this._target_position[0], .8);
+        let y = _tween(this.y, this._target_position[1], .8);
         this.set_position(x, y);
         this._layout_attached(true);
       }
 
-      this._render_area.draw({
+      this._iconsContainer.draw({
         icons,
         iconSize,
         scaleFactor,
@@ -605,10 +616,7 @@ var DockedDash = GObject.registerClass(
     }
 
     onUndock() {
-      if (this._t) {
-        this.extension._hiTimer.cancel(this._t);
-        this._t = null;
-      }
+      this._endAnimation();
     }
 
     onButtonEvent() {}

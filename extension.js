@@ -54,8 +54,6 @@ class Extension {
   enable() {
     this._imports = Me.imports;
 
-    // this.addDock();
-
     // three available timers
     // for persistent persistent runs
     this._timer = new Timer('loop timer');
@@ -164,6 +162,8 @@ class Extension {
     this.startUp();
 
     log('dash2dock-lite enabled');
+
+    this.addDock();
   }
 
   disable() {
@@ -231,7 +231,7 @@ class Extension {
       this._dock = new Dock();
       this._dock.extension = this;
     }
-    this._dock.dock(Main.layoutManager.primaryMonitor, St.DirectionType.LEFT);
+    this._dock.dock(Main.layoutManager.primaryMonitor, St.DirectionType.UP);
   }
 
   startUp() {

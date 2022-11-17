@@ -170,6 +170,9 @@ var Animator = class {
       d.get_parent().width = 1;
       d.get_parent().height = 1;
       d.visible = false;
+      // this sometimes get messed up
+      d.scale_x = 1;
+      d.scale_y = 1;
     });
   }
 

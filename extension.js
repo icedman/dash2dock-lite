@@ -1051,6 +1051,13 @@ class Extension {
       this._updateCss();
       this._updateBackgroundColors();
       this._onEnterEvent();
+
+      // borders get messed up
+      this.animator._background.style = 'border: 0px';
+      this._loTimer.runOnce(() => {
+        this._updateCss();
+        this._updateBackgroundColors();
+      }, 250);
     }
   }
 
@@ -1067,8 +1074,6 @@ class Extension {
         .find_child_by_name('overview')
         .first_child.add_child(this.dash);
     }
-
-    // this.dashContainer.hide();
 
     if (this.animator && this.animate_icons) {
       this.animator._beginAnimation();
@@ -1091,9 +1096,9 @@ class Extension {
         .find_child_by_name('overview')
         .first_child.remove_child(this.dash);
       this.dashContainer.add_child(this.dash);
+      this.dash.visible = true;
     }
 
-    // this.dashContainer.show();
     this._onEnterEvent();
 
     if (this.animator._iconsContainer) {

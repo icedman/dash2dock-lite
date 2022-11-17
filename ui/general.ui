@@ -210,7 +210,7 @@
     <items>
       <item translatable="yes">Bottom</item>
       <item translatable="yes">Left (experimental)</item>
-      <item translatable="yes">Right (experimental)</item>
+      <!-- <item translatable="yes">Right (experimental)</item> -->
     </items>
   </object>
   <object class="GtkStringList" id="animation-type-model">

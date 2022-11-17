@@ -187,6 +187,16 @@ var Animator = class {
     if (!this._iconsContainer || !this.dashContainer) return;
     this.dash = this.dashContainer.dash;
 
+    if (this.extension._inOverview && this.extension._vertical) {
+      this._iconsContainer.visible = false;
+      this._dotsContainer.visible = false;
+      this._background.visible = false;
+      this.dash.last_child.layout_manager.orientation = 0;
+      this.dash._box.layout_manager.orientation = 0;
+      this.dash.visible = false;
+      return;
+    }
+
     if (this._relayout > 0 && this.extension && this.extension._updateLayout) {
       this.extension._updateLayout();
       this._relayout--;
@@ -812,6 +822,8 @@ var Animator = class {
             this._background.width = this.dashContainer.width;
           }
         }
+
+        this._background.visible = true;
       }
 
       if (this.extension._disable_borders && this._background.width > 0) {

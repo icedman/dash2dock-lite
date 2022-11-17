@@ -1054,8 +1054,8 @@ var Animator = class {
 
     let windows = app.get_windows();
 
-    // if (!(evt.modifier_state & Clutter.ModifierType.CONTROL_MASK) ||
-    //   !(evt.modifier_state & Clutter.ModifierType.SHIFT_MASK)) {
+    // if ((evt.modifier_state & Clutter.ModifierType.CONTROL_MASK) ||
+    //   (evt.modifier_state & Clutter.ModifierType.SHIFT_MASK)) {
     // } else {
     //   if (windows.length < 2) {
     //     let appsystem = Shell.AppSystem.get_default();

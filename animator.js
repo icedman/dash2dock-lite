@@ -34,6 +34,9 @@ const FIND_ICONS_SKIP_FRAMES = 16;
 const THROTTLE_DOWN_FRAMES = 30;
 const THROTTLE_DOWN_DELAY_FRAMES = 20;
 
+const MIN_SCROLL_RESOLUTION = 4;
+const MAX_SCROLL_RESOLUTION = 10;
+
 const DOT_CANVAS_SIZE = 96;
 
 var Animator = class {
@@ -43,6 +46,8 @@ var Animator = class {
 
   enable() {
     if (this._enabled) return;
+
+    this._scrollCounter = 0;
 
     this._iconsContainer = new St.Widget({
       name: 'd2dlIconsContainer',
@@ -165,6 +170,9 @@ var Animator = class {
       d.get_parent().width = 1;
       d.get_parent().height = 1;
       d.visible = false;
+      // this sometimes get messed up
+      d.scale_x = 1;
+      d.scale_y = 1;
     });
   }
 
@@ -951,23 +959,50 @@ var Animator = class {
     Main._lastButtonEvent = evt;
     let pressed = evt.type() == Clutter.EventType.BUTTON_PRESS;
     let button1 = (evt.get_state() & Clutter.ModifierType.BUTTON1_MASK) != 0;
+    let shift = (evt.get_state() & Clutter.ModifierType.SHIFT_MASK) != 0;
     let button = button1 ? 'left' : 'right';
     let pointer = global.get_pointer();
 
+    log(evt.get_button());
+
     if (this._nearestIcon) {
       let icon = this._nearestIcon;
-      log(`${button} ${pressed} - (${icon._pos}) (${pointer})`);
+      // log(`${button} ${pressed} - (${icon._pos}) (${pointer})`);
       if (icon._appwell) {
-        // let dx = icon._pos[0] - pointer[0];
-        // let dy = icon._pos[1] - pointer[1];
-        // let dst = Math.sqrt(dx * dx + dy * dy);
-        // if (dst < icon._d / 2) {
+        Main._lastButtonObject = icon;
         if (button == 'left') {
           icon._appwell.emit('clicked', {});
         } else {
           icon._appwell.popupMenu();
         }
         // }
+      }
+    }
+  }
+
+  _onScrollEvent(obj, evt) {
+    this._lastScrollEvent = evt;
+    let pointer = global.get_pointer();
+    if (this._nearestIcon) {
+      let icon = this._nearestIcon;
+      // log(`scroll - (${icon._pos}) (${pointer})`);
+      let SCROLL_RESOLUTION =
+        MIN_SCROLL_RESOLUTION +
+        MAX_SCROLL_RESOLUTION -
+        (MAX_SCROLL_RESOLUTION * this.extension.scroll_sensitivity || 0);
+      if (icon._appwell && icon._appwell.app) {
+        this._lastScrollObject = icon;
+        switch (evt.direction) {
+          case Clutter.ScrollDirection.UP:
+          case Clutter.ScrollDirection.LEFT:
+            this._scrollCounter += 1 / SCROLL_RESOLUTION;
+            break;
+          case Clutter.ScrollDirection.DOWN:
+          case Clutter.ScrollDirection.RIGHT:
+            this._scrollCounter -= 1 / SCROLL_RESOLUTION;
+            break;
+        }
+        this._cycleWindows(icon._appwell.app, evt);
       }
     }
   }
@@ -1036,5 +1071,154 @@ var Animator = class {
         c._icon.opacity = 255;
       }
     });
+  }
+
+  _lockCycle() {
+    if (this._lockedCycle) return;
+    this._lockedCycle = true;
+    this.extension._hiTimer.runOnce(() => {
+      this._lockedCycle = false;
+    }, 500);
+  }
+
+  _cycleWindows(app, evt) {
+    if (this._lockedCycle) {
+      this._scrollCounter = 0;
+      return;
+    }
+    let focusId = 0;
+    let workspaceManager = global.workspace_manager;
+    let activeWs = workspaceManager.get_active_workspace();
+
+    let windows = app.get_windows();
+
+    // if ((evt.modifier_state & Clutter.ModifierType.CONTROL_MASK) ||
+    //   (evt.modifier_state & Clutter.ModifierType.SHIFT_MASK)) {
+    // } else {
+    //   if (windows.length < 2) {
+    //     let appsystem = Shell.AppSystem.get_default();
+    //     let running = appsystem.get_running();
+    //     windows = [];
+    //     for (let i = 0; i < running.length; i++) {
+    //         let app = running[i];
+    //         windows = [
+    //           ...windows,
+    //           ...app.get_windows()
+    //         ];
+    //     }
+    //   }
+    // }
+
+    if (evt.modifier_state & Clutter.ModifierType.CONTROL_MASK) {
+      windows = windows.filter((w) => {
+        return activeWs == w.get_workspace();
+      });
+    }
+
+    let nw = windows.length;
+
+    if (evt.modifier_state & Clutter.ModifierType.SHIFT_MASK) {
+      let maximize = [];
+      let minimize = [];
+      windows.forEach((w) => {
+        switch (evt.direction) {
+          case Clutter.ScrollDirection.UP:
+          case Clutter.ScrollDirection.LEFT: {
+            this._lockCycle();
+            if (w.has_focus()) {
+              if (w.get_maximized() == 3) {
+                minimize = null;
+                w.unmaximize(3);
+                return;
+              }
+            }
+            if (w.is_hidden()) {
+              w.unminimize();
+              w.raise();
+            } else {
+              if (minimize) {
+                minimize.push(w);
+              }
+            }
+            break;
+          }
+          case Clutter.ScrollDirection.DOWN:
+          case Clutter.ScrollDirection.RIGHT: {
+            this._lockCycle();
+            if (w.is_hidden()) {
+              w.unminimize();
+            }
+            if (maximize) {
+              maximize.push(w);
+            }
+            if (w.has_focus()) {
+              if (w.get_maximized() == 3) {
+                w.unmaximize(3);
+                // w.raise();
+              } else {
+                maximize = null;
+                w.maximize(3);
+              }
+            }
+            break;
+          }
+        }
+      });
+
+      if (minimize) {
+        minimize.forEach((w) => {
+          w.minimize();
+        });
+      }
+
+      if (maximize) {
+        maximize[0].raise();
+        maximize[0].focus(0);
+      }
+      return;
+    }
+    windows.sort((w1, w2) => {
+      return w1.get_id() > w2.get_id() ? -1 : 1;
+    });
+
+    if (nw > 1) {
+      for (let i = 0; i < nw; i++) {
+        if (windows[i].has_focus()) {
+          focusId = i;
+        }
+        if (windows[i].is_hidden()) {
+          windows[i].unminimize();
+          windows[i].raise();
+        }
+      }
+
+      let current_focus = focusId;
+
+      if (this._scrollCounter < -1 || this._scrollCounter > 1) {
+        focusId += Math.round(this._scrollCounter);
+        if (focusId < 0) {
+          focusId = nw - 1;
+        }
+        if (focusId >= nw) {
+          focusId = 0;
+        }
+        this._scrollCounter = 0;
+      }
+
+      if (current_focus == focusId) return;
+    }
+
+    let window = windows[focusId];
+
+    // log(`${focusId}/${window.get_id()}`);
+
+    if (window) {
+      if (activeWs == window.get_workspace()) {
+        window.raise();
+        window.focus(0);
+      } else {
+        activeWs.activate_with_focus(window, global.get_current_time());
+      }
+    }
   }
 };

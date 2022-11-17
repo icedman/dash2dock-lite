@@ -1,3 +1,7 @@
+# Release 17
+
+* Add scrollwheel cycle/maximize/minimize
+
 # Release 16
 
 * Add preferred monitor

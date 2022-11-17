@@ -10,7 +10,7 @@ var Animation = (animateIcons, pointer, container, settings) => {
   let nsz = _firstIcon.width;
   // second[0] - first[0];
 
-  let sz = nsz * (4 + 2 * settings.animation_spread);
+  let sz = nsz * (4 + 4 * settings.animation_spread);
   let szr = sz / 2;
   let center = [px, first[1]];
 

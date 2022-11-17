@@ -215,4 +215,8 @@ SettingsKeys.setKeys({
     widget_type: 'dropdown',
     test: { values: [0, 1, 2] },
   },
+  'scroll-sensitivity': {
+    default_value: 0.4,
+    widget_type: 'scale',
+  },
 });

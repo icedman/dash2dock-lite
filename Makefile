@@ -25,7 +25,6 @@ publish:
 	cp -R apps ./build
 	cp -R preferences ./build
 	cp -R effects ./build
-	rm ./build/dock.js
 	rm -rf ./*.zip
 	rm build/apps/*.desktop
 	cd build ; \

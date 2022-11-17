@@ -682,10 +682,12 @@ class Extension {
         let bg = this.border_color || [1, 1, 1, 1];
         let clr = bg.map((r) => Math.floor(255 * r));
         clr[3] = bg[3];
-        if (this.panel_mode && !this._vertical) {
-          border_style = `border-top: ${
-            this.border_thickness
-          }px solid rgba(${clr.join(',')});`;
+        if (this.panel_mode) {
+          if (!this._vertical) {
+            border_style = `border-top: ${
+              this.border_thickness
+            }px solid rgba(${clr.join(',')});`;
+          }
         } else {
           border_style = `border: ${
             this.border_thickness
@@ -877,6 +879,7 @@ class Extension {
       // could happen if ShowApps is hidden or not yet created?
     }
 
+    this._dashIcons = icons;
     this.dashContainer._icons = icons;
     return icons;
   }
@@ -918,6 +921,26 @@ class Extension {
     let dockPadding = 10 + distance;
     if (this.panel_mode) {
       this._effective_edge_distance = -dockPadding;
+    }
+
+    // scale down icons to fit monitor
+    if (this._dashIcons) {
+      let iconSpacing = iconSize * (1.2 + this.animation_spread / 4);
+      let scaleFactor = this.scaleFactor;
+      let limit = this._vertical ? 0.96 : 0.98;
+      let scaleDown = 1.0;
+      let maxWidth =
+        (this._vertical
+          ? this.dashContainer._monitor.height
+          : this.dashContainer._monitor.width) * limit;
+      let projectedWidth = iconSpacing * scaleFactor * this._dashIcons.length;
+      let iconSizeScaledUp =
+        iconSize + iconSize * this.animation_magnify * scaleFactor;
+      projectedWidth += iconSizeScaledUp * 4 - iconSize * scaleFactor * 4;
+      if (projectedWidth > maxWidth) {
+        scaleDown = maxWidth / projectedWidth;
+      }
+      iconSize *= scaleDown;
     }
 
     let scale = 0.5 + this.scale / 2;

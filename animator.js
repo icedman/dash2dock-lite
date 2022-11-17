@@ -187,7 +187,14 @@ var Animator = class {
     if (!this._iconsContainer || !this.dashContainer) return;
     this.dash = this.dashContainer.dash;
 
-    // vertical - overview unsupported - for now
+    // get monitor scaleFactor
+    let scaleFactor = St.ThemeContext.get_for_stage(global.stage).scale_factor;
+    let iconSize = this.extension.iconSize;
+    let iconSpacing = iconSize * (1.2 + this.extension.animation_spread / 4);
+    let effective_edge_distance = this.extension._effective_edge_distance;
+
+    // todo: add setting - hide on overview
+    // todo: vertical - overview unsupported - alway hide
     if (this.extension._inOverview && this.extension._vertical) {
       this._iconsContainer.visible = false;
       this._dotsContainer.visible = false;
@@ -218,6 +225,34 @@ var Animator = class {
     let pointer = global.get_pointer();
     let monitor = this.dashContainer._monitor;
 
+    // center the dash
+    if (this.extension._vertical) {
+      if (this.dash.height > this.extension.iconSize * 4) {
+        let style = '';
+        {
+          let pad = Math.floor(
+            (this.dashContainer.height - this.dash.height) / 2
+          );
+          pad -= 20 * scaleFactor; // panel height
+          if (pad > 0) {
+            style = `padding-top: ${pad}px;`;
+          }
+        }
+        // right side adjustment
+        if (this.extension._position == 1) {
+          let pad = Math.floor(
+            (this.dashContainer.width - iconSize * scaleFactor) / 2
+          );
+          if (pad > 0) {
+            style = `${style} padding-left: ${pad}px;`;
+          }
+        }
+        this.dashContainer.style = style;
+      }
+    } else {
+      this.dashContainer.style = '';
+    }
+
     let pivot = new Point();
     pivot.x = 0.5;
     pivot.y = 1.0;
@@ -228,32 +263,6 @@ var Animator = class {
     let dock_position = 'bottom';
     let ix = 0;
     let iy = 1;
-
-    let scaleFactor = St.ThemeContext.get_for_stage(global.stage).scale_factor;
-    let iconSize = this.extension.iconSize;
-    let iconSpacing = iconSize * (1.2 + this.extension.animation_spread / 4);
-    let effective_edge_distance = this.extension._effective_edge_distance;
-
-    // recompute to fit monitor
-    {
-      let limit = this.extension._vertical ? 0.96 : 0.98;
-      let scaleDown = 1.0;
-      let maxWidth =
-        (this.extension._vertical ? monitor.height : monitor.width) * limit;
-      let projectedWidth = iconSpacing * scaleFactor * existingIcons.length;
-      let iconSizeScaledUp =
-        iconSize + iconSize * this.extension.animation_magnify * scaleFactor;
-      projectedWidth += iconSizeScaledUp * 4 - iconSize * scaleFactor * 4;
-      if (projectedWidth > maxWidth) {
-        scaleDown = maxWidth / projectedWidth;
-      }
-
-      iconSize *= scaleDown;
-      iconSpacing *= scaleDown;
-
-      // todo.. scaledown oofset
-      // log(`${maxWidth} ${projectedWidth} ${scaleDown}`);
-    }
 
     this.dashContainer.dash.opacity = 0;
     this._iconsContainer.opacity = 255;
@@ -673,7 +682,7 @@ var Animator = class {
               break;
             case 'right':
               icon._label.x = pos[0] - iconSize * scale * 1.1 * scaleFactor;
-              icon._label.x -= icon._label.width / 1.8;
+              icon._label.x -= icon._label.width / 1.2;
               break;
             case 'bottom':
               icon._label.y = pos[1] - iconSize * scale * 0.9 * scaleFactor;

@@ -1,5 +1,5 @@
 {
-  "description": "minimal implementation of dash to dock",
+  "description": "The Animated & Effectful Dock",
   "name": "Dash2Dock Lite",
   "original-authors": [
     "icedman"
@@ -11,5 +11,5 @@
   "uuid": "dash2dock-lite@icedman.github.com",
   "schema-id": "org.gnome.shell.extensions.dash2dock-lite",
   "gettext-domain": "dash2dock-lite",
-  "version": 16
+  "version": 17
 }

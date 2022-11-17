@@ -11,8 +11,6 @@ const ExtensionUtils = imports.misc.extensionUtils;
 
 const { schemaId, SettingsKeys } = Me.imports.preferences.keys;
 
-let debugToggled = 0;
-
 function init() {
   let iconTheme = Gtk.IconTheme.get_for_display(Gdk.Display.get_default());
   iconTheme.add_search_path(`${UIFolderPath}/icons`);
@@ -163,22 +161,14 @@ function fillPreferencesWindow(window) {
   addMenu(window, builder);
 
   function toggle_experimental() {
-    // let exp = SettingsKeys.getValue('experimental-features');
-    let exp = true;
+    let exp = SettingsKeys.getValue('experimental-features');
     builder.get_object('dock-location-row').visible = exp;
-    // builder.get_object('animation-type-row').visible = exp;
     builder.get_object('self-test-row').visible = exp;
-    builder.get_object('experimental-features-row').visible = exp;
   }
 
-  // settings.connect('changed::experimental-features', () => {
-  //   toggle_experimental();
-  // });
-
-  settings.connect('changed::debug-visual', () => {
-    debugToggled++;
-    if (debugToggled > 3) {
-      toggle_experimental();
-    }
+  settings.connect('changed::experimental-features', () => {
+    toggle_experimental();
   });
+
+  toggle_experimental();
 }

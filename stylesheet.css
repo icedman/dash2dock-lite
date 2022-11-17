@@ -12,6 +12,11 @@
   color: black!important;
 }
 
+#dashContainer #dash * {
+  margin: 0px !important;
+  padding: 0px !important;
+}
+
 /*
 #dash .dash-item-container .app-well-app:hover > StWidget
 {

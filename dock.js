@@ -13,7 +13,7 @@ const xOverlay = Me.imports.apps.overlay.xOverlay;
 const ICON_QUALITY = 3;
 
 function _tween(from, to, weight) {
-  return (from * weight + to * (1-weight));
+  return from * weight + to * (1 - weight);
 }
 
 function _explodeDashIcon(c) {
@@ -61,7 +61,7 @@ var DockIcon = GObject.registerClass(
         });
         this.add_child(this._icon);
       }
-      
+
       this._icon.set_icon_size(params.iconSize * ICON_QUALITY);
     }
   }
@@ -155,7 +155,11 @@ var IconsContainer = GObject.registerClass(
             targetScale: source._targetScale,
           });
           target.visible = true;
-          let new_scale = _tween(target._icon.scale_x, source._targetScale/ICON_QUALITY, 0.9);
+          let new_scale = _tween(
+            target._icon.scale_x,
+            source._targetScale / ICON_QUALITY,
+            0.9
+          );
           if (target._icon) {
             target._icon.set_scale(new_scale, new_scale);
           }
@@ -591,16 +595,24 @@ var DockedDash = GObject.registerClass(
       // animate containers
       icons.forEach((i) => {
         if (vertical) {
-          i.height = _tween(i.height, i._targetScale * iconSpacing * scaleFactor, 0.9);
+          i.height = _tween(
+            i.height,
+            i._targetScale * iconSpacing * scaleFactor,
+            0.9
+          );
         } else {
-          i.width = _tween(i.width, i._targetScale * iconSpacing * scaleFactor, 0.9);
+          i.width = _tween(
+            i.width,
+            i._targetScale * iconSpacing * scaleFactor,
+            0.9
+          );
         }
       });
 
       // animate show/hide
       if (this._target_position) {
-        let x = _tween(this.x, this._target_position[0], .8);
-        let y = _tween(this.y, this._target_position[1], .8);
+        let x = _tween(this.x, this._target_position[0], 0.8);
+        let y = _tween(this.y, this._target_position[1], 0.8);
         this.set_position(x, y);
         this._layout_attached(true);
       }

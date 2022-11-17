@@ -3,6 +3,7 @@
 * Refactor Dock / Code cleanup
 * Add multiple-docks support
 * Add left, right, top layout
+* Add scrollwheel cycle/maximize/minimize
 
 # Release 16
 

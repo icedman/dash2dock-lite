@@ -163,7 +163,7 @@ class Extension {
 
     log('dash2dock-lite enabled');
 
-    this.addDock();
+    // this.addDock();
   }
 
   disable() {
@@ -364,7 +364,11 @@ class Extension {
           this.animator.enable();
           this.autohider.disable();
           this.autohider.enable();
-          this.startUp();
+          this.animator._background.visible = false;
+          this._updateCss();
+          this._updateBackgroundColors();
+          this._updateLayout();
+          this._onEnterEvent();
           break;
         }
         case 'icon-effect': {
@@ -678,7 +682,7 @@ class Extension {
         let bg = this.border_color || [1, 1, 1, 1];
         let clr = bg.map((r) => Math.floor(255 * r));
         clr[3] = bg[3];
-        if (this.panel_mode) {
+        if (this.panel_mode && !this._vertical) {
           border_style = `border-top: ${
             this.border_thickness
           }px solid rgba(${clr.join(',')});`;
@@ -801,10 +805,15 @@ class Extension {
     // W: breakable
     let icons = this.dash._box.get_children().filter((actor) => {
       if (!actor.child) {
+        let cls = actor.get_style_class_name();
+        if (cls === 'dash-separator') {
+          actor.width = 0;
+          actor.height = 0;
+        }
         return false;
       }
 
-      actor._cls = actor.child.get_style_class_name();
+      actor._cls = actor.get_style_class_name();
       if (actor.child._delegate && actor.child._delegate.icon) {
         return true;
       }
@@ -915,37 +924,30 @@ class Extension {
       (iconSize + dockPadding) * (this.shrink_icons ? 1.8 : 1.6) * scale;
     this.iconSize = iconSize;
 
-    // panel mode adjustment
-    if (this.panel_mode) {
-      // dockHeight -= 8 * this.scaleFactor;
-    }
-
-    this.dash.height = dockHeight * this.scaleFactor;
     this.dash.visible = true;
+    this.dashContainer.vertical = !this.dashContainer._vertical;
 
     if (this._vertical) {
       // left/right
-      this.dashContainer.set_size(dockHeight * this.scaleFactor, this.sh);
+      this.dashContainer.set_size(
+        dockHeight * this.scaleFactor,
+        this.sh - Main.panel.height
+      );
       this.dash.last_child.layout_manager.orientation = 1;
       this.dash._box.layout_manager.orientation = 1;
-      this.dash._box.height = -1;
-      this.dash._box.width = dockHeight * this.scaleFactor;
-
+      this.dash.height = -1;
+      this.dash.width = dockHeight * this.scaleFactor;
       this.dash.add_style_class_name('vertical');
     } else {
       // top/bottom
       this.dashContainer.set_size(this.sw, dockHeight * this.scaleFactor);
       this.dash.last_child.layout_manager.orientation = 0;
       this.dash._box.layout_manager.orientation = 0;
-      this.dash._box.height = -1;
-      this.dash._box.width = -1;
-
+      this.dash.height = dockHeight * this.scaleFactor;
+      this.dash.width = -1;
       this.dash.remove_style_class_name('vertical');
     }
 
-    // this._edge_distance =
-    //   (-EDGE_DISTANCE / 4 + (this.edge_distance || 0) * EDGE_DISTANCE) *
-    //   this.scaleFactor;
     let padding = 0;
     this._edge_distance =
       (this.edge_distance || 0) * (EDGE_DISTANCE - padding) * this.scaleFactor;
@@ -954,22 +956,22 @@ class Extension {
       // remain hidden
     } else {
       if (this._vertical) {
-        // left/right
-        // let posx = this.monitor.x + this._edge_distance;
-        // if (this.dashContainer._position == 1) {
-        //   this._edge_distance *= -1;
-        //   posx =
-        //     this.monitor.x +
-        //     this.sw -
-        //     dockHeight * this.scaleFactor +
-        //     this._edge_distance;
-        // }
-        this.dashContainer.set_position(this.monitor.x, this.monitor.y);
+        // left
+        this.dashContainer.set_position(
+          this.monitor.x,
+          this.monitor.y + Main.panel.height
+        );
+
+        // right
+        if (this.dashContainer._position == 1) {
+          this.dashContainer.x += this.dashContainer._monitor.width;
+          this.dashContainer.x -= dockHeight * this.scaleFactor;
+        }
       } else {
         // top/bottom
         this.dashContainer.set_position(
           this.monitor.x,
-          this.monitor.y + this.sh - dockHeight * this.scaleFactor // - distance
+          this.monitor.y + this.sh - dockHeight * this.scaleFactor
         );
       }
 
@@ -977,6 +979,7 @@ class Extension {
         this.dashContainer.x,
         this.dashContainer.y,
       ];
+
       this.dashContainer._hidePosition = [...this.dashContainer._fixedPosition];
 
       let hidePad = 4 * this.scaleFactor;
@@ -985,6 +988,14 @@ class Extension {
           this.dashContainer._monitor.x -
           dockHeight * this.scaleFactor +
           hidePad;
+
+        // right
+        if (this.dashContainer._position == 1) {
+          this.dashContainer._hidePosition[0] =
+            this.dashContainer._monitor.x +
+            this.dashContainer._monitor.width -
+            hidePad;
+        }
       } else {
         this.dashContainer._hidePosition[1] =
           this.dashContainer._monitor.y +
@@ -1057,6 +1068,15 @@ class Extension {
       this._updateCss();
       this._updateBackgroundColors();
       this._onEnterEvent();
+
+      // borders get messed up
+      if (this.border_thickness > 0) {
+        this.animator._background.style = 'border: 0px';
+        this._loTimer.runOnce(() => {
+          this._updateCss();
+          this._updateBackgroundColors();
+        }, 250);
+      }
     }
   }
 
@@ -1073,8 +1093,6 @@ class Extension {
         .find_child_by_name('overview')
         .first_child.add_child(this.dash);
     }
-
-    // this.dashContainer.hide();
 
     if (this.animator && this.animate_icons) {
       this.animator._beginAnimation();
@@ -1097,9 +1115,9 @@ class Extension {
         .find_child_by_name('overview')
         .first_child.remove_child(this.dash);
       this.dashContainer.add_child(this.dash);
+      this.dash.visible = true;
     }
 
-    // this.dashContainer.show();
     this._onEnterEvent();
 
     if (this.animator._iconsContainer) {

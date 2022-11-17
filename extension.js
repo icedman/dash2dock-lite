@@ -896,6 +896,7 @@ class Extension {
     this.dashContainer._position = [2, 3, 1, 0][pos];
     this._vertical =
       this.dashContainer._position == 1 || this.dashContainer._position == 3;
+    this._position = this.dashContainer._position;
 
     this.scaleFactor = St.ThemeContext.get_for_stage(global.stage).scale_factor;
     let iconSize = 64;

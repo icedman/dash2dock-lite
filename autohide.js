@@ -130,26 +130,45 @@ var AutoHide = class {
   _onMotionEvent() {
     if (this.extension.pressure_sense && !this._shown) {
       let monitor = this.dashContainer._monitor;
+      let pointer = global.get_pointer();
 
       let sw = this.extension.sw;
       let sh = this.extension.sh;
       let scale = St.ThemeContext.get_for_stage(global.stage).scale_factor;
       let area = scale * (PRESSURE_SENSE_DISTANCE * PRESSURE_SENSE_DISTANCE);
       let dx = 0;
-
-      let pointer = global.get_pointer();
+      let dy = 0;
 
       if (this.last_pointer) {
         dx = pointer[0] - this.last_pointer[0];
         dx = dx * dx;
-      }
-      if (dx < area && pointer[1] + 4 > monitor.y + sh) {
-        this._dwell++;
-      } else {
-        this._dwell = 0;
+        dy = pointer[1] - this.last_pointer[1];
+        dy = dy * dy;
       }
 
-      // log(`${dx} ${area}`);
+      if (this.extension._vertical) {
+        if (
+          // right
+          (this.extension._position == 1 &&
+            dy < area &&
+            pointer[0] > monitor.x + sw - 4) ||
+          // left
+          (this.extension._position != 1 &&
+            dy < area &&
+            pointer[0] < monitor.x + 4)
+        ) {
+          this._dwell++;
+        } else {
+          this._dwell = 0;
+        }
+      } else {
+        // bottom
+        if (dx < area && pointer[1] + 4 > monitor.y + sh) {
+          this._dwell++;
+        } else {
+          this._dwell = 0;
+        }
+      }
 
       if (this._dwell > 12) {
         this.show();
@@ -306,8 +325,17 @@ var AutoHide = class {
     // log(dash_position[1]);
 
     if (this.extension._vertical) {
-      if (pointer[0] < dash_position[1] + this.dashContainer.width)
-        return false;
+      if (this.extension._position == 1) {
+        // right
+        if (pointer[0] > dash_position[0]) {
+          return false;
+        }
+      } else {
+        //left
+        if (pointer[0] < dash_position[0] + this.dashContainer.width) {
+          return false;
+        }
+      }
     } else {
       if (pointer[1] > dash_position[1]) return false;
     }
@@ -336,8 +364,15 @@ var AutoHide = class {
       let frame = w.get_frame_rect();
       // log (`${frame.y} + ${frame.height}`);
       if (this.extension._vertical) {
-        if (frame.x <= dash_position[0] + this.dashContainer.width) {
-          isOverlapped = true;
+        if (this.extension._position == 1) {
+          if (frame.x + frame.width >= dash_position[0]) {
+            isOverlapped = true;
+          }
+        } else {
+          // left
+          if (frame.x <= dash_position[0] + this.dashContainer.width) {
+            isOverlapped = true;
+          }
         }
       } else {
         if (frame.y + frame.height >= dash_position[1]) {

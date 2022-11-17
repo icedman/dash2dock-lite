@@ -1041,11 +1041,33 @@ var Animator = class {
   }
 
   _cycleWindows(app, evt) {
+    if (this._lockedCycle) {
+      this._scrollCounter = 0;
+      return;
+    }
     let focusId = 0;
     let workspaceManager = global.workspace_manager;
     let activeWs = workspaceManager.get_active_workspace();
 
     let windows = app.get_windows();
+
+    // if (!(evt.modifier_state & Clutter.ModifierType.CONTROL_MASK) ||
+    //   !(evt.modifier_state & Clutter.ModifierType.SHIFT_MASK)) {
+    // } else {
+    //   if (windows.length < 2) {
+    //     let appsystem = Shell.AppSystem.get_default();
+    //     let running = appsystem.get_running();
+    //     windows = [];
+    //     for (let i = 0; i < running.length; i++) {
+    //         let app = running[i];
+    //         windows = [
+    //           ...windows,
+    //           ...app.get_windows()
+    //         ];
+    //     }
+    //   }
+    // }
+
     if (evt.modifier_state & Clutter.ModifierType.CONTROL_MASK) {
       windows = windows.filter((w) => {
         return activeWs == w.get_workspace();
@@ -1054,10 +1076,9 @@ var Animator = class {
 
     let nw = windows.length;
 
-    if (
-      !this._lockedCycle &&
-      evt.modifier_state & Clutter.ModifierType.SHIFT_MASK
-    ) {
+    if (evt.modifier_state & Clutter.ModifierType.SHIFT_MASK) {
+      let maximize = [];
+      let minimize = [];
       windows.forEach((w) => {
         switch (evt.direction) {
           case Clutter.ScrollDirection.UP:
@@ -1065,6 +1086,7 @@ var Animator = class {
             this._lockCycle();
             if (w.has_focus()) {
               if (w.get_maximized() == 3) {
+                minimize = null;
                 w.unmaximize(3);
                 return;
               }
@@ -1073,7 +1095,9 @@ var Animator = class {
               w.unminimize();
               w.raise();
             } else {
-              w.minimize();
+              if (minimize) {
+                minimize.push(w);
+              }
             }
             break;
           }
@@ -1083,11 +1107,15 @@ var Animator = class {
             if (w.is_hidden()) {
               w.unminimize();
             }
+            if (maximize) {
+              maximize.push(w);
+            }
             if (w.has_focus()) {
               if (w.get_maximized() == 3) {
                 w.unmaximize(3);
-                w.raise();
+                // w.raise();
               } else {
+                maximize = null;
                 w.maximize(3);
               }
             }
@@ -1095,6 +1123,17 @@ var Animator = class {
           }
         }
       });
+
+      if (minimize) {
+        minimize.forEach((w) => {
+          w.minimize();
+        });
+      }
+
+      if (maximize) {
+        maximize[0].raise();
+        maximize[0].focus(0);
+      }
       return;
     }
     windows.sort((w1, w2) => {

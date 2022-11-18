@@ -753,6 +753,7 @@ var Animator = class {
             dot.visible = true;
             dotParent.width = iconSize;
             dotParent.height = iconSize;
+            dotParent.set_scale(1, 1);
 
             if (this.extension._vertical) {
               if (this.dashContainer._position == 1) {

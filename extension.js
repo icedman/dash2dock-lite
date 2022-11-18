@@ -1064,7 +1064,7 @@ class Extension {
     Main.layoutManager.removeChrome(this.dashContainer);
     Main.layoutManager.addChrome(this.dashContainer, {
       affectsStruts: !this.autohide_dash,
-      affectsInputRegion: !this.autohide_dash,
+      affectsInputRegion: true, // !this.autohide_dash,
       trackFullscreen: true,
     });
 

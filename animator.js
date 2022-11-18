@@ -228,29 +228,16 @@ var Animator = class {
     // center the dash
     if (this.extension._vertical) {
       if (this.dash.height > this.extension.iconSize * 4) {
-        let style = '';
-        {
-          let pad = Math.floor(
-            (this.dashContainer.height - this.dash.height) / 2
-          );
-          pad -= 20 * scaleFactor; // panel height
-          if (pad > 0) {
-            style = `padding-top: ${pad}px;`;
-          }
-        }
-        // right side adjustment
-        if (this.extension._position == 1) {
-          let pad = Math.floor(
-            (this.dashContainer.width - iconSize * scaleFactor) / 2
-          );
-          if (pad > 0) {
-            style = `${style} padding-left: ${pad}px;`;
-          }
-        }
-        this.dashContainer.style = style;
+        let pad = Math.floor(
+          (this.dashContainer.height - this.dash.height) / 2
+        );
+        pad -= 20 * scaleFactor; // panel height
+        this.dashContainer._padding.height *= 2;
+        this.dashContainer._padding.height += pad;
+        this.dashContainer._padding.height /= 3;
       }
     } else {
-      this.dashContainer.style = '';
+      this.dashContainer._padding.height = 0;
     }
 
     let pivot = new Point();
@@ -648,7 +635,11 @@ var Animator = class {
 
       scale = (fromScale * _scale_coef + scale) / (_scale_coef + 1);
 
-      if (dst > iconSize * 0.01 && dst < iconSize * 3) {
+      if (
+        dst > 4 * scaleFactor &&
+        dst > iconSize * 0.01 &&
+        dst < iconSize * 3
+      ) {
         pos[0] = (from[0] * _pos_coef + pos[0]) / (_pos_coef + 1);
         pos[1] = (from[1] * _pos_coef + pos[1]) / (_pos_coef + 1);
         didAnimate = true;
@@ -866,6 +857,12 @@ var Animator = class {
       this._iconsContainer.show();
       this._dotsContainer.show();
       this._background.show();
+    }
+
+    if (this.extension.debug_visual) {
+      Main.panel.first_child.style = didAnimate
+        ? 'border:1px solid magenta'
+        : '';
     }
 
     if (didAnimate || this._dragging) {

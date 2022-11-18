@@ -124,6 +124,8 @@ class Extension {
     if (this.dash.get_parent()) {
       this.dash.get_parent().remove_child(this.dash);
     }
+    this.dashContainer._padding = new St.Widget();
+    this.dashContainer.add_child(this.dashContainer._padding);
     this.dashContainer.add_child(this.dash);
 
     // service
@@ -172,15 +174,11 @@ class Extension {
       this._dock = null;
     }
 
-    if (this._timer) {
-      this._timer.stop();
-      this._hiTimer.stop();
-      this._loTimer.stop();
-    }
-    if (this._diagnosticTimer) {
-      this._diagnosticTimer.stop();
-      this._diagnosticTimer = null;
-    }
+    this._timer?.stop();
+    this._hiTimer?.stop();
+    this._loTimer?.stop();
+    this._diagnosticTimer?.stop();
+    // null later
 
     this._removeEvents();
     this._disableSettings();
@@ -222,6 +220,7 @@ class Extension {
     this._timer = null;
     this._hiTimer = null;
     this._loTimer = null;
+    this._diagnosticTimer = null;
 
     log('dash2dock-lite disabled');
   }

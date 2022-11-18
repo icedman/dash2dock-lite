@@ -317,6 +317,7 @@ var AutoHide = class {
     });
     windows = windows.filter((w) => w.can_close());
     windows = windows.filter((w) => w.get_monitor() == monitor.index);
+    windows = windows.filter((w) => w.get_wm_class() != 'com.desktop.ding');
 
     let workspace = global.workspace_manager.get_active_workspace_index();
     windows = windows.filter(

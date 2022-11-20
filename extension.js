@@ -926,7 +926,7 @@ class Extension {
       let iconSizeScaledUp =
         iconSize + iconSize * this.animation_magnify * scaleFactor;
       projectedWidth += iconSizeScaledUp * 4 - iconSize * scaleFactor * 4;
-      if (projectedWidth > maxWidth) {
+      if (projectedWidth > maxWidth * 0.98) {
         scaleDown = (maxWidth - (iconSize / 2) * scaleFactor) / projectedWidth;
       }
       iconSize *= scaleDown;

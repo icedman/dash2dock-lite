@@ -30,11 +30,17 @@ var DockIcon = GObject.registerClass(
     }
 
     update(params) {
+      let gicon = null;
       let icon_gfx = params.icon?.icon_name;
       if (params.icon?.gicon) {
         let name = params.icon.gicon.name;
         if (!name && params.icon.gicon.names) {
           name = params.icon.gicon.names[0];
+        }
+        if (!name) {
+          // hijack
+          gicon = params.icon.gicon;
+          icon_gfx = params.app;
         }
         if (name) {
           icon_gfx = name;
@@ -49,7 +55,9 @@ var DockIcon = GObject.registerClass(
         this._icon = null;
       }
       if (!this._icon && icon_gfx) {
-        let gicon = new Gio.ThemedIcon({ name: icon_gfx });
+        if (!gicon) {
+          gicon = new Gio.ThemedIcon({ name: icon_gfx });
+        }
         this._icon = new St.Icon({
           gicon,
         });
@@ -112,6 +120,7 @@ var IconsContainer = GObject.registerClass(
         let _icon = this._icons[idx++];
         _icon.update({
           icon,
+          app: appwell?.app?.get_id()
         });
 
         _icon._appwell = appwell;

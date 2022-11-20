@@ -945,6 +945,7 @@ var Animator = class {
       this._scrollCounter = 0;
       return;
     }
+
     let focusId = 0;
     let workspaceManager = global.workspace_manager;
     let activeWs = workspaceManager.get_active_workspace();

@@ -18,6 +18,9 @@ const MonochromeEffect = Me.imports.effects.monochrome_effect.MonochromeEffect;
 const TestEffect = Me.imports.effects.test_effect.TestEffect;
 const Animation = Me.imports.effects.maclike_animation.Animation;
 
+const { IconsContainer, DotsContainer, DockBackground, explodeDashIcon } =
+  Me.imports.dock;
+
 const xOverlay = Me.imports.apps.overlay.xOverlay;
 
 const ANIM_POS_COEF = 1.5;
@@ -49,16 +52,18 @@ var Animator = class {
 
     this._scrollCounter = 0;
 
-    this._iconsContainer = new St.Widget({
+    this._iconsContainer = new IconsContainer({
       name: 'd2dlIconsContainer',
       offscreen_redirect: Clutter.OffscreenRedirect.ALWAYS,
       reactive: false,
     });
-    this._dotsContainer = new St.Widget({
+
+    this._dotsContainer = new DotsContainer({
       name: 'd2dldotsContainer',
       reactive: false,
     });
-    this._background = new St.Widget({ name: 'd2dlBackground' });
+
+    this._background = new DockBackground({ name: 'd2dlBackground' });
     Main.uiGroup.insert_child_above(this._dotsContainer, this.dashContainer);
     Main.uiGroup.insert_child_below(this._iconsContainer, this._dotsContainer);
     Main.uiGroup.insert_child_below(this._background, this.dashContainer);
@@ -74,7 +79,7 @@ var Animator = class {
     this._dragging = false;
     this._relayout = 20;
     this._showDots = true;
-    this._showBadge = true;
+    this._showBadges = true;
     this._throttleDown = 0;
     this._previousFindIndex = 0;
 
@@ -152,27 +157,6 @@ var Animator = class {
     }
   }
 
-  _precreate_dots(count) {
-    if (!this._dots) {
-      this._dots = [];
-    }
-    if (this._showDots && this.extension.xDot) {
-      for (let i = 0; i < count - this._dots.length; i++) {
-        let dot = new this.extension.xDot(DOT_CANVAS_SIZE);
-        let pdot = new St.Widget();
-        pdot.add_child(dot);
-        this._dots.push(dot);
-        this._dotsContainer.add_child(pdot);
-        dot.set_position(0, 0);
-      }
-    }
-    this._dots.forEach((d) => {
-      d.get_parent().width = 1;
-      d.get_parent().height = 1;
-      d.visible = false;
-    });
-  }
-
   relayout() {
     this._previousFind = null;
     this._throttleDown = 0;
@@ -180,9 +164,33 @@ var Animator = class {
     this._onEnterEvent();
   }
 
+  _getScaleFactor() {
+    // let scaleFactor = St.ThemeContext.get_for_stage(global.stage).scale_factor;
+    let scaleFactor = this.dashContainer._monitor.geometry_scale;
+    return scaleFactor;
+  }
+
   _animate() {
     if (!this._iconsContainer || !this.dashContainer) return;
     this.dash = this.dashContainer.dash;
+
+    // get monitor scaleFactor
+    let scaleFactor = this._getScaleFactor();
+    let iconSize = this.extension.iconSize;
+    let iconSpacing = iconSize * (1.2 + this.extension.animation_spread / 4);
+    let effective_edge_distance = this.extension._effective_edge_distance;
+
+    // todo: add setting - hide on overview
+    // todo: vertical - overview unsupported - alway hide
+    if (this.extension._inOverview && this.extension._vertical) {
+      this._iconsContainer.visible = false;
+      this._dotsContainer.visible = false;
+      this._background.visible = false;
+      this.dash.last_child.layout_manager.orientation = 0;
+      this.dash._box.layout_manager.orientation = 0;
+      this.dash.visible = false;
+      return;
+    }
 
     if (this._relayout > 0 && this.extension && this.extension._updateLayout) {
       this.extension._updateLayout();
@@ -204,6 +212,25 @@ var Animator = class {
     let pointer = global.get_pointer();
     let monitor = this.dashContainer._monitor;
 
+    // center the dash
+    if (this.extension._vertical) {
+      if (this.dash.height > this.extension.iconSize * 4) {
+        let pad = Math.floor(
+          (this.dashContainer.height - this.dash.height) / 2
+        );
+
+        let new_height = this.dashContainer._padding.height * 2;
+        new_height += pad;
+        new_height /= 3;
+        // pad -= 20 * scaleFactor; // panel height
+        if (new_height > 0) {
+          this.dashContainer._padding.height = new_height;
+        }
+      }
+    } else {
+      this.dashContainer._padding.height = 0;
+    }
+
     let pivot = new Point();
     pivot.x = 0.5;
     pivot.y = 1.0;
@@ -215,10 +242,7 @@ var Animator = class {
     let ix = 0;
     let iy = 1;
 
-    let scaleFactor = St.ThemeContext.get_for_stage(global.stage).scale_factor;
-    let iconSize = this.extension.iconSize;
-    let iconSpacing = iconSize * (1.2 + this.extension.animation_spread / 4);
-
+    this._iconsContainer.opacity = 255;
     this.dashContainer.dash.opacity = 0;
     this.dashContainer.dash._background.visible = false;
 
@@ -257,84 +281,52 @@ var Animator = class {
 
     let icons = this._previousFind;
 
-    if (!icons) {
+    // minimize findIcons call
+    this._previousFindIndex++;
+    if (!icons || this._dragging || this._previousFindIndex < 0) {
       icons = this._findIcons();
       this._previousFind = icons;
     } else {
-      if (this._previousFindIndex++ > FIND_ICONS_SKIP_FRAMES) {
+      if (this._previousFindIndex > FIND_ICONS_SKIP_FRAMES) {
         this._previousFind = null;
-      } else {
-        this._previousFind = 0;
+        this._previousFindIndex = 0;
       }
     }
 
-    icons.forEach((c) => {
-      let bin = c._bin;
-      if (!bin) return;
+    this._iconsContainer.update({
+      icons,
+      iconSize,
+      pivot,
+      quality: this.extension.icon_quality,
+    });
 
-      for (let i = 0; i < existingIcons.length; i++) {
-        if (existingIcons[i]._bin == bin) {
-          return;
-        }
-      }
-
-      let icon = c._icon;
-      let uiIcon = new St.Widget({
-        name: 'icon',
-        width: iconSize,
-        height: iconSize,
-      });
-
-      uiIcon._container = c;
-      uiIcon.pivot_point = pivot;
-      uiIcon._bin = bin;
-      uiIcon._appwell = c._appwell;
-      uiIcon._label = c._label;
-      uiIcon.set_reactive(false);
-
-      this._iconsContainer.add_child(uiIcon);
-
-      // spy dragging events
-      let draggable = c._draggable;
+    icons.forEach((icon) => {
+      let { draggable } = explodeDashIcon(icon);
       if (draggable && !draggable._dragBeginId) {
         draggable._dragBeginId = draggable.connect('drag-begin', () => {
           this._dragging = true;
         });
         draggable._dragEndId = draggable.connect('drag-end', () => {
           this._dragging = false;
+          this._previousFindIndex = -FIND_ICONS_SKIP_FRAMES;
         });
       }
     });
-
-    this._precreate_dots(this._dotsCount + icons.length);
 
     let nearestIdx = -1;
     let nearestIcon = null;
     let nearestDistance = -1;
 
     let animateIcons = this._iconsContainer.get_children();
-    animateIcons.forEach((c) => {
-      if (this.extension.services) {
-        this.extension.services.updateIcon(c.first_child);
-      }
-
-      let orphan = true;
-      for (let i = 0; i < icons.length; i++) {
-        if (icons[i]._bin == c._bin) {
-          orphan = false;
-          break;
-        }
-      }
-
-      if (orphan) {
-        this._iconsContainer.remove_child(c);
-        return;
-      }
+    animateIcons = this._iconsContainer.get_children().filter((c) => {
+      return c._bin && c._icon && c.visible;
     });
 
-    animateIcons = this._iconsContainer.get_children();
-    animateIcons.forEach((icon) => {
-      icon._pos = this._get_position(icon._bin);
+    animateIcons.forEach((c) => {
+      if (this.extension.services) {
+        this.extension.services.updateIcon(c._icon);
+      }
+      c._pos = this._get_position(c._bin);
     });
 
     // sort
@@ -345,18 +337,17 @@ var Animator = class {
       return dstA > dstB ? 1 : -1;
     });
 
-    // hack for last icon (appsButton)
-    // {
-    //   let p = animateIcons[animateIcons.length - 2];
-    //   let l = animateIcons[animateIcons.length - 1];
-    //   if (l && !l._appwell && p && p._container) {
-    //     l._pos[0] = p._pos[0] + p._container.width * 0.9 * scaleFactor;
-    //   }
-    // }
-
     let idx = 0;
     animateIcons.forEach((icon) => {
-      icon._pos[1] -= this.extension._effective_edge_distance;
+      if (this.extension._vertical) {
+        if (this.dashContainer._position == 1) {
+          // icon._pos[0] -= effective_edge_distance;
+        } else {
+          icon._pos[0] += effective_edge_distance;
+        }
+      } else {
+        icon._pos[1] -= effective_edge_distance;
+      }
 
       let bin = icon._bin;
       let pos = [...icon._pos];
@@ -365,25 +356,8 @@ var Animator = class {
       if (!this._dragging && bin.first_child) {
         bin.first_child.opacity = 0;
       }
+
       icon.set_size(iconSize, iconSize);
-
-      if (!icon.first_child && bin.first_child) {
-        let img = new St.Icon({
-          name: 'icon',
-          icon_name: bin.first_child.icon_name
-            ? bin.first_child.icon_name
-            : null,
-          gicon: bin.first_child.gicon ? bin.first_child.gicon : null,
-        });
-        img.set_scale(
-          1 / this.extension.icon_quality,
-          1 / this.extension.icon_quality
-        );
-        img._source = bin;
-        icon.add_child(img);
-        icon._img = img;
-      }
-
       if (icon._img) {
         icon._img.set_icon_size(iconSize * this.extension.icon_quality);
       }
@@ -410,9 +384,7 @@ var Animator = class {
       icon._targetScale = 1;
 
       if (this.extension._vertical) {
-        if (pos[0] > this.extension.sw / 2) {
-          validPosition = false;
-        }
+        //
       } else {
         if (pos[1] < this.extension.sh / 2) {
           validPosition = false;
@@ -467,8 +439,14 @@ var Animator = class {
       if (!i._pos) return;
       let p = [...i._pos];
       if (!p) return;
-      p[0] += off + offX;
+      p[0] += off;
       p[1] += off;
+
+      if (this.extension._vertical) {
+        p[1] += offX;
+      } else {
+        p[0] += offX;
+      }
       i._pos = p;
     });
 
@@ -492,12 +470,13 @@ var Animator = class {
     // animation behavior
     if (animateIcons.length && nearestIcon) {
       let animation_type = this.extension.animation_type;
-      let anim = Animation(animateIcons, [px, py], this.dashContainer, {
+      let anim = Animation(animateIcons, [px, py], {
         iconSize,
         scaleFactor,
         animation_rise: this.extension.animation_rise * ANIM_ICON_RAISE,
         animation_magnify: this.extension.animation_magnify * ANIM_ICON_SCALE,
         animation_spread: this.extension.animation_spread,
+        vertical: this.extension._vertical ? this.dashContainer._position : 0,
       });
 
       // commit
@@ -548,7 +527,11 @@ var Animator = class {
 
     if (!nearestIcon) {
       animateIcons.forEach((i) => {
-        i._container.width = iconSpacing * scaleFactor;
+        if (this.extension._vertical) {
+          i._container.height = iconSpacing * scaleFactor;
+        } else {
+          i._container.width = iconSpacing * scaleFactor;
+        }
       });
     }
 
@@ -589,7 +572,11 @@ var Animator = class {
 
       scale = (fromScale * _scale_coef + scale) / (_scale_coef + 1);
 
-      if (dst > iconSize * 0.01 && dst < iconSize * 3) {
+      if (
+        dst > 4 * scaleFactor &&
+        dst > iconSize * 0.01 &&
+        dst < iconSize * 3
+      ) {
         pos[0] = (from[0] * _pos_coef + pos[0]) / (_pos_coef + 1);
         pos[1] = (from[1] * _pos_coef + pos[1]) / (_pos_coef + 1);
         didAnimate = true;
@@ -600,7 +587,11 @@ var Animator = class {
         has_errors = true;
       }
 
-      icon._container.width = iconSpacing * scaleFactor * scale;
+      if (this.extension._vertical) {
+        icon._container.height = iconSpacing * scaleFactor * scale;
+      } else {
+        icon._container.width = iconSpacing * scaleFactor * scale;
+      }
 
       // scale
       if (!isNaN(scale)) {
@@ -610,6 +601,8 @@ var Animator = class {
       if (!isNaN(pos[0]) && !isNaN(pos[1])) {
         // why does NaN happen?
         icon.set_position(pos[0], pos[1]);
+        icon._pos = [...pos];
+        icon._scale = scale;
 
         // todo find appsButton._label
         if (icon._label && !this._dragging) {
@@ -619,9 +612,12 @@ var Animator = class {
               break;
             case 'right':
               icon._label.x = pos[0] - iconSize * scale * 1.1 * scaleFactor;
-              icon._label.x -= icon._label.width / 1.8;
+              icon._label.x -= icon._label.width / 1.2;
               break;
             case 'bottom':
+              icon._label.x =
+                pos[0] -
+                ((icon._container.width - iconSpacing) / 2) * scaleFactor;
               icon._label.y = pos[1] - iconSize * scale * 0.9 * scaleFactor;
               break;
             case 'top':
@@ -632,146 +628,43 @@ var Animator = class {
             icon._label.y = pos[1];
           }
         }
-
-        // todo ... move dots and badges to service?
-        // update the badge
-        let has_badge = false;
-        if (
-          icon._appwell &&
-          icon._appwell.app &&
-          this._showBadge &&
-          this.extension.services._appNotices &&
-          this.extension.services._appNotices[icon._appwell.app.get_id()] &&
-          this.extension.services._appNotices[icon._appwell.app.get_id()]
-            .count > 0
-        ) {
-          icon._badge = this._dots[dotIndex++];
-
-          let count =
-            this.extension.services._appNotices[icon._appwell.app.get_id()]
-              .count;
-
-          let badgeParent = icon._badge.get_parent();
-          badgeParent.set_position(
-            pos[0] + 4 * scaleFactor,
-            pos[1] - 4 * scaleFactor
-          );
-          badgeParent.width = iconSize;
-          badgeParent.height = iconSize;
-          badgeParent.pivot_point = pivot;
-          badgeParent.set_scale(scale, scale);
-
-          let style =
-            this.extension.notification_badge_style_options[
-              this.extension.notification_badge_style
-            ];
-
-          icon._badge.visible = true;
-          icon._badge.set_state({
-            count: count,
-            color: this.extension.notification_badge_color || [1, 1, 1, 1],
-            rotate: 180,
-            translate: [0.4, 0],
-            style: style || 'default',
-          });
-
-          icon._badge.set_scale(
-            (iconSize * scaleFactor) / DOT_CANVAS_SIZE,
-            (iconSize * scaleFactor) / DOT_CANVAS_SIZE
-          );
-          has_badge = true;
-        }
-
-        if (icon._badge && !has_badge) {
-          icon._badge.visible = false;
-        }
-
-        // update the dot
-        if (
-          this._showDots &&
-          icon._appwell &&
-          icon._appwell.app.get_n_windows() > 0
-        ) {
-          let dot = this._dots[dotIndex++];
-          icon._dot = dot;
-          if (dot) {
-            let dotParent = icon._dot.get_parent();
-            dot.visible = true;
-            dotParent.width = iconSize;
-            dotParent.height = iconSize;
-            dotParent.set_position(pos[0], pos[1] + 8 * scaleFactor);
-            dot.set_scale(
-              (iconSize * scaleFactor) / DOT_CANVAS_SIZE,
-              (iconSize * scaleFactor) / DOT_CANVAS_SIZE
-            );
-
-            let style =
-              this.extension.running_indicator_style_options[
-                this.extension.running_indicator_style
-              ];
-
-            dot.set_state({
-              count: icon._appwell.app.get_n_windows(),
-              color: this.extension.running_indicator_color || [1, 1, 1, 1],
-              style: style || 'default',
-            });
-          }
-        }
       }
     });
 
-    // background
+    this._dotsContainer.update({
+      icons: animateIcons,
+      iconSize,
+      scaleFactor,
+      vertical: this.extension._vertical,
+      position: this.dashContainer._position,
+      // dots
+      dotsCount: this._dotsCount,
+      running_indicator_style_options:
+        this.extension.running_indicator_style_options,
+      running_indicator_style: this.extension.running_indicator_style,
+      running_indicator_color: this.extension.running_indicator_color,
+      // badges
+      pivot: pivot,
+      appNotices: this.extension.services._appNotices,
+      notification_badge_style_options:
+        this.extension.notification_badge_style_options,
+      notification_badge_style: this.extension.notification_badge_style,
+      notification_badge_color: this.extension.notification_badge_color,
+    });
+
     if (validPosition && animateIcons.length > 1) {
-      let first = animateIcons[0];
-      let last = animateIcons[animateIcons.length - 1];
-      let p1 = this._get_position(first);
-      let p2 = this._get_position(last);
-      if (!isNaN(p1[0]) && !isNaN(p1[1])) {
-        let padding = iconSize * 0.25 * scaleFactor;
-
-        // bottom
-        this._background.x = p1[0] - padding;
-        this._background.y = animateIcons[0]._fixedPosition[1] - padding; // p1[1] - padding
-
-        if (p2[1] > p1[1]) {
-          this._background.y = p2[1] - padding;
-        }
-        this._background.width =
-          p2[0] -
-          p1[0] +
-          iconSize * scaleFactor * last._targetScale +
-          padding * 2;
-        this._background.height = iconSize * scaleFactor + padding * 2;
-        this._padding = padding;
-
-        // left
-        if (this.extension._vertical) {
-          this._background.x = p1[0] - padding;
-          this._background.y = animateIcons[0]._fixedPosition[1] - padding; // p1[1] - padding
-
-          if (p2[0] < p1[0]) {
-            this._background.x = p2[0] - padding;
-          }
-
-          this._background.width = iconSize * scaleFactor + padding * 2;
-          this._background.height =
-            p2[1] -
-            p1[1] +
-            iconSize * scaleFactor * last._targetScale +
-            padding * 2;
-
-          // log(`${this._background.width} ${this._background.height}`);
-        }
-
-        if (this.extension.panel_mode) {
-          this._background.x = this.dashContainer.x;
-          if (this.extension._vertical) {
-            this._background.height = this.dashContainer.height;
-          } else {
-            this._background.width = this.dashContainer.width;
-          }
-        }
-      }
+      let padding = iconSize * 0.25 * scaleFactor;
+      this._background.update({
+        first: animateIcons[0],
+        last: animateIcons[animateIcons.length - 1],
+        padding,
+        iconSize,
+        scaleFactor,
+        position: this.dashContainer._position,
+        vertical: this.extension._vertical,
+        dashContainer: this.dashContainer,
+        panel_mode: this.extension.panel_mode,
+      });
 
       if (this.extension._disable_borders && this._background.width > 0) {
         this.extension._disable_borders = false;
@@ -784,6 +677,13 @@ var Animator = class {
     if (validPosition && !this._isInFullscreen()) {
       this._iconsContainer.show();
       this._dotsContainer.show();
+      this._background.show();
+    }
+
+    if (this.extension.debug_visual) {
+      Main.panel.first_child.style = didAnimate
+        ? 'border:1px solid magenta'
+        : '';
     }
 
     if (didAnimate || this._dragging) {
@@ -918,18 +818,17 @@ var Animator = class {
     Main._lastButtonEvent = evt;
     let pressed = evt.type() == Clutter.EventType.BUTTON_PRESS;
     let button1 = (evt.get_state() & Clutter.ModifierType.BUTTON1_MASK) != 0;
+    let shift = (evt.get_state() & Clutter.ModifierType.SHIFT_MASK) != 0;
     let button = button1 ? 'left' : 'right';
     let pointer = global.get_pointer();
+
+    log(evt.get_button());
 
     if (this._nearestIcon) {
       let icon = this._nearestIcon;
       // log(`${button} ${pressed} - (${icon._pos}) (${pointer})`);
       if (icon._appwell) {
         Main._lastButtonObject = icon;
-        // let dx = icon._pos[0] - pointer[0];
-        // let dy = icon._pos[1] - pointer[1];
-        // let dst = Math.sqrt(dx * dx + dy * dy);
-        // if (dst < icon._d / 2) {
         if (button == 'left') {
           icon._appwell.emit('clicked', {});
         } else {
@@ -1033,12 +932,43 @@ var Animator = class {
     });
   }
 
+  _lockCycle() {
+    if (this._lockedCycle) return;
+    this._lockedCycle = true;
+    this.extension._hiTimer.runOnce(() => {
+      this._lockedCycle = false;
+    }, 500);
+  }
+
   _cycleWindows(app, evt) {
+    if (this._lockedCycle) {
+      this._scrollCounter = 0;
+      return;
+    }
+
     let focusId = 0;
     let workspaceManager = global.workspace_manager;
     let activeWs = workspaceManager.get_active_workspace();
 
     let windows = app.get_windows();
+
+    // if ((evt.modifier_state & Clutter.ModifierType.CONTROL_MASK) ||
+    //   (evt.modifier_state & Clutter.ModifierType.SHIFT_MASK)) {
+    // } else {
+    //   if (windows.length < 2) {
+    //     let appsystem = Shell.AppSystem.get_default();
+    //     let running = appsystem.get_running();
+    //     windows = [];
+    //     for (let i = 0; i < running.length; i++) {
+    //         let app = running[i];
+    //         windows = [
+    //           ...windows,
+    //           ...app.get_windows()
+    //         ];
+    //     }
+    //   }
+    // }
+
     if (evt.modifier_state & Clutter.ModifierType.CONTROL_MASK) {
       windows = windows.filter((w) => {
         return activeWs == w.get_workspace();
@@ -1048,18 +978,63 @@ var Animator = class {
     let nw = windows.length;
 
     if (evt.modifier_state & Clutter.ModifierType.SHIFT_MASK) {
+      let maximize = [];
+      let minimize = [];
       windows.forEach((w) => {
         switch (evt.direction) {
           case Clutter.ScrollDirection.UP:
-          case Clutter.ScrollDirection.LEFT:
-            w.minimize();
+          case Clutter.ScrollDirection.LEFT: {
+            this._lockCycle();
+            if (w.has_focus()) {
+              if (w.get_maximized() == 3) {
+                minimize = null;
+                w.unmaximize(3);
+                return;
+              }
+            }
+            if (w.is_hidden()) {
+              w.unminimize();
+              w.raise();
+            } else {
+              if (minimize) {
+                minimize.push(w);
+              }
+            }
             break;
+          }
           case Clutter.ScrollDirection.DOWN:
-          case Clutter.ScrollDirection.RIGHT:
-            w.unminimize();
+          case Clutter.ScrollDirection.RIGHT: {
+            this._lockCycle();
+            if (w.is_hidden()) {
+              w.unminimize();
+            }
+            if (maximize) {
+              maximize.push(w);
+            }
+            if (w.has_focus()) {
+              if (w.get_maximized() == 3) {
+                w.unmaximize(3);
+                // w.raise();
+              } else {
+                maximize = null;
+                w.maximize(3);
+              }
+            }
             break;
+          }
         }
       });
+
+      if (minimize) {
+        minimize.forEach((w) => {
+          w.minimize();
+        });
+      }
+
+      if (maximize) {
+        maximize[0].raise();
+        maximize[0].focus(0);
+      }
       return;
     }
     windows.sort((w1, w2) => {
@@ -1073,6 +1048,7 @@ var Animator = class {
         }
         if (windows[i].is_hidden()) {
           windows[i].unminimize();
+          windows[i].raise();
         }
       }
 

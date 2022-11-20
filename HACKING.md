@@ -29,6 +29,9 @@ const MessageTray = imports.ui.messageTray;
 calendar._messages[1].notification.urgency
 calendar._messages[1]._iconBin.first_child.icon_name
 
+// calendar events
+// org.gnome.Evolution-alarm-notify.desktop
+
 ```
 
 ## gsettings
@@ -36,3 +39,11 @@ calendar._messages[1]._iconBin.first_child.icon_name
 S = imports.gi.Gio.Settings
 s = new S({schema_id: 'org.gnome.desktop.wm.preferences'})
 s.get_string('button-layout')
+
+## theme
+
+file = Gio.File.new_for_path(".../style.css")
+theme_ctx = St.ThemeContext.get_for_stage(global.stage)
+theme = theme_ctx.get_theme();
+theme.load_stylesheet(file);
+theme.unload_stylesheet(file);

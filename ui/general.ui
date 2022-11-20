@@ -133,7 +133,7 @@
       -->
         <child>
           <object class="AdwActionRow" id="experimental-features-row">
-            <property name="visible">false</property>
+            <property name="visible">true</property>
             <property name="title" translatable="yes">Experimental Features</property>
             <property name="subtitle" translatable="yes">Enable settings for experimental features. These features may likely still contain bugs.</property>
             <property name="activatable-widget">experimental-features</property>

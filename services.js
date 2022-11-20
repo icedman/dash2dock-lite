@@ -397,6 +397,7 @@ var Services = class {
       return;
     }
 
+    // monitor scale
     this.scaleFactor = St.ThemeContext.get_for_stage(global.stage).scale_factor;
 
     // the trash
@@ -416,9 +417,7 @@ var Services = class {
           clock.visible = false;
           clock.reactive = false;
           this.clock = clock;
-
           p.clock = this.clock;
-          p.add_child(this.clock);
         }
         if (p.clock) {
           let scale =
@@ -427,6 +426,12 @@ var Services = class {
           p.clock.set_scale(scale, scale);
           p.clock.show();
           p.clock.reactive = false;
+
+          let pp = this.clock.get_parent();
+          if (pp != p) {
+            pp?.remove_child(p);
+            p.add_child(this.clock);
+          }
         }
       } else {
         if (p.clock) {
@@ -444,9 +449,7 @@ var Services = class {
           calendar.visible = false;
           calendar.reactive = false;
           this.calendar = calendar;
-
           p.calendar = this.calendar;
-          p.add_child(this.calendar);
         }
         if (p.calendar) {
           let scale =
@@ -455,6 +458,11 @@ var Services = class {
           p.calendar.set_scale(scale, scale);
           p.calendar.show();
           p.calendar.reactive = false;
+          let pp = this.calendar.get_parent();
+          if (pp != p) {
+            pp?.remove_child(p);
+            p.add_child(this.calendar);
+          }
         }
       } else {
         if (p.calendar) {

@@ -1,5 +1,4 @@
-var Animation = (animateIcons, pointer, container, settings) => {
-  let dash = container.dash;
+var Animation = (animateIcons, pointer, settings) => {
   let [px, py] = pointer;
   let _firstIcon = animateIcons[0];
   let _secondIcon = animateIcons[1];
@@ -10,9 +9,13 @@ var Animation = (animateIcons, pointer, container, settings) => {
   let nsz = _firstIcon.width;
   // second[0] - first[0];
 
-  let sz = nsz * (4 + 4 * settings.animation_spread);
+  let sz = nsz * (4 + 2 * settings.animation_spread);
   let szr = sz / 2;
   let center = [px, first[1]];
+
+  if (settings.vertical) {
+    center = [first[0], py];
+  }
 
   // spread
   let pad =
@@ -21,14 +24,15 @@ var Animation = (animateIcons, pointer, container, settings) => {
     settings.scaleFactor *
     (settings.animation_spread / 2);
 
-  container._targetScale = null;
-
   // compute diameter
   animateIcons.forEach((i) => {
     i._d = nsz;
 
     // distance
     let dx = i._pos[0] - center[0];
+    if (settings.vertical) {
+      dx = i._pos[1] - center[1];
+    }
     let dst = dx * dx;
     if (dst < szr * szr) {
       let dd = 1.0 - Math.abs(dx) / szr;
@@ -39,7 +43,15 @@ var Animation = (animateIcons, pointer, container, settings) => {
     i._targetScale = i._d / nsz;
 
     // rise
-    i._pos2[1] -= (i._d - nsz) * 0.8 * settings.animation_rise;
+    if (settings.vertical) {
+      if (settings.position == 1) {
+        i._pos2[0] -= (i._d - nsz) * 0.8 * settings.animation_rise;
+      } else {
+        i._pos2[0] += (i._d - nsz) * 0.8 * settings.animation_rise;
+      }
+    } else {
+      i._pos2[1] -= (i._d - nsz) * 0.8 * settings.animation_rise;
+    }
   });
 
   let w1 = last[0] - first[0];

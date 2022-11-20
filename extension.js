@@ -17,6 +17,7 @@ const Animator = Me.imports.animator.Animator;
 const AutoHide = Me.imports.autohide.AutoHide;
 const Services = Me.imports.services.Services;
 const Timer = Me.imports.timer.Timer;
+const Dock = Me.imports.dock.Dock;
 const xDot = Me.imports.apps.dot.xDot;
 const xWMControl = Me.imports.apps.wmcontrol.xWMControl;
 
@@ -34,9 +35,10 @@ var DashContainer = GObject.registerClass(
   {},
   class DashContainer extends St.BoxLayout {
     _init() {
-      super._init();
-      this.name = 'dashContainer';
-      this.vertical = true;
+      super._init({
+        name: 'd2dldotsContainer',
+        vertical: true,
+      });
     }
 
     vfunc_scroll_event(scrollEvent) {
@@ -114,6 +116,9 @@ class Extension {
       this.dash.add_style_class_name('overview');
     }
 
+    this.dash._adjustIconSize = () => {};
+    this.dash.opacity = 0;
+
     pivot.x = 0.5;
     pivot.y = 0.5;
     this.dash.pivot_point = pivot;
@@ -122,6 +127,8 @@ class Extension {
     if (this.dash.get_parent()) {
       this.dash.get_parent().remove_child(this.dash);
     }
+    this.dashContainer._padding = new St.Widget();
+    this.dashContainer.add_child(this.dashContainer._padding);
     this.dashContainer.add_child(this.dash);
 
     // service
@@ -163,15 +170,11 @@ class Extension {
   }
 
   disable() {
-    if (this._timer) {
-      this._timer.stop();
-      this._hiTimer.stop();
-      this._loTimer.stop();
-    }
-    if (this._diagnosticTimer) {
-      this._diagnosticTimer.stop();
-      this._diagnosticTimer = null;
-    }
+    this._timer?.stop();
+    this._hiTimer?.stop();
+    this._loTimer?.stop();
+    this._diagnosticTimer?.stop();
+    // null later
 
     this._removeEvents();
     this._disableSettings();
@@ -213,6 +216,7 @@ class Extension {
     this._timer = null;
     this._hiTimer = null;
     this._loTimer = null;
+    this._diagnosticTimer = null;
 
     log('dash2dock-lite disabled');
   }
@@ -226,17 +230,16 @@ class Extension {
             this._updateLayout();
             this._onEnterEvent();
           },
-          delay: 500,
+          delay: 50,
         },
         // force startup layout on ubuntu >:!
         {
           func: () => {
             this._updateLayout();
             this._onEnterEvent();
-
             // hack - rounded corners are messed up
           },
-          delay: 500,
+          delay: 250,
         },
         // make sure layout has been done on ubuntu >:!
         {
@@ -345,7 +348,11 @@ class Extension {
           this.animator.enable();
           this.autohider.disable();
           this.autohider.enable();
-          this.startUp();
+          this.animator._background.visible = false;
+          this._updateCss();
+          this._updateBackgroundColors();
+          this._updateLayout();
+          this._onEnterEvent();
           break;
         }
         case 'icon-effect': {
@@ -660,9 +667,11 @@ class Extension {
         let clr = bg.map((r) => Math.floor(255 * r));
         clr[3] = bg[3];
         if (this.panel_mode) {
-          border_style = `border-top: ${
-            this.border_thickness
-          }px solid rgba(${clr.join(',')});`;
+          if (!this._vertical) {
+            border_style = `border-top: ${
+              this.border_thickness
+            }px solid rgba(${clr.join(',')});`;
+          }
         } else {
           border_style = `border: ${
             this.border_thickness
@@ -782,10 +791,15 @@ class Extension {
     // W: breakable
     let icons = this.dash._box.get_children().filter((actor) => {
       if (!actor.child) {
+        let cls = actor.get_style_class_name();
+        if (cls === 'dash-separator') {
+          actor.width = 0;
+          actor.height = 0;
+        }
         return false;
       }
 
-      actor._cls = actor.child.get_style_class_name();
+      actor._cls = actor.get_style_class_name();
       if (actor.child._delegate && actor.child._delegate.icon) {
         return true;
       }
@@ -849,6 +863,7 @@ class Extension {
       // could happen if ShowApps is hidden or not yet created?
     }
 
+    this._dashIcons = icons;
     this.dashContainer._icons = icons;
     return icons;
   }
@@ -863,13 +878,16 @@ class Extension {
     if (!this.experimental_features) {
       pos = 0;
     }
-    // See St position constants
+    // See St.Direction position constants
     // remap [ bottom, left, right, top ] >> [ top, right, bottom, left ]
     this.dashContainer._position = [2, 3, 1, 0][pos];
     this._vertical =
       this.dashContainer._position == 1 || this.dashContainer._position == 3;
+    this._position = this.dashContainer._position;
 
-    this.scaleFactor = St.ThemeContext.get_for_stage(global.stage).scale_factor;
+    this.scaleFactor = this.dashContainer._monitor.geometry_scale;
+    // this.scaleFactor = St.ThemeContext.get_for_stage(global.stage).scale_factor;
+
     let iconSize = 64;
     if (!this._preferredIconSizes) {
       this._preferredIconSizes = [32];
@@ -884,6 +902,9 @@ class Extension {
       ] || 64);
     iconSize *= this.scale;
 
+    let padding = 0;
+    this._edge_distance =
+      (this.edge_distance || 0) * (EDGE_DISTANCE - padding) * this.scaleFactor;
     let distance = this.panel_mode ? 0 : this._edge_distance;
     this._effective_edge_distance = distance;
     let dockPadding = 10 + distance;
@@ -891,66 +912,75 @@ class Extension {
       this._effective_edge_distance = -dockPadding;
     }
 
+    // scale down icons to fit monitor
+    if (this._dashIcons) {
+      let iconSpacing = iconSize * (1.2 + this.animation_spread / 4);
+      let scaleFactor = this.scaleFactor;
+      let limit = this._vertical ? 0.96 : 0.98;
+      let scaleDown = 1.0;
+      let maxWidth =
+        (this._vertical
+          ? this.dashContainer._monitor.height
+          : this.dashContainer._monitor.width) * limit;
+      let projectedWidth = iconSpacing * scaleFactor * this._dashIcons.length;
+      let iconSizeScaledUp =
+        iconSize + iconSize * this.animation_magnify * scaleFactor;
+      projectedWidth += iconSizeScaledUp * 4 - iconSize * scaleFactor * 4;
+      if (projectedWidth > maxWidth * 0.98) {
+        scaleDown = (maxWidth - (iconSize / 2) * scaleFactor) / projectedWidth;
+      }
+      iconSize *= scaleDown;
+    }
+
     let scale = 0.5 + this.scale / 2;
     let dockHeight =
       (iconSize + dockPadding) * (this.shrink_icons ? 1.8 : 1.6) * scale;
     this.iconSize = iconSize;
 
-    // panel mode adjustment
-    if (this.panel_mode) {
-      // dockHeight -= 8 * this.scaleFactor;
-    }
-
-    this.dash.height = dockHeight * this.scaleFactor;
     this.dash.visible = true;
+    this.dashContainer.vertical = !this.dashContainer._vertical;
 
     if (this._vertical) {
       // left/right
-      this.dashContainer.set_size(dockHeight * this.scaleFactor, this.sh);
+      this.dashContainer.set_size(
+        dockHeight * this.scaleFactor,
+        this.sh - Main.panel.height
+      );
       this.dash.last_child.layout_manager.orientation = 1;
       this.dash._box.layout_manager.orientation = 1;
-      this.dash._box.height = -1;
-      this.dash._box.width = dockHeight * this.scaleFactor;
-
+      this.dash.height = -1;
+      this.dash.width = dockHeight * this.scaleFactor;
       this.dash.add_style_class_name('vertical');
     } else {
       // top/bottom
       this.dashContainer.set_size(this.sw, dockHeight * this.scaleFactor);
       this.dash.last_child.layout_manager.orientation = 0;
       this.dash._box.layout_manager.orientation = 0;
-      this.dash._box.height = -1;
-      this.dash._box.width = -1;
-
+      this.dash.height = dockHeight * this.scaleFactor;
+      this.dash.width = -1;
       this.dash.remove_style_class_name('vertical');
     }
-
-    // this._edge_distance =
-    //   (-EDGE_DISTANCE / 4 + (this.edge_distance || 0) * EDGE_DISTANCE) *
-    //   this.scaleFactor;
-    let padding = 0;
-    this._edge_distance =
-      (this.edge_distance || 0) * (EDGE_DISTANCE - padding) * this.scaleFactor;
 
     if (this.autohider._enabled && !this.autohider._shown) {
       // remain hidden
     } else {
       if (this._vertical) {
-        // left/right
-        // let posx = this.monitor.x + this._edge_distance;
-        // if (this.dashContainer._position == 1) {
-        //   this._edge_distance *= -1;
-        //   posx =
-        //     this.monitor.x +
-        //     this.sw -
-        //     dockHeight * this.scaleFactor +
-        //     this._edge_distance;
-        // }
-        this.dashContainer.set_position(this.monitor.x, this.monitor.y);
+        // left
+        this.dashContainer.set_position(
+          this.monitor.x,
+          this.monitor.y + Main.panel.height
+        );
+
+        // right
+        if (this.dashContainer._position == 1) {
+          this.dashContainer.x += this.dashContainer._monitor.width;
+          this.dashContainer.x -= dockHeight * this.scaleFactor;
+        }
       } else {
         // top/bottom
         this.dashContainer.set_position(
           this.monitor.x,
-          this.monitor.y + this.sh - dockHeight * this.scaleFactor // - distance
+          this.monitor.y + this.sh - dockHeight * this.scaleFactor
         );
       }
 
@@ -958,6 +988,7 @@ class Extension {
         this.dashContainer.x,
         this.dashContainer.y,
       ];
+
       this.dashContainer._hidePosition = [...this.dashContainer._fixedPosition];
 
       let hidePad = 4 * this.scaleFactor;
@@ -966,6 +997,14 @@ class Extension {
           this.dashContainer._monitor.x -
           dockHeight * this.scaleFactor +
           hidePad;
+
+        // right
+        if (this.dashContainer._position == 1) {
+          this.dashContainer._hidePosition[0] =
+            this.dashContainer._monitor.x +
+            this.dashContainer._monitor.width -
+            hidePad;
+        }
       } else {
         this.dashContainer._hidePosition[1] =
           this.dashContainer._monitor.y +
@@ -1011,7 +1050,7 @@ class Extension {
     Main.layoutManager.removeChrome(this.dashContainer);
     Main.layoutManager.addChrome(this.dashContainer, {
       affectsStruts: !this.autohide_dash,
-      affectsInputRegion: !this.autohide_dash,
+      affectsInputRegion: true, // !this.autohide_dash,
       trackFullscreen: true,
     });
 
@@ -1038,6 +1077,15 @@ class Extension {
       this._updateCss();
       this._updateBackgroundColors();
       this._onEnterEvent();
+
+      // borders get messed up
+      if (this.border_thickness > 0) {
+        this.animator._background.style = 'border: 0px';
+        this._loTimer.runOnce(() => {
+          this._updateCss();
+          this._updateBackgroundColors();
+        }, 250);
+      }
     }
   }
 
@@ -1054,8 +1102,6 @@ class Extension {
         .find_child_by_name('overview')
         .first_child.add_child(this.dash);
     }
-
-    // this.dashContainer.hide();
 
     if (this.animator && this.animate_icons) {
       this.animator._beginAnimation();
@@ -1078,9 +1124,9 @@ class Extension {
         .find_child_by_name('overview')
         .first_child.remove_child(this.dash);
       this.dashContainer.add_child(this.dash);
+      this.dash.visible = true;
     }
 
-    // this.dashContainer.show();
     this._onEnterEvent();
 
     if (this.animator._iconsContainer) {

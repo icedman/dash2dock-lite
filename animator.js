@@ -18,7 +18,8 @@ const MonochromeEffect = Me.imports.effects.monochrome_effect.MonochromeEffect;
 const TestEffect = Me.imports.effects.test_effect.TestEffect;
 const Animation = Me.imports.effects.maclike_animation.Animation;
 
-const { IconsContainer, DockIcon, explodeDashIcon } = Me.imports.dock;
+const { IconsContainer, DotsContainer, DockBackground, explodeDashIcon } =
+  Me.imports.dock;
 
 const xOverlay = Me.imports.apps.overlay.xOverlay;
 
@@ -51,23 +52,18 @@ var Animator = class {
 
     this._scrollCounter = 0;
 
-    // this._iconsContainer = new St.Widget({
-    //   name: 'd2dlIconsContainer',
-    //   offscreen_redirect: Clutter.OffscreenRedirect.ALWAYS,
-    //   reactive: false,
-    // });
-
     this._iconsContainer = new IconsContainer({
       name: 'd2dlIconsContainer',
       offscreen_redirect: Clutter.OffscreenRedirect.ALWAYS,
       reactive: false,
     });
 
-    this._dotsContainer = new St.Widget({
+    this._dotsContainer = new DotsContainer({
       name: 'd2dldotsContainer',
       reactive: false,
     });
-    this._background = new St.Widget({ name: 'd2dlBackground' });
+
+    this._background = new DockBackground({ name: 'd2dlBackground' });
     Main.uiGroup.insert_child_above(this._dotsContainer, this.dashContainer);
     Main.uiGroup.insert_child_below(this._iconsContainer, this._dotsContainer);
     Main.uiGroup.insert_child_below(this._background, this.dashContainer);
@@ -83,7 +79,7 @@ var Animator = class {
     this._dragging = false;
     this._relayout = 20;
     this._showDots = true;
-    this._showBadge = true;
+    this._showBadges = true;
     this._throttleDown = 0;
     this._previousFindIndex = 0;
 
@@ -161,30 +157,6 @@ var Animator = class {
     }
   }
 
-  _precreate_dots(count) {
-    if (!this._dots) {
-      this._dots = [];
-    }
-    if (this._showDots && this.extension.xDot) {
-      for (let i = 0; i < count - this._dots.length; i++) {
-        let dot = new this.extension.xDot(DOT_CANVAS_SIZE);
-        let pdot = new St.Widget();
-        pdot.add_child(dot);
-        this._dots.push(dot);
-        this._dotsContainer.add_child(pdot);
-        dot.set_position(0, 0);
-      }
-    }
-    this._dots.forEach((d) => {
-      d.get_parent().width = 1;
-      d.get_parent().height = 1;
-      d.visible = false;
-      // this sometimes get messed up
-      d.scale_x = 1;
-      d.scale_y = 1;
-    });
-  }
-
   relayout() {
     this._previousFind = null;
     this._throttleDown = 0;
@@ -192,12 +164,18 @@ var Animator = class {
     this._onEnterEvent();
   }
 
+  _getScaleFactor() {
+    // let scaleFactor = St.ThemeContext.get_for_stage(global.stage).scale_factor;
+    let scaleFactor = this.dashContainer._monitor.geometry_scale;
+    return scaleFactor;
+  }
+
   _animate() {
     if (!this._iconsContainer || !this.dashContainer) return;
     this.dash = this.dashContainer.dash;
 
     // get monitor scaleFactor
-    let scaleFactor = St.ThemeContext.get_for_stage(global.stage).scale_factor;
+    let scaleFactor = this._getScaleFactor();
     let iconSize = this.extension.iconSize;
     let iconSpacing = iconSize * (1.2 + this.extension.animation_spread / 4);
     let effective_edge_distance = this.extension._effective_edge_distance;
@@ -240,10 +218,14 @@ var Animator = class {
         let pad = Math.floor(
           (this.dashContainer.height - this.dash.height) / 2
         );
+
+        let new_height = this.dashContainer._padding.height * 2;
+        new_height += pad;
+        new_height /= 3;
         // pad -= 20 * scaleFactor; // panel height
-        this.dashContainer._padding.height *= 2;
-        this.dashContainer._padding.height += pad;
-        this.dashContainer._padding.height /= 3;
+        if (new_height > 0) {
+          this.dashContainer._padding.height = new_height;
+        }
       }
     } else {
       this.dashContainer._padding.height = 0;
@@ -260,8 +242,8 @@ var Animator = class {
     let ix = 0;
     let iy = 1;
 
-    this.dashContainer.dash.opacity = 0;
     this._iconsContainer.opacity = 255;
+    this.dashContainer.dash.opacity = 0;
     this.dashContainer.dash._background.visible = false;
 
     switch (this.dashContainer._position) {
@@ -299,11 +281,13 @@ var Animator = class {
 
     let icons = this._previousFind;
 
-    if (!icons) {
+    // minimize findIcons call
+    this._previousFindIndex++;
+    if (!icons || this._dragging || this._previousFindIndex < 0) {
       icons = this._findIcons();
       this._previousFind = icons;
     } else {
-      if (this._previousFindIndex++ > FIND_ICONS_SKIP_FRAMES) {
+      if (this._previousFindIndex > FIND_ICONS_SKIP_FRAMES) {
         this._previousFind = null;
         this._previousFindIndex = 0;
       }
@@ -324,29 +308,25 @@ var Animator = class {
         });
         draggable._dragEndId = draggable.connect('drag-end', () => {
           this._dragging = false;
+          this._previousFindIndex = -FIND_ICONS_SKIP_FRAMES;
         });
       }
     });
-
-    this._precreate_dots(this._dotsCount + icons.length);
 
     let nearestIdx = -1;
     let nearestIcon = null;
     let nearestDistance = -1;
 
     let animateIcons = this._iconsContainer.get_children();
-    animateIcons.forEach((c) => {
-      if (this.extension.services) {
-        this.extension.services.updateIcon(c.first_child);
-      }
-    });
-
     animateIcons = this._iconsContainer.get_children().filter((c) => {
       return c._bin && c._icon && c.visible;
     });
 
-    animateIcons.forEach((icon) => {
-      icon._pos = this._get_position(icon._bin);
+    animateIcons.forEach((c) => {
+      if (this.extension.services) {
+        this.extension.services.updateIcon(c._icon);
+      }
+      c._pos = this._get_position(c._bin);
     });
 
     // sort
@@ -361,7 +341,7 @@ var Animator = class {
     animateIcons.forEach((icon) => {
       if (this.extension._vertical) {
         if (this.dashContainer._position == 1) {
-          icon._pos[0] -= effective_edge_distance;
+          // icon._pos[0] -= effective_edge_distance;
         } else {
           icon._pos[0] += effective_edge_distance;
         }
@@ -376,7 +356,7 @@ var Animator = class {
       if (!this._dragging && bin.first_child) {
         bin.first_child.opacity = 0;
       }
-      
+
       icon.set_size(iconSize, iconSize);
       if (icon._img) {
         icon._img.set_icon_size(iconSize * this.extension.icon_quality);
@@ -404,12 +384,7 @@ var Animator = class {
       icon._targetScale = 1;
 
       if (this.extension._vertical) {
-        // if (this.dashContainer._position == 1 &&
-        //     pos[0] < this.extension.sw / 2) {
-        //   validPosition = false;
-        // } else if (pos[0] > this.extension.sw / 2) {
-        //   validPosition = false;
-        // }
+        //
       } else {
         if (pos[1] < this.extension.sh / 2) {
           validPosition = false;
@@ -626,6 +601,8 @@ var Animator = class {
       if (!isNaN(pos[0]) && !isNaN(pos[1])) {
         // why does NaN happen?
         icon.set_position(pos[0], pos[1]);
+        icon._pos = [...pos];
+        icon._scale = scale;
 
         // todo find appsButton._label
         if (icon._label && !this._dragging) {
@@ -638,6 +615,9 @@ var Animator = class {
               icon._label.x -= icon._label.width / 1.2;
               break;
             case 'bottom':
+              icon._label.x =
+                pos[0] -
+                ((icon._container.width - iconSpacing) / 2) * scaleFactor;
               icon._label.y = pos[1] - iconSize * scale * 0.9 * scaleFactor;
               break;
             case 'top':
@@ -648,166 +628,43 @@ var Animator = class {
             icon._label.y = pos[1];
           }
         }
-
-        // todo ... move dots and badges to service?
-        // update the badge
-        let has_badge = false;
-        if (
-          icon._appwell &&
-          icon._appwell.app &&
-          this._showBadge &&
-          this.extension.services._appNotices &&
-          this.extension.services._appNotices[icon._appwell.app.get_id()] &&
-          this.extension.services._appNotices[icon._appwell.app.get_id()]
-            .count > 0
-        ) {
-          icon._badge = this._dots[dotIndex++];
-
-          let count =
-            this.extension.services._appNotices[icon._appwell.app.get_id()]
-              .count;
-
-          let badgeParent = icon._badge.get_parent();
-          badgeParent.set_position(
-            pos[0] + 4 * scaleFactor,
-            pos[1] - 4 * scaleFactor
-          );
-          badgeParent.width = iconSize;
-          badgeParent.height = iconSize;
-          badgeParent.pivot_point = pivot;
-          badgeParent.set_scale(scale, scale);
-
-          let style =
-            this.extension.notification_badge_style_options[
-              this.extension.notification_badge_style
-            ];
-
-          icon._badge.visible = true;
-          icon._badge.set_state({
-            count: count,
-            color: this.extension.notification_badge_color || [1, 1, 1, 1],
-            rotate: 180,
-            translate: [0.4, 0],
-            style: style || 'default',
-          });
-
-          icon._badge.set_scale(
-            (iconSize * scaleFactor) / DOT_CANVAS_SIZE,
-            (iconSize * scaleFactor) / DOT_CANVAS_SIZE
-          );
-          has_badge = true;
-        }
-
-        if (icon._badge && !has_badge) {
-          icon._badge.visible = false;
-        }
-
-        // update the dot
-        if (false)
-          if (
-            this._showDots &&
-            icon._appwell &&
-            icon._appwell.app.get_n_windows() > 0
-          ) {
-            let dot = this._dots[dotIndex++];
-            icon._dot = dot;
-            if (dot) {
-              let dotParent = icon._dot.get_parent();
-              dot.visible = true;
-              dotParent.width = iconSize;
-              dotParent.height = iconSize;
-              dotParent.set_scale(1, 1);
-
-              if (this.extension._vertical) {
-                if (this.dashContainer._position == 1) {
-                  dotParent.set_position(pos[0] + 8 * scaleFactor, pos[1]);
-                } else {
-                  dotParent.set_position(pos[0] - 8 * scaleFactor, pos[1]);
-                }
-              } else {
-                dotParent.set_position(pos[0], pos[1] + 8 * scaleFactor);
-              }
-              dot.set_scale(
-                (iconSize * scaleFactor) / DOT_CANVAS_SIZE,
-                (iconSize * scaleFactor) / DOT_CANVAS_SIZE
-              );
-
-              let style =
-                this.extension.running_indicator_style_options[
-                  this.extension.running_indicator_style
-                ];
-
-              dot.set_state({
-                count: icon._appwell.app.get_n_windows(),
-                color: this.extension.running_indicator_color || [1, 1, 1, 1],
-                style: style || 'default',
-                rotate: this.extension._vertical
-                  ? this.dashContainer._position == 1
-                    ? -90
-                    : 90
-                  : 0,
-              });
-            }
-          }
       }
     });
 
-    // background
+    this._dotsContainer.update({
+      icons: animateIcons,
+      iconSize,
+      scaleFactor,
+      vertical: this.extension._vertical,
+      position: this.dashContainer._position,
+      // dots
+      dotsCount: this._dotsCount,
+      running_indicator_style_options:
+        this.extension.running_indicator_style_options,
+      running_indicator_style: this.extension.running_indicator_style,
+      running_indicator_color: this.extension.running_indicator_color,
+      // badges
+      pivot: pivot,
+      appNotices: this.extension.services._appNotices,
+      notification_badge_style_options:
+        this.extension.notification_badge_style_options,
+      notification_badge_style: this.extension.notification_badge_style,
+      notification_badge_color: this.extension.notification_badge_color,
+    });
+
     if (validPosition && animateIcons.length > 1) {
-      let first = animateIcons[0];
-      let last = animateIcons[animateIcons.length - 1];
-      let p1 = this._get_position(first);
-      let p2 = this._get_position(last);
-      if (!isNaN(p1[0]) && !isNaN(p1[1])) {
-        let padding = iconSize * 0.25 * scaleFactor;
-
-        // bottom
-        this._background.x = p1[0] - padding;
-        this._background.y = animateIcons[0]._fixedPosition[1] - padding; // p1[1] - padding
-
-        if (p2[1] > p1[1]) {
-          this._background.y = p2[1] - padding;
-        }
-        this._background.width =
-          p2[0] -
-          p1[0] +
-          iconSize * scaleFactor * last._targetScale +
-          padding * 2;
-        this._background.height = iconSize * scaleFactor + padding * 2;
-        this._padding = padding;
-
-        // vertical
-        if (this.extension._vertical) {
-          this._background.x = p1[0] - padding;
-          this._background.y = animateIcons[0]._fixedPosition[1] - padding; // p1[1] - padding
-
-          if (this.dashContainer._position == 1 && p2[0] > p1[0]) {
-            this._background.x = p2[0] - padding;
-          }
-          if (this.dashContainer._position == 3 && p2[0] < p1[0]) {
-            this._background.x = p2[0] - padding;
-          }
-
-          this._background.width = iconSize * scaleFactor + padding * 2;
-          this._background.height =
-            p2[1] -
-            p1[1] +
-            iconSize * scaleFactor * last._targetScale +
-            padding * 2;
-
-          // log(`${this._background.width} ${this._background.height}`);
-        }
-
-        if (this.extension.panel_mode) {
-          if (this.extension._vertical) {
-            this._background.y = this.dashContainer.y;
-            this._background.height = this.dashContainer.height;
-          } else {
-            this._background.x = this.dashContainer.x;
-            this._background.width = this.dashContainer.width;
-          }
-        }
-      }
+      let padding = iconSize * 0.25 * scaleFactor;
+      this._background.update({
+        first: animateIcons[0],
+        last: animateIcons[animateIcons.length - 1],
+        padding,
+        iconSize,
+        scaleFactor,
+        position: this.dashContainer._position,
+        vertical: this.extension._vertical,
+        dashContainer: this.dashContainer,
+        panel_mode: this.extension.panel_mode,
+      });
 
       if (this.extension._disable_borders && this._background.width > 0) {
         this.extension._disable_borders = false;

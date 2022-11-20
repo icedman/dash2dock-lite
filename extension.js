@@ -17,7 +17,7 @@ const Animator = Me.imports.animator.Animator;
 const AutoHide = Me.imports.autohide.AutoHide;
 const Services = Me.imports.services.Services;
 const Timer = Me.imports.timer.Timer;
-const Dock = Me.imports.dock.DockedDash;
+const Dock = Me.imports.dock.Dock;
 const xDot = Me.imports.apps.dot.xDot;
 const xWMControl = Me.imports.apps.wmcontrol.xWMControl;
 
@@ -116,6 +116,9 @@ class Extension {
       this.dash.add_style_class_name('overview');
     }
 
+    this.dash._adjustIconSize = () => {};
+    this.dash.opacity = 0;
+
     pivot.x = 0.5;
     pivot.y = 0.5;
     this.dash.pivot_point = pivot;
@@ -164,16 +167,9 @@ class Extension {
     this.startUp();
 
     log('dash2dock-lite enabled');
-
-    // this.addDock();
   }
 
   disable() {
-    if (this._dock) {
-      this._dock.undock();
-      this._dock = null;
-    }
-
     this._timer?.stop();
     this._hiTimer?.stop();
     this._loTimer?.stop();
@@ -225,14 +221,6 @@ class Extension {
     log('dash2dock-lite disabled');
   }
 
-  addDock() {
-    if (!this._dock) {
-      this._dock = new Dock();
-      this._dock.extension = this;
-    }
-    this._dock.dock(Main.layoutManager.primaryMonitor, St.DirectionType.UP);
-  }
-
   startUp() {
     // todo... refactor this
     if (!this._startupSeq) {
@@ -241,26 +229,23 @@ class Extension {
           func: () => {
             this._updateLayout();
             this._onEnterEvent();
-            this._dock?.updateIconSize(48);
           },
-          delay: 500,
+          delay: 50,
         },
         // force startup layout on ubuntu >:!
         {
           func: () => {
             this._updateLayout();
             this._onEnterEvent();
-            this._dock?.updateIconSize(48);
             // hack - rounded corners are messed up
           },
-          delay: 500,
+          delay: 250,
         },
         // make sure layout has been done on ubuntu >:!
         {
           func: () => {
             this._updateLayout();
             this._onEnterEvent();
-            this._dock?.updateIconSize(48);
           },
           delay: 500,
         },
@@ -900,7 +885,9 @@ class Extension {
       this.dashContainer._position == 1 || this.dashContainer._position == 3;
     this._position = this.dashContainer._position;
 
-    this.scaleFactor = St.ThemeContext.get_for_stage(global.stage).scale_factor;
+    this.scaleFactor = this.dashContainer._monitor.geometry_scale;
+    // this.scaleFactor = St.ThemeContext.get_for_stage(global.stage).scale_factor;
+
     let iconSize = 64;
     if (!this._preferredIconSizes) {
       this._preferredIconSizes = [32];
@@ -915,6 +902,9 @@ class Extension {
       ] || 64);
     iconSize *= this.scale;
 
+    let padding = 0;
+    this._edge_distance =
+      (this.edge_distance || 0) * (EDGE_DISTANCE - padding) * this.scaleFactor;
     let distance = this.panel_mode ? 0 : this._edge_distance;
     this._effective_edge_distance = distance;
     let dockPadding = 10 + distance;
@@ -937,7 +927,7 @@ class Extension {
         iconSize + iconSize * this.animation_magnify * scaleFactor;
       projectedWidth += iconSizeScaledUp * 4 - iconSize * scaleFactor * 4;
       if (projectedWidth > maxWidth) {
-        scaleDown = maxWidth / projectedWidth;
+        scaleDown = (maxWidth - (iconSize / 2) * scaleFactor) / projectedWidth;
       }
       iconSize *= scaleDown;
     }
@@ -970,10 +960,6 @@ class Extension {
       this.dash.width = -1;
       this.dash.remove_style_class_name('vertical');
     }
-
-    let padding = 0;
-    this._edge_distance =
-      (this.edge_distance || 0) * (EDGE_DISTANCE - padding) * this.scaleFactor;
 
     if (this.autohider._enabled && !this.autohider._shown) {
       // remain hidden

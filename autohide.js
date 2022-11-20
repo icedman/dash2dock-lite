@@ -127,6 +127,12 @@ var AutoHide = class {
     }
   }
 
+  _getScaleFactor() {
+    // let scaleFactor = St.ThemeContext.get_for_stage(global.stage).scale_factor;
+    let scaleFactor = this.dashContainer._monitor.geometry_scale;
+    return scaleFactor;
+  }
+
   _onMotionEvent() {
     if (this.extension.pressure_sense && !this._shown) {
       let monitor = this.dashContainer._monitor;
@@ -134,7 +140,7 @@ var AutoHide = class {
 
       let sw = this.extension.sw;
       let sh = this.extension.sh;
-      let scale = St.ThemeContext.get_for_stage(global.stage).scale_factor;
+      let scale = this._getScaleFactor();
       let area = scale * (PRESSURE_SENSE_DISTANCE * PRESSURE_SENSE_DISTANCE);
       let dx = 0;
       let dy = 0;

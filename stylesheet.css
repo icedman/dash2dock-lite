@@ -63,7 +63,13 @@
   border-radius: 32px !important;
 }
 
-#dock * {
+#BG,
+#IC,
+#Dock {
+  border: 1px solid red!important;
+}
+
+#Dock * {
   padding: 0px !important;
   margin: 0px !important;
 }

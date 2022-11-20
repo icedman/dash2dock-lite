@@ -18,6 +18,8 @@ const MonochromeEffect = Me.imports.effects.monochrome_effect.MonochromeEffect;
 const TestEffect = Me.imports.effects.test_effect.TestEffect;
 const Animation = Me.imports.effects.maclike_animation.Animation;
 
+const { IconsContainer, DockIcon, explodeDashIcon } = Me.imports.dock;
+
 const xOverlay = Me.imports.apps.overlay.xOverlay;
 
 const ANIM_POS_COEF = 1.5;
@@ -49,11 +51,18 @@ var Animator = class {
 
     this._scrollCounter = 0;
 
-    this._iconsContainer = new St.Widget({
+    // this._iconsContainer = new St.Widget({
+    //   name: 'd2dlIconsContainer',
+    //   offscreen_redirect: Clutter.OffscreenRedirect.ALWAYS,
+    //   reactive: false,
+    // });
+
+    this._iconsContainer = new IconsContainer({
       name: 'd2dlIconsContainer',
       offscreen_redirect: Clutter.OffscreenRedirect.ALWAYS,
       reactive: false,
     });
+
     this._dotsContainer = new St.Widget({
       name: 'd2dldotsContainer',
       reactive: false,
@@ -231,7 +240,7 @@ var Animator = class {
         let pad = Math.floor(
           (this.dashContainer.height - this.dash.height) / 2
         );
-        pad -= 20 * scaleFactor; // panel height
+        // pad -= 20 * scaleFactor; // panel height
         this.dashContainer._padding.height *= 2;
         this.dashContainer._padding.height += pad;
         this.dashContainer._padding.height /= 3;
@@ -296,39 +305,19 @@ var Animator = class {
     } else {
       if (this._previousFindIndex++ > FIND_ICONS_SKIP_FRAMES) {
         this._previousFind = null;
-      } else {
-        this._previousFind = 0;
+        this._previousFindIndex = 0;
       }
     }
 
-    icons.forEach((c) => {
-      let bin = c._bin;
-      if (!bin) return;
+    this._iconsContainer.update({
+      icons,
+      iconSize,
+      pivot,
+      quality: this.extension.icon_quality,
+    });
 
-      for (let i = 0; i < existingIcons.length; i++) {
-        if (existingIcons[i]._bin == bin) {
-          return;
-        }
-      }
-
-      let icon = c._icon;
-      let uiIcon = new St.Widget({
-        name: 'icon',
-        width: iconSize,
-        height: iconSize,
-      });
-
-      uiIcon._container = c;
-      uiIcon.pivot_point = pivot;
-      uiIcon._bin = bin;
-      uiIcon._appwell = c._appwell;
-      uiIcon._label = c._label;
-      uiIcon.set_reactive(false);
-
-      this._iconsContainer.add_child(uiIcon);
-
-      // spy dragging events
-      let draggable = c._draggable;
+    icons.forEach((icon) => {
+      let { draggable } = explodeDashIcon(icon);
       if (draggable && !draggable._dragBeginId) {
         draggable._dragBeginId = draggable.connect('drag-begin', () => {
           this._dragging = true;
@@ -350,22 +339,12 @@ var Animator = class {
       if (this.extension.services) {
         this.extension.services.updateIcon(c.first_child);
       }
-
-      let orphan = true;
-      for (let i = 0; i < icons.length; i++) {
-        if (icons[i]._bin == c._bin) {
-          orphan = false;
-          break;
-        }
-      }
-
-      if (orphan) {
-        this._iconsContainer.remove_child(c);
-        return;
-      }
     });
 
-    animateIcons = this._iconsContainer.get_children();
+    animateIcons = this._iconsContainer.get_children().filter((c) => {
+      return c._bin && c._icon && c.visible;
+    });
+
     animateIcons.forEach((icon) => {
       icon._pos = this._get_position(icon._bin);
     });
@@ -397,25 +376,8 @@ var Animator = class {
       if (!this._dragging && bin.first_child) {
         bin.first_child.opacity = 0;
       }
+      
       icon.set_size(iconSize, iconSize);
-
-      if (!icon.first_child && bin.first_child) {
-        let img = new St.Icon({
-          name: 'icon',
-          icon_name: bin.first_child.icon_name
-            ? bin.first_child.icon_name
-            : null,
-          gicon: bin.first_child.gicon ? bin.first_child.gicon : null,
-        });
-        img.set_scale(
-          1 / this.extension.icon_quality,
-          1 / this.extension.icon_quality
-        );
-        img._source = bin;
-        icon.add_child(img);
-        icon._img = img;
-      }
-
       if (icon._img) {
         icon._img.set_icon_size(iconSize * this.extension.icon_quality);
       }
@@ -741,51 +703,52 @@ var Animator = class {
         }
 
         // update the dot
-        if (
-          this._showDots &&
-          icon._appwell &&
-          icon._appwell.app.get_n_windows() > 0
-        ) {
-          let dot = this._dots[dotIndex++];
-          icon._dot = dot;
-          if (dot) {
-            let dotParent = icon._dot.get_parent();
-            dot.visible = true;
-            dotParent.width = iconSize;
-            dotParent.height = iconSize;
-            dotParent.set_scale(1, 1);
+        if (false)
+          if (
+            this._showDots &&
+            icon._appwell &&
+            icon._appwell.app.get_n_windows() > 0
+          ) {
+            let dot = this._dots[dotIndex++];
+            icon._dot = dot;
+            if (dot) {
+              let dotParent = icon._dot.get_parent();
+              dot.visible = true;
+              dotParent.width = iconSize;
+              dotParent.height = iconSize;
+              dotParent.set_scale(1, 1);
 
-            if (this.extension._vertical) {
-              if (this.dashContainer._position == 1) {
-                dotParent.set_position(pos[0] + 8 * scaleFactor, pos[1]);
+              if (this.extension._vertical) {
+                if (this.dashContainer._position == 1) {
+                  dotParent.set_position(pos[0] + 8 * scaleFactor, pos[1]);
+                } else {
+                  dotParent.set_position(pos[0] - 8 * scaleFactor, pos[1]);
+                }
               } else {
-                dotParent.set_position(pos[0] - 8 * scaleFactor, pos[1]);
+                dotParent.set_position(pos[0], pos[1] + 8 * scaleFactor);
               }
-            } else {
-              dotParent.set_position(pos[0], pos[1] + 8 * scaleFactor);
+              dot.set_scale(
+                (iconSize * scaleFactor) / DOT_CANVAS_SIZE,
+                (iconSize * scaleFactor) / DOT_CANVAS_SIZE
+              );
+
+              let style =
+                this.extension.running_indicator_style_options[
+                  this.extension.running_indicator_style
+                ];
+
+              dot.set_state({
+                count: icon._appwell.app.get_n_windows(),
+                color: this.extension.running_indicator_color || [1, 1, 1, 1],
+                style: style || 'default',
+                rotate: this.extension._vertical
+                  ? this.dashContainer._position == 1
+                    ? -90
+                    : 90
+                  : 0,
+              });
             }
-            dot.set_scale(
-              (iconSize * scaleFactor) / DOT_CANVAS_SIZE,
-              (iconSize * scaleFactor) / DOT_CANVAS_SIZE
-            );
-
-            let style =
-              this.extension.running_indicator_style_options[
-                this.extension.running_indicator_style
-              ];
-
-            dot.set_state({
-              count: icon._appwell.app.get_n_windows(),
-              color: this.extension.running_indicator_color || [1, 1, 1, 1],
-              style: style || 'default',
-              rotate: this.extension._vertical
-                ? this.dashContainer._position == 1
-                  ? -90
-                  : 90
-                : 0,
-            });
           }
-        }
       }
     });
 

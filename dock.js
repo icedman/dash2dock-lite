@@ -364,11 +364,11 @@ var DockBackground = GObject.registerClass(
 
         if (panel_mode) {
           if (vertical) {
-            y = dashContainer.y;
-            height = dashContainer.height;
+            this.y = dashContainer.y;
+            this.height = dashContainer.height;
           } else {
-            x = dashContainer.x;
-            width = dashContainer.width;
+            this.x = dashContainer.x;
+            this.width = dashContainer.width;
           }
         }
       }

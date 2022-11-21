@@ -35,7 +35,7 @@ class Extension {
     this._imports = Me.imports;
 
     // three available timers
-    // for persistent persistent runs
+    // for persistent runs
     this._timer = new Timer('loop timer');
     this._timer.initialize(3500);
 
@@ -59,23 +59,14 @@ class Extension {
     this._queryDisplay();
 
     this._disable_borders = this.border_radius > 0;
-
+    // animations are always on - but may be muted
     if (!SettingsKeys.getValue('animate-icons')) {
       SettingsKeys.setValue('animate-icons', true);
     }
 
-    // setup the dash container
-    // this.dashContainer = new St.BoxLayout({
-    //   name: 'dashContainer',
-    //   vertical: true,
-    // });
     this.dashContainer = new DashContainer();
     this.dashContainer.extension = this;
     this.dashContainer.delegate = this;
-    let pivot = new Point();
-    pivot.x = 0.5;
-    pivot.y = 0.5;
-    this.dashContainer.pivot_point = pivot;
 
     // todo
     this.reuseExistingDash = true;
@@ -87,19 +78,13 @@ class Extension {
       this.dash.add_style_class_name('overview');
     }
 
+    this.dash._adjustIconSize_ = this.dash._adjustIconSize;
     this.dash._adjustIconSize = () => {};
     this.dash.opacity = 0;
-
-    pivot.x = 0.5;
-    pivot.y = 0.5;
-    this.dash.pivot_point = pivot;
-
     this.dashContainer.dash = this.dash;
     if (this.dash.get_parent()) {
       this.dash.get_parent().remove_child(this.dash);
     }
-    this.dashContainer._padding = new St.Widget();
-    this.dashContainer.add_child(this.dashContainer._padding);
     this.dashContainer.add_child(this.dash);
 
     // service
@@ -161,6 +146,7 @@ class Extension {
       Main.uiGroup
         .find_child_by_name('overview')
         .first_child.add_child(this.dash);
+      this.dash._adjustIconSize = this.dash._adjustIconSize_;
     }
 
     Main.layoutManager.removeChrome(this.dashContainer);
@@ -658,107 +644,6 @@ class Extension {
     } else {
       this.dash.remove_style_class_name('custom-dots');
     }
-  }
-
-  _findIcons() {
-    if (!this.dash || !this.dashContainer) return [];
-
-    if (this.dash._showAppsIcon) {
-      this.dash._showAppsIcon.visible = this.apps_icon;
-    }
-
-    // hook on showApps
-    if (this.dash.showAppsButton && !this.dash.showAppsButton._checkEventId) {
-      this.dash.showAppsButton._checkEventId = this.dash.showAppsButton.connect(
-        'notify::checked',
-        () => {
-          if (!Main.overview.visible) {
-            Main.uiGroup
-              .find_child_by_name('overview')
-              ._controls._toggleAppsPage();
-          }
-        }
-      );
-    }
-
-    // W: breakable
-    let icons = this.dash._box.get_children().filter((actor) => {
-      if (!actor.child) {
-        let cls = actor.get_style_class_name();
-        if (cls === 'dash-separator') {
-          actor.width = 0;
-          actor.height = 0;
-        }
-        return false;
-      }
-
-      actor._cls = actor.get_style_class_name();
-      if (actor.child._delegate && actor.child._delegate.icon) {
-        return true;
-      }
-      return false;
-    });
-
-    // hide running apps
-    // this.dash.
-    if (this.favorites_only) {
-      let favorites = Fav.getAppFavorites();
-      let favorite_ids = favorites._getIds();
-      icons = icons.filter((i) => {
-        let app = i.child.app;
-        let appId = app ? app.get_id() : '';
-        let shouldInclude = favorite_ids.includes(appId);
-        i.child.visible = shouldInclude;
-        return shouldInclude;
-      });
-    }
-
-    icons.forEach((c) => {
-      // W: breakable
-      let label = c.label;
-      let appwell = c.first_child;
-      let draggable = appwell._draggable;
-      let widget = appwell.first_child;
-      let icongrid = widget.first_child;
-      let boxlayout = icongrid.first_child;
-      let bin = boxlayout.first_child;
-      let icon = bin.first_child;
-
-      c._bin = bin;
-      c._label = label;
-      c._draggable = draggable;
-      c._appwell = appwell;
-      if (icon) {
-        c._icon = icon;
-      }
-    });
-
-    try {
-      // W: breakable
-      let appsIcon = this.dash._showAppsIcon;
-      let apps = this.dash._showAppsIcon;
-      if (apps) {
-        let widget = appsIcon.child;
-        if (widget && widget.width > 0 && widget.get_parent().visible) {
-          let icongrid = widget.first_child;
-          let boxlayout = icongrid.first_child;
-          let bin = boxlayout.first_child;
-          let icon = bin.first_child;
-          let c = apps;
-          // c.child = widget;
-          c._bin = bin;
-          c._icon = icon;
-          c._label = widget._delegate.label;
-          icons.push(c);
-        }
-      }
-    } catch (err) {
-      // could happen if ShowApps is hidden or not yet created?
-    }
-
-    this._dashIcons = icons;
-    this.dashContainer._icons = icons;
-    return icons;
   }
 
   _updateLayout(disable) {

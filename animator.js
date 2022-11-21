@@ -694,7 +694,7 @@ var Animator = class {
   }
 
   _findIcons() {
-    let icons = this.extension._findIcons();
+    let icons = this.dashContainer._findIcons();
 
     this._dotsCount = 0;
     this._iconsCount = icons.length;
@@ -1031,7 +1031,7 @@ var Animator = class {
         });
       }
 
-      if (maximize) {
+      if (maximize && maximize.length) {
         maximize[0].raise();
         maximize[0].focus(0);
       }

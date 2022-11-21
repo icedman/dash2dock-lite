@@ -166,7 +166,7 @@ var Services = class {
       appname,
       this.extension.trash_icon ? favorite_ids.length - 1 : -1
     );
-    this.extension._onEnterEvent();
+    this.extension.animate();
 
     // re-try later
     if (!favorite_ids.includes(appname)) {
@@ -365,7 +365,7 @@ var Services = class {
     if (!favorites._getIds().includes(app)) {
       this.temporarilyMuteOverview();
       favorites.addFavorite(app);
-      this.extension._onEnterEvent();
+      this.extension.animate();
     }
   }
 
@@ -380,7 +380,7 @@ var Services = class {
       this.temporarilyMuteOverview();
       favorites.removeFavorite(app);
 
-      this.extension._onEnterEvent();
+      this.extension.animate();
     }
   }
 

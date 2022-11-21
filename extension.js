@@ -18,8 +18,7 @@ const AutoHide = Me.imports.autohide.AutoHide;
 const Services = Me.imports.services.Services;
 const Timer = Me.imports.timer.Timer;
 const Dock = Me.imports.dock.Dock;
-const xDot = Me.imports.apps.dot.xDot;
-const xWMControl = Me.imports.apps.wmcontrol.xWMControl;
+const DashContainer = Me.imports.dashContainer.DashContainer;
 
 const runTests = Me.imports.diagnostics.runTests;
 
@@ -30,25 +29,6 @@ const ANIM_ICON_QUALITY = 2.0;
 
 const ANIM_INTERVAL = 15;
 const ANIM_INTERVAL_PAD = 15;
-
-var DashContainer = GObject.registerClass(
-  {},
-  class DashContainer extends St.BoxLayout {
-    _init() {
-      super._init({
-        name: 'd2dldotsContainer',
-        vertical: true,
-      });
-    }
-
-    vfunc_scroll_event(scrollEvent) {
-      if (this.delegate) {
-        this.delegate._onScrollEvent(this, scrollEvent);
-      }
-      return Clutter.EVENT_PROPAGATE;
-    }
-  }
-);
 
 class Extension {
   enable() {
@@ -71,8 +51,6 @@ class Extension {
     this.listeners = [];
     this.scale = 1.0;
     this.icon_size = 0;
-    this.xDot = xDot;
-    this.xWMControl = xWMControl;
     this.icon_quality = ANIM_ICON_QUALITY;
 
     Main._d2dl = this;
@@ -86,25 +64,18 @@ class Extension {
       SettingsKeys.setValue('animate-icons', true);
     }
 
-    this._updateAnimationFPS();
-
     // setup the dash container
     // this.dashContainer = new St.BoxLayout({
     //   name: 'dashContainer',
     //   vertical: true,
     // });
     this.dashContainer = new DashContainer();
+    this.dashContainer.extension = this;
     this.dashContainer.delegate = this;
     let pivot = new Point();
     pivot.x = 0.5;
     pivot.y = 0.5;
     this.dashContainer.pivot_point = pivot;
-
-    Main.layoutManager.addChrome(this.dashContainer, {
-      affectsStruts: true,
-      affectsInputRegion: true,
-      trackFullscreen: true,
-    });
 
     // todo
     this.reuseExistingDash = true;
@@ -136,15 +107,13 @@ class Extension {
     this.services.extension = this;
 
     // animator
-    this.animator = new Animator();
+    this.animator = this.dashContainer.animator;
     this.animator.extension = this;
-    this.animator.dashContainer = this.dashContainer;
 
     // autohider
-    this.autohider = new AutoHide();
+    this.autohider = this.dashContainer.autohider;
     this.autohider.extension = this;
     this.autohider.animator = this.animator;
-    this.autohider.dashContainer = this.dashContainer;
 
     // todo follow animator and autohider protocol
     this.services.enable();
@@ -153,6 +122,7 @@ class Extension {
 
     this._onCheckServices();
 
+    this._updateAnimationFPS();
     this._updateShrink();
     this._updateIconResolution();
     this._updateLayout();
@@ -197,9 +167,6 @@ class Extension {
     delete this.dashContainer;
     this.dashContainer = null;
 
-    delete this.animator;
-    this.animator = null;
-
     if (this.dash.showAppsButton && this.dash.showAppsButton._checkEventId) {
       this.dash.showAppsButton.disconnect(
         this.dash.showAppsButton._checkEventId
@@ -221,6 +188,10 @@ class Extension {
     log('dash2dock-lite disabled');
   }
 
+  animate() {
+    this.dashContainer._onEnterEvent();
+  }
+
   startUp() {
     // todo... refactor this
     if (!this._startupSeq) {
@@ -228,7 +199,7 @@ class Extension {
         {
           func: () => {
             this._updateLayout();
-            this._onEnterEvent();
+            this.animate();
           },
           delay: 50,
         },
@@ -236,7 +207,7 @@ class Extension {
         {
           func: () => {
             this._updateLayout();
-            this._onEnterEvent();
+            this.animate();
             // hack - rounded corners are messed up
           },
           delay: 250,
@@ -245,7 +216,7 @@ class Extension {
         {
           func: () => {
             this._updateLayout();
-            this._onEnterEvent();
+            this.animate();
           },
           delay: 500,
         },
@@ -317,7 +288,7 @@ class Extension {
         case 'animation-rise': {
           if (this.animate_icons) {
             this.animator.preview();
-            this.animator._onEnterEvent();
+            this.animate();
           }
           break;
         }
@@ -325,19 +296,19 @@ class Extension {
         case 'notification-badge-style':
         case 'running-indicator-color':
         case 'running-indicator-style': {
-          this._onEnterEvent();
+          this.animate();
           break;
         }
         case 'apps-icon':
         case 'calendar-icon':
         case 'clock-icon': {
-          this._onEnterEvent();
+          this.animate();
           break;
         }
         case 'favorites-only': {
           this.animator.relayout();
           this._updateLayout();
-          this._onEnterEvent();
+          this.animate();
           break;
         }
         // problematic settings needing animator restart
@@ -352,21 +323,21 @@ class Extension {
           this._updateCss();
           this._updateBackgroundColors();
           this._updateLayout();
-          this._onEnterEvent();
+          this.animate();
           break;
         }
         case 'icon-effect': {
           if (this.animate_icons) {
             this.animator._updateIconEffect();
             this._updateLayout();
-            this._onEnterEvent();
+            this.animate();
           }
           break;
         }
         case 'icon-effect-color': {
           if (this.animate_icons && this.animator.iconEffect) {
             this.animator.iconEffect.color = this.icon_effect_color;
-            this._onEnterEvent();
+            this.animate();
           }
           break;
         }
@@ -377,7 +348,7 @@ class Extension {
         case 'icon-size':
         case 'preferred-monitor': {
           this._updateLayout();
-          this._onEnterEvent();
+          this.animate();
           break;
         }
         case 'autohide-dash': {
@@ -385,13 +356,13 @@ class Extension {
           break;
         }
         case 'edge-distance': {
-          this._onEnterEvent();
+          this.animate();
           break;
         }
         case 'shrink-icons':
         case 'icon-size': {
           this._updateShrink();
-          this._onEnterEvent();
+          this.animate();
           break;
         }
         case 'border-radius':
@@ -405,7 +376,7 @@ class Extension {
           this._updateCss();
           this._updateBackgroundColors();
           this._updateLayout();
-          this._onEnterEvent();
+          this.animate();
           break;
         }
         case 'pressure-sense': {
@@ -414,11 +385,11 @@ class Extension {
         case 'trash-icon': {
           this._updateTrashIcon();
           this._updateLayout();
-          this._onEnterEvent();
+          this.animate();
 
           this._loTimer.runOnce(() => {
             this._updateLayout();
-            this._onEnterEvent();
+            this.animate();
           }, 250);
 
           break;
@@ -441,22 +412,6 @@ class Extension {
   }
 
   _addEvents() {
-    this.dashContainer.set_reactive(true);
-    this.dashContainer.set_track_hover(true);
-    this.dashContainer.connectObject(
-      'button-press-event',
-      this._onButtonEvent.bind(this),
-      'motion-event',
-      this._onMotionEvent.bind(this),
-      'enter-event',
-      this._onEnterEvent.bind(this),
-      'leave-event',
-      this._onLeaveEvent.bind(this),
-      'destroy',
-      () => {},
-      this
-    );
-
     Main.sessionMode.connectObject(
       'updated',
       () => this._onSessionUpdated(),
@@ -468,7 +423,7 @@ class Extension {
       'monitors-changed',
       () => {
         this._updateLayout();
-        this._onEnterEvent();
+        this.animate();
       },
       this
     );
@@ -477,7 +432,7 @@ class Extension {
       'queue-changed',
       (count) => {
         this.services.checkNotifications();
-        this._onEnterEvent();
+        this.animate();
       },
       this
     );
@@ -522,9 +477,6 @@ class Extension {
   }
 
   _removeEvents() {
-    this.dashContainer.set_reactive(false);
-    this.dashContainer.set_track_hover(false);
-    this.dashContainer.disconnectObject(this);
     Main.sessionMode.disconnectObject(this);
     Main.messageTray.disconnectObject(this);
     Main.overview.disconnectObject(this);
@@ -542,59 +494,7 @@ class Extension {
     this.animator.enable();
     this._updateCss();
     this._updateBackgroundColors();
-    this._onEnterEvent();
-  }
-
-  _onScrollEvent(obj, evt) {
-    this.listeners
-      .filter((l) => {
-        return l._enabled;
-      })
-      .forEach((l) => {
-        if (l._onScrollEvent) l._onScrollEvent(obj, evt);
-      });
-  }
-
-  _onButtonEvent(obj, evt) {
-    this.listeners
-      .filter((l) => {
-        return l._enabled;
-      })
-      .forEach((l) => {
-        if (l._onButtonEvent) l._onButtonEvent(obj, evt);
-      });
-  }
-
-  _onMotionEvent() {
-    this.listeners
-      .filter((l) => {
-        return l._enabled;
-      })
-      .forEach((l) => {
-        if (l._onMotionEvent) l._onMotionEvent();
-      });
-  }
-
-  _onEnterEvent() {
-    this.listeners
-      .filter((l) => {
-        return l._enabled;
-      })
-      .forEach((l) => {
-        if (l._onEnterEvent) l._onEnterEvent();
-      });
-
-    this._updateLayout();
-  }
-
-  _onLeaveEvent() {
-    this.listeners
-      .filter((l) => {
-        return l._enabled;
-      })
-      .forEach((l) => {
-        if (l._onLeaveEvent) l._onLeaveEvent();
-      });
+    this.animate();
   }
 
   _onFocusWindow() {
@@ -619,14 +519,7 @@ class Extension {
   }
 
   _updateAnimationFPS() {
-    if (this.animator) {
-      this._hiTimer.cancel(this.animator._animationSeq);
-      this.animator._animationSeq = null;
-    }
-    if (this.autohider) {
-      this._hiTimer.cancel(this.autohider._animationSeq);
-      this.autohider._animationSeq = null;
-    }
+    this.dashContainer.cancelAnimations();
     this.animationInterval =
       ANIM_INTERVAL + (this.animation_fps || 0) * ANIM_INTERVAL_PAD;
     this._hiTimer.shutdown();
@@ -1034,9 +927,6 @@ class Extension {
   }
 
   _updateAutohide(disable) {
-    this.autohider.animator = this.animator;
-    this.dashContainer.autohider = this.autohider;
-
     if (this.autohide_dash && !disable) {
       this.autohider.enable();
     } else {
@@ -1047,36 +937,17 @@ class Extension {
       this.animator.disable();
     }
 
-    Main.layoutManager.removeChrome(this.dashContainer);
-    Main.layoutManager.addChrome(this.dashContainer, {
-      affectsStruts: !this.autohide_dash,
-      affectsInputRegion: true, // !this.autohide_dash,
-      trackFullscreen: true,
-    });
-
-    if (this.animator._iconsContainer) {
-      Main.uiGroup.remove_child(this.animator._dotsContainer);
-      Main.uiGroup.remove_child(this.animator._iconsContainer);
-      Main.uiGroup.remove_child(this.animator._background);
-      Main.uiGroup.insert_child_above(
-        this.animator._dotsContainer,
-        this.dashContainer
-      );
-      Main.uiGroup.insert_child_below(
-        this.animator._iconsContainer,
-        this.animator._dotsContainer
-      );
-      Main.uiGroup.insert_child_below(
-        this.animator._background,
-        this.animator.dashContainer
-      );
+    if (!disable) {
+      // re-chrome
+      this.dashContainer.removeFromChrome();
+      this.dashContainer.addToChrome();
     }
 
     if (this.animate_icons && !disable) {
       this.animator.enable();
       this._updateCss();
       this._updateBackgroundColors();
-      this._onEnterEvent();
+      this.animate();
 
       // borders get messed up
       if (this.border_thickness > 0) {
@@ -1112,7 +983,7 @@ class Extension {
       }
     }
 
-    this._onEnterEvent();
+    this.animate();
     // log('_onOverviewShowing');
   }
 
@@ -1127,7 +998,7 @@ class Extension {
       this.dash.visible = true;
     }
 
-    this._onEnterEvent();
+    this.animate();
 
     if (this.animator._iconsContainer) {
       this.animator._iconsContainer.show();

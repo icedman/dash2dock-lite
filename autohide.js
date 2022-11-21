@@ -138,8 +138,8 @@ var AutoHide = class {
       let monitor = this.dashContainer._monitor;
       let pointer = global.get_pointer();
 
-      let sw = this.extension.sw;
-      let sh = this.extension.sh;
+      let sw = monitor.width;
+      let sh = monitor.height;
       let scale = this._getScaleFactor();
       let area = scale * (PRESSURE_SENSE_DISTANCE * PRESSURE_SENSE_DISTANCE);
       let dx = 0;

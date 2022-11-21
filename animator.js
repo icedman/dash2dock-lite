@@ -386,7 +386,7 @@ var Animator = class {
       if (this.extension._vertical) {
         //
       } else {
-        if (pos[1] < this.extension.sh / 2) {
+        if (pos[1] < this.dashContainer._monitor.height / 2) {
           validPosition = false;
         }
       }

@@ -120,7 +120,7 @@ var IconsContainer = GObject.registerClass(
         let _icon = this._icons[idx++];
         _icon.update({
           icon,
-          app: appwell?.app?.get_id()
+          app: appwell?.app?.get_id(),
         });
 
         _icon._appwell = appwell;

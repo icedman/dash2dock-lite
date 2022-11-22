@@ -586,6 +586,8 @@ class Extension {
           }
         }
         this.animator._background.style = `border: ${this.border_thickness}px solid rgba(${rgba}) !important; ${disable_borders}`;
+      } else {
+        this.animator._background.style = '';
       }
 
       {
@@ -602,7 +604,7 @@ class Extension {
       if (this.topbar_border_thickness) {
         let rgba = this._style.rgba(this.topbar_border_color);
         styles.push(
-          `#panelBox #panel { border: ${this.border_thickness}px solid rgba(${rgba}); border-top: 0px; border-left: 0px; border-right: 0px; }`
+          `#panelBox #panel { border: ${this.topbar_border_thickness}px solid rgba(${rgba}); border-top: 0px; border-left: 0px; border-right: 0px; }`
         );
       }
 

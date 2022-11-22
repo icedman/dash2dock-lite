@@ -119,7 +119,7 @@ class Extension {
     this._updateAutohide();
     this._updateAnimation();
     this._updateTrashIcon();
-    this._updateStyleNow();
+    this._updateStyle();
 
     this._addEvents();
 
@@ -186,6 +186,8 @@ class Extension {
   }
 
   startUp() {
+    this._debouncedUpdateStyle();
+
     // todo... refactor this
     if (!this._startupSeq) {
       this._startupSeq = this._loTimer.runSequence([
@@ -201,7 +203,6 @@ class Extension {
           func: () => {
             this._updateLayout();
             this.animate();
-            this._updateStyle();
             // hack - rounded corners are messed up
           },
           delay: 250,
@@ -359,6 +360,8 @@ class Extension {
           break;
         }
         case 'border-radius':
+          this._debouncedUpdateStyle();
+          break;
         case 'border-color':
         case 'border-thickness':
         case 'customize-topbar':
@@ -538,22 +541,22 @@ class Extension {
     this.icon_quality = 1 + [2, 0, 1, 2, 3][this.icon_resolution || 0];
   }
 
-  _updateStyle(disable) {
+  _debouncedUpdateStyle(disable) {
     if (disable) return;
     if (!this._debounceStyleSeq) {
-      this._debounceStyleSeq = this._hiTimer.runDebounced(
+      this._debounceStyleSeq = this._loTimer.runDebounced(
         () => {
-          this._updateStyleNow();
+          this._updateStyle();
         },
-        250,
+        500,
         'debounceStyle'
       );
     } else {
-      this._hiTimer.runDebounced(this._debounceStyleSeq);
+      this._loTimer.runDebounced(this._debounceStyleSeq);
     }
   }
 
-  _updateStyleNow(disable) {
+  _updateStyle(disable) {
     let styles = [];
 
     let rads = [0, 8, 16, 20, 24, 28, 32];
@@ -780,8 +783,6 @@ class Extension {
     } else {
       this.animator.disable();
     }
-
-    this._updateStyle();
   }
 
   _updateAutohide(disable) {
@@ -803,16 +804,13 @@ class Extension {
 
     if (this.animate_icons && !disable) {
       this.animator.enable();
-      this._updateStyle();
       this.animate();
 
       // borders get messed up
-      if (this.border_thickness > 0) {
-        this.animator._background.style = 'border: 0px';
-        this._loTimer.runOnce(() => {
-          this._updateStyle();
-        }, 250);
-      }
+      // if (this.border_thickness > 0) {
+      //   this.animator._background.style = 'border: 0px';
+      //   this._debouncedUpdateStyle();
+      // }
     }
   }
 
@@ -861,10 +859,7 @@ class Extension {
       this.animator._dotsContainer.show();
     }
 
-    this._loTimer.runOnce(() => {
-      this._updateStyle();
-    }, 250);
-
+    this._debouncedUpdateStyle();
     // log('_onOverviewHidden');
   }
 

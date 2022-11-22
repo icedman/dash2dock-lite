@@ -3,6 +3,7 @@
 const { St, Shell, GObject, Gio, GLib, Gtk, Meta, Clutter } = imports.gi;
 
 const Main = imports.ui.main;
+const Fav = imports.ui.appFavorites;
 const Point = imports.gi.Graphene.Point;
 
 const ExtensionUtils = imports.misc.extensionUtils;
@@ -257,7 +258,6 @@ var DashContainer = GObject.registerClass(
         // could happen if ShowApps is hidden or not yet created?
       }
 
-      this._dashIcons = icons;
       this._icons = icons;
       return icons;
     }

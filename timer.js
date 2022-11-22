@@ -21,6 +21,7 @@ var Timer = class {
 
   shutdown() {
     this._autoStart = false;
+    this._hibernating = false;
     this.stop();
   }
 

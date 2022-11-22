@@ -219,9 +219,9 @@ var Animator = class {
           (this.dashContainer.height - this.dash.height) / 2
         );
 
-        let new_height = this.dashContainer._padding.height * 2;
+        let new_height = this.dashContainer._padding.height * 8;
         new_height += pad;
-        new_height /= 3;
+        new_height /= 9;
         // pad -= 20 * scaleFactor; // panel height
         if (new_height > 0) {
           this.dashContainer._padding.height = new_height;

@@ -253,9 +253,17 @@ var Services = class {
       this._notifications = [];
     }
 
-    this._appNotices = {};
+
+    this._appNotices = this._appNotices || {};
+
+    Object.keys(this._appNotices).forEach((k) => {
+      this._appNotices[k].previous = this._appNotices[k].count;
+      this._appNotices[k].count = 0;
+    });
+
     this._notifications.forEach((n) => {
       let appId = null;
+      if (!n.notification) return;
       if (n.notification.source.app) {
         appId = n.notification.source.app.get_id();
       }
@@ -271,6 +279,7 @@ var Services = class {
       if (!this._appNotices[appId]) {
         this._appNotices[appId] = {
           count: 0,
+          previous: 0,
           urgency: 0,
           source: n.notification.source,
         };
@@ -284,6 +293,25 @@ var Services = class {
         this._appNotices[`${appId}.desktop`] = this._appNotices[appId];
       }
     });
+
+    let hasUpdates = false;
+    Object.keys(this._appNotices).forEach((k) => {
+      if (this._appNotices[k].previous != this._appNotices[k].count) {
+        hasUpdates = true;
+      }
+    });
+
+    let update = {}
+    Object.keys(this._appNotices).forEach((k) => {
+      if (this._appNotices[k].count > 0) {
+        update[k] = this._appNotices[k];
+      }
+    });
+    this._appNotices = update;
+
+    if (hasUpdates) {
+      this.extension.animate();
+    }
   }
 
   checkTrash() {

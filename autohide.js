@@ -75,11 +75,6 @@ var AutoHide = class {
       if (w._tracked) {
         this._untrack(w);
       }
-      if (w._parent && w._parent._close_btn) {
-        w._parent.remove_child(w._parent._close_btn);
-        delete w._parent._close_btn;
-        w._parent._close_btn = null;
-      }
     });
 
     log('autohide disabled');
@@ -218,6 +213,7 @@ var AutoHide = class {
   }
 
   _animate() {
+    // log('.');
     if (!this.dashContainer) return false;
 
     if (this.extension.animator && this.extension.animator._dragging) {
@@ -283,28 +279,23 @@ var AutoHide = class {
   }
 
   _track(window) {
-    if (window == this._currentTracked) return;
-
-    this._untrack(this._currentTracked);
     if (!window._tracked) {
-      window._onPositionChanged = window.connect(
+      // log('tracking...');
+      window.connectObject(
         'position-changed',
-        this._debounceCheckHide.bind(this)
-      );
-      window._onSizeChanged = window.connect(
+        this._debounceCheckHide.bind(this),
         'size-changed',
-        this._debounceCheckHide.bind(this)
+        this._debounceCheckHide.bind(this),
+        this
       );
       window._tracked = true;
-      this._currentTracked = window;
     }
   }
 
   _untrack(window) {
     try {
       if (window && window._tracked) {
-        window.disconnect(window._onPositionChanged);
-        window.disconnect(window._onSizeChanged);
+        window.disconnectObject(this);
         window._tracked = false;
       }
     } catch (err) {
@@ -324,7 +315,6 @@ var AutoHide = class {
   _checkOverlap() {
     let pointer = global.get_pointer();
     let dash_position = this.dashContainer._fixedPosition;
-    // this.animator._get_position(this.dashContainer);
 
     // log('---');
     // log(pointer[1]);

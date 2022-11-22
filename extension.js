@@ -125,10 +125,10 @@ class Extension {
   }
 
   disable() {
-    this._timer?.stop();
-    this._hiTimer?.stop();
-    this._loTimer?.stop();
-    this._diagnosticTimer?.stop();
+    this._timer?.shutdown();
+    this._hiTimer?.shutdown();
+    this._loTimer?.shutdown();
+    this._diagnosticTimer?.shutdown();
     // null later
 
     this._removeEvents();
@@ -691,7 +691,7 @@ class Extension {
     }
 
     // scale down icons to fit monitor
-    if (this._dashIcons) {
+    if (this.dashContainer._icons) {
       let iconSpacing = iconSize * (1.2 + this.animation_spread / 4);
       let scaleFactor = this.scaleFactor;
       let limit = this._vertical ? 0.96 : 0.98;
@@ -700,7 +700,7 @@ class Extension {
         (this._vertical
           ? this.dashContainer._monitor.height
           : this.dashContainer._monitor.width) * limit;
-      let projectedWidth = iconSpacing * scaleFactor * this._dashIcons.length;
+      let projectedWidth = iconSpacing * scaleFactor * this.dashContainer._icons.length;
       let iconSizeScaledUp =
         iconSize + iconSize * this.animation_magnify * scaleFactor;
       projectedWidth += iconSizeScaledUp * 4 - iconSize * scaleFactor * 4;

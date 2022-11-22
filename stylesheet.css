@@ -4,10 +4,6 @@
      border: 2px solid magenta !important;
 }
 
-#panelBox #panel {
-  background: rgba(0,0,0,0);
-}
-
 #panelBox #panel.light * {
   color: black!important;
 }
@@ -15,61 +11,4 @@
 #dashContainer #dash * {
   margin: 0px !important;
   padding: 0px !important;
-}
-
-/*
-#dash .dash-item-container .app-well-app:hover > StWidget
-{
-  border: 2px solid yellow;
-}
-*/
-
-/* from gnome-shell
-// background of the dash behind app icons
-.dash-background {
-  background-color: $dash_background_color;
-  border-radius: $dash_border_radius;
-  padding: $dash_padding;
-  spacing: $base_padding;
-  margin-bottom: $dash_padding;
-}
-*/
-
-#d2dlBackground.border-radius-0 {
-  border-radius: 0px !important;
-}
-
-#d2dlBackground.border-radius-1 {
-  border-radius: 8px !important;
-}
-
-#d2dlBackground.border-radius-2 {
-  border-radius: 16px !important;
-}
-
-#d2dlBackground.border-radius-3 {
-  border-radius: 20px !important;
-}
-
-#d2dlBackground.border-radius-4 {
-  border-radius: 24px !important;
-}
-
-#d2dlBackground.border-radius-5 {
-  border-radius: 28px !important;
-}
-
-#d2dlBackground.border-radius-6 {
-  border-radius: 32px !important;
-}
-
-#BG,
-#IC,
-#Dock {
-  border: 1px solid red!important;
-}
-
-#Dock * {
-  padding: 0px !important;
-  margin: 0px !important;
 }

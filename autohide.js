@@ -81,11 +81,6 @@ var AutoHide = class {
   }
 
   _beginAnimation(t) {
-    // let monitor = this.dashContainer._monitor;
-    // let y = monitor.y;
-    // let height = monitor.height;
-    // this.target = y + height - t;
-
     if (this.extension.animator._dragging) {
       return;
     }

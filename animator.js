@@ -669,8 +669,7 @@ var Animator = class {
 
       if (this.extension._disable_borders && this._background.width > 0) {
         this.extension._disable_borders = false;
-        this.extension._updateCss();
-        this.extension._updateBackgroundColors();
+        this.extension._updateStyle();
       }
     }
 
@@ -711,7 +710,7 @@ var Animator = class {
 
     // todo: fix: too elaborate a hack to suppress initial dock display- when icons are not yet ready
     if (icons.length <= 1) {
-      // only the ShowAppsButton?... dash not yet ready
+      // only the ShowAppsButton is visible?... dash not yet ready
 
       this.dashContainer.dash.opacity = 0;
       this._iconsContainer.opacity = 0;
@@ -889,14 +888,10 @@ var Animator = class {
 
       this._findIcons();
 
-      if (
-        this._iconsCount != prevIconsCount ||
-        prevDots != this._dotsCount
-      ) {
-
+      if (this._iconsCount != prevIconsCount || prevDots != this._dotsCount) {
         // log(`${prevDots} ${prevIconsCount}`);
         // log(`>>${this._dotsCount} ${this._iconsCount}`);
-        
+
         this._endAnimation();
         this._startAnimation();
         this.relayout();

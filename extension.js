@@ -16,6 +16,7 @@ const { schemaId, settingsKeys, SettingsKeys } = Me.imports.preferences.keys;
 const Animator = Me.imports.animator.Animator;
 const AutoHide = Me.imports.autohide.AutoHide;
 const Services = Me.imports.services.Services;
+const Style = Me.imports.style.Style;
 const Timer = Me.imports.timer.Timer;
 const Dock = Me.imports.dock.Dock;
 const DashContainer = Me.imports.dashContainer.DashContainer;
@@ -58,6 +59,8 @@ class Extension {
 
     Main._d2dl = this;
 
+    this._style = new Style();
+
     this._enableSettings();
     this._queryDisplay();
 
@@ -69,7 +72,6 @@ class Extension {
 
     this.dashContainer = new DashContainer();
     this.dashContainer.extension = this;
-    this.dashContainer.delegate = this;
 
     // todo
     this.reuseExistingDash = true;
@@ -116,11 +118,12 @@ class Extension {
     this._updateLayout();
     this._updateAutohide();
     this._updateAnimation();
-    this._updateStyle();
     this._updateTrashIcon();
+    this._updateStyleNow();
 
     this._addEvents();
 
+    this.dashContainer.dock();
     this.startUp();
 
     log('dash2dock-lite enabled');
@@ -140,8 +143,8 @@ class Extension {
     this._updateLayout(true);
     this._updateAnimation(true);
     this._updateAutohide(true);
-    this._updateStyle(true);
 
+    this.dashContainer.undock();
     this.dashContainer.remove_child(this.dash);
     if (this.reuseExistingDash) {
       Main.uiGroup
@@ -172,6 +175,9 @@ class Extension {
     this._loTimer = null;
     this._diagnosticTimer = null;
 
+    this._style.unloadAll();
+    this._style = null;
+
     log('dash2dock-lite disabled');
   }
 
@@ -195,6 +201,7 @@ class Extension {
           func: () => {
             this._updateLayout();
             this.animate();
+            this._updateStyle();
             // hack - rounded corners are messed up
           },
           delay: 250,
@@ -532,120 +539,82 @@ class Extension {
   }
 
   _updateStyle(disable) {
-    this._updateCss(disable);
-    this._updateBackgroundColors(disable);
+    if (disable) return;
+    if (!this._debounceStyleSeq) {
+      this._debounceStyleSeq = this._hiTimer.runDebounced(
+        () => {
+          this._updateStyleNow();
+        },
+        250,
+        'debounceStyle'
+      );
+    } else {
+      this._hiTimer.runDebounced(this._debounceStyleSeq);
+    }
   }
 
-  _updateCss(disable) {
-    if (!this.dash || !this.dashContainer) return;
+  _updateStyleNow(disable) {
+    let styles = [];
 
-    let background = this.animator._background || null;
-    if (background) {
-      if (this.border_radius !== null) {
-        let r = -1;
-        if (!disable && !this.panel_mode) {
-          r = Math.floor(this.border_radius);
-          background.add_style_class_name(`border-radius-${r}`);
-        }
-        for (let i = 0; i < 7; i++) {
-          if (i != r) {
-            background.remove_style_class_name(`border-radius-${i}`);
-          }
-        }
+    let rads = [0, 8, 16, 20, 24, 28, 32];
+
+    // dash
+    {
+      let r = rads[Math.floor(this.border_radius)];
+      let ss = [];
+      if (this.panel_mode) {
+        r = 0;
       }
-    }
+      ss.push(`border-radius: ${r}px;`);
 
-    if (!disable && this.panel_mode) {
-      this.dash.add_style_class_name('panel-mode');
-    } else {
-      this.dash.remove_style_class_name('panel-mode');
-    }
-
-    if (!disable && this.animate_icons) {
-      this.dash.add_style_class_name('custom-dots');
-    } else {
-      this.dash.remove_style_class_name('custom-dots');
-    }
-  }
-
-  _updateBackgroundColors(disable) {
-    // if (!this.dash) return;
-
-    // dash background
-    let background = this.animator._background;
-
-    if (background) {
-      background.style = '';
-      let border_style = '';
+      // apply border as inline style... otherwise buggy and won't show at startup
+      // also add deferred bordering... otherwise rounder borders show with artifacts
       if (this.border_thickness && !this._disable_borders) {
-        let bg = this.border_color || [1, 1, 1, 1];
-        let clr = bg.map((r) => Math.floor(255 * r));
-        clr[3] = bg[3];
+        let rgba = this._style.rgba(this.border_color);
+        let disable_borders = '';
         if (this.panel_mode) {
-          if (!this._vertical) {
-            border_style = `border-top: ${
-              this.border_thickness
-            }px solid rgba(${clr.join(',')});`;
+          disable_borders =
+            'border-left: 0px; border-right: 0px; border-bottom: 0px;';
+          // vertical border-left/right doesn;t seem to work
+          if (this._position == 3) {
+            disable_borders =
+              'border-left: 0px; border-top: 0px; border-bottom: 0px;';
           }
-        } else {
-          border_style = `border: ${
-            this.border_thickness
-          }px solid rgba(${clr.join(',')});`;
+          if (this._position == 1) {
+            disable_borders =
+              'border-top: 0px; border-right: 0px; border-bottom: 0px;';
+          }
         }
+        this.animator._background.style = `border: ${this.border_thickness}px solid rgba(${rgba}) !important; ${disable_borders}`;
       }
 
-      if (!disable) {
-        let bg = this.background_color || [0, 0, 0, 0.5];
-        let clr = bg.map((r) => Math.floor(255 * r));
-        clr[3] = bg[3];
-        let style = `${border_style} background: rgba(${clr.join(',')});`;
-        background.style = style;
-        background.opacity = 255;
-      } else {
-        background.style = `${border_style}`;
+      {
+        let rgba = this._style.rgba(this.background_color);
+        ss.push(`background: rgba(${rgba});`);
       }
+
+      styles.push(`#d2dlBackground { ${ss.join(' ')}}`);
     }
 
-    if (!this.customize_topbar) {
-      if (this._didCustomizePanel) {
-        this._didCustomizePanel = false;
-        disable = true;
-      } else {
-        return;
-      }
-    }
-
-    if (disable) {
-      Main.panel.background_color = Clutter.Color.from_pixel(0xffffff00);
-      Main.panel.remove_style_class_name('light');
-    } else {
-      Main.panel.style = '';
-      let bg = Clutter.Color.from_pixel(0xffffffff);
-      bg.red = Math.floor(this.topbar_background_color[0] * 255);
-      bg.green = Math.floor(this.topbar_background_color[1] * 255);
-      bg.blue = Math.floor(this.topbar_background_color[2] * 255);
-      bg.alpha = Math.floor(this.topbar_background_color[3] * 255);
-      Main.panel.background_color = bg;
-
+    // topbar
+    if (this.customize_topbar) {
+      // border
       if (this.topbar_border_thickness) {
-        let bg = this.topbar_border_color || [1, 1, 1, 1];
-        let clr = bg.map((r) => Math.floor(255 * r));
-        clr[3] = bg[3];
-        Main.panel.style = `border: ${
-          this.topbar_border_thickness
-        }px solid rgba(${clr.join(
-          ','
-        )}); border-top: 0px; border-left: 0px; border-right: 0px;`;
+        let rgba = this._style.rgba(this.topbar_border_color);
+        styles.push(
+          `#panelBox #panel { border: ${this.border_thickness}px solid rgba(${rgba}); border-top: 0px; border-left: 0px; border-right: 0px; }`
+        );
       }
 
-      let _bg = this.topbar_background_color;
-      if (0.3 * _bg[0] + 0.59 * _bg[1] + 0.11 * _bg[2] < 0.5) {
-        Main.panel.remove_style_class_name('light');
-      } else {
-        Main.panel.add_style_class_name('light');
+      // background
+      {
+        let rgba = this._style.rgba(this.topbar_background_color);
+        styles.push(`#panelBox #panel { background: rgba(${rgba}); }`);
       }
-      this._didCustomizePanel = true;
     }
+
+    log(styles);
+    this._style.build('custom', styles);
   }
 
   _updateLayout(disable) {

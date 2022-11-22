@@ -57,6 +57,18 @@ var DashContainer = GObject.registerClass(
       return Clutter.EVENT_PROPAGATE;
     }
 
+    dock() {}
+
+    undock() {
+      let icons = this._findIcons();
+      icons.forEach((icon) => {
+        if (icon._destroyConnectId) {
+          icon.disconnect(icon._destroyConnectId);
+          icon._destroyConnectId = null;
+        }
+      });
+    }
+
     layout() {
       // todo
       this.extension._updateLayout();
@@ -264,6 +276,13 @@ var DashContainer = GObject.registerClass(
       }
 
       this._icons = icons;
+      icons.forEach((icon) => {
+        if (!icon._destroyConnectId) {
+          icon._destroyConnectId = icon.connect('destroy', () => {
+            this.animator._previousFind = null;
+          });
+        }
+      });
       return icons;
     }
   }

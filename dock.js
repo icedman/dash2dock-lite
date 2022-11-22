@@ -333,12 +333,19 @@ var DockBackground = GObject.registerClass(
         if (p2[1] > p1[1]) {
           this.y = p2[1] - padding;
         }
-        this.width =
+        let width =
           p2[0] -
           p1[0] +
           iconSize * scaleFactor * last._targetScale +
           padding * 2;
-        this.height = iconSize * scaleFactor + padding * 2;
+        let height = iconSize * scaleFactor + padding * 2;
+
+        if (!isNaN(width)) {
+          this.width = width;
+        }
+        if (!isNaN(width)) {
+          this.height = height;
+        }
 
         // vertical
         if (vertical) {

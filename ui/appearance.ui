@@ -180,6 +180,18 @@
         <property name="description" translatable="yes"/>
         <child>
           <object class="AdwActionRow">
+            <property name="title" translatable="yes">Customize</property>
+            <property name="subtitle" translatable="yes">Enable topbar customization.</property>
+            <property name="activatable-widget">customize-topbar</property>
+            <child>
+              <object class="GtkSwitch" id="customize-topbar">
+                <property name="valign">center</property>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="AdwActionRow">
             <property name="title" translatable="yes">Border Thickness</property>
             <property name="subtitle" translatable="yes">Set border thickness.</property>
             <property name="activatable-widget">topbar-border-thickness</property>

@@ -253,7 +253,6 @@ var Services = class {
       this._notifications = [];
     }
 
-
     this._appNotices = this._appNotices || {};
 
     Object.keys(this._appNotices).forEach((k) => {
@@ -301,7 +300,7 @@ var Services = class {
       }
     });
 
-    let update = {}
+    let update = {};
     Object.keys(this._appNotices).forEach((k) => {
       if (this._appNotices[k].count > 0) {
         update[k] = this._appNotices[k];

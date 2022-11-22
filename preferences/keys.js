@@ -64,6 +64,11 @@ SettingsKeys.setKeys({
     default_value: [0, 0, 0, 0.5],
     widget_type: 'color',
   },
+  'customize-topbar': {
+    default_value: false,
+    widget_type: 'switch',
+    key_maps: {},
+  },
   'topbar-border-thickness': {
     default_value: 0,
     widget_type: 'dropdown',

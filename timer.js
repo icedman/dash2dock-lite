@@ -98,7 +98,7 @@ var Timer = class {
   }
 
   onStart() {
-    // print(`started timer ${this._name} [${this.subscriberNames().join(',')}]`);
+    print(`started timer ${this._name} [${this.subscriberNames().join(',')}]`);
     this._subscribers.forEach((s) => {
       if (s.onStart) {
         s.onStart(s);
@@ -112,7 +112,7 @@ var Timer = class {
         s.onStop(s);
       }
     });
-    // print(`stopped timer ${this._name}`);
+    print(`stopped timer ${this._name}`);
   }
 
   onPause() {

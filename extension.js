@@ -32,6 +32,9 @@ const ANIM_INTERVAL_PAD = 15;
 
 class Extension {
   enable() {
+    // for debugging - set to 255
+    this._dash_opacity = 0;
+
     this._imports = Me.imports;
 
     // three available timers
@@ -113,8 +116,7 @@ class Extension {
     this._updateLayout();
     this._updateAutohide();
     this._updateAnimation();
-    this._updateCss();
-    this._updateBackgroundColors();
+    this._updateStyle();
     this._updateTrashIcon();
 
     this._addEvents();
@@ -138,8 +140,7 @@ class Extension {
     this._updateLayout(true);
     this._updateAnimation(true);
     this._updateAutohide(true);
-    this._updateCss(true);
-    this._updateBackgroundColors(true);
+    this._updateStyle(true);
 
     this.dashContainer.remove_child(this.dash);
     if (this.reuseExistingDash) {
@@ -306,8 +307,7 @@ class Extension {
           this.autohider.disable();
           this.autohider.enable();
           this.animator._background.visible = false;
-          this._updateCss();
-          this._updateBackgroundColors();
+          this._updateStyle();
           this._updateLayout();
           this.animate();
           break;
@@ -354,13 +354,13 @@ class Extension {
         case 'border-radius':
         case 'border-color':
         case 'border-thickness':
+        case 'customize-topbar':
         case 'topbar-border-color':
         case 'topbar-border-thickness':
         case 'topbar-background-color':
         case 'background-color':
         case 'panel-mode': {
-          this._updateCss();
-          this._updateBackgroundColors();
+          this._updateStyle();
           this._updateLayout();
           this.animate();
           break;
@@ -478,8 +478,7 @@ class Extension {
     }
     this.animator.disable();
     this.animator.enable();
-    this._updateCss();
-    this._updateBackgroundColors();
+    this._updateStyle();
     this.animate();
   }
 
@@ -491,7 +490,7 @@ class Extension {
       .forEach((l) => {
         if (l._onFocusWindow) l._onFocusWindow();
       });
-    this._onCheckServices();
+    // this._onCheckServices();
   }
 
   _onFullScreen() {
@@ -532,6 +531,43 @@ class Extension {
     this.icon_quality = 1 + [2, 0, 1, 2, 3][this.icon_resolution || 0];
   }
 
+  _updateStyle(disable) {
+    this._updateCss(disable);
+    this._updateBackgroundColors(disable);
+  }
+
+  _updateCss(disable) {
+    if (!this.dash || !this.dashContainer) return;
+
+    let background = this.animator._background || null;
+    if (background) {
+      if (this.border_radius !== null) {
+        let r = -1;
+        if (!disable && !this.panel_mode) {
+          r = Math.floor(this.border_radius);
+          background.add_style_class_name(`border-radius-${r}`);
+        }
+        for (let i = 0; i < 7; i++) {
+          if (i != r) {
+            background.remove_style_class_name(`border-radius-${i}`);
+          }
+        }
+      }
+    }
+
+    if (!disable && this.panel_mode) {
+      this.dash.add_style_class_name('panel-mode');
+    } else {
+      this.dash.remove_style_class_name('panel-mode');
+    }
+
+    if (!disable && this.animate_icons) {
+      this.dash.add_style_class_name('custom-dots');
+    } else {
+      this.dash.remove_style_class_name('custom-dots');
+    }
+  }
+
   _updateBackgroundColors(disable) {
     // if (!this.dash) return;
 
@@ -570,23 +606,20 @@ class Extension {
       }
     }
 
-    // panel background
-    // this is simple.. but has overview show/hide artifcats
-    // Main.panel.style = '';
-    // if (!disable) {
-    //   let bg = this.topbar_background_color || [0, 0, 0, 0.5];
-    //   let clr = bg.map((r) => Math.floor(255 * r));
-    //   clr[3] = bg[3];
-    //   let style = `background: rgba(${clr.join(',')})`;
-    //   Main.panel.style = style;
-    // }
-
-    Main.panel.style = '';
+    if (!this.customize_topbar) {
+      if (this._didCustomizePanel) {
+        this._didCustomizePanel = false;
+        disable = true;
+      } else {
+        return;
+      }
+    }
 
     if (disable) {
       Main.panel.background_color = Clutter.Color.from_pixel(0xffffff00);
       Main.panel.remove_style_class_name('light');
     } else {
+      Main.panel.style = '';
       let bg = Clutter.Color.from_pixel(0xffffffff);
       bg.red = Math.floor(this.topbar_background_color[0] * 255);
       bg.green = Math.floor(this.topbar_background_color[1] * 255);
@@ -611,38 +644,7 @@ class Extension {
       } else {
         Main.panel.add_style_class_name('light');
       }
-    }
-  }
-
-  _updateCss(disable) {
-    if (!this.dash || !this.dashContainer) return;
-
-    let background = this.animator._background || null;
-    if (background) {
-      if (this.border_radius !== null) {
-        let r = -1;
-        if (!disable && !this.panel_mode) {
-          r = Math.floor(this.border_radius);
-          background.add_style_class_name(`border-radius-${r}`);
-        }
-        for (let i = 0; i < 7; i++) {
-          if (i != r) {
-            background.remove_style_class_name(`border-radius-${i}`);
-          }
-        }
-      }
-    }
-
-    if (!disable && this.panel_mode) {
-      this.dash.add_style_class_name('panel-mode');
-    } else {
-      this.dash.remove_style_class_name('panel-mode');
-    }
-
-    if (!disable && this.animate_icons) {
-      this.dash.add_style_class_name('custom-dots');
-    } else {
-      this.dash.remove_style_class_name('custom-dots');
+      this._didCustomizePanel = true;
     }
   }
 
@@ -700,7 +702,8 @@ class Extension {
         (this._vertical
           ? this.dashContainer._monitor.height
           : this.dashContainer._monitor.width) * limit;
-      let projectedWidth = iconSpacing * scaleFactor * this.dashContainer._icons.length;
+      let projectedWidth =
+        iconSpacing * scaleFactor * this.dashContainer._icons.length;
       let iconSizeScaledUp =
         iconSize + iconSize * this.animation_magnify * scaleFactor;
       projectedWidth += iconSizeScaledUp * 4 - iconSize * scaleFactor * 4;
@@ -807,8 +810,7 @@ class Extension {
       this.animator.disable();
     }
 
-    this._updateCss();
-    this._updateBackgroundColors();
+    this._updateStyle();
   }
 
   _updateAutohide(disable) {
@@ -830,16 +832,14 @@ class Extension {
 
     if (this.animate_icons && !disable) {
       this.animator.enable();
-      this._updateCss();
-      this._updateBackgroundColors();
+      this._updateStyle();
       this.animate();
 
       // borders get messed up
       if (this.border_thickness > 0) {
         this.animator._background.style = 'border: 0px';
         this._loTimer.runOnce(() => {
-          this._updateCss();
-          this._updateBackgroundColors();
+          this._updateStyle();
         }, 250);
       }
     }
@@ -891,8 +891,7 @@ class Extension {
     }
 
     this._loTimer.runOnce(() => {
-      this._updateCss();
-      this._updateBackgroundColors();
+      this._updateStyle();
     }, 250);
 
     // log('_onOverviewHidden');

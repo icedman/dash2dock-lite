@@ -203,6 +203,7 @@ var DashContainer = GObject.registerClass(
 
       // hide running apps
       // this.dash.
+      // todo... make jerky animation
       if (this.extension.favorites_only) {
         let favorites = Fav.getAppFavorites();
         let favorite_ids = favorites._getIds();
@@ -211,6 +212,10 @@ var DashContainer = GObject.registerClass(
           let appId = app ? app.get_id() : '';
           let shouldInclude = favorite_ids.includes(appId);
           i.child.visible = shouldInclude;
+          if (!shouldInclude) {
+            i.width = -1;
+            i.height = -1;
+          }
           return shouldInclude;
         });
       }

@@ -243,7 +243,7 @@ var Animator = class {
     let iy = 1;
 
     this._iconsContainer.opacity = 255;
-    this.dashContainer.dash.opacity = 0;
+    this.dashContainer.dash.opacity = this.extension._dash_opacity;
     this.dashContainer.dash._background.visible = false;
 
     switch (this.dashContainer._position) {
@@ -354,7 +354,7 @@ var Animator = class {
 
       icon._fixedPosition = [...pos];
       if (!this._dragging && bin.first_child) {
-        bin.first_child.opacity = 0;
+        bin.first_child.opacity = this.extension._dash_opacity;
       }
 
       icon.set_size(iconSize, iconSize);
@@ -527,6 +527,7 @@ var Animator = class {
 
     if (!nearestIcon) {
       animateIcons.forEach((i) => {
+        if (!i._container.visible) return;
         if (this.extension._vertical) {
           i._container.height = iconSpacing * scaleFactor;
         } else {
@@ -885,10 +886,17 @@ var Animator = class {
     this.extension._loTimer.runOnce(() => {
       let prevDots = this._dotsCount;
       let prevIconsCount = this._iconsCount;
+
+      this._findIcons();
+
       if (
-        this._iconsCount != this._findIcons().length ||
+        this._iconsCount != prevIconsCount ||
         prevDots != this._dotsCount
       ) {
+
+        // log(`${prevDots} ${prevIconsCount}`);
+        // log(`>>${this._dotsCount} ${this._iconsCount}`);
+        
         this._endAnimation();
         this._startAnimation();
         this.relayout();
@@ -924,11 +932,17 @@ var Animator = class {
   }
 
   _restoreIcons() {
-    let icons = this._findIcons();
+    this.dash._showAppsIcon.visible = true;
+    let icons = this.dash._box.get_children();
     icons.forEach((c) => {
       if (c._icon) {
         c._icon.opacity = 255;
       }
+      if (c.child) {
+        c.child.visible = true;
+      }
+      c.width = -1;
+      c.height = -1;
     });
   }
 

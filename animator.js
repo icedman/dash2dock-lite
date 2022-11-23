@@ -340,13 +340,22 @@ var Animator = class {
     let idx = 0;
     animateIcons.forEach((icon) => {
       if (this.extension._vertical) {
+        icon._pos[0] = this.dashContainer.x + this.dashContainer._monitor.x;
         if (this.dashContainer._position == 1) {
-          icon._pos[0] -= effective_edge_distance;
+          icon._pos[0] += this.dashContainer._dashHeight / 2;
+          icon._pos[0] += this.dashContainer._dockPadding;
+          icon._pos[0] -= (iconSize / 2) * scaleFactor;
         } else {
           icon._pos[0] += effective_edge_distance;
+          icon._pos[0] += this.dashContainer._dashHeight / 2;
+          icon._pos[0] -= (iconSize / 2) * scaleFactor;
         }
       } else {
-        icon._pos[1] -= effective_edge_distance;
+        // icon._pos[1] -= effective_edge_distance;
+        icon._pos[1] = this.dashContainer.y + this.dashContainer._monitor.y;
+        icon._pos[1] += this.dashContainer._dashHeight / 2;
+        icon._pos[1] += this.dashContainer._dockPadding;
+        icon._pos[1] -= (iconSize / 2) * scaleFactor;
       }
 
       let bin = icon._bin;

@@ -4,11 +4,11 @@
      border: 2px solid magenta !important;
 }
 
-#panelBox #panel.light * {
-  color: black!important;
+#d2dldotsContainer {
+  /*border: 2px solid red;*/
 }
 
-#dashContainer #dash * {
+#d2dldotsContainer #dash * {
   margin: 0px !important;
   padding: 0px !important;
 }

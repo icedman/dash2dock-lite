@@ -678,17 +678,14 @@ class Extension {
       ] || 64);
     iconSize *= this.scale;
 
-    let padding = 0;
     this._edge_distance =
-      (this.edge_distance || 0) * (EDGE_DISTANCE - padding) * this.scaleFactor;
-    let distance = this.panel_mode ? 0 : this._edge_distance;
-    this._effective_edge_distance = distance;
-    let dockPadding = 10 + distance;
-    if (this.panel_mode) {
-      this._effective_edge_distance = -dockPadding;
-    }
+      (this.edge_distance || 0) * EDGE_DISTANCE * this.scaleFactor;
 
-    this._effective_edge_distance = 0;
+    let distance = this.panel_mode ? 0 : this._edge_distance;
+    let dockPadding = iconSize * 0.1;
+    if (this.panel_mode) {
+      distance -= 8;
+    }
 
     // scale down icons to fit monitor
     if (this.dashContainer._icons) {
@@ -709,11 +706,16 @@ class Extension {
         scaleDown = (maxWidth - (iconSize / 2) * scaleFactor) / projectedWidth;
       }
       iconSize *= scaleDown;
+      dockPadding *= scaleDown;
+      distance *= scaleDown;
     }
+    this._effective_edge_distance = distance;
 
     let scale = 0.5 + this.scale / 2;
+    let dashHeight = iconSize * (this.shrink_icons ? 1.8 : 1.6) * scale;
     let dockHeight =
       (iconSize + dockPadding) * (this.shrink_icons ? 1.8 : 1.6) * scale;
+    dockHeight += this._effective_edge_distance;
     this.iconSize = iconSize;
 
     this.dash.visible = true;
@@ -795,6 +797,8 @@ class Extension {
 
       // log(`${this.dashContainer._fixedPosition[1]} ${this.dashContainer._hidePosition[1]}`);
       this.dashContainer._dockHeight = dockHeight * this.scaleFactor;
+      this.dashContainer._dockPadding = dockPadding * this.scaleFactor;
+      this.dashContainer._dashHeight = dashHeight * this.scaleFactor;
     }
   }
 

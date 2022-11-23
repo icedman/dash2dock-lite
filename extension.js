@@ -688,6 +688,8 @@ class Extension {
       this._effective_edge_distance = -dockPadding;
     }
 
+    this._effective_edge_distance = 0;
+
     // scale down icons to fit monitor
     if (this.dashContainer._icons) {
       let iconSpacing = iconSize * (1.2 + this.animation_spread / 4);
@@ -757,7 +759,9 @@ class Extension {
         // top/bottom
         this.dashContainer.set_position(
           this.monitor.x,
-          this.monitor.y + this.sh - dockHeight * this.scaleFactor
+          this.monitor.y +
+            this.dashContainer._monitor.height -
+            dockHeight * this.scaleFactor
         );
       }
 

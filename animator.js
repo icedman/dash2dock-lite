@@ -341,7 +341,7 @@ var Animator = class {
     animateIcons.forEach((icon) => {
       if (this.extension._vertical) {
         if (this.dashContainer._position == 1) {
-          // icon._pos[0] -= effective_edge_distance;
+          icon._pos[0] -= effective_edge_distance;
         } else {
           icon._pos[0] += effective_edge_distance;
         }
@@ -355,6 +355,8 @@ var Animator = class {
       icon._fixedPosition = [...pos];
       if (!this._dragging && bin.first_child) {
         bin.first_child.opacity = this.extension._dash_opacity;
+        bin.first_child.width = 16;
+        bin.first_child.height = 16;
       }
 
       icon.set_size(iconSize, iconSize);
@@ -935,6 +937,8 @@ var Animator = class {
       }
       if (c.child) {
         c.child.visible = true;
+        c.child.width = -1;
+        c.child.height = -1;
       }
       c.width = -1;
       c.height = -1;

@@ -82,6 +82,10 @@ SettingsKeys.setKeys({
     default_value: [0, 0, 0, 0.5],
     widget_type: 'color',
   },
+  'topbar-foreground-color': {
+    default_value: [0, 0, 0, 0],
+    widget_type: 'color',
+  },
   'favorites-only': {
     default_value: false,
     widget_type: 'switch',

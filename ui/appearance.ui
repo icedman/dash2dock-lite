@@ -237,6 +237,23 @@
             </child>
           </object>
         </child>
+        <child>
+          <object class="AdwActionRow">
+            <property name="title" translatable="yes">Foreground Color</property>
+            <property name="subtitle" translatable="yes">Set topbar panel foreground color. Set opacity to zero to adapt to background.</property>
+            <property name="activatable-widget">topbar-foreground-color</property>
+            <child>
+              <object class="GtkColorButton" id="topbar-foreground-color">
+                <property name="valign">center</property>
+                <property name="hexpand">false</property>
+                <property name="width-request">70px</property>
+                <property name="height-request">45px</property>
+                <property name="show-editor">true</property>
+                <property name="use-alpha">true</property>
+              </object>
+            </child>
+          </object>
+        </child>
       </object>
     </child>
     <child>

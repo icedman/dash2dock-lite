@@ -369,6 +369,7 @@ class Extension {
         case 'topbar-border-color':
         case 'topbar-border-thickness':
         case 'topbar-background-color':
+        case 'topbar-foreground-color':
         case 'background-color':
         case 'panel-mode': {
           this._updateStyle();
@@ -581,24 +582,40 @@ class Extension {
 
     // topbar
     if (this.customize_topbar) {
+      let ss = [];
       // border
       if (this.topbar_border_thickness) {
         let rgba = this._style.rgba(this.topbar_border_color);
-        styles.push(
-          `#panelBox #panel { border: ${this.topbar_border_thickness}px solid rgba(${rgba}); border-top: 0px; border-left: 0px; border-right: 0px; }`
+        s.push(
+          `border: ${this.topbar_border_thickness}px solid rgba(${rgba}); border-top: 0px; border-left: 0px; border-right: 0px;`
         );
       }
 
       // background
       {
         let rgba = this._style.rgba(this.topbar_background_color);
-        styles.push(`#panelBox #panel { background: rgba(${rgba}); }`);
+        ss.push(`background: rgba(${rgba});`);
+      }
+
+      styles.push(`#panelBox #panel {${ss.join(' ')}}`);
+
+      // foreground
+      if (this.topbar_foreground_color && this.topbar_foreground_color[3] > 0) {
+        let rgba = this._style.rgba(this.topbar_foreground_color);
+        styles.push(`#panelBox #panel * { color: rgba(${rgba}) }`);
+      } else {
+        let rgba = this._style.rgba([0, 0, 0, 1]);
+        let bg = this.topbar_background_color;
+        if (0.3 * bg[0] + 0.59 * bg[1] + 0.11 * bg[2] < 0.5) {
+          rgba = this._style.rgba([1, 1, 1, 1]);
+        }
+        styles.push(`#panelBox #panel * { color: rgba(${rgba}) }`);
       }
     }
 
-    log(styles);
     this._style.build('custom', styles);
 
+    log(styles);
     this._updateBorderStyle();
   }
 

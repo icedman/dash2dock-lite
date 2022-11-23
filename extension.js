@@ -309,6 +309,7 @@ class Extension {
         // problematic settings needing animator restart
         case 'dock-location':
         case 'icon-resolution': {
+          this._disable_borders = this.border_radius > 0;
           this._updateIconResolution();
           this.animator.disable();
           this.animator.enable();
@@ -570,29 +571,6 @@ class Extension {
       }
       ss.push(`border-radius: ${r}px;`);
 
-      // apply border as inline style... otherwise buggy and won't show at startup
-      // also add deferred bordering... otherwise rounder borders show with artifacts
-      if (this.border_thickness && !this._disable_borders) {
-        let rgba = this._style.rgba(this.border_color);
-        let disable_borders = '';
-        if (this.panel_mode) {
-          disable_borders =
-            'border-left: 0px; border-right: 0px; border-bottom: 0px;';
-          // vertical border-left/right doesn;t seem to work
-          if (this._position == 3) {
-            disable_borders =
-              'border-left: 0px; border-top: 0px; border-bottom: 0px;';
-          }
-          if (this._position == 1) {
-            disable_borders =
-              'border-top: 0px; border-right: 0px; border-bottom: 0px;';
-          }
-        }
-        this.animator._background.style = `border: ${this.border_thickness}px solid rgba(${rgba}) !important; ${disable_borders}`;
-      } else {
-        this.animator._background.style = '';
-      }
-
       {
         let rgba = this._style.rgba(this.background_color);
         ss.push(`background: rgba(${rgba});`);
@@ -620,6 +598,33 @@ class Extension {
 
     log(styles);
     this._style.build('custom', styles);
+
+    this._updateBorderStyle();
+  }
+
+  _updateBorderStyle() {
+    // apply border as inline style... otherwise buggy and won't show at startup
+    // also add deferred bordering... otherwise rounder borders show with artifacts
+    if (this.border_thickness && !this._disable_borders) {
+      let rgba = this._style.rgba(this.border_color);
+      let disable_borders = '';
+      if (this.panel_mode) {
+        disable_borders =
+          'border-left: 0px; border-right: 0px; border-bottom: 0px;';
+        // vertical border-left/right doesn;t seem to work
+        if (this._position == 3) {
+          disable_borders =
+            'border-left: 0px; border-top: 0px; border-bottom: 0px;';
+        }
+        if (this._position == 1) {
+          disable_borders =
+            'border-top: 0px; border-right: 0px; border-bottom: 0px;';
+        }
+      }
+      this.animator._background.style = `border: ${this.border_thickness}px solid rgba(${rgba}) !important; ${disable_borders}`;
+    } else {
+      this.animator._background.style = '';
+    }
   }
 
   _updateLayout(disable) {

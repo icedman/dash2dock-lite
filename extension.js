@@ -228,13 +228,12 @@ class Extension {
     } else if (idx == Main.layoutManager.primaryIndex) {
       idx = 0;
     }
-    this.monitor =
-      Main.layoutManager.monitors[idx];
-    
+    this.monitor = Main.layoutManager.monitors[idx];
+
     if (!this.monitor) {
       this.monitor = Main.layoutManager.primaryMonitor;
       idx = Main.layoutManager.primaryIndex;
-    } 
+    }
 
     if (this.dashContainer) {
       this.dashContainer._monitorIndex = idx;
@@ -242,8 +241,6 @@ class Extension {
       this.dashContainer._monitorIsPrimary =
         this.monitor == Main.layoutManager.primaryMonitor;
     }
-    this.sw = this.monitor.width;
-    this.sh = this.monitor.height;
 
     if (this._last_monitor_count != Main.layoutManager.monitors.length) {
       this._settings.set_int(
@@ -620,8 +617,6 @@ class Extension {
     }
 
     this._style.build('custom', styles);
-
-    log(styles);
     this._updateBorderStyle();
   }
 
@@ -731,31 +726,41 @@ class Extension {
     this.dashContainer._disableAutohide = false;
     {
       let display = global.display;
-      switch(this.dashContainer._position) {
-      // left
-      case 3:
-        this.dashContainer._disableAutohide =
-                display.get_monitor_neighbor_index(this.dashContainer._monitorIndex, Meta.DisplayDirection.LEFT) != -1;
-        break;
-      // right
-      case 1:
-        this.dashContainer._disableAutohide =
-                display.get_monitor_neighbor_index(this.dashContainer._monitorIndex, Meta.DisplayDirection.RIGHT) != -1;
-        break;
-      // bottom
-      case 0:
-      default:
-        this.dashContainer._disableAutohide =
-                display.get_monitor_neighbor_index(this.dashContainer._monitorIndex, Meta.DisplayDirection.DOWN) != -1;
-        break;
+      switch (this.dashContainer._position) {
+        // left
+        case 3:
+          this.dashContainer._disableAutohide =
+            display.get_monitor_neighbor_index(
+              this.dashContainer._monitorIndex,
+              Meta.DisplayDirection.LEFT
+            ) != -1;
+          break;
+        // right
+        case 1:
+          this.dashContainer._disableAutohide =
+            display.get_monitor_neighbor_index(
+              this.dashContainer._monitorIndex,
+              Meta.DisplayDirection.RIGHT
+            ) != -1;
+          break;
+        // bottom
+        case 0:
+        default:
+          this.dashContainer._disableAutohide =
+            display.get_monitor_neighbor_index(
+              this.dashContainer._monitorIndex,
+              Meta.DisplayDirection.DOWN
+            ) != -1;
+          break;
       }
     }
 
     if (this._vertical) {
+      let sh = this.dashContainer._monitor.height;
       // left/right
       this.dashContainer.set_size(
         dockHeight * this.scaleFactor,
-        this.dashContainer._monitorIsPrimary ? this.sh - Main.panel.height : 0
+        sh - (this.dashContainer._monitorIsPrimary ? Main.panel.height : 0)
       );
       this.dash.last_child.layout_manager.orientation = 1;
       this.dash._box.layout_manager.orientation = 1;
@@ -763,8 +768,9 @@ class Extension {
       this.dash.width = dockHeight * this.scaleFactor;
       this.dash.add_style_class_name('vertical');
     } else {
+      let sw = this.dashContainer._monitor.width;
       // top/bottom
-      this.dashContainer.set_size(this.sw, dockHeight * this.scaleFactor);
+      this.dashContainer.set_size(sw, dockHeight * this.scaleFactor);
       this.dash.last_child.layout_manager.orientation = 0;
       this.dash._box.layout_manager.orientation = 0;
       this.dash.height = dockHeight * this.scaleFactor;
@@ -779,7 +785,8 @@ class Extension {
         // left
         this.dashContainer.set_position(
           this.monitor.x,
-          this.monitor.y + Main.panel.height
+          this.monitor.y +
+            (this.dashContainer._monitorIsPrimary ? Main.panel.height : 0)
         );
 
         // right

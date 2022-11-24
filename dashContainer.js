@@ -214,8 +214,6 @@ var DashContainer = GObject.registerClass(
       });
 
       // hide running apps
-      // this.dash.
-      // todo... make jerky animation
       if (this.extension.favorites_only) {
         let favorites = Fav.getAppFavorites();
         let favorite_ids = favorites._getIds();

@@ -311,6 +311,10 @@ var AutoHide = class {
     let pointer = global.get_pointer();
     let dash_position = this.dashContainer._fixedPosition;
 
+    if (this.dashContainer._disableAutohide) {
+      return false;
+    }
+
     // log('---');
     // log(pointer[1]);
     // log(dash_position[1]);

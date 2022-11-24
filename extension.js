@@ -229,9 +229,15 @@ class Extension {
       idx = 0;
     }
     this.monitor =
-      Main.layoutManager.monitors[idx] || Main.layoutManager.primaryMonitor;
+      Main.layoutManager.monitors[idx];
+    
+    if (!this.monitor) {
+      this.monitor = Main.layoutManager.primaryMonitor;
+      idx = Main.layoutManager.primaryIndex;
+    } 
 
     if (this.dashContainer) {
+      this.dashContainer._monitorIndex = idx;
       this.dashContainer._monitor = this.monitor;
       this.dashContainer._monitorIsPrimary =
         this.monitor == Main.layoutManager.primaryMonitor;
@@ -721,11 +727,35 @@ class Extension {
     this.dash.visible = true;
     this.dashContainer.vertical = !this.dashContainer._vertical;
 
+    // check should disable hide
+    this.dashContainer._disableAutohide = false;
+    {
+      let display = global.display;
+      switch(this.dashContainer._position) {
+      // left
+      case 3:
+        this.dashContainer._disableAutohide =
+                display.get_monitor_neighbor_index(this.dashContainer._monitorIndex, Meta.DisplayDirection.LEFT) != -1;
+        break;
+      // right
+      case 1:
+        this.dashContainer._disableAutohide =
+                display.get_monitor_neighbor_index(this.dashContainer._monitorIndex, Meta.DisplayDirection.RIGHT) != -1;
+        break;
+      // bottom
+      case 0:
+      default:
+        this.dashContainer._disableAutohide =
+                display.get_monitor_neighbor_index(this.dashContainer._monitorIndex, Meta.DisplayDirection.DOWN) != -1;
+        break;
+      }
+    }
+
     if (this._vertical) {
       // left/right
       this.dashContainer.set_size(
         dockHeight * this.scaleFactor,
-        this.sh - Main.panel.height
+        this.dashContainer._monitorIsPrimary ? this.sh - Main.panel.height : 0
       );
       this.dash.last_child.layout_manager.orientation = 1;
       this.dash._box.layout_manager.orientation = 1;
@@ -796,9 +826,17 @@ class Extension {
       }
 
       // log(`${this.dashContainer._fixedPosition[1]} ${this.dashContainer._hidePosition[1]}`);
+
       this.dashContainer._dockHeight = dockHeight * this.scaleFactor;
       this.dashContainer._dockPadding = dockPadding * this.scaleFactor;
       this.dashContainer._dashHeight = dashHeight * this.scaleFactor;
+
+      // if (this.dashContainer.animator._iconsContainer) {
+      //   this.dashContainer.animator._iconsContainer.x = 0;
+      //   this.dashContainer.animator._iconsContainer.y = 0;
+      //   this.dashContainer.animator._dotsContainer.x = 0;
+      //   this.dashContainer.animator._dotsContainer.y = 0;
+      // }
     }
   }
 

@@ -25,9 +25,7 @@ const runTests = Me.imports.diagnostics.runTests;
 
 const SERVICES_UPDATE_INTERVAL = 2500;
 
-const EDGE_DISTANCE = 20;
 const ANIM_ICON_QUALITY = 2.0;
-
 const ANIM_INTERVAL = 15;
 const ANIM_INTERVAL_PAD = 15;
 
@@ -450,16 +448,16 @@ class Extension {
       this
     );
 
-    Main.overview.connectObject(
-      'showing',
-      this._onOverviewShowing.bind(this),
-      this
-    );
-    Main.overview.connectObject(
-      'hidden',
-      this._onOverviewHidden.bind(this),
-      this
-    );
+    // Main.overview.connectObject(
+    //   'showing',
+    //   this._onOverviewShowing.bind(this),
+    //   this
+    // );
+    // Main.overview.connectObject(
+    //   'hidden',
+    //   this._onOverviewHidden.bind(this),
+    //   this
+    // );
 
     St.TextureCache.get_default().connectObject(
       'icon-theme-changed',
@@ -549,7 +547,7 @@ class Extension {
   _debouncedUpdateStyle(disable) {
     if (disable) return;
     if (!this._debounceStyleSeq) {
-      this._debounceStyleSeq = this._loTimer.runDebounced(
+      this._debounceStyleSeq = this._hiTimer.runDebounced(
         () => {
           this._updateStyle();
         },
@@ -557,7 +555,7 @@ class Extension {
         'debounceStyle'
       );
     } else {
-      this._loTimer.runDebounced(this._debounceStyleSeq);
+      this._hiTimer.runDebounced(this._debounceStyleSeq);
     }
   }
 
@@ -646,205 +644,7 @@ class Extension {
   }
 
   _updateLayout(disable) {
-    if (disable || !this.dashContainer) return;
-
-    this._queryDisplay();
-
-    let pos = this.dock_location || 0;
-    // dock position -- [left, right] are experimental
-    if (!this.experimental_features) {
-      pos = 0;
-    }
-    // See St.Direction position constants
-    // remap [ bottom, left, right, top ] >> [ top, right, bottom, left ]
-    this.dashContainer._position = [2, 3, 1, 0][pos];
-    this._vertical =
-      this.dashContainer._position == 1 || this.dashContainer._position == 3;
-    this._position = this.dashContainer._position;
-
-    this.scaleFactor = this.dashContainer._monitor.geometry_scale;
-    // this.scaleFactor = St.ThemeContext.get_for_stage(global.stage).scale_factor;
-
-    let iconSize = 64;
-    if (!this._preferredIconSizes) {
-      this._preferredIconSizes = [32];
-      for (let i = 16; i < 128; i += 4) {
-        this._preferredIconSizes.push(i);
-      }
-    }
-    iconSize =
-      2 *
-      (this._preferredIconSizes[
-        Math.floor(this.icon_size * this._preferredIconSizes.length)
-      ] || 64);
-    iconSize *= this.scale;
-
-    this._edge_distance =
-      (this.edge_distance || 0) * EDGE_DISTANCE * this.scaleFactor;
-
-    let distance = this.panel_mode ? 0 : this._edge_distance;
-    let dockPadding = iconSize * 0.1;
-    if (this.panel_mode) {
-      distance -= 8;
-    }
-
-    // scale down icons to fit monitor
-    if (this.dashContainer._icons) {
-      let iconSpacing = iconSize * (1.2 + this.animation_spread / 4);
-      let scaleFactor = this.scaleFactor;
-      let limit = this._vertical ? 0.96 : 0.98;
-      let scaleDown = 1.0;
-      let maxWidth =
-        (this._vertical
-          ? this.dashContainer._monitor.height
-          : this.dashContainer._monitor.width) * limit;
-      let projectedWidth =
-        iconSpacing * scaleFactor * this.dashContainer._icons.length;
-      let iconSizeScaledUp =
-        iconSize + iconSize * this.animation_magnify * scaleFactor;
-      projectedWidth += iconSizeScaledUp * 4 - iconSize * scaleFactor * 4;
-      if (projectedWidth > maxWidth * 0.98) {
-        scaleDown = (maxWidth - (iconSize / 2) * scaleFactor) / projectedWidth;
-      }
-      iconSize *= scaleDown;
-      dockPadding *= scaleDown;
-      distance *= scaleDown;
-    }
-    this._effective_edge_distance = distance;
-
-    let scale = 0.5 + this.scale / 2;
-    let dashHeight = iconSize * (this.shrink_icons ? 1.8 : 1.6) * scale;
-    let dockHeight =
-      (iconSize + dockPadding) * (this.shrink_icons ? 1.8 : 1.6) * scale;
-    dockHeight += this._effective_edge_distance;
-    this.iconSize = iconSize;
-
-    this.dash.visible = true;
-    this.dashContainer.vertical = !this.dashContainer._vertical;
-
-    // check should disable hide
-    this.dashContainer._disableAutohide = false;
-    {
-      let display = global.display;
-      switch (this.dashContainer._position) {
-        // left
-        case 3:
-          this.dashContainer._disableAutohide =
-            display.get_monitor_neighbor_index(
-              this.dashContainer._monitorIndex,
-              Meta.DisplayDirection.LEFT
-            ) != -1;
-          break;
-        // right
-        case 1:
-          this.dashContainer._disableAutohide =
-            display.get_monitor_neighbor_index(
-              this.dashContainer._monitorIndex,
-              Meta.DisplayDirection.RIGHT
-            ) != -1;
-          break;
-        // bottom
-        case 0:
-        default:
-          this.dashContainer._disableAutohide =
-            display.get_monitor_neighbor_index(
-              this.dashContainer._monitorIndex,
-              Meta.DisplayDirection.DOWN
-            ) != -1;
-          break;
-      }
-    }
-
-    if (this._vertical) {
-      let sh = this.dashContainer._monitor.height;
-      // left/right
-      this.dashContainer.set_size(
-        dockHeight * this.scaleFactor,
-        sh - (this.dashContainer._monitorIsPrimary ? Main.panel.height : 0)
-      );
-      this.dash.last_child.layout_manager.orientation = 1;
-      this.dash._box.layout_manager.orientation = 1;
-      this.dash.height = -1;
-      this.dash.width = dockHeight * this.scaleFactor;
-      this.dash.add_style_class_name('vertical');
-    } else {
-      let sw = this.dashContainer._monitor.width;
-      // top/bottom
-      this.dashContainer.set_size(sw, dockHeight * this.scaleFactor);
-      this.dash.last_child.layout_manager.orientation = 0;
-      this.dash._box.layout_manager.orientation = 0;
-      this.dash.height = dockHeight * this.scaleFactor;
-      this.dash.width = -1;
-      this.dash.remove_style_class_name('vertical');
-    }
-
-    if (this.autohider._enabled && !this.autohider._shown) {
-      // remain hidden
-    } else {
-      if (this._vertical) {
-        // left
-        this.dashContainer.set_position(
-          this.monitor.x,
-          this.monitor.y +
-            (this.dashContainer._monitorIsPrimary ? Main.panel.height : 0)
-        );
-
-        // right
-        if (this.dashContainer._position == 1) {
-          this.dashContainer.x += this.dashContainer._monitor.width;
-          this.dashContainer.x -= dockHeight * this.scaleFactor;
-        }
-      } else {
-        // top/bottom
-        this.dashContainer.set_position(
-          this.monitor.x,
-          this.monitor.y +
-            this.dashContainer._monitor.height -
-            dockHeight * this.scaleFactor
-        );
-      }
-
-      this.dashContainer._fixedPosition = [
-        this.dashContainer.x,
-        this.dashContainer.y,
-      ];
-
-      this.dashContainer._hidePosition = [...this.dashContainer._fixedPosition];
-
-      let hidePad = 4 * this.scaleFactor;
-      if (this._vertical) {
-        this.dashContainer._hidePosition[0] =
-          this.dashContainer._monitor.x -
-          dockHeight * this.scaleFactor +
-          hidePad;
-
-        // right
-        if (this.dashContainer._position == 1) {
-          this.dashContainer._hidePosition[0] =
-            this.dashContainer._monitor.x +
-            this.dashContainer._monitor.width -
-            hidePad;
-        }
-      } else {
-        this.dashContainer._hidePosition[1] =
-          this.dashContainer._monitor.y +
-          this.dashContainer._monitor.height -
-          hidePad;
-      }
-
-      // log(`${this.dashContainer._fixedPosition[1]} ${this.dashContainer._hidePosition[1]}`);
-
-      this.dashContainer._dockHeight = dockHeight * this.scaleFactor;
-      this.dashContainer._dockPadding = dockPadding * this.scaleFactor;
-      this.dashContainer._dashHeight = dashHeight * this.scaleFactor;
-
-      // if (this.dashContainer.animator._iconsContainer) {
-      //   this.dashContainer.animator._iconsContainer.x = 0;
-      //   this.dashContainer.animator._iconsContainer.y = 0;
-      //   this.dashContainer.animator._dotsContainer.x = 0;
-      //   this.dashContainer.animator._dotsContainer.y = 0;
-      // }
-    }
+    this.dashContainer.layout(disable);
   }
 
   _updateAnimation(disable) {
@@ -852,7 +652,6 @@ class Extension {
     // virtually every feature requires animation enable
     // animate-icons-unmute now controls where the icons move on hover
     this.animate_icons = true;
-
     if (this.animate_icons && !disable) {
       this.animator.enable();
     } else {
@@ -880,12 +679,6 @@ class Extension {
     if (this.animate_icons && !disable) {
       this.animator.enable();
       this.animate();
-
-      // borders get messed up
-      // if (this.border_thickness > 0) {
-      //   this.animator._background.style = 'border: 0px';
-      //   this._debouncedUpdateStyle();
-      // }
     }
   }
 
@@ -895,46 +688,11 @@ class Extension {
 
   _onOverviewShowing() {
     this._inOverview = true;
-
-    if (this.reuseExistingDash) {
-      this.dashContainer.remove_child(this.dash);
-      Main.uiGroup
-        .find_child_by_name('overview')
-        .first_child.add_child(this.dash);
-    }
-
-    if (this.animator && this.animate_icons) {
-      this.animator._beginAnimation();
-      if (this.animator._iconsContainer) {
-        this.animator._iconsContainer.hide();
-        this.animator._dotsContainer.hide();
-        this.animator.relayout();
-      }
-    }
-
-    this.animate();
     // log('_onOverviewShowing');
   }
 
   _onOverviewHidden() {
     this._inOverview = false;
-
-    if (this.reuseExistingDash) {
-      Main.uiGroup
-        .find_child_by_name('overview')
-        .first_child.remove_child(this.dash);
-      this.dashContainer.add_child(this.dash);
-      this.dash.visible = true;
-    }
-
-    this.animate();
-
-    if (this.animator._iconsContainer) {
-      this.animator._iconsContainer.show();
-      this.animator._dotsContainer.show();
-    }
-
-    this._debouncedUpdateStyle();
     // log('_onOverviewHidden');
   }
 

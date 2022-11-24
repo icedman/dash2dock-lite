@@ -176,7 +176,7 @@ var Animator = class {
 
     // get monitor scaleFactor
     let scaleFactor = this._getScaleFactor();
-    let iconSize = this.extension.iconSize;
+    let iconSize = this.dashContainer.iconSize;
     let iconSpacing = iconSize * (1.2 + this.extension.animation_spread / 4);
     let effective_edge_distance = this.extension._effective_edge_distance;
 
@@ -214,7 +214,7 @@ var Animator = class {
 
     // center the dash
     if (this.extension._vertical) {
-      if (this.dash.height > this.extension.iconSize * 4) {
+      if (this.dash.height > this.dashContainer.iconSize * 4) {
         let pad = Math.floor(
           (this.dashContainer.height - this.dash.height) / 2
         );
@@ -340,7 +340,7 @@ var Animator = class {
     let idx = 0;
     animateIcons.forEach((icon) => {
       if (this.extension._vertical) {
-        icon._pos[0] = this.dashContainer.x; // + this.dashContainer._monitor.x;
+        icon._pos[0] = this.dashContainer.x;
         if (this.dashContainer._position == 1) {
           icon._pos[0] += this.dashContainer._dashHeight / 2;
           icon._pos[0] += this.dashContainer._dockPadding;
@@ -351,7 +351,7 @@ var Animator = class {
           icon._pos[0] -= (iconSize / 2) * scaleFactor;
         }
       } else {
-        icon._pos[1] = this.dashContainer.y; // + this.dashContainer._monitor.y;
+        icon._pos[1] = this.dashContainer.y;
         icon._pos[1] += this.dashContainer._dashHeight / 2;
         icon._pos[1] += this.dashContainer._dockPadding;
         icon._pos[1] -= (iconSize / 2) * scaleFactor;

@@ -180,6 +180,60 @@ var DashContainer = GObject.registerClass(
       this.autohider._animationSeq = null;
     }
 
+    _maybeMinimizeOrMaximize(app) {
+      let windows = app.get_windows();
+      if (!windows.length) return;
+
+      let event = Clutter.get_current_event();
+      let modifiers = event ? event.get_state() : 0;
+      let pressed = event.type() == Clutter.EventType.BUTTON_PRESS;
+      let button1 = (modifiers & Clutter.ModifierType.BUTTON1_MASK) != 0;
+      let shift = (modifiers & Clutter.ModifierType.SHIFT_MASK) != 0;
+      let button = button1 ? 'left' : 'right';
+      let isMiddleButton = false; // button && button == Clutter.BUTTON_MIDDLE;
+      let isCtrlPressed = (modifiers & Clutter.ModifierType.CONTROL_MASK) != 0;
+      let openNewWindow =
+        app.can_open_new_window() &&
+        app.state == Shell.AppState.RUNNING &&
+        (isCtrlPressed || isMiddleButton);
+      if (openNewWindow) return;
+
+      let workspaceManager = global.workspace_manager;
+      let activeWs = workspaceManager.get_active_workspace();
+      let focusedWindow = null;
+
+      windows.forEach((w) => {
+        if (w.has_focus()) {
+          focusedWindow = w;
+        }
+      });
+
+      if (focusedWindow) {
+        this.extension._hiTimer.runOnce(() => {
+          if (shift) {
+            if (focusedWindow.get_maximized() == 3) {
+              focusedWindow.unmaximize(3);
+            } else {
+              focusedWindow.maximize(3);
+            }
+          } else {
+            windows.forEach((w) => {
+              w.minimize();
+            });
+          }
+        }, 50);
+      } else {
+        this.extension._hiTimer.runOnce(() => {
+          windows.forEach((w) => {
+            if (w.is_hidden()) {
+              w.unminimize();
+              w.raise();
+            }
+          });
+        }, 50);
+      }
+    }
+
     _findIcons() {
       if (!this.dash) return [];
 
@@ -206,14 +260,25 @@ var DashContainer = GObject.registerClass(
         if (!actor.child) {
           let cls = actor.get_style_class_name();
           if (cls === 'dash-separator') {
-            // actor.width = 0;
-            // actor.height = 0;
+            // actor.width = 4 * (this.scaleFactor || 1);
+            // actor.height = 4 * (this.scaleFactor || 1);
+            this._separators.push(actor);
           }
           return false;
         }
 
         actor._cls = actor.get_style_class_name();
+
         if (actor.child._delegate && actor.child._delegate.icon) {
+          // hook activate function
+          if (actor.child.activate && !actor.child._activate) {
+            actor.child._activate = actor.child.activate;
+            actor.child.activate = () => {
+              this._maybeMinimizeOrMaximize(actor.child.app);
+              actor.child._activate();
+            };
+          }
+
           return true;
         }
         return false;

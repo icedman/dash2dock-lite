@@ -122,7 +122,7 @@ class Extension {
     this._addEvents();
 
     this.dashContainer.dock();
-    this.startUp();
+    // this.startUp();
 
     log('dash2dock-lite enabled');
   }
@@ -184,7 +184,7 @@ class Extension {
   }
 
   startUp() {
-    this._debouncedUpdateStyle();
+    // this._debouncedUpdateStyle();
 
     // todo... refactor this
     if (!this._startupSeq) {
@@ -481,6 +481,7 @@ class Extension {
     Main.overview.disconnectObject(this);
     Main.layoutManager.disconnectObject(this);
     global.display.disconnectObject(this);
+    global.stage.disconnectObject(this);
     St.TextureCache.get_default().disconnectObject(this);
   }
 

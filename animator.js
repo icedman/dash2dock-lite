@@ -936,6 +936,7 @@ var Animator = class {
     // this._debounceEndAnimation();
   }
 
+  // todo: dashContainer should restore
   _restoreIcons() {
     this.dash._showAppsIcon.visible = true;
     let icons = this.dash._box.get_children();
@@ -947,6 +948,10 @@ var Animator = class {
         c.child.visible = true;
         c.child.width = -1;
         c.child.height = -1;
+        if (c.child._activate) {
+          c.child.activate = c.child._activate;
+          c.child._activate = null;
+        }
       }
       c.width = -1;
       c.height = -1;
@@ -964,7 +969,7 @@ var Animator = class {
   _cycleWindows(app, evt) {
     if (this._lockedCycle) {
       this._scrollCounter = 0;
-      return;
+      return false;
     }
 
     let focusId = 0;
@@ -973,23 +978,6 @@ var Animator = class {
 
     let windows = app.get_windows();
 
-    // if ((evt.modifier_state & Clutter.ModifierType.CONTROL_MASK) ||
-    //   (evt.modifier_state & Clutter.ModifierType.SHIFT_MASK)) {
-    // } else {
-    //   if (windows.length < 2) {
-    //     let appsystem = Shell.AppSystem.get_default();
-    //     let running = appsystem.get_running();
-    //     windows = [];
-    //     for (let i = 0; i < running.length; i++) {
-    //         let app = running[i];
-    //         windows = [
-    //           ...windows,
-    //           ...app.get_windows()
-    //         ];
-    //     }
-    //   }
-    // }
-
     if (evt.modifier_state & Clutter.ModifierType.CONTROL_MASK) {
       windows = windows.filter((w) => {
         return activeWs == w.get_workspace();
@@ -997,67 +985,6 @@ var Animator = class {
     }
 
     let nw = windows.length;
-
-    if (evt.modifier_state & Clutter.ModifierType.SHIFT_MASK) {
-      let maximize = [];
-      let minimize = [];
-      windows.forEach((w) => {
-        switch (evt.direction) {
-          case Clutter.ScrollDirection.UP:
-          case Clutter.ScrollDirection.LEFT: {
-            this._lockCycle();
-            if (w.has_focus()) {
-              if (w.get_maximized() == 3) {
-                minimize = null;
-                w.unmaximize(3);
-                return;
-              }
-            }
-            if (w.is_hidden()) {
-              w.unminimize();
-              w.raise();
-            } else {
-              if (minimize) {
-                minimize.push(w);
-              }
-            }
-            break;
-          }
-          case Clutter.ScrollDirection.DOWN:
-          case Clutter.ScrollDirection.RIGHT: {
-            this._lockCycle();
-            if (w.is_hidden()) {
-              w.unminimize();
-            }
-            if (maximize) {
-              maximize.push(w);
-            }
-            if (w.has_focus()) {
-              if (w.get_maximized() == 3) {
-                w.unmaximize(3);
-                // w.raise();
-              } else {
-                maximize = null;
-                w.maximize(3);
-              }
-            }
-            break;
-          }
-        }
-      });
-
-      if (minimize) {
-        minimize.forEach((w) => {
-          w.minimize();
-        });
-      }
-
-      if (maximize && maximize.length) {
-        maximize[0].raise();
-        maximize[0].focus(0);
-      }
-      return;
-    }
     windows.sort((w1, w2) => {
       return w1.get_id() > w2.get_id() ? -1 : 1;
     });

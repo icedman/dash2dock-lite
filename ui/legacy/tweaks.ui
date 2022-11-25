@@ -417,7 +417,7 @@
                   <object class="GtkLabel">
                     <property name="halign">start</property>
                     <property name="valign">center</property>
-                    <property name="label" translatable="yes">Press SHIFT while scrolling up or down over dock icons. Press CTRL to affect only windows in current workspace.</property>
+                    <property name="label" translatable="yes">Click on icon to minimze. Press SHIFT and click to maximize windows.</property>
                   </object>
                 </child>
               </object>

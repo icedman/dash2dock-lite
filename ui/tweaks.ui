@@ -101,8 +101,16 @@
     </child>
     <child>
       <object class="AdwPreferencesGroup">
-        <property name="title" translatable="yes">Scroll</property>
-        <property name="description" translatable="yes">Tweak behavior on scrolling over icons.</property>
+        <property name="title" translatable="yes">Behavior</property>
+        <property name="description" translatable="yes">Tweak icon behavior when clicked or scrolled over.</property>
+        <child>
+          <object class="AdwActionRow">
+            <property name="title" translatable="yes">Cycle Windows</property>
+            <property name="subtitle" translatable="yes">Scroll over dock icons. Press CTRL to affect only windows in current workspace.</property>
+            <child>
+            </child>
+          </object>
+        </child>
         <child>
           <object class="AdwActionRow">
             <property name="title" translatable="yes">Sensitivity</property>
@@ -124,16 +132,8 @@
         </child>
         <child>
           <object class="AdwActionRow">
-            <property name="title" translatable="yes">Cycle Windows</property>
-            <property name="subtitle" translatable="yes">Scroll over dock icons. Press CTRL to affect only windows in current workspace.</property>
-            <child>
-            </child>
-          </object>
-        </child>
-        <child>
-          <object class="AdwActionRow">
             <property name="title" translatable="yes">Maximize/Minimize Windows</property>
-            <property name="subtitle" translatable="yes">Press SHIFT while scrolling up or down over dock icons. Press CTRL to affect only windows in current workspace.</property>
+            <property name="subtitle" translatable="yes">Click on icon to minimze windows. Press SHIFT and click to maximize.</property>
             <child>
             </child>
           </object>

@@ -184,6 +184,8 @@ var Timer = class {
     ) {
       this.start(this._resolution);
     }
+
+    // log(`subscribers: ${this.subscriberNames().join(',')}`);
     return obj;
   }
 

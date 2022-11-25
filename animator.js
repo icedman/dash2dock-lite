@@ -110,11 +110,6 @@ var Animator = class {
 
     this._dots = [];
 
-    if (this.dashContainer) {
-      this._restoreIcons();
-      this.dashContainer.dash._background.visible = true;
-    }
-
     this._enabled = false;
     log('animator disabled');
   }
@@ -934,28 +929,6 @@ var Animator = class {
   _startAnimation() {
     this._beginAnimation();
     // this._debounceEndAnimation();
-  }
-
-  // todo: dashContainer should restore
-  _restoreIcons() {
-    this.dash._showAppsIcon.visible = true;
-    let icons = this.dash._box.get_children();
-    icons.forEach((c) => {
-      if (c._icon) {
-        c._icon.opacity = 255;
-      }
-      if (c.child) {
-        c.child.visible = true;
-        c.child.width = -1;
-        c.child.height = -1;
-        if (c.child._activate) {
-          c.child.activate = c.child._activate;
-          c.child._activate = null;
-        }
-      }
-      c.width = -1;
-      c.height = -1;
-    });
   }
 
   _lockCycle() {

@@ -3,6 +3,7 @@
 const { St, Shell, GObject, Gio, GLib, Gtk, Meta, Clutter } = imports.gi;
 
 const Main = imports.ui.main;
+const Dash = imports.ui.dash.Dash;
 const Fav = imports.ui.appFavorites;
 const Point = imports.gi.Graphene.Point;
 
@@ -40,6 +41,13 @@ var DashContainer = GObject.registerClass(
       this._padding = new St.Widget();
       this.add_child(this._padding);
 
+      this.dash = new Dash();
+      this.dash.set_name('dash');
+      this.dash.add_style_class_name('overview');
+      this.dash._adjustIconSize = () => {};
+      this.dash.opacity = 0;
+      this.add_child(this.dash);
+
       this.listeners = [this.animator, this.autohider];
       this.connectObject(
         'button-press-event',
@@ -63,15 +71,7 @@ var DashContainer = GObject.registerClass(
 
     dock() {}
 
-    undock() {
-      let icons = this._findIcons();
-      icons.forEach((icon) => {
-        if (icon._destroyConnectId) {
-          icon.disconnect(icon._destroyConnectId);
-          icon._destroyConnectId = null;
-        }
-      });
-    }
+    undock() {}
 
     layout() {
       // todo
@@ -188,9 +188,10 @@ var DashContainer = GObject.registerClass(
       let modifiers = event ? event.get_state() : 0;
       let pressed = event.type() == Clutter.EventType.BUTTON_PRESS;
       let button1 = (modifiers & Clutter.ModifierType.BUTTON1_MASK) != 0;
+      let button2 = (modifiers & Clutter.ModifierType.BUTTON2_MASK) != 0;
+      let button3 = (modifiers & Clutter.ModifierType.BUTTON3_MASK) != 0;
       let shift = (modifiers & Clutter.ModifierType.SHIFT_MASK) != 0;
-      let button = button1 ? 'left' : 'right';
-      let isMiddleButton = false; // button && button == Clutter.BUTTON_MIDDLE;
+      let isMiddleButton = button3; // middle?
       let isCtrlPressed = (modifiers & Clutter.ModifierType.CONTROL_MASK) != 0;
       let openNewWindow =
         app.can_open_new_window() &&
@@ -208,6 +209,7 @@ var DashContainer = GObject.registerClass(
         }
       });
 
+      // delay - allow dash to actually call 'activate' first
       if (focusedWindow) {
         this.extension._hiTimer.runOnce(() => {
           if (shift) {
@@ -227,7 +229,9 @@ var DashContainer = GObject.registerClass(
           windows.forEach((w) => {
             if (w.is_hidden()) {
               w.unminimize();
-              w.raise();
+              if (w.has_focus()) {
+                w.raise();
+              }
             }
           });
         }, 50);

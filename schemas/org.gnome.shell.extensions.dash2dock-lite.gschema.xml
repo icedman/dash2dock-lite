@@ -1,11 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <schemalist gettext-domain="dash2dock-lite">
   <schema path="/org/gnome/shell/extensions/dash2dock-lite/" id="org.gnome.shell.extensions.dash2dock-lite">
-    <key type="b" name="reuse-dash">
-        <default>false</default>
-        <summary>Reuse existing Dash</summary>
-        <description>Reuse existing Dash instead of creating another instance.</description>
-    </key>
     <key type="b" name="debug">
         <default>false</default>
         <summary>Debug Mode</summary>

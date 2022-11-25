@@ -71,24 +71,7 @@ class Extension {
     this.dashContainer = new DashContainer();
     this.dashContainer.extension = this;
 
-    // todo
-    this.reuseExistingDash = true;
-    if (this.reuseExistingDash) {
-      this.dash = Main.overview.dash;
-    } else {
-      this.dash = new Dash();
-      this.dash.set_name('dash');
-      this.dash.add_style_class_name('overview');
-    }
-
-    this.dash._adjustIconSize_ = this.dash._adjustIconSize;
-    this.dash._adjustIconSize = () => {};
-    this.dash.opacity = 0;
-    this.dashContainer.dash = this.dash;
-    if (this.dash.get_parent()) {
-      this.dash.get_parent().remove_child(this.dash);
-    }
-    this.dashContainer.add_child(this.dash);
+    Main.overview.dash.visible = false;
 
     // service
     this.services = new Services();
@@ -142,31 +125,16 @@ class Extension {
     this._updateAnimation(true);
     this._updateAutohide(true);
 
+    Main.overview.dash.visible = true;
     this.dashContainer.undock();
-    this.dashContainer.remove_child(this.dash);
-    if (this.reuseExistingDash) {
-      Main.uiGroup
-        .find_child_by_name('overview')
-        .first_child.add_child(this.dash);
-      this.dash._adjustIconSize = this.dash._adjustIconSize_;
-    }
 
     Main.layoutManager.removeChrome(this.dashContainer);
     delete this.dashContainer;
     this.dashContainer = null;
 
-    if (this.dash.showAppsButton && this.dash.showAppsButton._checkEventId) {
-      this.dash.showAppsButton.disconnect(
-        this.dash.showAppsButton._checkEventId
-      );
-      this.dash.showAppsButton._checkEventId = null;
-    }
-
     this.services.disable();
     delete this.services;
     this.services = null;
-
-    this.dash.opacity = 255;
 
     this._timer = null;
     this._hiTimer = null;
@@ -530,10 +498,8 @@ class Extension {
 
     if (this.shrink_icons && !disable) {
       this.scale = 0.8; // * rescale_modifier;
-      this.dashContainer.add_style_class_name('shrink');
     } else {
       this.scale = 1.0; // * rescale_modifier;
-      this.dashContainer.remove_style_class_name('shrink');
     }
 
     if (this.animate_icons) {

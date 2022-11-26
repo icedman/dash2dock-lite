@@ -280,8 +280,8 @@ class Extension {
         case 'icon-resolution': {
           this._disable_borders = this.border_radius > 0;
           this._updateIconResolution();
-          this.animator.disable();
-          this.animator.enable();
+          this.animator._previousFind = null;
+          this.animator._iconsContainer.clear();
           this.autohider.disable();
           this.autohider.enable();
           this.animator._background.visible = false;
@@ -384,6 +384,7 @@ class Extension {
       () => this._onSessionUpdated(),
       this
     );
+
     Main.layoutManager.connectObject(
       'startup-complete',
       this.startUp.bind(this),
@@ -458,8 +459,8 @@ class Extension {
       this.services.disable();
       this.services.enable();
     }
-    this.animator.disable();
-    this.animator.enable();
+    this.animator._previousFind = null;
+    this.animator._iconsContainer.clear();
     this._updateStyle();
     this.animate();
   }
@@ -472,7 +473,6 @@ class Extension {
       .forEach((l) => {
         if (l._onFocusWindow) l._onFocusWindow();
       });
-    // this._onCheckServices();
   }
 
   _onFullScreen() {
@@ -554,7 +554,7 @@ class Extension {
       // border
       if (this.topbar_border_thickness) {
         let rgba = this._style.rgba(this.topbar_border_color);
-        s.push(
+        ss.push(
           `border: ${this.topbar_border_thickness}px solid rgba(${rgba}); border-top: 0px; border-left: 0px; border-right: 0px;`
         );
       }
@@ -633,10 +633,6 @@ class Extension {
       this.autohider.disable();
     }
 
-    if (this.animate_icons) {
-      this.animator.disable();
-    }
-
     if (!disable) {
       // re-chrome
       this.dashContainer.removeFromChrome();
@@ -644,7 +640,6 @@ class Extension {
     }
 
     if (this.animate_icons && !disable) {
-      this.animator.enable();
       this.animate();
     }
   }

@@ -27,6 +27,11 @@ var DockIcon = GObject.registerClass(
   class DockIcon extends St.Widget {
     _init() {
       super._init({ name: 'DockIcon', reactive: false });
+
+      let pivot = new Point();
+      pivot.x = 0.5;
+      pivot.y = 0.5;
+      this.pivot_point = pivot;
     }
 
     update(params) {
@@ -122,6 +127,8 @@ var IconsContainer = GObject.registerClass(
           icon,
           app: appwell?.app?.get_id(),
         });
+
+        container._renderedIcon = _icon;
 
         _icon._appwell = appwell;
         _icon._bin = bin;

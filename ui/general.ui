@@ -55,16 +55,23 @@
         </child>
         <child>
           <object class="AdwActionRow" id="animation-type-row">
-            <property name="visible">false</property>
-            <property name="title" translatable="yes">Animation Type</property>
-            <property name="subtitle" translatable="yes">Set animation behavior.</property>
-            <property name="activatable-widget">animation-type</property>
+            <property name="visible">true</property>
+            <property name="title" translatable="yes">Opening Animation</property>
+            <property name="subtitle" translatable="yes">Animate icons on opening new apps.</property>
+            <property name="activatable-widget">open-app-animation</property>
             <child>
-              <object class="GtkDropDown" id="animation-type">
+              <object class="GtkSwitch" id="open-app-animation">
                 <property name="valign">center</property>
-                <property name="model">animation-type-model</property>
               </object>
             </child>
+            <!--
+            <child>
+              <object class="GtkDropDown" id="open-app-animation">
+                <property name="valign">center</property>
+                <property name="model">open-app-animation-model</property>
+              </object>
+            </child>
+            -->
           </object>
         </child>
       </object>
@@ -213,11 +220,10 @@
       <item translatable="yes">Right (experimental)</item>
     </items>
   </object>
-  <object class="GtkStringList" id="animation-type-model">
+  <object class="GtkStringList" id="open-app-animation-model">
     <items>
-      <item translatable="yes">Default</item>
-      <!-- x2 -->
-      <item translatable="yes">Experimental</item>
+      <item translatable="yes">None</item>
+      <item translatable="yes">Bounce</item>
     </items>
   </object>
 </interface>

@@ -11,6 +11,8 @@ const ExtensionUtils = imports.misc.extensionUtils;
 const Me = ExtensionUtils.getCurrentExtension();
 const Animator = Me.imports.animator.Animator;
 const AutoHide = Me.imports.autohide.AutoHide;
+const Bounce = Me.imports.effects.easing.Bounce;
+const Linear = Me.imports.effects.easing.Linear;
 
 const EDGE_DISTANCE = 20;
 
@@ -45,7 +47,7 @@ var DashContainer = GObject.registerClass(
       this.dash.set_name('dash');
       this.dash.add_style_class_name('overview');
       this.dash._adjustIconSize = () => {};
-      this.dash.opacity = 0;
+      this.dash.visible = false;
       this.add_child(this.dash);
 
       this.listeners = [this.animator, this.autohider];
@@ -72,11 +74,6 @@ var DashContainer = GObject.registerClass(
     dock() {}
 
     undock() {}
-
-    layout() {
-      // todo
-      this.extension._updateLayout();
-    }
 
     addToChrome() {
       if (this._onChrome) {
@@ -278,6 +275,7 @@ var DashContainer = GObject.registerClass(
           if (actor.child.activate && !actor.child._activate) {
             actor.child._activate = actor.child.activate;
             actor.child.activate = () => {
+              this._maybeBounce(actor);
               this._maybeMinimizeOrMaximize(actor.child.app);
               actor.child._activate();
             };
@@ -403,6 +401,7 @@ var DashContainer = GObject.registerClass(
           Math.floor(icon_size * _preferredIconSizes.length)
         ] || 64);
       iconSize *= this.extension.scale;
+      this.iconSize = iconSize;
 
       this._edge_distance = (edge_distance || 0) * EDGE_DISTANCE * scaleFactor;
 
@@ -547,6 +546,68 @@ var DashContainer = GObject.registerClass(
         this._dockPadding = dockPadding * scaleFactor;
         this._dashHeight = dashHeight * scaleFactor;
       }
+    }
+
+    _maybeBounce(container) {
+      if (!this.extension.open_app_animation) {
+        return;
+      }
+      if (container.child.app && !container.child.app.get_n_windows()) {
+        if (container._renderedIcon) {
+          Main._renderedIcon = container._renderedIcon;
+          this._bounceIcon(container._renderedIcon);
+        }
+      }
+    }
+
+    _bounceIcon(icon) {
+      if (!icon) {
+        icon = this.animator._iconsContainer.get_children()[0];
+      }
+
+      let scaleFactor = this._monitor.geometry_scale;
+      let travel =
+        (this.iconSize / 3) *
+        (this.extension.animation_rise * 1.5) *
+        scaleFactor;
+      icon._img.translation_y = 0;
+
+      let t = 250;
+      let _frames = [
+        {
+          _duration: t,
+          _func: (f, s) => {
+            let res = Linear.easeNone(f._time, 0, travel, f._duration);
+            icon._img.translation_y = -res;
+          },
+        },
+        {
+          _duration: t * 3,
+          _func: (f, s) => {
+            let res = Bounce.easeOut(f._time, travel, -travel, f._duration);
+            icon._img.translation_y = -res;
+          },
+        },
+      ];
+
+      let frames = [];
+      for (let i = 0; i < 3; i++) {
+        _frames.forEach((b) => {
+          frames.push({
+            ...b,
+          });
+        });
+      }
+
+      this.extension._hiTimer.runAnimation([
+        ...frames,
+        {
+          _duration: 10,
+          _func: (f, s) => {
+            icon._img.translation_y = 0;
+          },
+        },
+      ]);
     }
   }
 );

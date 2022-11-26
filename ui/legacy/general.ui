@@ -132,6 +132,55 @@
                         <property name="visible">True</property>
                         <property name="can-focus">False</property>
                         <property name="valign">center</property>
+                        <property name="label" translatable="yes">Opening Animation</property>
+                        <property name="xalign">0</property>
+                        <property name="hexpand">1</property>
+                        <attributes>
+                          <attribute name="weight" value="PANGO_WEIGHT_BOLD"/>
+                        </attributes>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkSwitch" id="open-app-animation">
+                        <property name="valign">center</property>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkLabel">
+                    <property name="halign">start</property>
+                    <property name="valign">center</property>
+                    <property name="label" translatable="yes">Animate icons on opening new apps.</property>
+                  </object>
+                </child>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="GtkListBoxRow">
+            <property name="visible">True</property>
+            <property name="can-focus">True</property>
+            <child>
+              <object class="GtkBox">
+                <property name="visible">True</property>
+                <property name="can-focus">False</property>
+                <property name="margin-start">12</property>
+                <property name="margin-end">12</property>
+                <property name="margin-top">12</property>
+                <property name="margin-bottom">12</property>
+                <property name="orientation">vertical</property>
+                <child>
+                  <object class="GtkBox">
+                    <property name="visible">True</property>
+                    <property name="can-focus">False</property>
+                    <property name="spacing">32</property>
+                    <child>
+                      <object class="GtkLabel">
+                        <property name="visible">True</property>
+                        <property name="can-focus">False</property>
+                        <property name="valign">center</property>
                         <property name="label" translatable="yes">Autohide Icons</property>
                         <property name="xalign">0</property>
                         <property name="hexpand">1</property>
@@ -374,10 +423,10 @@
       <item translatable="yes">Right (experimental)</item>
     </items>
   </object>
-  <object class="GtkStringList" id="animation-type-model">
+  <object class="GtkStringList" id="open-app-animation-model">
     <items>
-      <item translatable="yes">Default</item>
-      <item translatable="yes">Experimental</item>
+      <item translatable="yes">None</item>
+      <item translatable="yes">Bounce</item>
     </items>
   </object>
 </interface>

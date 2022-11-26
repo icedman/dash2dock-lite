@@ -325,16 +325,50 @@ var Timer = class {
   runAnimation(array, settings) {
     if (typeof func === 'object' && !array.length) {
       func._time = 0;
-      func._currentIdx = 0;
       return this.subscribe(func);
     }
+
+    let duration = 0;
+    array.forEach((f) => {
+      if (!f._start) {
+        f._start = duration;
+      }
+      duration += f._duration;
+    });
+
     let obj = {
       _time: 0,
-      _loop: loop,
+      _duration: duration,
+      _loop: false,
       _frames: [...array],
-      ...settings,
+      ...(settings || {}),
       onUpdate: (s, dt) => {
         s._time += dt;
+
+        let frames = [];
+        if (s._frames) {
+          frames = s._frames.filter((f) => {
+            return f._start <= s._time && s._time < f._start + f._duration;
+          });
+        }
+        s._currentFrames = frames;
+
+        if (!s._func) {
+          s._func = (s) => {
+            s._currentFrames.forEach((f) => {
+              f._time = s._time - f._start;
+              f._func(f, s);
+            });
+          };
+        }
+
+        if (s._time > s._duration) {
+          this.unsubscribe(s);
+          s._time = s._duration;
+          s._func(s);
+          return;
+        }
+        s._func(s);
       },
     };
     return this.subscribe(obj);

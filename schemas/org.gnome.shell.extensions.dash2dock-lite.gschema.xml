@@ -41,6 +41,11 @@
         <summary>Animate Icons</summary>
         <description>Animate dash icons on hover.</description>
     </key>
+    <key type="b" name="open-app-animation">
+        <default>false</default>
+        <summary>Open app animation</summary>
+        <description>Open app animation.</description>
+    </key>
     <key type="b" name="autohide-dash">
         <default>false</default>
         <summary>Autohide dash panel</summary>

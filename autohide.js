@@ -44,7 +44,7 @@ var AutoHide = class {
         func: () => {
           if (isNaN(this.dashContainer._fixedPosition)) {
             this._checkHide();
-            this.extension._updateLayout();
+            this.dashContainer.layout();
           }
         },
         delay: 500,

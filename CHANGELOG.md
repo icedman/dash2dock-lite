@@ -1,9 +1,15 @@
+# Roadmap
+
+* Add multiple-docks support
+
 # Release 17 (target)
 
-* Refactor Dock / Code cleanup
-* Add multiple-docks support
-* Add left, right, top layout
-* Add scrollwheel cycle/maximize/minimize
+* Major refactor of the dock - Code cleanup
+* Add dock position - left, right layout
+* Add scrollwheel cycle windows
+* Add click maximize/minimize windows
+* Add opening app animation
+* Add topbar text color 
 
 # Release 16
 
@@ -19,7 +25,6 @@
 * Improved animation and icon scaling
 * Refactor timers (use less timers)
 
-* Add dock position (on-hold)
 
 # Release 14
 

@@ -18,24 +18,8 @@ function init() {
 }
 
 function updateMonitors(window, builder, settings) {
-  // monitors
+  // monitors (use dbus?)
   let count = settings.get_int('monitor-count') || 1;
-
-  // try {
-  //   let tmp = Gio.File.new_for_path(
-  //     `${GLib.get_tmp_dir()}/monitors.dash2dock-lite`
-  //   );
-  //   // makes noise
-  //   const [, contents, etag] = tmp.load_contents(null);
-  //   const ByteArray = imports.byteArray;
-  //   const contentsString = ByteArray.toString(contents);
-  //   count = Number(contentsString);
-  // } catch (err) {
-  //   // fail silently
-  //   // print(err)
-  // }
-
-  // print(count);
   const monitors_model = builder.get_object('preferred-monitor-model');
   monitors_model.splice(count, 6 - count, []);
 }

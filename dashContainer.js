@@ -261,8 +261,8 @@ var DashContainer = GObject.registerClass(
         if (!actor.child) {
           let cls = actor.get_style_class_name();
           if (cls === 'dash-separator') {
-            // actor.width = 4 * (this.scaleFactor || 1);
-            // actor.height = 4 * (this.scaleFactor || 1);
+            actor.width = (this.iconSize / 8) * (this.scaleFactor || 1);
+            actor.height = (this.iconSize / 8) * (this.scaleFactor || 1);
             this._separators.push(actor);
           }
           return false;

@@ -6,14 +6,11 @@ const Cairo = imports.cairo;
 
 const ExtensionUtils = imports.misc.extensionUtils;
 const Me = ExtensionUtils.getCurrentExtension();
-const Drawing = Me.imports.apps.drawing.Drawing;
+const Drawing = Me.imports.drawing.Drawing;
 
-var xOverlay = GObject.registerClass(
-  {
-    Properties: {},
-    Signals: {},
-  },
-  class xOverlay extends Clutter.Actor {
+var DebugOverlay = GObject.registerClass(
+  {},
+  class DebugOverlay extends Clutter.Actor {
     _init(x, y) {
       super._init();
 

@@ -9,8 +9,8 @@ const ExtensionUtils = imports.misc.extensionUtils;
 const Me = ExtensionUtils.getCurrentExtension();
 const AppsFolderPath = Me.dir.get_child('apps').get_path();
 
-const xClock = Me.imports.apps.clock.xClock;
-const xCalendar = Me.imports.apps.calendar.xCalendar;
+const Clock = Me.imports.apps.clock.Clock;
+const Calendar = Me.imports.apps.calendar.Calendar;
 
 // sync with animator
 const CANVAS_SIZE = 120;
@@ -440,7 +440,7 @@ var Services = class {
       let p = icon.get_parent();
       if (this.extension.clock_icon) {
         if (!p.clock) {
-          let clock = new xClock(CANVAS_SIZE);
+          let clock = new Clock(CANVAS_SIZE);
           clock.visible = false;
           clock.reactive = false;
           this.clock = clock;
@@ -472,7 +472,7 @@ var Services = class {
       let p = icon.get_parent();
       if (this.extension.calendar_icon) {
         if (!p.calendar) {
-          let calendar = new xCalendar(CANVAS_SIZE);
+          let calendar = new Calendar(CANVAS_SIZE);
           calendar.visible = false;
           calendar.reactive = false;
           this.calendar = calendar;

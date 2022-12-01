@@ -40,8 +40,8 @@ var Dock = GObject.registerClass(
       this.autohider.dashContainer = this;
       this.autohider.animator = this.animator;
 
-      this._padding = new St.Widget();
-      this.add_child(this._padding);
+      this._leftBox = new St.Widget();
+      this.add_child(this._leftBox);
 
       this.dash = new Dash();
       this.dash.set_name('dash');
@@ -91,6 +91,7 @@ var Dock = GObject.registerClass(
         Main.uiGroup.remove_child(this.animator._dotsContainer);
         Main.uiGroup.remove_child(this.animator._iconsContainer);
         Main.uiGroup.remove_child(this.animator._background);
+        Main.uiGroup.remove_child(this.animator._dockExtension);
         Main.uiGroup.insert_child_above(this.animator._dotsContainer, this);
         Main.uiGroup.insert_child_below(
           this.animator._iconsContainer,
@@ -99,6 +100,10 @@ var Dock = GObject.registerClass(
         Main.uiGroup.insert_child_below(
           this.animator._background,
           this.animator.dashContainer
+        );
+        Main.uiGroup.insert_child_below(
+          this.animator._dockExtension,
+          this.animator._background
         );
       }
 
@@ -572,6 +577,9 @@ var Dock = GObject.registerClass(
         scaleFactor;
       icon._img.translation_y = 0;
 
+      // overlay images such as clocks & calendars, bounce them too
+      let attached = icon.last_child;
+
       let t = 250;
       let _frames = [
         {
@@ -579,6 +587,7 @@ var Dock = GObject.registerClass(
           _func: (f, s) => {
             let res = Linear.easeNone(f._time, 0, travel, f._duration);
             icon._img.translation_y = -res;
+            attached.translation_y = icon._img.translation_y;
           },
         },
         {
@@ -586,6 +595,7 @@ var Dock = GObject.registerClass(
           _func: (f, s) => {
             let res = Bounce.easeOut(f._time, travel, -travel, f._duration);
             icon._img.translation_y = -res;
+            attached.translation_y = icon._img.translation_y;
           },
         },
       ];
@@ -605,6 +615,7 @@ var Dock = GObject.registerClass(
           _duration: 10,
           _func: (f, s) => {
             icon._img.translation_y = 0;
+            attached.translation_y = icon._img.translation_y;
           },
         },
       ]);

@@ -32,47 +32,7 @@ const get_shader_source = (_) => {
 /// GJS Doc:
 /// https://gjs-docs.gnome.org/clutter10~10_api/clutter.shadereffect
 var TintEffect = new GObject.registerClass(
-  {
-    GTypeName: 'D2DLTintEffect',
-    Properties: {
-      red: GObject.ParamSpec.double(
-        `red`,
-        `Red`,
-        `Red value in shader`,
-        GObject.ParamFlags.READWRITE,
-        0.0,
-        1.0,
-        0.4
-      ),
-      green: GObject.ParamSpec.double(
-        `green`,
-        `Green`,
-        `Green value in shader`,
-        GObject.ParamFlags.READWRITE,
-        0.0,
-        1.0,
-        0.4
-      ),
-      blue: GObject.ParamSpec.double(
-        `blue`,
-        `Blue`,
-        `Blue value in shader`,
-        GObject.ParamFlags.READWRITE,
-        0.0,
-        1.0,
-        0.4
-      ),
-      blend: GObject.ParamSpec.double(
-        `blend`,
-        `Blend`,
-        `Amount of blending between the colors`,
-        GObject.ParamFlags.READWRITE,
-        0.0,
-        1.0,
-        0.4
-      ),
-    },
-  },
+  {},
   class ColorShader extends Clutter.ShaderEffect {
     _init(params) {
       this._red = null;

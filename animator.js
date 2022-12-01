@@ -15,13 +15,17 @@ const Me = ExtensionUtils.getCurrentExtension();
 
 const TintEffect = Me.imports.effects.tint_effect.TintEffect;
 const MonochromeEffect = Me.imports.effects.monochrome_effect.MonochromeEffect;
-const TestEffect = Me.imports.effects.test_effect.TestEffect;
 const Animation = Me.imports.effects.maclike_animation.Animation;
 
-const { IconsContainer, DotsContainer, DockBackground, explodeDashIcon } =
-  Me.imports.dockItems;
+const {
+  IconsContainer,
+  DotsContainer,
+  DockExtension,
+  DockBackground,
+  explodeDashIcon,
+} = Me.imports.dockItems;
 
-const xOverlay = Me.imports.apps.overlay.xOverlay;
+const DebugOverlay = Me.imports.apps.overlay.DebugOverlay;
 
 const ANIM_POS_COEF = 1.5;
 const ANIM_SCALE_COEF = 2.5;
@@ -64,11 +68,16 @@ var Animator = class {
     });
 
     this._background = new DockBackground({ name: 'd2dlBackground' });
+    this._dockExtension = new DockExtension({ name: 'd2dlReactExtension' });
+    this._dockExtension.listeners = this.dashContainer.listeners;
+    this._dockExtension.visible = false;
+
     Main.uiGroup.insert_child_above(this._dotsContainer, this.dashContainer);
     Main.uiGroup.insert_child_below(this._iconsContainer, this._dotsContainer);
     Main.uiGroup.insert_child_below(this._background, this.dashContainer);
+    Main.uiGroup.insert_child_below(this._dockExtension, this._background);
 
-    this._overlay = new xOverlay(
+    this._overlay = new DebugOverlay(
       this.dashContainer._monitor.width,
       this.dashContainer._monitor.height
     );
@@ -103,6 +112,9 @@ var Animator = class {
       Main.uiGroup.remove_child(this._background);
       delete this._background;
       this._dotsContainer = null;
+      Main.uiGroup.remove_child(this._dockExtension);
+      delete this._dockExtension;
+      this._dockExtension = null;
       Main.uiGroup.remove_child(this._overlay);
       delete this._overlay;
       this._overlay = null;
@@ -202,16 +214,16 @@ var Animator = class {
           (this.dashContainer.height - this.dash.height) / 2
         );
 
-        let new_height = this.dashContainer._padding.height * 8;
+        let new_height = this.dashContainer._leftBox.height * 8;
         new_height += pad;
         new_height /= 9;
         // pad -= 20 * scaleFactor; // panel height
         if (new_height > 0) {
-          this.dashContainer._padding.height = new_height;
+          this.dashContainer._leftBox.height = new_height;
         }
       }
     } else {
-      this.dashContainer._padding.height = 0;
+      this.dashContainer._leftBox.height = 0;
     }
 
     let pivot = new Point();
@@ -543,6 +555,10 @@ var Animator = class {
       let scale = (iconSize / icon.width) * icon._targetScale;
       let fromScale = icon.get_scale()[0];
 
+      if (icon._targetScale > 1.2) {
+        didAnimate = true;
+      }
+
       // could happen at login? < recheck
       icon.visible = !isNaN(pos[0]);
       if (!icon.visible) {
@@ -664,6 +680,28 @@ var Animator = class {
         this.extension._disable_borders = false;
         this.extension._updateStyle();
       }
+
+      // shadows the background
+      this._dockExtension.width = this._background.width;
+      this._dockExtension.height = this._background.height;
+      this._dockExtension.x = this._background.x;
+      this._dockExtension.y = this._background.y;
+      switch (dock_position) {
+        case 'left':
+          this._dockExtension.x += this._dockExtension.width;
+          this._dockExtension.width /= 2;
+          break;
+        case 'right':
+          this._dockExtension.width /= 2;
+          this._dockExtension.x -= this._dockExtension.width;
+          break;
+        case 'bottom':
+          this._dockExtension.height /= 2;
+          this._dockExtension.y -= this._dockExtension.height;
+          break;
+        case 'top':
+          break;
+      }
     }
 
     // show when ready
@@ -767,6 +805,10 @@ var Animator = class {
 
     this._throttleDown = 0;
 
+    if (this._dockExtension && this.extension.animate_icons_unmute) {
+      this._dockExtension.visible = true;
+    }
+
     this.animationInterval = this.extension.animationInterval;
     if (this.extension._hiTimer) {
       if (!this._animationSeq) {
@@ -789,6 +831,9 @@ var Animator = class {
       this.extension._loTimer.cancel(this.debounceEndSeq);
     }
     this._relayout = 0;
+    if (this._dockExtension) {
+      this._dockExtension.visible = false;
+    }
   }
 
   _debounceEndAnimation() {

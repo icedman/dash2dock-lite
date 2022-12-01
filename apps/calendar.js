@@ -3,18 +3,15 @@ const Cairo = imports.cairo;
 
 const ExtensionUtils = imports.misc.extensionUtils;
 const Me = ExtensionUtils.getCurrentExtension();
-const Drawing = Me.imports.apps.drawing.Drawing;
+const Drawing = Me.imports.drawing.Drawing;
 
 let size = 400;
 
-var xCalendar = GObject.registerClass(
-  {
-    Properties: {},
-    Signals: {},
-  },
+var Calendar = GObject.registerClass(
+  {},
 
   // todo St.DrawingArea
-  class xCalendar extends Clutter.Actor {
+  class Calendar extends Clutter.Actor {
     _init(x) {
       super._init();
 

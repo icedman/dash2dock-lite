@@ -6,16 +6,13 @@ const Cairo = imports.cairo;
 
 const ExtensionUtils = imports.misc.extensionUtils;
 const Me = ExtensionUtils.getCurrentExtension();
-const Drawing = Me.imports.apps.drawing.Drawing;
+const Drawing = Me.imports.drawing.Drawing;
 
 let size = 400;
 
-var xDot = GObject.registerClass(
-  {
-    Properties: {},
-    Signals: {},
-  },
-  class xDot extends Clutter.Actor {
+var Dot = GObject.registerClass(
+  {},
+  class Dot extends Clutter.Actor {
     _init(x) {
       super._init();
 

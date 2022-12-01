@@ -7,7 +7,7 @@ const Point = imports.gi.Graphene.Point;
 
 const ExtensionUtils = imports.misc.extensionUtils;
 const Me = ExtensionUtils.getCurrentExtension();
-const xDot = Me.imports.apps.dot.xDot;
+const Dot = Me.imports.apps.dot.Dot;
 
 const DOT_CANVAS_SIZE = 96;
 
@@ -154,7 +154,7 @@ var DotsContainer = GObject.registerClass(
       const { count, show } = params;
       if (show) {
         for (let i = 0; i < count - this._dots.length; i++) {
-          let dot = new xDot(DOT_CANVAS_SIZE);
+          let dot = new Dot(DOT_CANVAS_SIZE);
           let pdot = new St.Widget();
           pdot.add_child(dot);
           this._dots.push(dot);
@@ -289,6 +289,62 @@ var DotsContainer = GObject.registerClass(
           }
         }
       });
+    }
+  }
+);
+
+var DockExtension = GObject.registerClass(
+  {},
+  class DockExtension extends St.Widget {
+    _init(params) {
+      super._init({
+        reactive: true,
+        ...params,
+      });
+
+      this.listeners = [];
+      this.connectObject(
+        'button-press-event',
+        this._onButtonEvent.bind(this),
+        'motion-event',
+        this._onMotionEvent.bind(this),
+        this
+      );
+    }
+
+    vfunc_scroll_event(scrollEvent) {
+      this._onScrollEvent({}, scrollEvent);
+      return Clutter.EVENT_PROPAGATE;
+    }
+
+    _onScrollEvent(obj, evt) {
+      this.listeners
+        .filter((l) => {
+          return l._enabled;
+        })
+        .forEach((l) => {
+          if (l._onScrollEvent) l._onScrollEvent(obj, evt);
+        });
+    }
+
+    _onButtonEvent(obj, evt) {
+      this.listeners
+        .filter((l) => {
+          return l._enabled;
+        })
+        .forEach((l) => {
+          if (l._onButtonEvent) l._onButtonEvent(obj, evt);
+        });
+    }
+
+    _onMotionEvent() {
+      this.listeners
+        .filter((l) => {
+          return l._enabled;
+        })
+        .forEach((l) => {
+          if (l._onMotionEvent) l._onMotionEvent();
+        });
     }
   }
 );

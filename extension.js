@@ -19,7 +19,6 @@ const Services = Me.imports.services.Services;
 const Style = Me.imports.style.Style;
 const Timer = Me.imports.timer.Timer;
 const Dock = Me.imports.dock.Dock;
-const DashContainer = Me.imports.dashContainer.DashContainer;
 
 const runTests = Me.imports.diagnostics.runTests;
 
@@ -68,7 +67,7 @@ class Extension {
       SettingsKeys.setValue('animate-icons', true);
     }
 
-    this.dashContainer = new DashContainer();
+    this.dashContainer = new Dock();
     this.dashContainer.extension = this;
 
     Main.overview.dash.visible = false;

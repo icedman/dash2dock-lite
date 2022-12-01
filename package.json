@@ -4,8 +4,5 @@
   "main": "index.js",
   "repository": "git@github.com:icedman/dash2dock-lite",
   "author": "icedman <m4rvin2005@gmail.com>",
-  "license": "MIT",
-  "scripts": {
-    "pretty": "prettier --single-quote --write \"**/*.js\""
-   }
+  "license": "GPLv3"
 }

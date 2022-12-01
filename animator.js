@@ -19,7 +19,7 @@ const TestEffect = Me.imports.effects.test_effect.TestEffect;
 const Animation = Me.imports.effects.maclike_animation.Animation;
 
 const { IconsContainer, DotsContainer, DockBackground, explodeDashIcon } =
-  Me.imports.dock;
+  Me.imports.dockItems;
 
 const xOverlay = Me.imports.apps.overlay.xOverlay;
 
@@ -284,12 +284,12 @@ var Animator = class {
     });
 
     icons.forEach((icon) => {
-      let { draggable } = explodeDashIcon(icon);
-      if (draggable && !draggable._dragBeginId) {
-        draggable._dragBeginId = draggable.connect('drag-begin', () => {
+      let { _draggable } = icon;
+      if (_draggable && !_draggable._dragBeginId) {
+        _draggable._dragBeginId = _draggable.connect('drag-begin', () => {
           this._dragging = true;
         });
-        draggable._dragEndId = draggable.connect('drag-end', () => {
+        _draggable._dragEndId = _draggable.connect('drag-end', () => {
           this._dragging = false;
           this._previousFindIndex = -FIND_ICONS_SKIP_FRAMES;
         });

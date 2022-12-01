@@ -59,7 +59,6 @@ class Extension {
     this._style = new Style();
 
     this._enableSettings();
-    this._queryDisplay();
 
     this._disable_borders = this.border_radius > 0;
     // animations are always on - but may be muted
@@ -85,6 +84,9 @@ class Extension {
     this.autohider.extension = this;
     this.autohider.animator = this.animator;
 
+    this._queryDisplay();
+    this.dashContainer.dock();
+
     // todo follow animator and autohider protocol
     this.services.enable();
 
@@ -97,13 +99,10 @@ class Extension {
     this._updateIconResolution();
     this._updateLayout();
     this._updateAutohide();
-    this._updateAnimation();
     this._updateTrashIcon();
     this._updateStyle();
 
     this._addEvents();
-
-    this.dashContainer.dock();
     // this.startUp();
 
     log('dash2dock-lite enabled');
@@ -121,7 +120,6 @@ class Extension {
 
     this._updateShrink(true);
     this._updateLayout(true);
-    this._updateAnimation(true);
     this._updateAutohide(true);
 
     Main.overview.dash.visible = true;
@@ -304,10 +302,6 @@ class Extension {
           }
           break;
         }
-        case 'animate-icons': {
-          this._updateAnimation();
-          break;
-        }
         case 'icon-size':
         case 'preferred-monitor': {
           this._updateLayout();
@@ -385,8 +379,8 @@ class Extension {
     );
 
     Main.layoutManager.connectObject(
-      'startup-complete',
-      this.startUp.bind(this),
+      // 'startup-complete',
+      // this.startUp.bind(this),
       'monitors-changed',
       () => {
         this._updateLayout();
@@ -613,18 +607,6 @@ class Extension {
     this.dashContainer.layout(disable);
   }
 
-  _updateAnimation(disable) {
-    // force animation mode;
-    // virtually every feature requires animation enable
-    // animate-icons-unmute now controls where the icons move on hover
-    this.animate_icons = true;
-    if (this.animate_icons && !disable) {
-      this.animator.enable();
-    } else {
-      this.animator.disable();
-    }
-  }
-
   _updateAutohide(disable) {
     if (this.autohide_dash && !disable) {
       this.autohider.enable();
@@ -633,7 +615,6 @@ class Extension {
     }
 
     if (!disable) {
-      // re-chrome
       this.dashContainer.removeFromChrome();
       this.dashContainer.addToChrome();
     }

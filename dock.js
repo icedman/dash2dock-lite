@@ -71,9 +71,13 @@ var Dock = GObject.registerClass(
       return Clutter.EVENT_PROPAGATE;
     }
 
-    dock() {}
+    dock() {
+      this.animator.enable();
+    }
 
-    undock() {}
+    undock() {
+      this.animator.disable();
+    }
 
     addToChrome() {
       if (this._onChrome) {

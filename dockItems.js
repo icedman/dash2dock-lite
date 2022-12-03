@@ -108,7 +108,7 @@ var IconsContainer = GObject.registerClass(
       let idx = 0;
 
       icons.forEach((container) => {
-        const { _appwell, _bin, _label } = container;
+        const { _appwell, _bin, _label, _showApps } = container;
 
         let _icon = this._icons[idx++];
         _icon.update({
@@ -119,6 +119,7 @@ var IconsContainer = GObject.registerClass(
         container._renderedIcon = _icon;
 
         _icon._appwell = _appwell;
+        _icon._showApps = _showApps;
         _icon._bin = _bin;
         _icon._label = _label;
         _icon._img = _icon._icon;

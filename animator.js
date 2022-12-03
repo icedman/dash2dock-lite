@@ -860,19 +860,23 @@ var Animator = class {
     let button = button1 ? 'left' : 'right';
     let pointer = global.get_pointer();
 
-    log(evt.get_button());
+    // log(evt.get_button());
 
     if (this._nearestIcon) {
       let icon = this._nearestIcon;
       // log(`${button} ${pressed} - (${icon._pos}) (${pointer})`);
       if (icon._appwell) {
-        Main._lastButtonObject = icon;
         if (button == 'left') {
           icon._appwell.emit('clicked', {});
         } else {
           icon._appwell.popupMenu();
         }
-        // }
+      } else if (icon._showApps) {
+        if (Main.overview.visible) {
+          Main.overview.hide();
+        } else {
+          icon._showApps.checked = !icon._showApps.checked;
+        }
       }
     }
   }

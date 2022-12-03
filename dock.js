@@ -334,9 +334,10 @@ var Dock = GObject.registerClass(
 
       try {
         // W: breakable
+        let appsButton = this.dash.showAppsButton;
         let appsIcon = this.dash._showAppsIcon;
-        let apps = this.dash._showAppsIcon;
-        if (apps) {
+        if (appsButton && appsIcon) {
+          let apps = appsButton.get_parent();
           let widget = appsIcon.child;
           if (widget && widget.width > 0 && widget.get_parent().visible) {
             let icongrid = widget.first_child;
@@ -344,10 +345,13 @@ var Dock = GObject.registerClass(
             let bin = boxlayout.first_child;
             let icon = bin.first_child;
             let c = apps;
-            // c.child = widget;
             c._bin = bin;
             c._icon = icon;
             c._label = widget._delegate.label;
+            c._showApps = appsButton;
+            // make virtually unclickable
+            appsButton.width = 1;
+            appsButton.height = 1;
             icons.push(c);
           }
         }
@@ -363,6 +367,7 @@ var Dock = GObject.registerClass(
           });
         }
       });
+
       return icons;
     }
 

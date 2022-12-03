@@ -167,7 +167,7 @@
           <object class="AdwActionRow" id="self-test-row">
             <property name="visible">false</property>
             <property name="title" translatable="yes">Test</property>
-            <property name="subtitle" translatable="yes">Run self-test. Messages will be logged at the terminal running journalctl -f.</property>
+            <property name="subtitle" translatable="yes">Run self-test. Messages will be logged at the terminal running journalctl -f. WARNING: This takes a few minutes to finish.</property>
             <property name="activatable-widget">self-test</property>
             <child>
               <object class="GtkButton" id="self-test">

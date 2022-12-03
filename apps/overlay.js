@@ -14,8 +14,6 @@ var DebugOverlay = GObject.registerClass(
     _init(x, y) {
       super._init();
 
-      this._drawing = Drawing;
-
       this._width = x ? x : 400;
       this._height = y ? y : 400;
 

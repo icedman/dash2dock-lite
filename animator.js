@@ -16,6 +16,7 @@ const Me = ExtensionUtils.getCurrentExtension();
 const TintEffect = Me.imports.effects.tint_effect.TintEffect;
 const MonochromeEffect = Me.imports.effects.monochrome_effect.MonochromeEffect;
 const Animation = Me.imports.effects.maclike_animation.Animation;
+const Drawing = Me.imports.drawing.Drawing;
 
 const {
   IconsContainer,
@@ -490,12 +491,14 @@ var Animator = class {
       });
 
       // debug draw
+      // todo move to overlay class
       if (this.extension.debug_visual) {
         this._overlay.onDraw = (ctx) => {
           anim.debugDraw.forEach((d) => {
+            log(`${d.t} ${d.x} ${d.y}`);
             switch (d.t) {
               case 'line':
-                this._overlay._drawing.draw_line(
+                Drawing.draw_line(
                   ctx,
                   d.c,
                   1,
@@ -507,7 +510,7 @@ var Animator = class {
                 );
                 break;
               case 'circle':
-                this._overlay._drawing.draw_circle(
+                Drawing.draw_circle(
                   ctx,
                   d.c,
                   d.x - monitor.x,
@@ -520,13 +523,10 @@ var Animator = class {
           });
         };
 
-        if (this.extension.debug_visual) {
-          this._overlay.visible = this.extension.debug_visual;
-          let monitor = this.dashContainer._monitor;
-          this._overlay.set_position(monitor.x, monitor.y);
-          this._overlay.set_size(monitor.width, monitor.height);
-          this._overlay.redraw();
-        }
+        this._overlay.visible = this.extension.debug_visual;
+        this._overlay.set_position(monitor.x, monitor.y);
+        this._overlay.set_size(monitor.width, monitor.height);
+        this._overlay.redraw();
       }
     }
 

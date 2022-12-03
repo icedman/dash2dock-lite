@@ -32,7 +32,7 @@ const ANIM_SCALE_COEF = 2.5;
 const ANIM_ON_LEAVE_COEF = 2.5;
 const ANIM_ICON_RAISE = 0.6;
 const ANIM_ICON_SCALE = 1.5;
-const ANIM_ICON_HIT_AREA = 1.5;
+const ANIM_ICON_HIT_AREA = 2.5;
 const ANIM_REENABLE_DELAY = 250;
 const ANIM_DEBOUNCE_END_DELAY = 750;
 const ANIM_PREVIEW_DURATION = 1200;
@@ -290,7 +290,7 @@ var Animator = class {
 
     this._iconsContainer.update({
       icons,
-      iconSize,
+      iconSize: iconSize * scaleFactor,
       pivot,
       quality: this.extension.icon_quality,
     });
@@ -319,7 +319,7 @@ var Animator = class {
 
     animateIcons.forEach((c) => {
       if (this.extension.services) {
-        this.extension.services.updateIcon(c._icon);
+        this.extension.services.updateIcon(c._icon, { scaleFactor });
       }
       c._pos = this._get_position(c._bin);
     });
@@ -477,7 +477,7 @@ var Animator = class {
       let animation_type = this.extension.animation_type;
       let anim = Animation(animateIcons, [px, py], {
         iconSize,
-        scaleFactor,
+        scaleFactor: 1.0,
         animation_rise: this.extension.animation_rise * ANIM_ICON_RAISE,
         animation_magnify: this.extension.animation_magnify * ANIM_ICON_SCALE,
         animation_spread: this.extension.animation_spread,

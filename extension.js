@@ -103,7 +103,8 @@ class Extension {
     this._updateStyle();
 
     this._addEvents();
-    // this.startUp();
+
+    this.startUp();
 
     log('dash2dock-lite enabled');
   }
@@ -150,37 +151,21 @@ class Extension {
 
   startUp() {
     // this._debouncedUpdateStyle();
+    this.dashContainer.animator._iconsContainer.opacity = 0;
 
     // todo... refactor this
     if (!this._startupSeq) {
-      this._startupSeq = this._loTimer.runSequence([
-        {
-          func: () => {
-            this._updateLayout();
-            this.animate();
-          },
-          delay: 50,
-        },
-        // force startup layout on ubuntu >:!
-        {
-          func: () => {
-            this._updateLayout();
-            this.animate();
-            // hack - rounded corners are messed up
-          },
-          delay: 250,
-        },
-        // make sure layout has been done on ubuntu >:!
-        {
-          func: () => {
-            this._updateLayout();
-            this.animate();
-          },
-          delay: 500,
-        },
+      let func = () => {
+        this._updateLayout();
+        this.animate();
+      };
+      this._startupSeq = this._hiTimer.runSequence([
+        { func, delay: 50 },
+        { func, delay: 250 },
+        { func, delay: 500 },
       ]);
     } else {
-      this._loTimer.runSequence(this._startupSeq);
+      this._hiTimer.runSequence(this._startupSeq);
     }
   }
 

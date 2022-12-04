@@ -237,7 +237,6 @@ var Animator = class {
     let ix = 0;
     let iy = 1;
 
-    this._iconsContainer.opacity = 255;
     this.dashContainer.dash.opacity = this.extension._dash_opacity;
     this.dashContainer.dash._background.visible = false;
 
@@ -358,6 +357,8 @@ var Animator = class {
       icon._fixedPosition = [...pos];
       if (!this._dragging && bin.first_child) {
         bin.first_child.opacity = this.extension._dash_opacity;
+        // todo make this small - so as not to mess up the layout
+        // however, the icons appear when released from drag
         bin.first_child.width = 16;
         bin.first_child.height = 16;
       }
@@ -715,6 +716,7 @@ var Animator = class {
       Main.panel.first_child.style = didAnimate
         ? 'border:1px solid magenta'
         : '';
+      this._dockExtension.style = Main.panel.first_child.style;
     }
 
     if (didAnimate || this._dragging) {

@@ -270,8 +270,9 @@ var Dock = GObject.registerClass(
         if (!actor.child) {
           let cls = actor.get_style_class_name();
           if (cls === 'dash-separator') {
-            actor.width = (this.iconSize / 8) * (this.scaleFactor || 1);
-            actor.height = (this.iconSize / 8) * (this.scaleFactor || 1);
+            actor.visible = false;
+            // actor.width = (this.iconSize / 8) * (this.scaleFactor || 1);
+            // actor.height = (this.iconSize / 8) * (this.scaleFactor || 1);
             this._separators.push(actor);
           }
           return false;
@@ -394,6 +395,7 @@ var Dock = GObject.registerClass(
       }
 
       // See St.Direction position constants
+      // todo - make this reable
       // remap [ bottom, left, right, top ] >> [ top, right, bottom, left ]
       this.extension._position = [2, 3, 1, 0][pos];
       this.extension._vertical =

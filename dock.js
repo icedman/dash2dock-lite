@@ -96,6 +96,7 @@ var Dock = GObject.registerClass(
         Main.uiGroup.remove_child(this.animator._iconsContainer);
         Main.uiGroup.remove_child(this.animator._background);
         Main.uiGroup.remove_child(this.animator._dockExtension);
+        Main.uiGroup.remove_child(this.animator._overlay);
         Main.uiGroup.insert_child_above(this.animator._dotsContainer, this);
         Main.uiGroup.insert_child_below(
           this.animator._iconsContainer,
@@ -108,6 +109,10 @@ var Dock = GObject.registerClass(
         Main.uiGroup.insert_child_below(
           this.animator._dockExtension,
           this.animator._background
+        );
+        Main.uiGroup.insert_child_above(
+          this.animator._overlay,
+          this.animator._iconsContainer
         );
       }
 

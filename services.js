@@ -419,13 +419,14 @@ var Services = class {
     }
   }
 
-  updateIcon(icon) {
+  updateIcon(icon, settings) {
     if (!icon || !icon.icon_name) {
       return;
     }
 
+    let { scaleFactor } = settings;
     // monitor scale
-    this.scaleFactor = St.ThemeContext.get_for_stage(global.stage).scale_factor;
+    // this.scaleFactor = St.ThemeContext.get_for_stage(global.stage).scale_factor;
 
     // the trash
     if (this.extension.trash_icon && icon.icon_name.startsWith('user-trash')) {
@@ -449,7 +450,7 @@ var Services = class {
         if (p.clock) {
           let scale =
             icon.icon_size / this.extension.icon_quality / CANVAS_SIZE;
-          scale *= this.scaleFactor;
+          scale *= scaleFactor;
           p.clock.set_scale(scale, scale);
           p.clock.show();
           p.clock.reactive = false;
@@ -481,7 +482,7 @@ var Services = class {
         if (p.calendar) {
           let scale =
             icon.icon_size / this.extension.icon_quality / CANVAS_SIZE;
-          scale *= this.scaleFactor;
+          scale *= scaleFactor;
           p.calendar.set_scale(scale, scale);
           p.calendar.show();
           p.calendar.reactive = false;

@@ -20,7 +20,10 @@
 * Animated dock icons
 * Resize icons
 * Autohide/intellihide
-* Translucent top panel
+* Dock position - left, right layout
+* Scrollwheel to cycle windows
+* Click to maximize/minimize windows
+* Style top panel
 * Panel mode
 * Show/Hide Apps icon
 * Analog clock

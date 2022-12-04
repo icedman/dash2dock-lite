@@ -16,6 +16,7 @@ const Me = ExtensionUtils.getCurrentExtension();
 const TintEffect = Me.imports.effects.tint_effect.TintEffect;
 const MonochromeEffect = Me.imports.effects.monochrome_effect.MonochromeEffect;
 const Animation = Me.imports.effects.maclike_animation.Animation;
+const Drawing = Me.imports.drawing.Drawing;
 
 const {
   IconsContainer,
@@ -32,7 +33,7 @@ const ANIM_SCALE_COEF = 2.5;
 const ANIM_ON_LEAVE_COEF = 2.5;
 const ANIM_ICON_RAISE = 0.6;
 const ANIM_ICON_SCALE = 1.5;
-const ANIM_ICON_HIT_AREA = 1.5;
+const ANIM_ICON_HIT_AREA = 2.5;
 const ANIM_REENABLE_DELAY = 250;
 const ANIM_DEBOUNCE_END_DELAY = 750;
 const ANIM_PREVIEW_DURATION = 1200;
@@ -289,7 +290,7 @@ var Animator = class {
 
     this._iconsContainer.update({
       icons,
-      iconSize,
+      iconSize: iconSize * scaleFactor,
       pivot,
       quality: this.extension.icon_quality,
     });
@@ -318,7 +319,7 @@ var Animator = class {
 
     animateIcons.forEach((c) => {
       if (this.extension.services) {
-        this.extension.services.updateIcon(c._icon);
+        this.extension.services.updateIcon(c._icon, { scaleFactor });
       }
       c._pos = this._get_position(c._bin);
     });
@@ -478,7 +479,7 @@ var Animator = class {
       let animation_type = this.extension.animation_type;
       let anim = Animation(animateIcons, [px, py], {
         iconSize,
-        scaleFactor,
+        scaleFactor: 1.0,
         animation_rise: this.extension.animation_rise * ANIM_ICON_RAISE,
         animation_magnify: this.extension.animation_magnify * ANIM_ICON_SCALE,
         animation_spread: this.extension.animation_spread,
@@ -491,12 +492,14 @@ var Animator = class {
       });
 
       // debug draw
+      // todo move to overlay class
       if (this.extension.debug_visual) {
         this._overlay.onDraw = (ctx) => {
           anim.debugDraw.forEach((d) => {
+            log(`${d.t} ${d.x} ${d.y}`);
             switch (d.t) {
               case 'line':
-                this._overlay._drawing.draw_line(
+                Drawing.draw_line(
                   ctx,
                   d.c,
                   1,
@@ -508,7 +511,7 @@ var Animator = class {
                 );
                 break;
               case 'circle':
-                this._overlay._drawing.draw_circle(
+                Drawing.draw_circle(
                   ctx,
                   d.c,
                   d.x - monitor.x,
@@ -521,13 +524,10 @@ var Animator = class {
           });
         };
 
-        if (this.extension.debug_visual) {
-          this._overlay.visible = this.extension.debug_visual;
-          let monitor = this.dashContainer._monitor;
-          this._overlay.set_position(monitor.x, monitor.y);
-          this._overlay.set_size(monitor.width, monitor.height);
-          this._overlay.redraw();
-        }
+        this._overlay.visible = this.extension.debug_visual;
+        this._overlay.set_position(monitor.x, monitor.y);
+        this._overlay.set_size(monitor.width, monitor.height);
+        this._overlay.redraw();
       }
     }
 

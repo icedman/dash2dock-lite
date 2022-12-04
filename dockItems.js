@@ -100,7 +100,7 @@ var IconsContainer = GObject.registerClass(
     }
 
     update(params) {
-      let { icons, pivot, iconSize, quality } = params;
+      let { icons, pivot, iconSize, quality, scaleFactor } = params;
       if (!icons) {
         icons = [];
       }

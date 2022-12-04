@@ -712,6 +712,8 @@ var Animator = class {
       this._background.show();
     }
 
+    this._invisible(!validPosition);
+
     if (this.extension.debug_visual) {
       Main.panel.first_child.style = didAnimate
         ? 'border:1px solid magenta'
@@ -744,16 +746,10 @@ var Animator = class {
     // todo: fix: too elaborate a hack to suppress initial dock display- when icons are not yet ready
     if (icons.length <= 1) {
       // only the ShowAppsButton is visible?... dash not yet ready
-
-      this.dashContainer.dash.opacity = 0;
-      this._iconsContainer.opacity = 0;
-      this._dotsContainer.opacity = 0;
-
+      this._invisible(true);
       if (!this.debounceReadySeq) {
         this.debounceReadySeq = this.extension._loTimer.runDebounced(() => {
-          this.dashContainer.dash.opacity = 255;
-          this._iconsContainer.opacity = 255;
-          this._dotsContainer.opacity = 255;
+          this._invisible(false);
           this._startAnimation();
         }, 100);
       } else {
@@ -762,27 +758,19 @@ var Animator = class {
 
       return [];
     }
-
     return icons;
   }
 
+  _invisible(hide) {
+    this._isHidden = hide;
+    this._iconsContainer.opacity = hide ? 0 : 255;
+    this._dotsContainer.opacity = hide ? 0 : 255;
+    this._background.opacity = hide ? 0 : 255;
+  }
+
   // todo move to util
-  _get_x(obj) {
-    if (obj == null) return 0;
-    return obj.get_transformed_position()[0];
-  }
-
-  _get_y(obj) {
-    if (obj == null) return 0;
-    return obj.get_transformed_position()[1];
-  }
-
   _get_position(obj) {
     return [...obj.get_transformed_position()];
-  }
-
-  _get_frame_rect(obj) {
-    return [...obj.get_transformed_position(), ...obj.get_transformed_size()];
   }
 
   _get_distance_sqr(pos1, pos2) {

@@ -2,7 +2,13 @@
 
 * Add multiple-docks support
 
-# Release 17 (target)
+# Current Issues
+
+* Startup artifacts showing prior to scaling down
+* Space is showing between Apps button & icons - more prominent with vertical layouts
+* Labels not centered
+
+# Release 18
 
 * Major refactor of the dock - Code cleanup
 * Add dock position - left, right layout

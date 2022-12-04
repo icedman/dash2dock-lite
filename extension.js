@@ -264,8 +264,10 @@ class Extension {
           this._updateIconResolution();
           this.animator._previousFind = null;
           this.animator._iconsContainer.clear();
-          this.autohider.disable();
-          this.autohider.enable();
+          if (this.autohide_dash) {
+            this.autohider.disable();
+            this.autohider.enable();
+          }
           this.animator._background.visible = false;
           this._updateStyle();
           this._updateLayout();

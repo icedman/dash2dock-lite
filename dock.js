@@ -47,6 +47,7 @@ var Dock = GObject.registerClass(
       this.dash.set_name('dash');
       this.dash.add_style_class_name('overview');
       this.dash._adjustIconSize = () => {};
+      this.dash.opacity = 0;
       this.dash.visible = false;
       this.add_child(this.dash);
 

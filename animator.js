@@ -45,8 +45,6 @@ const THROTTLE_DOWN_DELAY_FRAMES = 20;
 const MIN_SCROLL_RESOLUTION = 4;
 const MAX_SCROLL_RESOLUTION = 10;
 
-const DOT_CANVAS_SIZE = 96;
-
 var Animator = class {
   constructor() {
     this._enabled = false;
@@ -387,12 +385,14 @@ var Animator = class {
         icon._dy = bposcenter[1] - pointer[1];
       }
 
+      let off = (iconSize * scaleFactor) / 2;
       icon._target = pos;
       icon._targetScale = 1;
 
-      if (this.extension._vertical) {
-        //
+      if (this.extension._vertical) {  
+        // icon._target[1] -= off/2 + 8;
       } else {
+        // icon._target[0] -= off/2 + 8;
         if (pos[1] < this.dashContainer._monitor.height / 2) {
           validPosition = false;
         }
@@ -449,11 +449,12 @@ var Animator = class {
       p[0] += off;
       p[1] += off;
 
-      if (this.extension._vertical) {
-        p[1] += offX;
-      } else {
-        p[0] += offX;
-      }
+      // if (this.extension._vertical) {
+      //   p[1] += offX;
+      // } else {
+      //   p[0] += offX;
+      // }
+      
       i._pos = p;
     });
 
@@ -489,6 +490,11 @@ var Animator = class {
       // commit
       animateIcons.forEach((i) => {
         i._target = [i._pos[0] - off, i._pos[1] - off];
+        // if (this.extension._vertical) {
+        //   i._target[1] -= off;
+        // } else {
+        //   i._target[0] -= off;
+        // }
       });
 
       // debug draw
@@ -610,7 +616,6 @@ var Animator = class {
       }
 
       if (!isNaN(pos[0]) && !isNaN(pos[1])) {
-        // why does NaN happen?
         icon.set_position(pos[0], pos[1]);
         icon._pos = [...pos];
         icon._scale = scale;
@@ -626,13 +631,10 @@ var Animator = class {
               icon._label.x -= icon._label.width / 1.2;
               break;
             case 'bottom':
-              icon._label.x =
-                pos[0] -
-                ((icon._container.width - iconSpacing) / 2) * scaleFactor;
+              icon._label.x = (-icon._label.width/2 +
+                icon.width/2) * scaleFactor +
+                pos[0];
               icon._label.y = pos[1] - iconSize * scale * 0.9 * scaleFactor;
-              break;
-            case 'top':
-              icon._label.y = pos[1] + iconSize * scale * 0.9 * scaleFactor;
               break;
           }
           if (this.extension._vertical) {
@@ -730,7 +732,7 @@ var Animator = class {
 
   _findIcons() {
     let icons = this.dashContainer._findIcons();
-
+    
     this._dotsCount = 0;
     this._iconsCount = icons.length;
 

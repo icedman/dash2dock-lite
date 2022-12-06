@@ -575,11 +575,11 @@ class Extension {
         disable_borders =
           'border-left: 0px; border-right: 0px; border-bottom: 0px;';
         // vertical border-left/right doesn;t seem to work
-        if (this._position == 3) {
+        if (this._position == 'left') {
           disable_borders =
             'border-left: 0px; border-top: 0px; border-bottom: 0px;';
         }
-        if (this._position == 1) {
+        if (this._position == 'right') {
           disable_borders =
             'border-top: 0px; border-right: 0px; border-bottom: 0px;';
         }

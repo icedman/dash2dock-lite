@@ -242,7 +242,7 @@ var Animator = class {
     let existingIcons = this._iconsContainer.get_children();
 
     let validPosition = true;
-    let dock_position = 'bottom';
+    let dock_position = this.dashContainer._position;
     let ix = 0;
     let iy = 1;
 
@@ -250,25 +250,21 @@ var Animator = class {
     this.dashContainer.dash._background.visible = false;
 
     switch (this.dashContainer._position) {
-      case 0:
-        dock_position = 'top';
+      case 'top':
         ix = 0;
         iy = -1.0;
         pivot.x = 0.0;
         pivot.y = 0.0;
         break;
-      case 1:
-        dock_position = 'right';
+      case 'right':
         ix = 1;
         iy = 0;
         pivot.x = 1.0;
         pivot.y = 0.5;
         break;
-      case 2:
-        dock_position = 'bottom';
+      case 'bottom':
         break;
-      case 3:
-        dock_position = 'left';
+      case 'left':
         ix = 1;
         iy = 0;
         pivot.x = 0.0;
@@ -344,7 +340,7 @@ var Animator = class {
     animateIcons.forEach((icon) => {
       if (this.extension._vertical) {
         icon._pos[0] = this.dashContainer.x;
-        if (this.dashContainer._position == 1) {
+        if (this.dashContainer._position == 'right') {
           icon._pos[0] += this.dashContainer._dashHeight / 2;
           icon._pos[0] += this.dashContainer._dockPadding;
           icon._pos[0] -= (iconSize / 2) * scaleFactor;
@@ -933,6 +929,10 @@ var Animator = class {
     let y1 = this._dockExtension.y;
     let x2 = this.dashContainer.x + this.dashContainer.width;
     let y2 = this.dashContainer.y + this.dashContainer.height;
+    if (this.extension._vertical) {
+      x1 = this.dashContainer.x;
+      x2 += this._dockExtension.width;
+    }
     let [px, py] = p;
     return px >= x1 && px < x2 && py >= y1 && py < y2;
   }

@@ -265,7 +265,7 @@ var DotsContainer = GObject.registerClass(
             dotParent.set_scale(1, 1);
 
             if (vertical) {
-              if (position == 1) {
+              if (position == 'right') {
                 dotParent.set_position(pos[0] + 8 * scaleFactor, pos[1]);
               } else {
                 dotParent.set_position(pos[0] - 8 * scaleFactor, pos[1]);
@@ -285,7 +285,7 @@ var DotsContainer = GObject.registerClass(
               count: icon._appwell.app.get_n_windows(),
               color: running_indicator_color || [1, 1, 1, 1],
               style: style || 'default',
-              rotate: vertical ? (position == 1 ? -90 : 90) : 0,
+              rotate: vertical ? (position == 'right' ? -90 : 90) : 0,
             });
           }
         }
@@ -416,10 +416,10 @@ var DockBackground = GObject.registerClass(
           this.x = p1[0] - padding;
           this.y = first._fixedPosition[1] - padding; // p1[1] - padding
 
-          if (position == 1 && p2[0] > p1[0]) {
+          if (position == 'right' && p2[0] > p1[0]) {
             this.x = p2[0] - padding;
           }
-          if (position == 3 && p2[0] < p1[0]) {
+          if (position == 'left' && p2[0] < p1[0]) {
             this.x = p2[0] - padding;
           }
 

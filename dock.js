@@ -357,8 +357,9 @@ var Dock = GObject.registerClass(
             c._label = widget._delegate.label;
             c._showApps = appsButton;
             // make virtually unclickable
-            appsButton.width = 1;
-            appsButton.height = 1;
+            appsButton.reactive = false;
+            // appsButton.width = 1;
+            // appsButton.height = 1;
             icons.push(c);
           }
         }
@@ -403,10 +404,14 @@ var Dock = GObject.registerClass(
       // See St.Direction position constants
       // todo - make this reable
       // remap [ bottom, left, right, top ] >> [ top, right, bottom, left ]
-      this.extension._position = [2, 3, 1, 0][pos];
+      // this.extension._position = [2, 3, 1, 0][pos];
+      this.extension._position = ['bottom', 'left', 'right', 'top'][pos];
       this.extension._vertical =
-        this.extension._position == 1 || this.extension._position == 3;
+        this.extension._position == 'left' ||
+        this.extension._position == 'right';
       this._position = this.extension._position;
+
+      log(this._position);
 
       let scaleFactor = this._monitor.geometry_scale;
 
@@ -472,7 +477,7 @@ var Dock = GObject.registerClass(
         let display = global.display;
         switch (this._position) {
           // left
-          case 3:
+          case 'left':
             this._disableAutohide =
               display.get_monitor_neighbor_index(
                 this._monitorIndex,
@@ -480,7 +485,7 @@ var Dock = GObject.registerClass(
               ) != -1;
             break;
           // right
-          case 1:
+          case 'right':
             this._disableAutohide =
               display.get_monitor_neighbor_index(
                 this._monitorIndex,
@@ -488,7 +493,7 @@ var Dock = GObject.registerClass(
               ) != -1;
             break;
           // bottom
-          case 0:
+          case 'bottom':
           default:
             this._disableAutohide =
               display.get_monitor_neighbor_index(
@@ -533,7 +538,7 @@ var Dock = GObject.registerClass(
           );
 
           // right
-          if (this._position == 1) {
+          if (this._position == 'right') {
             this.x += this._monitor.width;
             this.x -= dockHeight * scaleFactor;
           }
@@ -555,7 +560,7 @@ var Dock = GObject.registerClass(
             this._monitor.x - dockHeight * scaleFactor + hidePad;
 
           // right
-          if (this._position == 1) {
+          if (this._position == 'right') {
             this._hidePosition[0] =
               this._monitor.x + this._monitor.width - hidePad;
           }

@@ -145,11 +145,11 @@ var AutoHide = class {
       if (this.extension._vertical) {
         if (
           // right
-          (this.extension._position == 1 &&
+          (this.extension._position == 'right' &&
             dy < area &&
             pointer[0] > monitor.x + sw - 4) ||
           // left
-          (this.extension._position != 1 &&
+          (this.extension._position == 'left' &&
             dy < area &&
             pointer[0] < monitor.x + 4)
         ) {
@@ -320,7 +320,7 @@ var AutoHide = class {
     // log(dash_position[1]);
 
     if (this.extension._vertical) {
-      if (this.extension._position == 1) {
+      if (this.extension._position == 'right') {
         // right
         if (pointer[0] > dash_position[0]) {
           return false;
@@ -359,7 +359,7 @@ var AutoHide = class {
       let frame = w.get_frame_rect();
       // log (`${frame.y} + ${frame.height}`);
       if (this.extension._vertical) {
-        if (this.extension._position == 1) {
+        if (this.extension._position == 'right') {
           if (frame.x + frame.width >= dash_position[0]) {
             isOverlapped = true;
           }

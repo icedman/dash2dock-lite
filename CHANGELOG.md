@@ -1,8 +1,11 @@
 # Roadmap
 
 * Add multiple-docks support
+* Separator
+* Panel mode (combine with topbar)
+* Arch Menu support (?)
 
-# Release 17 (target)
+# Release 19
 
 * Major refactor of the dock - Code cleanup
 * Add dock position - left, right layout

@@ -206,6 +206,16 @@ var Animator = class {
     let pointer = global.get_pointer();
     let monitor = this.dashContainer._monitor;
 
+    let minimizeShaking = false;
+    if (
+      this._prevPointer &&
+      this._prevPointer[0] == pointer[0] &&
+      this._prevPointer[1] == pointer[1]
+    ) {
+      minimizeShaking = true;
+    }
+    this._prevPointer = pointer;
+
     // center the dash
     if (this.extension._vertical) {
       if (this.dash.height > this.dashContainer.iconSize * 4) {
@@ -358,8 +368,8 @@ var Animator = class {
         bin.first_child.opacity = this.extension._dash_opacity;
         // todo make this small - so as not to mess up the layout
         // however, the icons appear when released from drag
-        bin.first_child.width = 16;
-        bin.first_child.height = 16;
+        bin.first_child.width = iconSize * 0.8 * scaleFactor;
+        bin.first_child.height = iconSize * 0.8 * scaleFactor;
       }
 
       icon.set_size(iconSize, iconSize);
@@ -389,7 +399,7 @@ var Animator = class {
       icon._target = pos;
       icon._targetScale = 1;
 
-      if (this.extension._vertical) {  
+      if (this.extension._vertical) {
         // icon._target[1] -= off/2 + 8;
       } else {
         // icon._target[0] -= off/2 + 8;
@@ -401,6 +411,7 @@ var Animator = class {
       idx++;
     });
 
+    // preview mode
     // simulate animation at hovering middle icon
     if (this._preview && this._preview > 0) {
       nearestIdx = Math.floor(animateIcons.length / 2);
@@ -409,6 +420,10 @@ var Animator = class {
       this._preview -= this.animationInterval;
     } else {
       this._preview = null;
+    }
+
+    if (!this._preview && !this._isWithinDash(pointer)) {
+      nearestIcon = null;
     }
 
     //---------------------
@@ -454,7 +469,7 @@ var Animator = class {
       // } else {
       //   p[0] += offX;
       // }
-      
+
       i._pos = p;
     });
 
@@ -502,7 +517,7 @@ var Animator = class {
       if (this.extension.debug_visual) {
         this._overlay.onDraw = (ctx) => {
           anim.debugDraw.forEach((d) => {
-            log(`${d.t} ${d.x} ${d.y}`);
+            // log(`${d.t} ${d.x} ${d.y}`);
             switch (d.t) {
               case 'line':
                 Drawing.draw_line(
@@ -590,7 +605,7 @@ var Animator = class {
       scale = (fromScale * _scale_coef + scale) / (_scale_coef + 1);
 
       if (
-        dst > 4 * scaleFactor &&
+        dst > 8 * scaleFactor &&
         dst > iconSize * 0.01 &&
         dst < iconSize * 3
       ) {
@@ -604,10 +619,17 @@ var Animator = class {
         has_errors = true;
       }
 
+      // minimize icon shaking
+      if (scale < 1.0) {
+        scale = 1.0;
+      }
+      scale = scale.toFixed(2);
+
+      let target_spread = iconSpacing * scaleFactor * scale;
       if (this.extension._vertical) {
-        icon._container.height = iconSpacing * scaleFactor * scale;
+        icon._container.height = target_spread;
       } else {
-        icon._container.width = iconSpacing * scaleFactor * scale;
+        icon._container.width = target_spread;
       }
 
       // scale
@@ -622,23 +644,28 @@ var Animator = class {
 
         // todo find appsButton._label
         if (icon._label && !this._dragging) {
-          switch (dock_position) {
-            case 'left':
-              icon._label.x = pos[0] + iconSize * scale * 1.1 * scaleFactor;
-              break;
-            case 'right':
-              icon._label.x = pos[0] - iconSize * scale * 1.1 * scaleFactor;
-              icon._label.x -= icon._label.width / 1.2;
-              break;
-            case 'bottom':
-              icon._label.x = (-icon._label.width/2 +
-                icon.width/2) * scaleFactor +
-                pos[0];
-              icon._label.y = pos[1] - iconSize * scale * 0.9 * scaleFactor;
-              break;
-          }
-          if (this.extension._vertical) {
-            icon._label.y = pos[1];
+          if (icon == nearestIcon) {
+            switch (dock_position) {
+              case 'left':
+                icon._label.x = pos[0] + iconSize * scale * 1.1 * scaleFactor;
+                break;
+              case 'right':
+                icon._label.x = pos[0] - iconSize * scale * 1.1 * scaleFactor;
+                icon._label.x -= icon._label.width / 1.2;
+                break;
+              case 'bottom':
+                icon._label.x =
+                  (-icon._label.width / 2 + icon.width / 2) * scaleFactor +
+                  pos[0];
+                icon._label.y = pos[1] - iconSize * scale * 0.9 * scaleFactor;
+                break;
+            }
+            if (this.extension._vertical) {
+              icon._label.y = pos[1];
+            }
+            // icon._label.opacity = 255;
+          } else {
+            // icon._label.opacity = 0;
           }
         }
       }
@@ -732,11 +759,14 @@ var Animator = class {
 
   _findIcons() {
     let icons = this.dashContainer._findIcons();
-    
+
     this._dotsCount = 0;
     this._iconsCount = icons.length;
 
     icons.forEach((c) => {
+      if (c._label) {
+        // c._label.opacity = 0;
+      }
       if (c._appwell) {
         let wc = c._appwell.app.get_n_windows();
         if (wc > 0) {
@@ -852,8 +882,6 @@ var Animator = class {
     let button = button1 ? 'left' : 'right';
     let pointer = global.get_pointer();
 
-    // log(evt.get_button());
-
     if (this._nearestIcon) {
       let icon = this._nearestIcon;
       // log(`${button} ${pressed} - (${icon._pos}) (${pointer})`);
@@ -900,9 +928,17 @@ var Animator = class {
     }
   }
 
+  _isWithinDash(p) {
+    let x1 = this._dockExtension.x;
+    let y1 = this._dockExtension.y;
+    let x2 = this.dashContainer.x + this.dashContainer.width;
+    let y2 = this.dashContainer.y + this.dashContainer.height;
+    let [px, py] = p;
+    return px >= x1 && px < x2 && py >= y1 && py < y2;
+  }
+
   _onMotionEvent() {
     this._preview = null;
-    this._inDash = true;
     this._onEnterEvent();
   }
 
@@ -911,7 +947,6 @@ var Animator = class {
   }
 
   _onLeaveEvent() {
-    this._inDash = false;
     this._debounceEndAnimation();
   }
 

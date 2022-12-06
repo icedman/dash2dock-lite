@@ -309,6 +309,8 @@ var DockExtension = GObject.registerClass(
         this._onButtonEvent.bind(this),
         'motion-event',
         this._onMotionEvent.bind(this),
+        'leave-event',
+        this._onLeaveEvent.bind(this),
         this
       );
     }
@@ -345,6 +347,16 @@ var DockExtension = GObject.registerClass(
         })
         .forEach((l) => {
           if (l._onMotionEvent) l._onMotionEvent();
+        });
+    }
+
+    _onLeaveEvent() {
+      this.listeners
+        .filter((l) => {
+          return l._enabled;
+        })
+        .forEach((l) => {
+          if (l._onLeaveEvent) l._onLeaveEvent();
         });
     }
   }

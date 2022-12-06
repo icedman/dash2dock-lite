@@ -1,6 +1,9 @@
 # Roadmap
 
 * Add multiple-docks support
+* Separator
+* Panel mode (combine with topbar)
+* Arch Menu support (?)
 
 # Current Issues
 
@@ -8,7 +11,7 @@
 * Space is showing between Apps button & icons - more prominent with vertical layouts
 * Labels not centered
 
-# Release 18
+# Release 19
 
 * Major refactor of the dock - Code cleanup
 * Add dock position - left, right layout

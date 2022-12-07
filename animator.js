@@ -391,14 +391,12 @@ var Animator = class {
         icon._dy = bposcenter[1] - pointer[1];
       }
 
-      let off = (iconSize * scaleFactor) / 2;
       icon._target = pos;
       icon._targetScale = 1;
 
       if (this.extension._vertical) {
-        // icon._target[1] -= off/2 + 8;
+        //
       } else {
-        // icon._target[0] -= off/2 + 8;
         if (pos[1] < this.dashContainer._monitor.height / 2) {
           validPosition = false;
         }
@@ -421,6 +419,11 @@ var Animator = class {
     if (!this._preview && !this._isWithinDash(pointer)) {
       nearestIcon = null;
     }
+
+    if (nearestDistance > iconSize * 1.5 * scaleFactor) {
+      nearestIcon = null;
+    }
+    // log(`${nearestIdx} ${nearestDistance}`);
 
     //---------------------
     // disable animation when:
@@ -451,7 +454,7 @@ var Animator = class {
     let didAnimate = false;
 
     let off = (iconSize * scaleFactor) / 2;
-    let offX = (iconSpacing / 2 - iconSize / 2) * scaleFactor;
+    // let offX = (iconSpacing / 2 - iconSize / 2) * scaleFactor;
 
     animateIcons.forEach((i) => {
       if (!i._pos) return;
@@ -459,13 +462,6 @@ var Animator = class {
       if (!p) return;
       p[0] += off;
       p[1] += off;
-
-      // if (this.extension._vertical) {
-      //   p[1] += offX;
-      // } else {
-      //   p[0] += offX;
-      // }
-
       i._pos = p;
     });
 
@@ -501,11 +497,6 @@ var Animator = class {
       // commit
       animateIcons.forEach((i) => {
         i._target = [i._pos[0] - off, i._pos[1] - off];
-        // if (this.extension._vertical) {
-        //   i._target[1] -= off;
-        // } else {
-        //   i._target[0] -= off;
-        // }
       });
 
       // debug draw
@@ -565,6 +556,9 @@ var Animator = class {
     // todo
     // all icons scale up (scaleJump 0.08) when cursor within hover area
     let scaleJump = 0; // this._inDash ? 0.08 : 0;
+
+    let lastIcon = animateIcons[animateIcons.length-1];
+    let prevIcon = null;
 
     // animate to target scale and position
     // todo .. make this velocity based
@@ -634,6 +628,17 @@ var Animator = class {
       }
 
       if (!isNaN(pos[0]) && !isNaN(pos[1])) {
+        if (prevIcon) {
+          // mitigate issue #39
+          if (icon == lastIcon) {
+            if (this.extension._vertical) {
+              pos[1] = (pos[1] + (prevIcon.y + prevIcon._container.height)*3)/4;
+            } else {
+              pos[0] = (pos[0] + (prevIcon.x + prevIcon._container.width)*3)/4;
+            }
+          }
+        }
+
         icon.set_position(pos[0], pos[1]);
         icon._pos = [...pos];
         icon._scale = scale;
@@ -664,7 +669,10 @@ var Animator = class {
             // icon._label.opacity = 0;
           }
         }
+
+        prevIcon = icon;
       }
+
     });
 
     this._dotsContainer.update({

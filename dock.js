@@ -401,17 +401,11 @@ var Dock = GObject.registerClass(
         pos = 0;
       }
 
-      // See St.Direction position constants
-      // todo - make this reable
-      // remap [ bottom, left, right, top ] >> [ top, right, bottom, left ]
-      // this.extension._position = [2, 3, 1, 0][pos];
       this.extension._position = ['bottom', 'left', 'right', 'top'][pos];
       this.extension._vertical =
         this.extension._position == 'left' ||
         this.extension._position == 'right';
       this._position = this.extension._position;
-
-      log(this._position);
 
       let scaleFactor = this._monitor.geometry_scale;
 

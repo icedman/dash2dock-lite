@@ -452,6 +452,7 @@ var Dock = GObject.registerClass(
         iconSize *= scaleDown;
         dockPadding *= scaleDown;
         distance *= scaleDown;
+        this._projectedWidth = projectedWidth * scaleDown;
       }
       this.extension._effective_edge_distance = distance;
 

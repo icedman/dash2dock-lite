@@ -218,15 +218,14 @@ var Animator = class {
 
     // center the dash
     if (this.extension._vertical) {
-      if (this.dash.height > this.dashContainer.iconSize * 4) {
+      if (this._projectedWidth > this.dashContainer.iconSize * 4) {
         let pad = Math.floor(
-          (this.dashContainer.height - this.dash.height) / 2
+          (this.dashContainer.height - this._projectedWidth) / 2
         );
 
         let new_height = this.dashContainer._leftBox.height * 8;
         new_height += pad;
         new_height /= 9;
-        // pad -= 20 * scaleFactor; // panel height
         if (new_height > 0) {
           this.dashContainer._leftBox.height = new_height;
         }
@@ -936,7 +935,8 @@ var Animator = class {
     let y2 = this.dashContainer.y + this.dashContainer.height;
     if (this.extension._vertical) {
       x1 = this.dashContainer.x;
-      x2 += this._dockExtension.width;
+      x2 += this.dashContainer.width + this._dockExtension.width;
+      y1 = this.dashContainer.y;
     }
     let [px, py] = p;
     return px + pad >= x1 && px - pad < x2 && py + pad >= y1 && py - pad < y2;

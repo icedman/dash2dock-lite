@@ -557,7 +557,7 @@ var Animator = class {
     // all icons scale up (scaleJump 0.08) when cursor within hover area
     let scaleJump = 0; // this._inDash ? 0.08 : 0;
 
-    let lastIcon = animateIcons[animateIcons.length-1];
+    let lastIcon = animateIcons[animateIcons.length - 1];
     let prevIcon = null;
 
     // animate to target scale and position
@@ -613,9 +613,9 @@ var Animator = class {
       if (scale < 1.0) {
         scale = 1.0;
       }
-      scale = scale.toFixed(2);
+      scale = scale.toFixed(3);
 
-      let target_spread = iconSpacing * scaleFactor * scale;
+      let target_spread = Math.floor(iconSpacing * scaleFactor * scale);
       if (this.extension._vertical) {
         icon._container.height = target_spread;
       } else {
@@ -628,14 +628,14 @@ var Animator = class {
       }
 
       if (!isNaN(pos[0]) && !isNaN(pos[1])) {
-        if (prevIcon) {
-          // mitigate issue #39
-          if (icon == lastIcon) {
-            if (this.extension._vertical) {
-              pos[1] = (pos[1] + (prevIcon.y + prevIcon._container.height)*3)/4;
-            } else {
-              pos[0] = (pos[0] + (prevIcon.x + prevIcon._container.width)*3)/4;
-            }
+        // mitigate issue #39
+        if (prevIcon && icon == lastIcon) {
+          if (this.extension._vertical) {
+            pos[1] =
+              (pos[1] + (prevIcon.y + prevIcon._container.height) * 3) / 4;
+          } else {
+            pos[0] =
+              (pos[0] + (prevIcon.x + prevIcon._container.width) * 3) / 4;
           }
         }
 
@@ -672,7 +672,6 @@ var Animator = class {
 
         prevIcon = icon;
       }
-
     });
 
     this._dotsContainer.update({

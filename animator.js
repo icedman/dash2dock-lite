@@ -420,9 +420,6 @@ var Animator = class {
       nearestIcon = null;
     }
 
-    if (nearestDistance > iconSize * 1.5 * scaleFactor) {
-      nearestIcon = null;
-    }
     // log(`${nearestIdx} ${nearestDistance}`);
 
     //---------------------
@@ -932,6 +929,7 @@ var Animator = class {
   }
 
   _isWithinDash(p) {
+    let pad = 0;
     let x1 = this._dockExtension.x;
     let y1 = this._dockExtension.y;
     let x2 = this.dashContainer.x + this.dashContainer.width;
@@ -941,7 +939,7 @@ var Animator = class {
       x2 += this._dockExtension.width;
     }
     let [px, py] = p;
-    return px >= x1 && px < x2 && py >= y1 && py < y2;
+    return px + pad >= x1 && px - pad < x2 && py + pad >= y1 && py - pad < y2;
   }
 
   _onMotionEvent() {

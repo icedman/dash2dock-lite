@@ -28,10 +28,6 @@ SettingsKeys.setKeys({
     default_value: false,
     widget_type: 'switch',
   },
-  'scale-icons': {
-    default_value: 0,
-    widget_type: 'scale',
-  },
   'icon-size': {
     default_value: 0,
     widget_type: 'scale',

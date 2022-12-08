@@ -8,8 +8,14 @@
 # Current Issues
 
 * Startup artifacts showing prior to scaling down
+
+# Release 20
+
+* Fix hovered icon shaking
+* Janky resizing on hover (total dash width shaking)
+* Labels centering
 * Space is showing between Apps button & icons - more prominent with vertical layouts
-* Labels not centered
+
 
 # Release 19
 

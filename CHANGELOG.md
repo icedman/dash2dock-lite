@@ -4,6 +4,7 @@
 * Separator
 * Panel mode (combine with topbar)
 * Arch Menu support (?)
+* Multi-language
 
 # Current Issues
 
@@ -12,9 +13,9 @@
 # Release 20
 
 * Fix hovered icon shaking
-* Janky resizing on hover (total dash width shaking)
-* Labels centering
-* Space is showing between Apps button & icons - more prominent with vertical layouts
+* Fix Janky resizing on hover (total dash width shaking)
+* Fix labels not centering
+* Fix space is showing between Apps button & icons - more prominent with vertical layouts
 
 
 # Release 19

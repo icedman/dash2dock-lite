@@ -71,17 +71,11 @@ var Animator = class {
     this._dockExtension.listeners = this.dashContainer.listeners;
     this._dockExtension.visible = false;
 
-    Main.uiGroup.insert_child_above(this._dotsContainer, this.dashContainer);
-    Main.uiGroup.insert_child_below(this._iconsContainer, this._dotsContainer);
-    Main.uiGroup.insert_child_below(this._background, this.dashContainer);
-    Main.uiGroup.insert_child_below(this._dockExtension, this._background);
-
     this._overlay = new DebugOverlay(
       this.dashContainer._monitor.width,
       this.dashContainer._monitor.height
     );
     this._overlay.name = 'debugOverlay';
-    Main.uiGroup.insert_child_above(this._overlay, this._iconsContainer);
 
     this._enabled = true;
     this._dragging = false;

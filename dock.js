@@ -92,30 +92,37 @@ var Dock = GObject.registerClass(
         trackFullscreen: true,
       });
 
-      if (this.animator._iconsContainer) {
-        Main.uiGroup.remove_child(this.animator._dotsContainer);
-        Main.uiGroup.remove_child(this.animator._iconsContainer);
-        Main.uiGroup.remove_child(this.animator._background);
-        Main.uiGroup.remove_child(this.animator._dockExtension);
-        Main.uiGroup.remove_child(this.animator._overlay);
-        Main.uiGroup.insert_child_above(this.animator._dotsContainer, this);
-        Main.uiGroup.insert_child_below(
-          this.animator._iconsContainer,
-          this.animator._dotsContainer
-        );
-        Main.uiGroup.insert_child_below(
-          this.animator._background,
-          this.animator.dashContainer
-        );
-        Main.uiGroup.insert_child_below(
-          this.animator._dockExtension,
-          this.animator._background
-        );
-        Main.uiGroup.insert_child_above(
-          this.animator._overlay,
-          this.animator._iconsContainer
-        );
-      }
+      this._reparentItems();
+    }
+
+    _reparentItems() {
+      // todo: refactor this
+      // reparent -- rearranges the z-order
+      let reparent = [
+        { c: this.animator._dotsContainer, p: this, above: true },
+        { c: this.animator._iconsContainer, p: this.animator._dotsContainer },
+        { c: this.animator._background, p: this.animator.dashContainer },
+        { c: this.animator._dockExtension, p: this.animator._background },
+        {
+          c: this.animator._overlay,
+          p: this.animator._iconsContainer,
+          above: true,
+        },
+      ];
+
+      reparent.forEach((obj) => {
+        let { c, p, above } = obj;
+        if (c && c.get_parent()) {
+          c.get_parent().remove_child(c);
+        }
+        if (c && p) {
+          if (above) {
+            Main.uiGroup.insert_child_above(c, p);
+          } else {
+            Main.uiGroup.insert_child_below(c, p);
+          }
+        }
+      });
 
       this._onChrome = true;
     }

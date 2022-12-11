@@ -1,6 +1,7 @@
 # Roadmap
 
 * Add multiple-docks support
+* Add more autohide features
 * Separator
 * Panel mode (combine with topbar)
 * Arch Menu support (?)

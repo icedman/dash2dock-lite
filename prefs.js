@@ -145,7 +145,7 @@ function fillPreferencesWindow(window) {
   addMenu(window, builder);
 
   function toggle_experimental() {
-    let exp = SettingsKeys.getValue('experimental-features');
+    let exp = false; // SettingsKeys.getValue('experimental-features');
     builder.get_object('dock-location-row').visible = exp;
     builder.get_object('self-test-row').visible = exp;
   }

@@ -40,9 +40,6 @@ var Dock = GObject.registerClass(
       this.autohider.dashContainer = this;
       this.autohider.animator = this.animator;
 
-      this._leftBox = new St.Widget();
-      this.add_child(this._leftBox);
-
       this.dash = new Dash();
       this.dash.set_name('dash');
       this.dash.add_style_class_name('overview');
@@ -403,6 +400,8 @@ var Dock = GObject.registerClass(
       this.extension._queryDisplay();
 
       let pos = dock_location || 0;
+
+      experimental_features = false;
       // dock position -- [left, right] are experimental
       if (!experimental_features) {
         pos = 0;
@@ -440,9 +439,18 @@ var Dock = GObject.registerClass(
       }
 
       // scale down icons to fit monitor
+      this._scaleDownExcess = 0;
       if (this._icons) {
         let iconSpacing = iconSize * (1.2 + animation_spread / 4);
         let limit = this.extension._vertical ? 0.96 : 0.98;
+
+        if (
+          this.extension.dock_size_limit >= 0.5 &&
+          this.extension.dock_size_limit <= 1.0
+        ) {
+          limit *= this.extension.dock_size_limit;
+        }
+
         let scaleDown = 1.0;
         let maxWidth =
           (this.extension._vertical
@@ -459,7 +467,10 @@ var Dock = GObject.registerClass(
         iconSize *= scaleDown;
         dockPadding *= scaleDown;
         distance *= scaleDown;
-        this._projectedWidth = projectedWidth * scaleDown;
+        let scaleDownWidth = projectedWidth * scaleDown;
+        let diff = projectedWidth - scaleDownWidth;
+        this._scaleDownExcess = diff;
+        this._projectedWidth = scaleDownWidth;
       }
       this.extension._effective_edge_distance = distance;
 

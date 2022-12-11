@@ -210,22 +210,29 @@ var Animator = class {
     }
     this._prevPointer = pointer;
 
+    this.dashContainer.dash.style = '';
+
     // center the dash
     if (this.extension._vertical) {
-      if (this._projectedWidth > this.dashContainer.iconSize * 4) {
-        let pad = Math.floor(
-          (this.dashContainer.height - this._projectedWidth) / 2
-        );
+      if (
+        this.dashContainer._projectedWidth >
+        this.dashContainer.iconSize * 4
+      ) {
+        let width = this.dashContainer.height;
+        let pad = Math.floor((width - this.dashContainer._projectedWidth) / 2);
 
-        let new_height = this.dashContainer._leftBox.height * 8;
-        new_height += pad;
-        new_height /= 9;
-        if (new_height > 0) {
-          this.dashContainer._leftBox.height = new_height;
+        if (pad > 0) {
+          this.dashContainer.dash.style = `padding-top: ${pad}px;`;
         }
       }
-    } else {
-      this.dashContainer._leftBox.height = 0;
+    }
+
+    if (this.dashContainer._scaleDownExcess) {
+      let pad =
+        this.dashContainer._scaleDownExcess /
+        (this.extension._vertical ? 2 : 8);
+      let pos = this.extension._vertical ? 'bottom' : 'right';
+      this.dashContainer.dash.style += `padding-${pos}: ${pad}px;`;
     }
 
     let pivot = new Point();

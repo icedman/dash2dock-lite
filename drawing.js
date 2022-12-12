@@ -22,11 +22,12 @@ function draw_line(ctx, color, width, x, y, x2, y2) {
   ctx.restore();
 }
 
-function draw_circle(ctx, color, x, y, diameter, borderOnly) {
+function draw_circle(ctx, color, x, y, diameter, line_width) {
   ctx.save();
   set_color(ctx, color, 1);
   ctx.arc(x, y, diameter / 2 - diameter / 20, 0, 2 * Math.PI);
-  if (borderOnly) {
+  ctx.setLineWidth(line_width || 0);
+  if (line_width > 0) {
     ctx.stroke();
   } else {
     ctx.fill();
@@ -47,7 +48,7 @@ function draw_rounded_rect(
   ctx.save();
   set_color(ctx, color, 1);
   ctx.translate(x, y);
-  ctx.setLineWidth(line_width);
+  ctx.setLineWidth(line_width || 0);
   ctx.moveTo(border_radius, 0);
   ctx.lineTo(h_size - border_radius, 0);
   // ctx.lineTo(h_size, border_radius);
@@ -67,7 +68,29 @@ function draw_rounded_rect(
   ctx.curveTo(border_radius, v_size, 0, v_size, 0, v_size - border_radius);
   ctx.lineTo(0, border_radius);
   ctx.curveTo(0, border_radius, 0, 0, border_radius, 0);
-  ctx.fill();
+  if (line_width == 0) {
+    ctx.fill();
+  } else {
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function draw_rect(ctx, color, x, y, h_size, v_size, line_width) {
+  ctx.save();
+  set_color(ctx, color, 1);
+  ctx.translate(x, y);
+  ctx.setLineWidth(line_width || 0);
+  ctx.moveTo(0, 0);
+  ctx.lineTo(h_size, 0);
+  ctx.lineTo(h_size, v_size);
+  ctx.lineTo(0, v_size);
+  ctx.lineTo(0, 0);
+  if (line_width == 0) {
+    ctx.fill();
+  } else {
+    ctx.stroke();
+  }
   ctx.restore();
 }
 
@@ -108,6 +131,7 @@ var Drawing = {
   draw_rotated_line,
   draw_line,
   draw_circle,
+  draw_rect,
   draw_rounded_rect,
   draw_text,
 };

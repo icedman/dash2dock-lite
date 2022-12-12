@@ -176,9 +176,17 @@ var Animator = class {
 
     // get monitor scaleFactor
     let scaleFactor = this._getScaleFactor();
-    let iconSize = this.dashContainer.iconSize;
+    let iconSize = Math.floor(this.dashContainer.iconSize);
     let iconSpacing = iconSize * (1.2 + this.extension.animation_spread / 4);
     let effective_edge_distance = this.extension._effective_edge_distance;
+
+    if (!this._posCache || this._posCache.iconSize != iconSize) {
+      this._posCache = {
+        max: -1,
+        min: -1,
+        iconSize,
+      };
+    }
 
     if (this._relayout > 0) {
       this.dashContainer.layout();
@@ -211,7 +219,6 @@ var Animator = class {
     this._prevPointer = pointer;
 
     this.dashContainer.dash.style = '';
-
     // center the dash
     if (this.extension._vertical) {
       if (
@@ -220,7 +227,6 @@ var Animator = class {
       ) {
         let width = this.dashContainer.height;
         let pad = Math.floor((width - this.dashContainer._projectedWidth) / 2);
-
         if (pad > 0) {
           this.dashContainer.dash.style = `padding-top: ${pad}px;`;
         }
@@ -238,8 +244,6 @@ var Animator = class {
     let pivot = new Point();
     pivot.x = 0.5;
     pivot.y = 1.0;
-
-    let existingIcons = this._iconsContainer.get_children();
 
     let validPosition = true;
     let dock_position = this.dashContainer._position;
@@ -416,7 +420,14 @@ var Animator = class {
       this._preview = null;
     }
 
-    if (!this._preview && !this._isWithinDash(pointer)) {
+    let isWithin = this._isWithinDash(pointer);
+    if (isWithin) {
+      this._isWithinCount = (this._isWithinCount || 0) + 1;
+    } else {
+      this._isWithinCount = 0;
+    }
+
+    if (!this._preview && !isWithin) {
       nearestIcon = null;
     }
 
@@ -451,8 +462,6 @@ var Animator = class {
     let didAnimate = false;
 
     let off = (iconSize * scaleFactor) / 2;
-    // let offX = (iconSpacing / 2 - iconSize / 2) * scaleFactor;
-
     animateIcons.forEach((i) => {
       if (!i._pos) return;
       let p = [...i._pos];
@@ -499,36 +508,8 @@ var Animator = class {
       // debug draw
       // todo move to overlay class
       if (this.extension.debug_visual) {
-        this._overlay.onDraw = (ctx) => {
-          anim.debugDraw.forEach((d) => {
-            // log(`${d.t} ${d.x} ${d.y}`);
-            switch (d.t) {
-              case 'line':
-                Drawing.draw_line(
-                  ctx,
-                  d.c,
-                  1,
-                  d.x - monitor.x,
-                  d.y - monitor.y,
-                  d.x2,
-                  d.y2,
-                  true
-                );
-                break;
-              case 'circle':
-                Drawing.draw_circle(
-                  ctx,
-                  d.c,
-                  d.x - monitor.x,
-                  d.y - monitor.y,
-                  d.d,
-                  true
-                );
-                break;
-            }
-          });
-        };
-
+        this._overlay.state.monitor = monitor;
+        this._overlay.objects = anim.debugDraw;
         this._overlay.visible = this.extension.debug_visual;
         this._overlay.set_position(monitor.x, monitor.y);
         this._overlay.set_size(monitor.width, monitor.height);
@@ -553,9 +534,7 @@ var Animator = class {
     // todo
     // all icons scale up (scaleJump 0.08) when cursor within hover area
     let scaleJump = 0; // this._inDash ? 0.08 : 0;
-
-    let lastIcon = animateIcons[animateIcons.length - 1];
-    let prevIcon = null;
+    let { max, min } = this._posCache;
 
     // animate to target scale and position
     // todo .. make this velocity based
@@ -606,17 +585,24 @@ var Animator = class {
         has_errors = true;
       }
 
-      // minimize icon shaking
       if (scale < 1.0) {
         scale = 1.0;
       }
-      scale = scale.toFixed(3);
+      // scale = scale.toFixed(3);
 
-      let target_spread = Math.floor(iconSpacing * scaleFactor * scale);
+      let targetSpread = Math.floor(iconSpacing * scaleFactor * scale);
+
+      // if (icon._icon.icon_name == 'spotify-client') {
+      //   targetSpread += iconSize * scaleFactor;
+      //   icon._img.translation_x = -iconSize/2 * scaleFactor;
+      // } else {
+      //   icon._img.translation_x = 0;
+      // }
+
       if (this.extension._vertical) {
-        icon._container.height = target_spread;
+        icon._container.height = targetSpread;
       } else {
-        icon._container.width = target_spread;
+        icon._container.width = targetSpread;
       }
 
       // scale
@@ -625,14 +611,19 @@ var Animator = class {
       }
 
       if (!isNaN(pos[0]) && !isNaN(pos[1])) {
-        // mitigate issue #39
-        if (prevIcon && icon == lastIcon) {
-          if (this.extension._vertical) {
-            pos[1] =
-              (pos[1] + (prevIcon.y + prevIcon._container.height) * 3) / 4;
+        if (didAnimate && scale == 1.0) {
+          if (!icon._anchor) {
+            icon._anchor = pos;
           } else {
-            pos[0] =
-              (pos[0] + (prevIcon.x + prevIcon._container.width) * 3) / 4;
+            let coef = 1 + this._isWithinCount / 8;
+            icon._anchor[ix] *= coef;
+            icon._anchor[ix] += pos[ix];
+            icon._anchor[ix] /= coef + 1;
+            icon._anchor[iy] = pos[iy];
+          }
+          let diff = Math.sqrt(icon._anchor[ix] - pos[ix]);
+          if (diff < 2) {
+            pos = [...icon._anchor];
           }
         }
 
@@ -661,13 +652,8 @@ var Animator = class {
             if (this.extension._vertical) {
               icon._label.y = pos[1];
             }
-            // icon._label.opacity = 255;
-          } else {
-            // icon._label.opacity = 0;
           }
         }
-
-        prevIcon = icon;
       }
     });
 
@@ -702,8 +688,8 @@ var Animator = class {
         scaleFactor,
         position: this.dashContainer._position,
         vertical: this.extension._vertical,
-        dashContainer: this.dashContainer,
         panel_mode: this.extension.panel_mode,
+        dashContainer: this.dashContainer,
       });
 
       if (this.extension._disable_borders && this._background.width > 0) {

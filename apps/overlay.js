@@ -10,7 +10,7 @@ const Drawing = Me.imports.drawing.Drawing;
 
 var DebugOverlay = GObject.registerClass(
   {},
-  class DebugOverlay extends Clutter.Actor {
+  class D2DLDebugOverlay extends Clutter.Actor {
     _init(x, y) {
       super._init();
 
@@ -19,7 +19,9 @@ var DebugOverlay = GObject.registerClass(
 
       this.state = {
         color: [0.8, 0.25, 0.15, 1],
+        monitor: { x: 0, y: 0, width: 0, height: 0 },
       };
+      this.objects = [];
 
       this._canvas = new Clutter.Canvas();
       this._canvas.connect('draw', this.on_draw.bind(this));
@@ -28,6 +30,16 @@ var DebugOverlay = GObject.registerClass(
       this.set_size(this._width, this._height);
       this.set_content(this._canvas);
       this.reactive = false;
+    }
+
+    resize(width, height) {
+      if (this._width != width || this._height != height) {
+        this._width = width;
+        this._height = height;
+        this.set_size(this._width, this._height);
+        this._canvas.set_size(this._width, this._height);
+        this._canvas.invalidate();
+      }
     }
 
     redraw() {
@@ -49,28 +61,41 @@ var DebugOverlay = GObject.registerClass(
 
       ctx.save();
 
-      // ctx.translate(width / 2, height / 2);
-      // Drawing.draw_line(
-      //   ctx,
-      //   this.state.color,
-      //   1,
-      //   0,
-      //   0,
-      //   this._width,
-      //   this._height
-      // );
-
-      if (this.onDraw) {
-        this.onDraw(ctx);
-      }
-
-      // let bgSize = size * 0.7;
-      // let offset = size - bgSize;
-      // Drawing.draw_circle(ctx, this.state.color, 0, 0, bgSize);
+      this.onDraw(ctx);
 
       ctx.restore();
-
       ctx.$dispose();
+    }
+
+    onDraw(ctx) {
+      let monitor = this.state.monitor;
+      this.objects.forEach((d) => {
+        // log(`${d.t} ${d.x} ${d.y}`);
+        switch (d.t) {
+          case 'line':
+            Drawing.draw_line(
+              ctx,
+              d.c,
+              d.w || 1,
+              d.x - monitor.x,
+              d.y - monitor.y,
+              d.x2,
+              d.y2,
+              true
+            );
+            break;
+          case 'circle':
+            Drawing.draw_circle(
+              ctx,
+              d.c,
+              d.x - monitor.x,
+              d.y - monitor.y,
+              d.d,
+              true
+            );
+            break;
+        }
+      });
     }
 
     destroy() {}

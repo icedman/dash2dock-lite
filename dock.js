@@ -608,7 +608,7 @@ var Dock = GObject.registerClass(
       let scaleFactor = this._monitor.geometry_scale;
       let travel =
         (this.iconSize / 3) *
-        (this.extension.animation_rise * 1.5) *
+        ((0.1 + this.extension.animation_rise) * 1.5) *
         scaleFactor;
       icon._img.translation_y = 0;
 

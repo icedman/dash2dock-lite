@@ -1,99 +1,230 @@
-var Animation = (animateIcons, pointer, settings) => {
-  let [px, py] = pointer;
-  let _firstIcon = animateIcons[0];
-  let _secondIcon = animateIcons[1];
-  let _lastIcon = animateIcons[animateIcons.length - 1];
-  let first = _firstIcon._pos || [0, 0];
-  let second = _secondIcon._pos || [0, 0];
-  let last = _lastIcon._pos || [0, 0];
-  let nsz = _firstIcon.width;
-  // second[0] - first[0];
+function gen_frames(settings) {
+  let { iconsCount, iconSize, iconSpacing, pointer, width, height, debugDraw } =
+    settings;
 
-  let sz = nsz * (6 + 2 * settings.animation_spread);
-  let szr = sz / 2;
-  let center = [px, first[1]];
+  iconSpacing = Math.floor(
+    iconSpacing +
+      iconSpacing * (settings.vertical ? 0.1 : 0.2) * settings.animation_spread
+  );
 
+  let dashWidth = width;
   if (settings.vertical) {
-    center = [first[0], py];
+    dashWidth = height;
   }
 
-  // spread
-  let pad =
-    settings.iconSize *
-    4 *
-    settings.scaleFactor *
-    (settings.animation_spread / 2);
+  let frames = [];
+  for (let i = 0; i < iconsCount; i++) {
+    frames.push({
+      idx: i,
+      x: 0,
+      y: 0,
+      w: iconSpacing,
+      h: iconSpacing,
+      l: iconSpacing,
+      r: 0,
+      p: 1,
+    });
+  }
 
-  // compute diameter
-  animateIcons.forEach((i) => {
-    i._d = nsz;
+  function total_length() {
+    let tl = 0;
+    frames.forEach((f) => {
+      tl += f.l;
+    });
+    return tl;
+  }
 
-    // distance
-    let dx = i._pos[0] - center[0];
+  function reposition() {
+    let tl = total_length();
+    let r1 = dashWidth / 2 - tl / 2;
+    frames.forEach((f) => {
+      f.r = r1;
+      r1 += f.l;
+    });
+  }
+
+  reposition();
+
+  if (pointer) {
+    let left = [];
+    let center = [];
+    let right = [];
+
+    let thresh = iconSpacing * 3;
+    let thresh2 = thresh / 2;
+    let cx = pointer[0];
+    let cy = pointer[1];
+
+    let doLeft = true;
+    let doRight = false;
+    let totalP = 0;
+
+    let pp = cx;
     if (settings.vertical) {
-      dx = i._pos[1] - center[1];
-    }
-    let dst = dx * dx;
-    if (dst < szr * szr) {
-      let dd = 1.0 - Math.abs(dx) / szr;
-      i._d = nsz + nsz * settings.animation_magnify * settings.scaleFactor * dd;
+      pp = cy;
     }
 
-    i._pos2 = [...i._pos];
-    i._targetScale = i._d / nsz;
-
-    // rise
-    if (settings.vertical) {
-      if (settings.position == 1) {
-        i._pos2[0] -= (i._d - nsz) * 0.8 * settings.animation_rise;
+    frames.forEach((f) => {
+      let ir = f.r + f.l / 2;
+      let dr = ir - pp;
+      dr = Math.sqrt(dr * dr);
+      f.p = 1;
+      if (dr < thresh2) {
+        f.in = true;
+        let p = 1 - dr / thresh2;
+        f.p = 1 + p * 0.8;
+        totalP += f.p;
+        doLeft = false;
+        center.push(f);
       } else {
-        i._pos2[0] += (i._d - nsz) * 0.8 * settings.animation_rise;
+        if (!doLeft) {
+          doRight = true;
+        }
       }
+      if (doLeft) {
+        left.push(f);
+      }
+      if (doRight) {
+        right.push(f);
+      }
+    });
+
+    if (totalP > 0) {
+      let tw = (iconsCount + 1) * iconSpacing;
+      let r1 = dashWidth / 2 - tw / 2;
+      let leftX = r1;
+      left.forEach((f) => {
+        f.r = r1;
+        r1 += f.l;
+        leftX = r1;
+      });
+      r1 = dashWidth / 2 + tw / 2 - right.length * iconSpacing;
+      right.forEach((f) => {
+        f.r = r1;
+        r1 += f.l;
+      });
+      let rightX =
+        leftX + (iconsCount - left.length - right.length + 1) * iconSpacing;
+      let area = rightX - leftX;
+
+      let usedArea = 0;
+      center.forEach((f) => {
+        f.r = leftX;
+        f.l = area * (f.p / totalP);
+        leftX += f.l;
+        usedArea += f.l;
+      });
+
+      let diff = area - usedArea;
+      center[0].l += diff;
+    }
+
+    if (settings.vertical) {
+      debugDraw.push({
+        t: 'circle',
+        x: settings.x + iconSize / 2,
+        y: settings.y + cy,
+        d: thresh,
+        c: [1, 1, 0, 1],
+      });
     } else {
-      i._pos2[1] -= (i._d - nsz) * 0.8 * settings.animation_rise;
+      debugDraw.push({
+        t: 'circle',
+        x: settings.x + cx,
+        y: settings.y + iconSize / 2,
+        d: thresh,
+        c: [1, 1, 0, 1],
+      });
+    }
+  }
+
+  frames.forEach((f) => {
+    if (settings.vertical) {
+      f.y = Math.floor(f.r);
+      f.h = Math.floor(f.l);
+    } else {
+      f.x = Math.floor(f.r);
+      f.w = Math.floor(f.l);
     }
   });
 
-  let w1 = last[0] - first[0];
-  let w2 =
-    animateIcons[animateIcons.length - 1]._pos2[0] - animateIcons[0]._pos2[0];
+  return frames;
+}
 
-  animateIcons.forEach((i) => {
-    i._pos = i._pos2;
-    i._previousPos = [...i._pos];
-  });
+var Animation = (animateIcons, pointer, settings) => {
+  if (!animateIcons.length) return;
+  let _firstIcon = animateIcons[0];
+  let _lastIcon = animateIcons[animateIcons.length - 1];
+  let first = _firstIcon._pos || [0, 0];
+  let last = _lastIcon._pos || [0, 0];
 
   let debugDraw = [];
-  debugDraw = animateIcons.map((i) => ({
-    t: 'circle',
-    x: i._pos[0],
-    y: i._pos[1],
-    d: i._d,
-    c: [1, 0, 0, 1],
-  }));
-
-  // debugDraw = debugDraw.splice(0,2);
-
-  debugDraw.push({
-    t: 'circle',
-    x: center[0],
-    y: center[1],
-    d: sz,
-    c: [1, 1, 0, 1],
+  let frames = gen_frames({
+    ...settings,
+    pointer: [
+      settings.pointer[0] - settings.x,
+      settings.pointer[1] - settings.y,
+    ],
+    iconsCount: settings.iconsCount + 2,
+    debugDraw,
+  });
+  let lastIdx = frames.length - 1;
+  let padLeft = Math.floor(frames[0].l);
+  let padRight = Math.floor(frames[lastIdx].l);
+  frames = frames.filter((i) => {
+    return i.idx != 0 && i.idx != lastIdx;
   });
 
-  // debugDraw.push({
-  //   t: 'line',
-  //   x: first[0],
-  //   y: first[1],
-  //   x2: last[1],
-  //   y2: last[1],
-  //   c: [1, 0, 1, 1],
-  // });
+  // todo.. vertical
+  if (settings.vertical) {
+    frames.forEach((i) => {
+      debugDraw.push({
+        t: 'circle',
+        y: i.y + settings.y + i.h / 2,
+        x: i.x + settings.x + settings.iconSize - (i.h - settings.iconSize) / 2,
+        d: i.h,
+        c: [1, 0, 0, 1],
+      });
+    });
+  } else {
+    frames.forEach((i) => {
+      debugDraw.push({
+        t: 'circle',
+        x: i.x + settings.x + i.w / 2,
+        y: i.y + settings.y + settings.iconSize - (i.w - settings.iconSize) / 2,
+        d: i.w,
+        c: [1, 0, 0, 1],
+      });
+    });
+  }
+
+  let idx = 0;
+  animateIcons.forEach((a) => {
+    let f = frames[idx++];
+    if (f && f.p > 1) {
+      f.p *= 0.6 * (1 + settings.animation_magnify);
+
+      // rise
+      let sz = settings.iconSize * f.p - settings.iconSize;
+      if (settings.vertical) {
+        if (settings.position == 1) {
+          a._pos[0] -= sz * 0.8 * settings.animation_rise;
+        } else {
+          a._pos[0] += sz * 0.8 * settings.animation_rise;
+        }
+      } else {
+        a._pos[1] -= sz * 0.8 * settings.animation_rise;
+      }
+    }
+    a._targetScale = f.p;
+    a._targetSpread = f.w;
+  });
 
   return {
     first,
     last,
+    padLeft,
+    padRight,
     debugDraw,
   };
 };

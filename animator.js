@@ -397,6 +397,7 @@ var Animator = class {
 
       icon._target = pos;
       icon._targetScale = 1;
+      icon._targetSpread = iconSpacing;
 
       if (this.extension._vertical) {
         //
@@ -491,19 +492,40 @@ var Animator = class {
     // animation behavior
     if (animateIcons.length && nearestIcon) {
       let animation_type = this.extension.animation_type;
-      let anim = Animation(animateIcons, [px, py], {
+      // let anim = Animation(animateIcons, [px, py], {
+      //   iconSize,
+      //   scaleFactor: 1.0,
+      //   animation_rise: this.extension.animation_rise * ANIM_ICON_RAISE,
+      //   animation_magnify: this.extension.animation_magnify * ANIM_ICON_SCALE,
+      //   animation_spread: this.extension.animation_spread,
+      //   vertical: this.extension._vertical ? this.dashContainer._position : 0,
+      // });
+
+      let vertical = this.extension._vertical
+        ? this.dashContainer._position
+        : 0;
+      let anim = Animation(animateIcons, pointer, {
+        iconsCount: animateIcons.length,
         iconSize,
+        iconSpacing,
+        pointer,
+        x: this.dashContainer.x,
+        y: this.dashContainer.y,
+        width: this.dashContainer.width,
+        height: this.dashContainer.height,
         scaleFactor: 1.0,
         animation_rise: this.extension.animation_rise * ANIM_ICON_RAISE,
         animation_magnify: this.extension.animation_magnify * ANIM_ICON_SCALE,
         animation_spread: this.extension.animation_spread,
-        vertical: this.extension._vertical ? this.dashContainer._position : 0,
+        vertical,
       });
 
       // commit
       animateIcons.forEach((i) => {
         i._target = [i._pos[0] - off, i._pos[1] - off];
       });
+
+      this.dashContainer.dash.style += `padding-left: ${anim.padLeft}px; padding-right: ${anim.padRight}px;`;
 
       // debug draw
       // todo move to overlay class
@@ -590,7 +612,8 @@ var Animator = class {
       }
       // scale = scale.toFixed(3);
 
-      let targetSpread = Math.floor(iconSpacing * scaleFactor * scale);
+      let targetSpread = icon._targetSpread;
+      // Math.floor(iconSpacing * scaleFactor * scale);
 
       // if (icon._icon.icon_name == 'spotify-client') {
       //   targetSpread += iconSize * scaleFactor;

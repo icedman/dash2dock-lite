@@ -206,14 +206,16 @@ var Animation = (animateIcons, pointer, settings) => {
 
       // rise
       let sz = settings.iconSize * f.p - settings.iconSize;
-      if (settings.vertical) {
-        if (settings.position == 1) {
-          a._pos[0] -= sz * 0.8 * settings.animation_rise;
+      if (sz > 0) {
+        if (settings.vertical) {
+          if (settings.position == 'right') {
+            a._pos[0] -= sz * 0.8 * settings.animation_rise;
+          } else {
+            a._pos[0] += sz * 0.8 * settings.animation_rise;
+          }
         } else {
-          a._pos[0] += sz * 0.8 * settings.animation_rise;
+          a._pos[1] -= sz * 0.8 * settings.animation_rise;
         }
-      } else {
-        a._pos[1] -= sz * 0.8 * settings.animation_rise;
       }
     }
     a._targetScale = f.p;

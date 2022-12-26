@@ -1,6 +1,6 @@
 # Roadmap
 
-* Features frozen - Pleae migrate to Anino Dock
+* Features frozen - Please migrate to Anino Dock
 
 # Current Issues
 

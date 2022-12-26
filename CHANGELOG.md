@@ -1,15 +1,16 @@
 # Roadmap
 
-* Add multiple-docks support
-* Add more autohide features
-* Separator
-* Panel mode (combine with topbar)
-* Arch Menu support (?)
-* Multi-language
+* Features frozen - Pleae migrate to Anino Dock
 
 # Current Issues
 
 * Startup artifacts showing prior to scaling down
+* Autohide disabled at certain monitor layouts
+
+# Release 21
+
+* Fix shaking animation
+* Fix bounce for zero rise settings
 
 # Release 20
 

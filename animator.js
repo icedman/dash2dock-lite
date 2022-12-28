@@ -824,7 +824,11 @@ var Animator = class {
     return icons;
   }
 
-  _invisible(hide) {
+  _invisible(hide, lock) {
+    if (lock !== undefined) {
+      this._lock = lock;
+    }
+    if (this._lock === true && this._isHidden) return;
     this._isHidden = hide;
     this._iconsContainer.opacity = hide ? 0 : 255;
     this._dotsContainer.opacity = hide ? 0 : 255;

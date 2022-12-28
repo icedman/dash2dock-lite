@@ -1,11 +1,14 @@
 function gen_frames(settings) {
-  let { iconsCount, iconSize, iconSpacing, pointer, width, height, debugDraw } =
-    settings;
-
-  iconSpacing = Math.floor(
-    iconSpacing +
-      iconSpacing * (settings.vertical ? 0.1 : 0.2) * settings.animation_spread
-  );
+  let {
+    iconsCount,
+    iconSize,
+    iconSpacing,
+    scaleFactor,
+    pointer,
+    width,
+    height,
+    debugDraw,
+  } = settings;
 
   let dashWidth = width;
   if (settings.vertical) {
@@ -50,7 +53,7 @@ function gen_frames(settings) {
     let center = [];
     let right = [];
 
-    let thresh = iconSpacing * 3;
+    let thresh = iconSpacing * 3.5;
     let thresh2 = thresh / 2;
     let cx = pointer[0];
     let cy = pointer[1];
@@ -72,7 +75,7 @@ function gen_frames(settings) {
       if (dr < thresh2) {
         f.in = true;
         let p = 1 - dr / thresh2;
-        f.p = 1 + p * 0.8;
+        f.p = 1 + p * 0.7;
         totalP += f.p;
         doLeft = false;
         center.push(f);
@@ -110,7 +113,7 @@ function gen_frames(settings) {
       let usedArea = 0;
       center.forEach((f) => {
         f.r = leftX;
-        f.l = area * (f.p / totalP);
+        f.l = Math.floor(area * (f.p / totalP));
         leftX += f.l;
         usedArea += f.l;
       });
@@ -139,12 +142,13 @@ function gen_frames(settings) {
   }
 
   frames.forEach((f) => {
+    f.l = Math.floor(f.l);
     if (settings.vertical) {
       f.y = Math.floor(f.r);
-      f.h = Math.floor(f.l);
+      f.h = f.l;
     } else {
       f.x = Math.floor(f.r);
-      f.w = Math.floor(f.l);
+      f.w = f.l;
     }
   });
 
@@ -194,7 +198,12 @@ var Animation = (animateIcons, pointer, settings) => {
       debugDraw.push({
         t: 'circle',
         y: i.y + settings.y + i.h / 2,
-        x: i.x + settings.x + settings.iconSize - (i.h - settings.iconSize) / 2,
+        x:
+          i.x +
+          settings.x +
+          settings.iconSize +
+          (i.h - settings.iconSize) /
+            (settings.dock_position == 'left' ? 2 : -2),
         d: i.h,
         c: [1, 0, 0, 1],
       });
@@ -232,7 +241,7 @@ var Animation = (animateIcons, pointer, settings) => {
       }
     }
     a._targetScale = f.p;
-    a._targetSpread = f.w;
+    a._targetSpread = f.l;
   });
 
   return {

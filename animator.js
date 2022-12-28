@@ -218,6 +218,8 @@ var Animator = class {
     }
     this._prevPointer = pointer;
 
+    let padEnd = 0;
+    let padEndPos = '';
     this.dashContainer.dash.style = '';
 
     // center the dash
@@ -402,7 +404,7 @@ var Animator = class {
 
       icon._target = pos;
       icon._targetScale = 1;
-      icon._targetSpread = iconSpacing;
+      icon._targetSpread = iconSpacing * scaleFactor;
 
       if (this.extension._vertical) {
         //
@@ -505,6 +507,7 @@ var Animator = class {
         iconsCount: animateIcons.length,
         iconSize,
         iconSpacing,
+        dock_position,
         pointer,
         x: this.dashContainer.x,
         y: this.dashContainer.y,
@@ -522,8 +525,6 @@ var Animator = class {
         i._target = [i._pos[0] - off, i._pos[1] - off];
       });
 
-      let padEnd = 0;
-      let padEndPos = '';
       this.dashContainer.dash.style = '';
 
       {

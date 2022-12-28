@@ -150,8 +150,7 @@ class Extension {
   }
 
   startUp() {
-    // this._debouncedUpdateStyle();
-    this.dashContainer.animator._iconsContainer.opacity = 0;
+    this.dashContainer.animator._invisible(true, true);
 
     // todo... refactor this
     if (!this._startupSeq) {
@@ -162,7 +161,13 @@ class Extension {
       this._startupSeq = this._hiTimer.runSequence([
         { func, delay: 50 },
         { func, delay: 250 },
-        { func, delay: 500 },
+        { func, delay: this._vertical ? 500 : 0 },
+        {
+          func: () => {
+            this.dashContainer.animator._invisible(false, false);
+          },
+          delay: 50,
+        },
       ]);
     } else {
       this._hiTimer.runSequence(this._startupSeq);

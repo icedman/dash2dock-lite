@@ -20,11 +20,11 @@ let _preferredIconSizes = null;
 
 var Dock = GObject.registerClass(
   {},
-  class Dock extends St.BoxLayout {
+  class Dock extends St.Widget {
     _init() {
       super._init({
         name: 'd2dldotsContainer',
-        vertical: true,
+        // vertical: true,
         reactive: true,
         track_hover: true,
       });
@@ -482,7 +482,7 @@ var Dock = GObject.registerClass(
       this.iconSize = iconSize;
 
       this.dash.visible = true;
-      this.vertical = !this.extension._vertical;
+      // this.vertical = !this.extension._vertical;
 
       // check should disable hide
       this._disableAutohide = false;

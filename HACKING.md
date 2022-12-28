@@ -47,3 +47,7 @@ theme_ctx = St.ThemeContext.get_for_stage(global.stage)
 theme = theme_ctx.get_theme();
 theme.load_stylesheet(file);
 theme.unload_stylesheet(file);
+
+## coolest animation
+
+https://github.com/PuruVJ/macos-web-svelte-dock

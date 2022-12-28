@@ -219,16 +219,21 @@ var Animator = class {
     this._prevPointer = pointer;
 
     this.dashContainer.dash.style = '';
+
     // center the dash
-    if (this.extension._vertical) {
-      if (
-        this.dashContainer._projectedWidth >
-        this.dashContainer.iconSize * 4
-      ) {
-        let width = this.dashContainer.height;
-        let pad = Math.floor((width - this.dashContainer._projectedWidth) / 2);
-        if (pad > 0) {
-          this.dashContainer.dash.style = `padding-top: ${pad}px;`;
+    {
+      let width = this.extension._vertical
+        ? this.dashContainer.height
+        : this.dashContainer.width;
+      let padStart = Math.floor(
+        width / scaleFactor / 2 - (this._iconsCount / 2) * iconSpacing
+      );
+      // note: provide unscale values to styles
+      if (padStart > 0) {
+        if (this.extension._vertical) {
+          this.dashContainer.dash.style = `padding-top: ${padStart}px;`;
+        } else {
+          this.dashContainer.dash.style = `padding-left: ${padStart}px;`;
         }
       }
     }
@@ -492,14 +497,6 @@ var Animator = class {
     // animation behavior
     if (animateIcons.length && nearestIcon) {
       let animation_type = this.extension.animation_type;
-      // let anim = Animation(animateIcons, [px, py], {
-      //   iconSize,
-      //   scaleFactor: 1.0,
-      //   animation_rise: this.extension.animation_rise * ANIM_ICON_RAISE,
-      //   animation_magnify: this.extension.animation_magnify * ANIM_ICON_SCALE,
-      //   animation_spread: this.extension.animation_spread,
-      //   vertical: this.extension._vertical ? this.dashContainer._position : 0,
-      // });
 
       let vertical = this.extension._vertical
         ? this.dashContainer._position
@@ -513,7 +510,7 @@ var Animator = class {
         y: this.dashContainer.y,
         width: this.dashContainer.width,
         height: this.dashContainer.height,
-        scaleFactor: 1.0,
+        scaleFactor,
         animation_rise: this.extension.animation_rise * ANIM_ICON_RAISE,
         animation_magnify: this.extension.animation_magnify * ANIM_ICON_SCALE,
         animation_spread: this.extension.animation_spread,
@@ -525,7 +522,32 @@ var Animator = class {
         i._target = [i._pos[0] - off, i._pos[1] - off];
       });
 
-      this.dashContainer.dash.style += `padding-left: ${anim.padLeft}px; padding-right: ${anim.padRight}px;`;
+      let padEnd = 0;
+      let padEndPos = '';
+      this.dashContainer.dash.style = '';
+
+      {
+        let width = this.extension._vertical
+          ? this.dashContainer.height
+          : this.dashContainer.width;
+
+        let padStart = Math.floor(
+          width / scaleFactor / 2 -
+            ((this._iconsCount + 1) / 2) * anim.iconSpacing
+        );
+        // note: provide unscale values to styles
+        if (padStart > 0) {
+          if (this.extension._vertical) {
+            this.dashContainer.dash.style = `padding-top: ${padStart}px; padding-bottom: ${
+              padEnd + anim.padRight
+            }px;`;
+          } else {
+            this.dashContainer.dash.style = `padding-left: ${
+              padStart // + anim.padLeft
+            }px; padding-right: ${anim.padRight + padEnd}px;`;
+          }
+        }
+      }
 
       // debug draw
       // todo move to overlay class

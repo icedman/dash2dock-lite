@@ -158,9 +158,22 @@ var Animation = (animateIcons, pointer, settings) => {
   let first = _firstIcon._pos || [0, 0];
   let last = _lastIcon._pos || [0, 0];
 
+  let spread = settings.animation_spread;
+  let magnify = settings.animation_magnify;
+  if (spread < 0.2) {
+    magnify *= 0.8;
+  }
+  if (magnify > 0.5 && spread < 0.55) {
+    spread += 0.55;
+  }
+  let iconSpacing =
+    settings.iconSpacing +
+    settings.iconSpacing * (settings.vertical ? 0.1 : 0.2) * spread;
+
   let debugDraw = [];
   let frames = gen_frames({
     ...settings,
+    iconSpacing: Math.floor(iconSpacing * settings.scaleFactor),
     pointer: [
       settings.pointer[0] - settings.x,
       settings.pointer[1] - settings.y,
@@ -202,7 +215,7 @@ var Animation = (animateIcons, pointer, settings) => {
   animateIcons.forEach((a) => {
     let f = frames[idx++];
     if (f && f.p > 1) {
-      f.p *= 0.6 * (1 + settings.animation_magnify);
+      f.p *= 0.6 * (1 + magnify);
 
       // rise
       let sz = settings.iconSize * f.p - settings.iconSize;
@@ -227,6 +240,7 @@ var Animation = (animateIcons, pointer, settings) => {
     last,
     padLeft,
     padRight,
+    iconSpacing,
     debugDraw,
   };
 };

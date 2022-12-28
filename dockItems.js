@@ -385,11 +385,11 @@ var DockBackground = GObject.registerClass(
         dashContainer,
       } = params;
 
+      padding *= 0.5;
+
       let p1 = first.get_transformed_position();
       let p2 = last.get_transformed_position();
       if (!isNaN(p1[0]) && !isNaN(p1[1])) {
-        let padding = iconSize * 0.25 * scaleFactor;
-
         // bottom
         this.x = p1[0] - padding;
         this.y = first._fixedPosition[1] - padding; // p1[1] - padding

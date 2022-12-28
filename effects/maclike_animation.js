@@ -159,7 +159,7 @@ var Animation = (animateIcons, pointer, settings) => {
     magnify *= 0.8;
   }
   if (magnify > 0.5 && spread < 0.55) {
-    spread = 0.55 + (spread * 0.2);
+    spread = 0.55 + spread * 0.2;
   }
   let iconSpacing =
     settings.iconSpacing +
@@ -188,14 +188,14 @@ var Animation = (animateIcons, pointer, settings) => {
     frames.forEach((i) => {
       debugDraw.push({
         t: 'circle',
-        y: i.y + settings.y + i.h / 2,
+        y: i.r + settings.y + i.l / 2,
         x:
           i.x +
           settings.x +
           settings.iconSize +
-          (i.h - settings.iconSize) /
+          (i.l - settings.iconSize) /
             (settings.dock_position == 'left' ? 2 : -2),
-        d: i.h,
+        d: i.l,
         c: [1, 0, 0, 1],
       });
     });
@@ -203,9 +203,9 @@ var Animation = (animateIcons, pointer, settings) => {
     frames.forEach((i) => {
       debugDraw.push({
         t: 'circle',
-        x: i.x + settings.x + i.w / 2,
-        y: i.y + settings.y + settings.iconSize - (i.w - settings.iconSize) / 2,
-        d: i.w,
+        x: i.r + settings.x + i.l / 2,
+        y: i.y + settings.y + settings.iconSize - (i.l - settings.iconSize) / 2,
+        d: i.l,
         c: [1, 0, 0, 1],
       });
     });

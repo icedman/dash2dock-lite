@@ -21,8 +21,6 @@ function gen_frames(settings) {
       idx: i,
       x: 0,
       y: 0,
-      w: iconSpacing,
-      h: iconSpacing,
       l: iconSpacing,
       r: 0,
       p: 1,
@@ -143,13 +141,6 @@ function gen_frames(settings) {
 
   frames.forEach((f) => {
     f.l = Math.floor(f.l);
-    if (settings.vertical) {
-      f.y = Math.floor(f.r);
-      f.h = f.l;
-    } else {
-      f.x = Math.floor(f.r);
-      f.w = f.l;
-    }
   });
 
   return frames;
@@ -168,7 +159,7 @@ var Animation = (animateIcons, pointer, settings) => {
     magnify *= 0.8;
   }
   if (magnify > 0.5 && spread < 0.55) {
-    spread += 0.55;
+    spread = 0.55 + (spread * 0.2);
   }
   let iconSpacing =
     settings.iconSpacing +

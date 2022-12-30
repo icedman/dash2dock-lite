@@ -7,13 +7,9 @@ function gen_frames(settings) {
     pointer,
     width,
     height,
+    dashWidth,
     debugDraw,
   } = settings;
-
-  let dashWidth = width;
-  if (settings.vertical) {
-    dashWidth = height;
-  }
 
   let frames = [];
   for (let i = 0; i < iconsCount; i++) {
@@ -153,6 +149,12 @@ var Animation = (animateIcons, pointer, settings) => {
   let first = _firstIcon._pos || [0, 0];
   let last = _lastIcon._pos || [0, 0];
 
+  let dashWidth = settings.width;
+  if (settings.vertical) {
+    dashWidth = settings.height;
+  }
+
+  // spread and magnify cap
   let spread = settings.animation_spread;
   let magnify = settings.animation_magnify;
   if (spread < 0.2) {
@@ -165,9 +167,18 @@ var Animation = (animateIcons, pointer, settings) => {
     settings.iconSpacing +
     settings.iconSpacing * (settings.vertical ? 0.1 : 0.2) * spread;
 
+  // spacing cap
+  if (
+    iconSpacing * (settings.iconsCount + 1) >
+    dashWidth / settings.scaleFactor
+  ) {
+    iconSpacing = dashWidth / settings.scaleFactor / (settings.iconsCount + 1);
+  }
+
   let debugDraw = [];
   let frames = gen_frames({
     ...settings,
+    dashWidth,
     iconSpacing: Math.floor(iconSpacing * settings.scaleFactor),
     pointer: [
       settings.pointer[0] - settings.x,

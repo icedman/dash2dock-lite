@@ -243,7 +243,7 @@ var Animator = class {
     pivot.x = 0.5;
     pivot.y = 1.0;
 
-    let validPosition = true;
+    let validPosition = this._iconsCount > 1;
     let dock_position = this.dashContainer._position;
     let ix = 0;
     let iy = 1;
@@ -323,6 +323,8 @@ var Animator = class {
       return c._bin && c._icon && c.visible;
     });
 
+    let firstIcon = animateIcons[0];
+
     animateIcons.forEach((c) => {
       if (this.extension.services) {
         this.extension.services.updateIcon(c._icon, { scaleFactor });
@@ -397,11 +399,15 @@ var Animator = class {
       icon._targetScale = 1;
       icon._targetSpread = iconSpacing * scaleFactor;
 
-      if (this.extension._vertical) {
-        //
-      } else {
-        if (pos[1] < this.dashContainer._monitor.height / 2) {
-          validPosition = false;
+      if (icon === firstIcon) {
+        if (this.extension._vertical) {
+          if (pos[1] > this.dashContainer.dash.y + iconSize * 2) {
+            validPosition = false;
+          }
+        } else {
+          if (pos[0] > this.dashContainer.dash.x + iconSize * 2) {
+            validPosition = false;
+          }
         }
       }
 
@@ -820,7 +826,14 @@ var Animator = class {
     this._isHidden = hide;
     this._iconsContainer.opacity = hide ? 0 : 255;
     this._dotsContainer.opacity = hide ? 0 : 255;
-    this._background.opacity = hide ? 0 : 255;
+    this._background._opacity = hide ? 0 : 255;
+
+    if (this._background._opacity != 0) {
+      this._background.opacity =
+        (this._background._opacity + this._background.opacity * 10) / 11;
+    } else {
+      this._background.opacity = 0;
+    }
   }
 
   // todo move to util

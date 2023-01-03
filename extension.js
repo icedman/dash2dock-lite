@@ -157,11 +157,14 @@ class Extension {
       let func = () => {
         this._updateLayout();
         this.animate();
+        if (!this._vertical) {
+          this.dashContainer.animator._invisible(false, false);
+        }
       };
       this._startupSeq = this._hiTimer.runSequence([
         { func, delay: 50 },
-        { func, delay: 250 },
-        { func, delay: this._vertical ? 500 : 0 },
+        // { func, delay: 250 },
+        { func, delay: 500 },
         {
           func: () => {
             this.dashContainer.animator._invisible(false, false);

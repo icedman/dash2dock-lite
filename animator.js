@@ -30,7 +30,7 @@ const DebugOverlay = Me.imports.apps.overlay.DebugOverlay;
 
 const ANIM_POS_COEF = 1.5;
 const ANIM_SCALE_COEF = 2.5;
-const ANIM_ON_LEAVE_COEF = 2.5;
+const ANIM_ON_LEAVE_COEF = 2.0;
 const ANIM_ICON_RAISE = 0.6;
 const ANIM_ICON_SCALE = 1.5;
 const ANIM_ICON_HIT_AREA = 2.5;
@@ -465,6 +465,7 @@ var Animator = class {
     }
 
     let didAnimate = false;
+    let didScale = false;
 
     let off = (iconSize * scaleFactor) / 2;
     animateIcons.forEach((i) => {
@@ -582,7 +583,7 @@ var Animator = class {
       let fromScale = icon.get_scale()[0];
 
       if (icon._targetScale > 1.2) {
-        didAnimate = true;
+        didScale = true;
       }
 
       // could happen at login? < recheck
@@ -611,7 +612,7 @@ var Animator = class {
       if (
         dst > 8 * scaleFactor &&
         dst > iconSize * 0.01 &&
-        dst < iconSize * 3
+        dst < iconSize * 4
       ) {
         pos[0] = (from[0] * _pos_coef + pos[0]) / (_pos_coef + 1);
         pos[1] = (from[1] * _pos_coef + pos[1]) / (_pos_coef + 1);
@@ -775,9 +776,10 @@ var Animator = class {
       this._dockExtension.style = Main.panel.first_child.style;
     }
 
-    if (didAnimate || this._dragging) {
+    if (didScale || this._dragging) {
       this._debounceEndAnimation();
-    } else if (this._throttleDown <= 0) {
+    }
+    if (!didAnimate && !this._dragging && this._throttleDown <= 0) {
       this._throttleDown = THROTTLE_DOWN_FRAMES + THROTTLE_DOWN_DELAY_FRAMES;
     }
   }

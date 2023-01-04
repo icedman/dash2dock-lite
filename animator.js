@@ -607,14 +607,7 @@ var Animator = class {
       let from = this._get_position(icon);
       let dst = this._get_distance(from, icon._target);
 
-      let sc = _scale_coef;
-      if (scale < 1.1 && nearestIcon) {
-        sc += 2;
-        if (fromScale < scale) {
-          sc += 16;
-        }
-      }
-      scale = (fromScale * sc + scale) / (sc + 1);
+      scale = (fromScale * _scale_coef + scale) / (_scale_coef + 1);
 
       if (
         dst > 8 * scaleFactor &&

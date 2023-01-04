@@ -30,7 +30,7 @@ const DebugOverlay = Me.imports.apps.overlay.DebugOverlay;
 
 const ANIM_POS_COEF = 1.5;
 const ANIM_SCALE_COEF = 2.5;
-const ANIM_ON_LEAVE_COEF = 2.5;
+const ANIM_ON_LEAVE_COEF = 2.0;
 const ANIM_ICON_RAISE = 0.6;
 const ANIM_ICON_SCALE = 1.5;
 const ANIM_ICON_HIT_AREA = 2.5;
@@ -465,6 +465,7 @@ var Animator = class {
     }
 
     let didAnimate = false;
+    let didScale = false;
 
     let off = (iconSize * scaleFactor) / 2;
     animateIcons.forEach((i) => {
@@ -505,7 +506,7 @@ var Animator = class {
         iconSize,
         iconSpacing,
         dock_position,
-        pointer,
+        pointer: [px, py],
         x: this.dashContainer.x,
         y: this.dashContainer.y,
         width: this.dashContainer.width,
@@ -566,6 +567,17 @@ var Animator = class {
       });
     }
 
+    let _scale_coef = ANIM_SCALE_COEF;
+    let _pos_coef = ANIM_POS_COEF;
+    if (this.extension.animation_fps > 0) {
+      _pos_coef /= 1 + this.extension.animation_fps / 2;
+      _scale_coef /= 1 + this.extension.animation_fps / 2;
+    }
+    if (!nearestIcon) {
+      _scale_coef *= ANIM_ON_LEAVE_COEF;
+      _pos_coef *= ANIM_ON_LEAVE_COEF;
+    }
+
     let dotIndex = 0;
     let has_errors = false;
 
@@ -582,7 +594,7 @@ var Animator = class {
       let fromScale = icon.get_scale()[0];
 
       if (icon._targetScale > 1.2) {
-        didAnimate = true;
+        didScale = true;
       }
 
       // could happen at login? < recheck
@@ -595,23 +607,19 @@ var Animator = class {
       let from = this._get_position(icon);
       let dst = this._get_distance(from, icon._target);
 
-      let _scale_coef = ANIM_SCALE_COEF;
-      let _pos_coef = ANIM_POS_COEF;
-      if (this.extension.animation_fps > 0) {
-        _pos_coef /= 1 + this.extension.animation_fps / 2;
-        _scale_coef /= 1 + this.extension.animation_fps / 2;
+      let sc = _scale_coef;
+      if (scale < 1.1 && nearestIcon) {
+        sc += 2;
+        if (fromScale < scale) {
+          sc += 16;
+        }
       }
-      if (!nearestIcon) {
-        _scale_coef *= ANIM_ON_LEAVE_COEF;
-        _pos_coef *= ANIM_ON_LEAVE_COEF;
-      }
-
-      scale = (fromScale * _scale_coef + scale) / (_scale_coef + 1);
+      scale = (fromScale * sc + scale) / (sc + 1);
 
       if (
         dst > 8 * scaleFactor &&
         dst > iconSize * 0.01 &&
-        dst < iconSize * 3
+        dst < iconSize * 4
       ) {
         pos[0] = (from[0] * _pos_coef + pos[0]) / (_pos_coef + 1);
         pos[1] = (from[1] * _pos_coef + pos[1]) / (_pos_coef + 1);
@@ -775,9 +783,10 @@ var Animator = class {
       this._dockExtension.style = Main.panel.first_child.style;
     }
 
-    if (didAnimate || this._dragging) {
+    if (didScale || this._dragging) {
       this._debounceEndAnimation();
-    } else if (this._throttleDown <= 0) {
+    }
+    if (!didAnimate && !this._dragging && this._throttleDown <= 0) {
       this._throttleDown = THROTTLE_DOWN_FRAMES + THROTTLE_DOWN_DELAY_FRAMES;
     }
   }

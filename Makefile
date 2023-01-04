@@ -10,6 +10,9 @@ install: build
 	mkdir -p ~/.local/share/gnome-shell/extensions/dash2dock-lite@icedman.github.com/
 	cp -R ./* ~/.local/share/gnome-shell/extensions/dash2dock-lite@icedman.github.com/
 
+clean:
+	rm -rf ./build
+	
 publish:
 	echo "publishing..."
 	rm -rf build

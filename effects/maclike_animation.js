@@ -66,10 +66,12 @@ function gen_frames(settings) {
       let dr = ir - pp;
       dr = Math.sqrt(dr * dr);
       f.p = 1;
+      f._p = 1;
       if (dr < thresh2) {
         f.in = true;
         let p = 1 - dr / thresh2;
         f.p = 1 + p * 0.7;
+        f._p = 1 + (0.5 + settings.animation_magnify * 0.6) * p;
         totalP += f.p;
         doLeft = false;
         center.push(f);
@@ -242,7 +244,7 @@ var Animation = (animateIcons, pointer, settings) => {
         }
       }
     }
-    a._targetScale = f.p;
+    a._targetScale = f._p;
     a._targetSpread = f.l;
   });
 

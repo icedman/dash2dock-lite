@@ -506,7 +506,7 @@ var Animator = class {
         iconSize,
         iconSpacing,
         dock_position,
-        pointer,
+        pointer: [px, py],
         x: this.dashContainer.x,
         y: this.dashContainer.y,
         width: this.dashContainer.width,
@@ -567,6 +567,17 @@ var Animator = class {
       });
     }
 
+    let _scale_coef = ANIM_SCALE_COEF;
+    let _pos_coef = ANIM_POS_COEF;
+    if (this.extension.animation_fps > 0) {
+      _pos_coef /= 1 + this.extension.animation_fps / 2;
+      _scale_coef /= 1 + this.extension.animation_fps / 2;
+    }
+    if (!nearestIcon) {
+      _scale_coef *= ANIM_ON_LEAVE_COEF;
+      _pos_coef *= ANIM_ON_LEAVE_COEF;
+    }
+
     let dotIndex = 0;
     let has_errors = false;
 
@@ -596,18 +607,14 @@ var Animator = class {
       let from = this._get_position(icon);
       let dst = this._get_distance(from, icon._target);
 
-      let _scale_coef = ANIM_SCALE_COEF;
-      let _pos_coef = ANIM_POS_COEF;
-      if (this.extension.animation_fps > 0) {
-        _pos_coef /= 1 + this.extension.animation_fps / 2;
-        _scale_coef /= 1 + this.extension.animation_fps / 2;
+      let sc = _scale_coef;
+      if (scale < 1.1 && nearestIcon) {
+        sc += 2;
+        if (fromScale < scale) {
+          sc += 16;
+        }
       }
-      if (!nearestIcon) {
-        _scale_coef *= ANIM_ON_LEAVE_COEF;
-        _pos_coef *= ANIM_ON_LEAVE_COEF;
-      }
-
-      scale = (fromScale * _scale_coef + scale) / (_scale_coef + 1);
+      scale = (fromScale * sc + scale) / (sc + 1);
 
       if (
         dst > 8 * scaleFactor &&

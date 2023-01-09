@@ -163,8 +163,13 @@ class Extension {
       };
       this._startupSeq = this._hiTimer.runSequence([
         { func, delay: 50 },
-        // { func, delay: 250 },
         { func, delay: 500 },
+        {
+          func: () => {
+            this.dashContainer.animator._invisible(false, false);
+          },
+          delay: 250,
+        },
         {
           func: () => {
             this.dashContainer.animator._invisible(false, false);

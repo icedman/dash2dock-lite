@@ -168,13 +168,13 @@ class Extension {
           func: () => {
             this.dashContainer.animator._invisible(false, false);
           },
-          delay: 250,
+          delay: 50,
         },
         {
           func: () => {
             this.dashContainer.animator._invisible(false, false);
           },
-          delay: 50,
+          delay: 250,
         },
       ]);
     } else {

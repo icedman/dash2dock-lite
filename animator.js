@@ -651,22 +651,6 @@ var Animator = class {
       }
 
       if (!isNaN(pos[0]) && !isNaN(pos[1])) {
-        if (didAnimate && scale == 1.0) {
-          if (!icon._anchor) {
-            icon._anchor = pos;
-          } else {
-            let coef = 1 + this._isWithinCount / 8;
-            icon._anchor[ix] *= coef;
-            icon._anchor[ix] += pos[ix];
-            icon._anchor[ix] /= coef + 1;
-            icon._anchor[iy] = pos[iy];
-          }
-          let diff = Math.sqrt(icon._anchor[ix] - pos[ix]);
-          if (diff < 2) {
-            pos = [...icon._anchor];
-          }
-        }
-
         icon.set_position(pos[0], pos[1]);
         icon._pos = [...pos];
         icon._scale = scale;

@@ -260,6 +260,10 @@ var Services = class {
       this._appNotices[k].count = 0;
     });
 
+    let app_map = {
+      'org.gnome.Evolution-alarm-notify.desktop': 'org.gnome.Calendar.desktop',
+    };
+
     this._notifications.forEach((n) => {
       let appId = null;
       if (!n.notification) return;
@@ -275,6 +279,10 @@ var Services = class {
       if (!appId) {
         appId = '?';
       }
+
+      // remap
+      appId = app_map[appId] || appId;
+
       if (!this._appNotices[appId]) {
         this._appNotices[appId] = {
           count: 0,

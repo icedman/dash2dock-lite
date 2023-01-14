@@ -260,6 +260,10 @@ var Services = class {
       this._appNotices[k].count = 0;
     });
 
+    let app_map = {
+      'org.gnome.Evolution-alarm-notify.desktop': 'org.gnome.Calendar.desktop',
+    };
+
     this._notifications.forEach((n) => {
       let appId = null;
       if (!n.notification) return;
@@ -275,6 +279,10 @@ var Services = class {
       if (!appId) {
         appId = '?';
       }
+
+      // remap
+      appId = app_map[appId] || appId;
+
       if (!this._appNotices[appId]) {
         this._appNotices[appId] = {
           count: 0,
@@ -419,6 +427,24 @@ var Services = class {
     }
   }
 
+  redraw() {
+    let widgets = [this.clock, this.calendar];
+    widgets.forEach((w) => {
+      if (w) {
+        w.settings = {
+          dark_color: this.extension.drawing_dark_color,
+          light_color: this.extension.drawing_light_color,
+          accent_color: this.extension.drawing_accent_color,
+          dark_foreground: this.extension.drawing_dark_foreground,
+          light_foreground: this.extension.drawing_light_foreground,
+          secondary_color: this.extension.drawing_secondary_color,
+          clock_style: this.extension.clock_style,
+        };
+        w.redraw();
+      }
+    });
+  }
+
   updateIcon(icon, settings) {
     if (!icon || !icon.icon_name) {
       return;
@@ -436,6 +462,8 @@ var Services = class {
       }
     }
 
+    let didCreate = false;
+
     // clock
     if (icon.icon_name == 'org.gnome.clocks') {
       let p = icon.get_parent();
@@ -446,8 +474,10 @@ var Services = class {
           clock.reactive = false;
           this.clock = clock;
           p.clock = this.clock;
+          didCreate = true;
         }
         if (p.clock) {
+          p.clock._icon = icon;
           let scale =
             icon.icon_size / this.extension.icon_quality / CANVAS_SIZE;
           scale *= scaleFactor;
@@ -478,6 +508,7 @@ var Services = class {
           calendar.reactive = false;
           this.calendar = calendar;
           p.calendar = this.calendar;
+          didCreate = true;
         }
         if (p.calendar) {
           let scale =
@@ -497,6 +528,10 @@ var Services = class {
           p.calendar.hide();
         }
       }
+    }
+
+    if (didCreate) {
+      this.redraw();
     }
   }
 };

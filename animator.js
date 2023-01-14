@@ -174,19 +174,32 @@ var Animator = class {
     if (!this._iconsContainer || !this.dashContainer) return;
     this.dash = this.dashContainer.dash;
 
+    let icons = this._previousFind;
+
+    // satisfy other extensions
+    // compiz effects
+    if (!Main.overview.dash.__box) {
+      Main.overview.dash.__box = Main.overview.dash._box;
+    }
+    Main.overview.dash._box = this.dashContainer.dash._box;
+
+    // minimize findIcons call
+    this._previousFindIndex++;
+    if (!icons || this._dragging || this._previousFindIndex < 0) {
+      icons = this._findIcons();
+      this._previousFind = icons;
+    } else {
+      if (this._previousFindIndex > FIND_ICONS_SKIP_FRAMES) {
+        this._previousFind = null;
+        this._previousFindIndex = 0;
+      }
+    }
+
     // get monitor scaleFactor
     let scaleFactor = this._getScaleFactor();
     let iconSize = Math.floor(this.dashContainer.iconSize);
     let iconSpacing = iconSize * (1.2 + this.extension.animation_spread / 4);
     let effective_edge_distance = this.extension._effective_edge_distance;
-
-    if (!this._posCache || this._posCache.iconSize != iconSize) {
-      this._posCache = {
-        max: -1,
-        min: -1,
-        iconSize,
-      };
-    }
 
     if (this._relayout > 0) {
       this.dashContainer.layout();
@@ -279,20 +292,6 @@ var Animator = class {
 
     pivot.x *= scaleFactor;
     pivot.y *= scaleFactor;
-
-    let icons = this._previousFind;
-
-    // minimize findIcons call
-    this._previousFindIndex++;
-    if (!icons || this._dragging || this._previousFindIndex < 0) {
-      icons = this._findIcons();
-      this._previousFind = icons;
-    } else {
-      if (this._previousFindIndex > FIND_ICONS_SKIP_FRAMES) {
-        this._previousFind = null;
-        this._previousFindIndex = 0;
-      }
-    }
 
     this._iconsContainer.update({
       icons,
@@ -584,7 +583,6 @@ var Animator = class {
     // todo
     // all icons scale up (scaleJump 0.08) when cursor within hover area
     let scaleJump = 0; // this._inDash ? 0.08 : 0;
-    let { max, min } = this._posCache;
 
     // animate to target scale and position
     // todo .. make this velocity based

@@ -438,8 +438,10 @@ var DockBackground = GObject.registerClass(
             this.y = dashContainer.y;
             this.height = dashContainer.height;
           } else {
-            this.x = dashContainer.x;
-            this.width = dashContainer.width;
+            let pad = 0;//dashContainer.cornerPad || 0;
+            this.x = dashContainer.x - pad;
+            this.width = dashContainer.width + pad*2;
+            this.height ++;
           }
         }
       }

@@ -517,6 +517,9 @@ var Dock = GObject.registerClass(
         }
       }
 
+      let cornerPad = 2;
+      this.cornerPad = cornerPad;
+
       if (this.extension._vertical) {
         let sh = this._monitor.height;
         // left/right
@@ -530,7 +533,7 @@ var Dock = GObject.registerClass(
         this.dash.width = dockHeight * scaleFactor;
         this.dash.add_style_class_name('vertical');
       } else {
-        let sw = this._monitor.width;
+        let sw = this._monitor.width - cornerPad*2;
         // top/bottom
         this.set_size(sw, dockHeight * scaleFactor);
         this.dash.last_child.layout_manager.orientation = 0;
@@ -558,7 +561,7 @@ var Dock = GObject.registerClass(
         } else {
           // top/bottom
           this.set_position(
-            this._monitor.x,
+            this._monitor.x + cornerPad,
             this._monitor.y + this._monitor.height - dockHeight * scaleFactor
           );
         }

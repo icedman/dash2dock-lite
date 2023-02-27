@@ -4,8 +4,13 @@
 
 # Current Issues
 
-* Startup artifacts showing prior to scaling down
 * Autohide disabled at certain monitor layouts
+
+# Release 27
+
+* Improved animation
+* Fix startup artifacts showing prior to scaling down
+* Fix Compiz Effects compatibility
 
 # Release 21
 

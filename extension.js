@@ -372,11 +372,11 @@ class Extension {
   }
 
   _addEvents() {
-    Main.sessionMode.connectObject(
-      'updated',
-      () => this._onSessionUpdated(),
-      this
-    );
+    // Main.sessionMode.connectObject(
+    //   'updated',
+    //   () => this._onSessionUpdated(),
+    //   this
+    // );
 
     Main.layoutManager.connectObject(
       // 'startup-complete',
@@ -438,7 +438,7 @@ class Extension {
   }
 
   _removeEvents() {
-    Main.sessionMode.disconnectObject(this);
+    // Main.sessionMode.disconnectObject(this);
     Main.messageTray.disconnectObject(this);
     Main.overview.disconnectObject(this);
     Main.layoutManager.disconnectObject(this);

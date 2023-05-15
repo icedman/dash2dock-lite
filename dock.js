@@ -533,7 +533,7 @@ var Dock = GObject.registerClass(
         this.dash.width = dockHeight * scaleFactor;
         this.dash.add_style_class_name('vertical');
       } else {
-        let sw = this._monitor.width - cornerPad*2;
+        let sw = this._monitor.width - cornerPad * 2;
         // top/bottom
         this.set_size(sw, dockHeight * scaleFactor);
         this.dash.last_child.layout_manager.orientation = 0;

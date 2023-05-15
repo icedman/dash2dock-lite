@@ -308,6 +308,9 @@ var AutoHide = class {
   }
 
   _checkOverlap() {
+    if (this.extension._inOverview) {
+      return false;
+    }
     let pointer = global.get_pointer();
     let dash_position = this.dashContainer._fixedPosition;
 

@@ -410,16 +410,16 @@ class Extension {
       this
     );
 
-    // Main.overview.connectObject(
-    //   'showing',
-    //   this._onOverviewShowing.bind(this),
-    //   this
-    // );
-    // Main.overview.connectObject(
-    //   'hidden',
-    //   this._onOverviewHidden.bind(this),
-    //   this
-    // );
+    Main.overview.connectObject(
+      'showing',
+      this._onOverviewShowing.bind(this),
+      this
+    );
+    Main.overview.connectObject(
+      'hidden',
+      this._onOverviewHidden.bind(this),
+      this
+    );
 
     St.TextureCache.get_default().connectObject(
       'icon-theme-changed',
@@ -630,11 +630,17 @@ class Extension {
 
   _onOverviewShowing() {
     this._inOverview = true;
+    if (this.autohider._enabled) {
+      this.autohider._debounceCheckHide();
+    }
     // log('_onOverviewShowing');
   }
 
   _onOverviewHidden() {
     this._inOverview = false;
+    if (this.autohider._enabled) {
+      this.autohider._debounceCheckHide();
+    }
     // log('_onOverviewHidden');
   }
 

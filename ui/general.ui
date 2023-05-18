@@ -57,7 +57,7 @@
           <object class="AdwActionRow" id="animation-type-row">
             <property name="visible">true</property>
             <property name="title" translatable="yes">Opening Animation</property>
-            <property name="subtitle" translatable="yes">Animate icons on opening new apps.</property>
+            <property name="subtitle" translatable="yes">Add bounce animation on dash icons when opening new apps.</property>
             <property name="activatable-widget">open-app-animation</property>
             <child>
               <object class="GtkSwitch" id="open-app-animation">
@@ -72,6 +72,19 @@
               </object>
             </child>
             -->
+          </object>
+        </child>
+        <child>
+          <object class="AdwActionRow">
+            <property name="visible">true</property>
+            <property name="title" translatable="yes">Lamp Animation</property>
+            <property name="subtitle" translatable="yes">Add genie on a lamp animation on minimizing windows. Credit to https://github.com/hermes83/compiz-alike-magic-lamp-effect</property>
+            <property name="activatable-widget">lamp-app-animation</property>
+            <child>
+              <object class="GtkSwitch" id="lamp-app-animation">
+                <property name="valign">center</property>
+              </object>
+            </child>
           </object>
         </child>
       </object>

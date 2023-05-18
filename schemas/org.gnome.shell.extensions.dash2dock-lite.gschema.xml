@@ -41,6 +41,11 @@
         <summary>Open app animation</summary>
         <description>Open app animation.</description>
     </key>
+    <key type="b" name="lamp-app-animation">
+        <default>false</default>
+        <summary>Minimize app lamp animation</summary>
+        <description>Minimize app genie on a lamp animation.</description>
+    </key>
     <key type="b" name="autohide-dash">
         <default>false</default>
         <summary>Autohide dash panel</summary>

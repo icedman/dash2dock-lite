@@ -13,6 +13,7 @@ const Me = ExtensionUtils.getCurrentExtension();
 
 const { schemaId, settingsKeys, SettingsKeys } = Me.imports.preferences.keys;
 
+const LampAnimation = Me.imports.effects.lamp_animation.LampAnimation;
 const Animator = Me.imports.animator.Animator;
 const AutoHide = Me.imports.autohide.AutoHide;
 const Services = Me.imports.services.Services;
@@ -94,6 +95,7 @@ class Extension {
 
     this._onCheckServices();
 
+    this._updateLampAnimation();
     this._updateAnimationFPS();
     this._updateShrink();
     this._updateIconResolution();
@@ -119,6 +121,7 @@ class Extension {
     this._removeEvents();
     this._disableSettings();
 
+    this._updateLampAnimation(true);
     this._updateShrink(true);
     this._updateLayout(true);
     this._updateAutohide(true);
@@ -322,6 +325,10 @@ class Extension {
           this.animate();
           break;
         }
+        case 'lamp-app-animation': {
+          this._updateLampAnimation();
+          break;
+        }
         case 'border-radius':
           this._debouncedUpdateStyle();
           break;
@@ -484,6 +491,14 @@ class Extension {
       ANIM_INTERVAL + (this.animation_fps || 0) * ANIM_INTERVAL_PAD;
     this._hiTimer.shutdown();
     this._hiTimer.initialize(this.animationInterval);
+  }
+
+  _updateLampAnimation(disable) {
+    if (this.lamp_app_animation && !disable) {
+      LampAnimation.enable();
+    } else {
+      LampAnimation.disable();
+    }
   }
 
   _updateShrink(disable) {

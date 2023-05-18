@@ -50,6 +50,12 @@ SettingsKeys.setKeys({
     key_maps: {},
     // test: { values: [0, 1] },
   },
+  'lamp-app-animation': {
+    default_value: false,
+    widget_type: 'switch',
+    key_maps: {},
+    // test: { values: [0, 1] },
+  },
   'autohide-dash': {
     default_value: true,
     widget_type: 'switch',

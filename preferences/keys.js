@@ -1,13 +1,16 @@
 'use strict';
 
-const ExtensionUtils = imports.misc.extensionUtils;
-const Me = ExtensionUtils.getCurrentExtension();
-const { PrefKeys } = Me.imports.preferences.prefKeys;
+// const ExtensionUtils = imports.misc.extensionUtils;
+// const Me = ExtensionUtils.getCurrentExtension();
+// const { PrefKeys } = Me.imports.preferences.prefKeys;
 
-var schemaId = 'org.gnome.shell.extensions.dash2dock-lite';
+import { PrefKeys } from './prefKeys.js';
 
-var SettingsKeys = new PrefKeys();
-SettingsKeys.setKeys({
+export let schemaId = 'org.gnome.shell.extensions.dash2dock-lite';
+
+export let settingsKeys = new PrefKeys();
+
+settingsKeys.setKeys({
   // debug: {
   //   default_value: false,
   //   widget_type: 'switch',

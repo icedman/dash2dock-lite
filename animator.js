@@ -1,32 +1,42 @@
 'use strict';
 
-const Main = imports.ui.main;
-const Dash = imports.ui.dash.Dash;
-const Layout = imports.ui.layout;
-const Shell = imports.gi.Shell;
-const Meta = imports.gi.Meta;
-const St = imports.gi.St;
-const Clutter = imports.gi.Clutter;
-const GLib = imports.gi.GLib;
-const Point = imports.gi.Graphene.Point;
+import * as Main from 'resource:///org/gnome/shell/ui/main.js';
+// import Meta from 'gi://Meta';
+// import Shell from 'gi://Shell';
+// import GObject from 'gi://GObject';
+import Clutter from 'gi://Clutter';
+// import GLib from 'gi://GLib';
+import Graphene from 'gi://Graphene';
+// import St from 'gi://St';
 
-const ExtensionUtils = imports.misc.extensionUtils;
-const Me = ExtensionUtils.getCurrentExtension();
+// import { Dash } from 'resource:///org/gnome/shell/ui/dash.js';
+// import { Layout } from 'resource:///org/gnome/shell/ui/layout.js';
 
-const TintEffect = Me.imports.effects.tint_effect.TintEffect;
-const MonochromeEffect = Me.imports.effects.monochrome_effect.MonochromeEffect;
-const Animation = Me.imports.effects.maclike_animation.Animation;
-const Drawing = Me.imports.drawing.Drawing;
+const Point = Graphene.Point;
 
-const {
+// const TintEffect = Me.imports.effects.tint_effect.TintEffect;
+// const MonochromeEffect = Me.imports.effects.monochrome_effect.MonochromeEffect;
+// const Animation = Me.imports.effects.maclike_animation.Animation;
+
+import { Animation } from './effects/maclike_animation.js';
+
+// const {
+//   IconsContainer,
+//   DotsContainer,
+//   DockExtension,
+//   DockBackground,
+//   explodeDashIcon,
+// } = Me.imports.dockItems;
+
+import {
   IconsContainer,
   DotsContainer,
   DockExtension,
   DockBackground,
-  explodeDashIcon,
-} = Me.imports.dockItems;
+  // explodeDashIcon,
+} from './dockItems.js';
 
-const DebugOverlay = Me.imports.apps.overlay.DebugOverlay;
+// const DebugOverlay = Me.imports.apps.overlay.DebugOverlay;
 
 const ANIM_POS_COEF = 1.5;
 const ANIM_SCALE_COEF = 2.5;
@@ -45,7 +55,7 @@ const THROTTLE_DOWN_DELAY_FRAMES = 20;
 const MIN_SCROLL_RESOLUTION = 4;
 const MAX_SCROLL_RESOLUTION = 10;
 
-var Animator = class {
+export let Animator = class {
   constructor() {
     this._enabled = false;
   }
@@ -71,11 +81,11 @@ var Animator = class {
     this._dockExtension.listeners = this.dashContainer.listeners;
     this._dockExtension.visible = false;
 
-    this._overlay = new DebugOverlay(
-      this.dashContainer._monitor.width,
-      this.dashContainer._monitor.height
-    );
-    this._overlay.name = 'debugOverlay';
+    // this._overlay = new DebugOverlay(
+    //   this.dashContainer._monitor.width,
+    //   this.dashContainer._monitor.height
+    // );
+    // this._overlay.name = 'debugOverlay';
 
     this._enabled = true;
     this._dragging = false;
@@ -108,9 +118,9 @@ var Animator = class {
       Main.uiGroup.remove_child(this._dockExtension);
       delete this._dockExtension;
       this._dockExtension = null;
-      Main.uiGroup.remove_child(this._overlay);
-      delete this._overlay;
-      this._overlay = null;
+      // Main.uiGroup.remove_child(this._overlay);
+      // delete this._overlay;
+      // this._overlay = null;
     }
 
     this._dots = [];
@@ -121,22 +131,22 @@ var Animator = class {
 
   _createEffect(idx) {
     let effect = null;
-    switch (idx) {
-      case 1: {
-        effect = new TintEffect({
-          name: 'color',
-          color: this.extension.icon_effect_color,
-        });
-        break;
-      }
-      case 2: {
-        effect = new MonochromeEffect({
-          name: 'color',
-          color: this.extension.icon_effect_color,
-        });
-        break;
-      }
-    }
+    // switch (idx) {
+    //   case 1: {
+    //     effect = new TintEffect({
+    //       name: 'color',
+    //       color: this.extension.icon_effect_color,
+    //     });
+    //     break;
+    //   }
+    //   case 2: {
+    //     effect = new MonochromeEffect({
+    //       name: 'color',
+    //       color: this.extension.icon_effect_color,
+    //     });
+    //     break;
+    //   }
+    // }
     return effect;
   }
 
@@ -477,7 +487,7 @@ var Animator = class {
     });
 
     if (!nearestIcon) {
-      this._overlay.visible = false;
+      // this._overlay.visible = false;
     }
 
     this._nearestIcon = nearestIcon;
@@ -546,12 +556,12 @@ var Animator = class {
       // debug draw
       // todo move to overlay class
       if (this.extension.debug_visual) {
-        this._overlay.state.monitor = monitor;
-        this._overlay.objects = anim.debugDraw;
-        this._overlay.visible = this.extension.debug_visual;
-        this._overlay.set_position(monitor.x, monitor.y);
-        this._overlay.set_size(monitor.width, monitor.height);
-        this._overlay.redraw();
+        // this._overlay.state.monitor = monitor;
+        // this._overlay.objects = anim.debugDraw;
+        // this._overlay.visible = this.extension.debug_visual;
+        // this._overlay.set_position(monitor.x, monitor.y);
+        // this._overlay.set_size(monitor.width, monitor.height);
+        // this._overlay.redraw();
       }
     }
 

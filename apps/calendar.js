@@ -1,13 +1,12 @@
-const { Clutter, GObject, GLib, PangoCairo, Pango } = imports.gi;
-const Cairo = imports.cairo;
+import GObject from 'gi://GObject';
+import Clutter from 'gi://Clutter';
+import Cairo from 'gi://cairo';
 
-const ExtensionUtils = imports.misc.extensionUtils;
-const Me = ExtensionUtils.getCurrentExtension();
-const Drawing = Me.imports.drawing.Drawing;
+import { Drawing } from '../drawing.js';
 
 let size = 400;
 
-var Calendar = GObject.registerClass(
+export const Calendar = GObject.registerClass(
   {},
 
   // todo St.DrawingArea

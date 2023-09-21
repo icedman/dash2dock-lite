@@ -144,7 +144,7 @@ function gen_frames(settings) {
   return frames;
 }
 
-var Animation = (animateIcons, pointer, settings) => {
+export const Animation = (animateIcons, pointer, settings) => {
   if (!animateIcons.length) return;
   let _firstIcon = animateIcons[0];
   let _lastIcon = animateIcons[animateIcons.length - 1];

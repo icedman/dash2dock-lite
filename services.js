@@ -1,16 +1,21 @@
 'use strict';
 
-const Main = imports.ui.main;
-const Gio = imports.gi.Gio;
-const St = imports.gi.St;
-const Fav = imports.ui.appFavorites;
-const Weather = imports.misc.weather;
-const ExtensionUtils = imports.misc.extensionUtils;
-const Me = ExtensionUtils.getCurrentExtension();
-const AppsFolderPath = Me.dir.get_child('apps').get_path();
+import * as Main from 'resource:///org/gnome/shell/ui/main.js';
+import * as Fav from 'resource:///org/gnome/shell/ui/appFavorites.js';
+// import { WeatherClient } from 'resource:///org/gnome/shell/misc/weather.js';
 
-const Clock = Me.imports.apps.clock.Clock;
-const Calendar = Me.imports.apps.calendar.Calendar;
+import Meta from 'gi://Meta';
+import Shell from 'gi://Shell';
+import GObject from 'gi://GObject';
+import Clutter from 'gi://Clutter';
+import Gio from 'gi://Gio';
+import St from 'gi://St';
+
+// const Clock = Me.imports.apps.clock.Clock;
+// const Calendar = Me.imports.apps.calendar.Calendar;
+
+import { Clock } from './apps/clock.js';
+import { Calendar } from './apps/calendar.js';
 
 // sync with animator
 const CANVAS_SIZE = 120;
@@ -37,7 +42,7 @@ class ServiceCounter {
   }
 }
 
-var Services = class {
+export const Services = class {
   enable() {
     this._services = [
       new ServiceCounter('trash', 1000 * 15, this.checkTrash.bind(this)),

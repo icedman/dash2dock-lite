@@ -2,7 +2,7 @@
 
 import GLib from 'gi://GLib';
 
-export let Timer = class {
+export const Timer = class {
   constructor(name) {
     this._name = name;
     this._subscribers = [];

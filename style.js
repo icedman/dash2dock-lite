@@ -4,7 +4,7 @@ import Gio from 'gi://Gio';
 import St from 'gi://St';
 const CustomStylesPath = '/tmp';
 
-export let Style = class {
+export const Style = class {
   constructor() {
     this.styles = {};
     this.style_contents = {};

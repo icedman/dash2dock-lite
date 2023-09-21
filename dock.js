@@ -1,24 +1,29 @@
 'use strict';
 
-const { St, Shell, GObject, Gio, GLib, Gtk, Meta, Clutter } = imports.gi;
+import * as Main from 'resource:///org/gnome/shell/ui/main.js';
+import Meta from 'gi://Meta';
+import Shell from 'gi://Shell';
+import GObject from 'gi://GObject';
+import Clutter from 'gi://Clutter';
+import Graphene from 'gi://Graphene';
+import St from 'gi://St';
 
-const Main = imports.ui.main;
-const Dash = imports.ui.dash.Dash;
-const Fav = imports.ui.appFavorites;
-const Point = imports.gi.Graphene.Point;
+import { Dash } from 'resource:///org/gnome/shell/ui/dash.js';
 
-const ExtensionUtils = imports.misc.extensionUtils;
-const Me = ExtensionUtils.getCurrentExtension();
-const Animator = Me.imports.animator.Animator;
-const AutoHide = Me.imports.autohide.AutoHide;
-const Bounce = Me.imports.effects.easing.Bounce;
-const Linear = Me.imports.effects.easing.Linear;
+import * as Fav from 'resource:///org/gnome/shell/ui/appFavorites.js';
+const Point = Graphene.Point;
+
+// const Bounce = Me.imports.effects.easing.Bounce;
+// const Linear = Me.imports.effects.easing.Linear;
+
+import { Animator } from './animator.js';
+import { AutoHide } from './autohide.js';
 
 const EDGE_DISTANCE = 20;
 
 let _preferredIconSizes = null;
 
-var Dock = GObject.registerClass(
+export let Dock = GObject.registerClass(
   {},
   class Dock extends St.Widget {
     _init() {
@@ -623,17 +628,17 @@ var Dock = GObject.registerClass(
         {
           _duration: t,
           _func: (f, s) => {
-            let res = Linear.easeNone(f._time, 0, travel, f._duration);
-            icon._img.translation_y = -res;
-            attached.translation_y = icon._img.translation_y;
+            // let res = Linear.easeNone(f._time, 0, travel, f._duration);
+            // icon._img.translation_y = -res;
+            // attached.translation_y = icon._img.translation_y;
           },
         },
         {
           _duration: t * 3,
           _func: (f, s) => {
-            let res = Bounce.easeOut(f._time, travel, -travel, f._duration);
-            icon._img.translation_y = -res;
-            attached.translation_y = icon._img.translation_y;
+            // let res = Bounce.easeOut(f._time, travel, -travel, f._duration);
+            // icon._img.translation_y = -res;
+            // attached.translation_y = icon._img.translation_y;
           },
         },
       ];

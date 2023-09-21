@@ -1,17 +1,25 @@
 'use strict';
 
-const { St, Shell, GObject, Gio, GLib, Gtk, Meta, Clutter } = imports.gi;
-const Main = imports.ui.main;
-const Dash = imports.ui.dash.Dash;
-const Point = imports.gi.Graphene.Point;
+import * as Main from 'resource:///org/gnome/shell/ui/main.js';
+import Meta from 'gi://Meta';
+import Shell from 'gi://Shell';
+import Gio from 'gi://Gio';
+import GObject from 'gi://GObject';
+import Clutter from 'gi://Clutter';
+import Graphene from 'gi://Graphene';
+import St from 'gi://St';
 
-const ExtensionUtils = imports.misc.extensionUtils;
-const Me = ExtensionUtils.getCurrentExtension();
-const Dot = Me.imports.apps.dot.Dot;
+import { Dash } from 'resource:///org/gnome/shell/ui/dash.js';
+
+const Point = Graphene.Point;
+
+// const ExtensionUtils = imports.misc.extensionUtils;
+// const Me = ExtensionUtils.getCurrentExtension();
+// const Dot = Me.imports.apps.dot.Dot;
 
 const DOT_CANVAS_SIZE = 96;
 
-var DockIcon = GObject.registerClass(
+export const DockIcon = GObject.registerClass(
   {},
   class DockIcon extends St.Widget {
     _init() {
@@ -68,7 +76,7 @@ var DockIcon = GObject.registerClass(
   }
 );
 
-var IconsContainer = GObject.registerClass(
+export const IconsContainer = GObject.registerClass(
   {},
   class IconsContainer extends St.Widget {
     _init(params) {
@@ -140,7 +148,7 @@ var IconsContainer = GObject.registerClass(
   }
 );
 
-var DotsContainer = GObject.registerClass(
+export const DotsContainer = GObject.registerClass(
   {},
   class DotsContainer extends St.Widget {
     _init(params) {
@@ -155,12 +163,12 @@ var DotsContainer = GObject.registerClass(
       const { count, show } = params;
       if (show) {
         for (let i = 0; i < count - this._dots.length; i++) {
-          let dot = new Dot(DOT_CANVAS_SIZE);
-          let pdot = new St.Widget();
-          pdot.add_child(dot);
-          this._dots.push(dot);
-          this.add_child(pdot);
-          dot.set_position(0, 0);
+          // let dot = new Dot(DOT_CANVAS_SIZE);
+          // let pdot = new St.Widget();
+          // pdot.add_child(dot);
+          // this._dots.push(dot);
+          // this.add_child(pdot);
+          // dot.set_position(0, 0);
         }
       }
       this._dots.forEach((d) => {
@@ -294,7 +302,7 @@ var DotsContainer = GObject.registerClass(
   }
 );
 
-var DockExtension = GObject.registerClass(
+export const DockExtension = GObject.registerClass(
   {},
   class DockExtension extends St.Widget {
     _init(params) {
@@ -362,7 +370,7 @@ var DockExtension = GObject.registerClass(
   }
 );
 
-var DockBackground = GObject.registerClass(
+export const DockBackground = GObject.registerClass(
   {},
   class DockBackground extends St.Widget {
     _init(params) {

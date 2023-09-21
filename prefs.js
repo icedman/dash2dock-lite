@@ -6,7 +6,7 @@ import Gio from 'gi://Gio';
 
 const GETTEXT_DOMAIN = 'dash2dock-light';
 
-import { schemaId, settingsKeys as SettingsKeys } from './preferences/keys.js';
+import { schemaId, SettingsKeys } from './preferences/keys.js';
 
 import {
   ExtensionPreferences,
@@ -105,8 +105,9 @@ export default class Preferences extends ExtensionPreferences {
     let settings = this.getSettings(schemaId);
     settings.set_string('msg-to-ext', '');
 
-    SettingsKeys.connectBuilder(builder);
-    SettingsKeys.connectSettings(settings);
+    let settingsKeys = SettingsKeys();
+    settingsKeys.connectBuilder(builder);
+    settingsKeys.connectSettings(settings);
 
     this.addButtonEvents(window, builder, settings);
     this.updateMonitors(window, builder, settings);

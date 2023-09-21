@@ -1,32 +1,15 @@
 'use strict';
 
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
-// import Meta from 'gi://Meta';
-// import Shell from 'gi://Shell';
-// import GObject from 'gi://GObject';
 import Clutter from 'gi://Clutter';
-// import GLib from 'gi://GLib';
 import Graphene from 'gi://Graphene';
-// import St from 'gi://St';
-
-// import { Dash } from 'resource:///org/gnome/shell/ui/dash.js';
-// import { Layout } from 'resource:///org/gnome/shell/ui/layout.js';
 
 const Point = Graphene.Point;
 
-// const TintEffect = Me.imports.effects.tint_effect.TintEffect;
-// const MonochromeEffect = Me.imports.effects.monochrome_effect.MonochromeEffect;
-// const Animation = Me.imports.effects.maclike_animation.Animation;
-
+import { TintEffect } from './effects/tint_effect.js';
+import { MonochromeEffect } from './effects/monochrome_effect.js';
 import { Animation } from './effects/maclike_animation.js';
-
-// const {
-//   IconsContainer,
-//   DotsContainer,
-//   DockExtension,
-//   DockBackground,
-//   explodeDashIcon,
-// } = Me.imports.dockItems;
+import { DebugOverlay } from './apps/overlay.js';
 
 import {
   IconsContainer,
@@ -35,8 +18,6 @@ import {
   DockBackground,
   // explodeDashIcon,
 } from './dockItems.js';
-
-// const DebugOverlay = Me.imports.apps.overlay.DebugOverlay;
 
 const ANIM_POS_COEF = 1.5;
 const ANIM_SCALE_COEF = 2.5;
@@ -81,11 +62,11 @@ export let Animator = class {
     this._dockExtension.listeners = this.dashContainer.listeners;
     this._dockExtension.visible = false;
 
-    // this._overlay = new DebugOverlay(
-    //   this.dashContainer._monitor.width,
-    //   this.dashContainer._monitor.height
-    // );
-    // this._overlay.name = 'debugOverlay';
+    this._overlay = new DebugOverlay(
+      this.dashContainer._monitor.width,
+      this.dashContainer._monitor.height
+    );
+    this._overlay.name = 'debugOverlay';
 
     this._enabled = true;
     this._dragging = false;
@@ -118,9 +99,9 @@ export let Animator = class {
       Main.uiGroup.remove_child(this._dockExtension);
       delete this._dockExtension;
       this._dockExtension = null;
-      // Main.uiGroup.remove_child(this._overlay);
-      // delete this._overlay;
-      // this._overlay = null;
+      Main.uiGroup.remove_child(this._overlay);
+      delete this._overlay;
+      this._overlay = null;
     }
 
     this._dots = [];
@@ -131,22 +112,22 @@ export let Animator = class {
 
   _createEffect(idx) {
     let effect = null;
-    // switch (idx) {
-    //   case 1: {
-    //     effect = new TintEffect({
-    //       name: 'color',
-    //       color: this.extension.icon_effect_color,
-    //     });
-    //     break;
-    //   }
-    //   case 2: {
-    //     effect = new MonochromeEffect({
-    //       name: 'color',
-    //       color: this.extension.icon_effect_color,
-    //     });
-    //     break;
-    //   }
-    // }
+    switch (idx) {
+      case 1: {
+        effect = new TintEffect({
+          name: 'color',
+          color: this.extension.icon_effect_color,
+        });
+        break;
+      }
+      case 2: {
+        effect = new MonochromeEffect({
+          name: 'color',
+          color: this.extension.icon_effect_color,
+        });
+        break;
+      }
+    }
     return effect;
   }
 

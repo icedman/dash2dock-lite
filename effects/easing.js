@@ -1,7 +1,7 @@
 'use strict';
 
 /* PennerEasing */
-var Linear = {
+export const Linear = {
   easeNone: (t, b, c, d) => {
     return (c * t) / d + b;
   },
@@ -16,7 +16,7 @@ var Linear = {
   },
 };
 
-var Bounce = {
+export const Bounce = {
   easeIn: (t, b, c, d) => {
     return c - Bounce.easeOut(d - t, 0, c, d) + b;
   },

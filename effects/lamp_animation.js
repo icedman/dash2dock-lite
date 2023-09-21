@@ -23,34 +23,32 @@
  */
 'use strict';
 
-const { GObject, Clutter, Meta, St } = imports.gi;
-const ExtensionUtils = imports.misc.extensionUtils;
-const Extension = ExtensionUtils.getCurrentExtension();
-const Main = imports.ui.main;
-// const Settings = Extension.imports.settings;
-const Config = imports.misc.config;
+import * as Main from 'resource:///org/gnome/shell/ui/main.js';
+import St from 'gi://St';
+import GObject from 'gi://GObject';
+import Clutter from 'gi://Clutter';
 
-const IS_4_XX_SHELL_VERSION = Config.PACKAGE_VERSION.startsWith('4');
-const IS_3_XX_SHELL_VERSION = Config.PACKAGE_VERSION.startsWith('3');
-const IS_3_38_SHELL_VERSION = Config.PACKAGE_VERSION.startsWith('3.38');
+const IS_4_XX_SHELL_VERSION = true; // Config.PACKAGE_VERSION.startsWith('4');
+const IS_3_XX_SHELL_VERSION = false; // Config.PACKAGE_VERSION.startsWith('3');
+const IS_3_38_SHELL_VERSION = false; // Config.PACKAGE_VERSION.startsWith('3.38');
 
 let extension;
 
-function init() {}
+export const init = () => {};
 
-function enable() {
+export const enable = () => {
   extension = new CompizMagicLampEffectExtension();
   if (extension) {
     extension.enable();
   }
-}
+};
 
-function disable() {
+export const disable = () => {
   if (extension) {
     extension.disable();
     extension = null;
   }
-}
+};
 
 class CompizMagicLampEffectExtension {
   constructor() {

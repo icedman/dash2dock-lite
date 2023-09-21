@@ -18,19 +18,17 @@
  */
 
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
-import Meta from 'gi://Meta';
-import Shell from 'gi://Shell';
-import GObject from 'gi://GObject';
-import Clutter from 'gi://Clutter';
 import St from 'gi://St';
-
-import { Dash } from 'resource:///org/gnome/shell/ui/dash.js';
 
 import { Timer } from './timer.js';
 import { Style } from './style.js';
 import { Dock } from './dock.js';
-import { Drawing } from './drawing.js';
 import { Services } from './services.js';
+import { runTests } from './diagnostics.js';
+
+import { initEffects as initTintEffects } from './effects/tint_effect.js';
+import { initEffects as initMonoChromeEffects } from './effects/monochrome_effect.js';
+import * as LampAnimation from './effects/lamp_animation.js';
 
 import {
   Extension,
@@ -47,6 +45,9 @@ const ANIM_INTERVAL_PAD = 15;
 
 export default class Dash2DockLiteExt extends Extension {
   enable() {
+    initTintEffects(this.dir.get_path());
+    initMonoChromeEffects(this.dir.get_path());
+
     // for debugging - set to 255
     this._dash_opacity = 0;
 
@@ -388,7 +389,7 @@ export default class Dash2DockLiteExt extends Extension {
 
   _disableSettings() {
     this._settingsKeys.disconnectSettings();
-    _settingsKeys = null();
+    this._settingsKeys = null;
   }
 
   _addEvents() {
@@ -508,9 +509,9 @@ export default class Dash2DockLiteExt extends Extension {
 
   _updateLampAnimation(disable) {
     if (this.lamp_app_animation && !disable) {
-      // LampAnimation.enable();
+      LampAnimation.enable();
     } else {
-      // LampAnimation.disable();
+      LampAnimation.disable();
     }
   }
 
@@ -690,7 +691,7 @@ export default class Dash2DockLiteExt extends Extension {
       this._diagnosticTimer = new Timer('diagnostics');
       this._diagnosticTimer.initialize(50);
     }
-    // runTests(this, this._settingsKeys);
+    runTests(this, this._settingsKeys);
   }
 
   dumpTimers() {

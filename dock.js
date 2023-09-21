@@ -13,8 +13,7 @@ import { Dash } from 'resource:///org/gnome/shell/ui/dash.js';
 import * as Fav from 'resource:///org/gnome/shell/ui/appFavorites.js';
 const Point = Graphene.Point;
 
-// const Bounce = Me.imports.effects.easing.Bounce;
-// const Linear = Me.imports.effects.easing.Linear;
+import { Bounce, Linear } from './effects/easing.js';
 
 import { Animator } from './animator.js';
 import { AutoHide } from './autohide.js';
@@ -602,7 +601,6 @@ export let Dock = GObject.registerClass(
       }
       if (container.child.app && !container.child.app.get_n_windows()) {
         if (container._renderedIcon) {
-          Main._renderedIcon = container._renderedIcon;
           this._bounceIcon(container._renderedIcon);
         }
       }
@@ -628,17 +626,17 @@ export let Dock = GObject.registerClass(
         {
           _duration: t,
           _func: (f, s) => {
-            // let res = Linear.easeNone(f._time, 0, travel, f._duration);
-            // icon._img.translation_y = -res;
-            // attached.translation_y = icon._img.translation_y;
+            let res = Linear.easeNone(f._time, 0, travel, f._duration);
+            icon._img.translation_y = -res;
+            attached.translation_y = icon._img.translation_y;
           },
         },
         {
           _duration: t * 3,
           _func: (f, s) => {
-            // let res = Bounce.easeOut(f._time, travel, -travel, f._duration);
-            // icon._img.translation_y = -res;
-            // attached.translation_y = icon._img.translation_y;
+            let res = Bounce.easeOut(f._time, travel, -travel, f._duration);
+            icon._img.translation_y = -res;
+            attached.translation_y = icon._img.translation_y;
           },
         },
       ];

@@ -1,20 +1,10 @@
 'use strict';
 
-const { St, Shell, Gio, GLib, Gtk, Meta, Clutter } = imports.gi;
+import * as Main from 'resource:///org/gnome/shell/ui/main.js';
+import Graphene from 'gi://Graphene';
 
-const Main = imports.ui.main;
-const Dash = imports.ui.dash.Dash;
-const Fav = imports.ui.appFavorites;
-const Layout = imports.ui.layout;
-const Point = imports.gi.Graphene.Point;
-
-const ExtensionUtils = imports.misc.extensionUtils;
-const Me = ExtensionUtils.getCurrentExtension();
-
-const getPointer = Me.imports.utils.getPointer;
-const warpPointer = Me.imports.utils.warpPointer;
-
-const { schemaId, settingsKeys, SettingsKeys } = Me.imports.preferences.keys;
+const Point = Graphene.Point;
+import { getPointer, warpPointer } from './utils.js';
 
 var print = (msg) => {
   log(msg);
@@ -226,7 +216,7 @@ function addPreferenceTests(_seqs, extension, settings) {
   add_message(_seqs, 'done', 0);
 }
 
-var runTests = (extension, settings) => {
+export const runTests = (extension, settings) => {
   let _seqs = [];
   addMotionTests(_seqs, extension, settings);
   addPreferenceTests(_seqs, extension, settings);

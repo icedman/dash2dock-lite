@@ -3,24 +3,46 @@
 
 'use strict';
 
-const { GLib, GObject, Gio, Clutter, Shell } = imports.gi;
-const ExtensionUtils = imports.misc.extensionUtils;
+import Shell from 'gi://Shell';
+import GLib from 'gi://GLib';
+import GObject from 'gi://GObject';
+import Clutter from 'gi://Clutter';
 
-const Me = ExtensionUtils.getCurrentExtension();
+let extensionDir = '';
 
-const SHADER_PATH = GLib.build_filenamev([
-  Me.path,
-  'effects',
-  'monochrome_effect.glsl',
-]);
+const getShaderSource = (_) => {
+  const SHADER_PATH = GLib.build_filenamev([
+    extensionDir,
+    'effects',
+    'monochrome_effect.glsl',
+  ]);
 
-const get_shader_source = (_) => {
   try {
     return Shell.get_file_contents_utf8_sync(SHADER_PATH);
   } catch (e) {
     log(`[d2dl] error loading shader from ${SHADER_PATH}: ${e}`);
     return null;
   }
+};
+
+let declarations = null;
+let code = null;
+
+const loadShader = () => {
+  let source = getShaderSource() || '';
+  let [decl, main] = source.split(/^.*?main\(\s?\)\s?/m);
+
+  decl = decl.trim();
+  main = main.trim().replace(/^[{}]/gm, '').trim();
+
+  declarations = decl;
+  code = main;
+  // return { declarations, code: main };
+};
+
+export const initEffects = (path) => {
+  extensionDir = path;
+  loadShader();
 };
 
 /// New Clutter Shader Effect that simply mixes a color in, the class applies
@@ -32,7 +54,7 @@ const get_shader_source = (_) => {
 ///
 /// GJS Doc:
 /// https://gjs-docs.gnome.org/clutter10~10_api/clutter.shadereffect
-var MonochromeEffect = new GObject.registerClass(
+export const MonochromeEffect = GObject.registerClass(
   {},
   class ColorShader extends Clutter.ShaderEffect {
     _init(params) {
@@ -52,7 +74,7 @@ var MonochromeEffect = new GObject.registerClass(
 
       // set shader source
 
-      this._source = get_shader_source();
+      this._source = getShaderSource();
 
       if (this._source) this.set_shader_source(this._source);
 

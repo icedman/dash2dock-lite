@@ -14,6 +14,11 @@
 
 ![Screen Shot](https://raw.githubusercontent.com/icedman/dash2dock-lite/main/screenshots/Screenshot%20from%202022-10-17%2021-33-29.png)
 
+### Notice
+
+* Gnome 45 port is ready for testing
+* Gnome 44 and prior will be under g44 branch - and will largely be unsupported.
+
 ### Features
 
 * Dash docked at the desktop

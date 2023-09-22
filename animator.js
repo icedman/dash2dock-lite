@@ -53,7 +53,7 @@ export let Animator = class {
     });
 
     this._dotsContainer = new DotsContainer({
-      name: 'd2dldotsContainer',
+      name: 'd2dlDotsContainer',
       reactive: false,
     });
 
@@ -212,27 +212,33 @@ export let Animator = class {
     let pointer = global.get_pointer();
     let monitor = this.dashContainer._monitor;
 
-    let minimizeShaking = false;
-    if (
-      this._prevPointer &&
-      this._prevPointer[0] == pointer[0] &&
-      this._prevPointer[1] == pointer[1]
-    ) {
-      minimizeShaking = true;
-    }
-    this._prevPointer = pointer;
+    // let minimizeShaking = false;
+    // if (
+    //   this._prevPointer &&
+    //   this._prevPointer[0] == pointer[0] &&
+    //   this._prevPointer[1] == pointer[1]
+    // ) {
+    //   minimizeShaking = true;
+    // }
+    // this._prevPointer = pointer;
 
     let padEnd = 0;
     let padEndPos = '';
     this.dashContainer.dash.style = '';
+
+    let isWithin = this._isWithinDash(pointer);
 
     // center the dash
     {
       let width = this.extension._vertical
         ? this.dashContainer.height
         : this.dashContainer.width;
-      this.dashContainer.dash.x =
-        width / 2 - (this._iconsCount * iconSpacing * scaleFactor) / 2;
+
+      let dashWidth = this.extension._vertical
+        ? this.dashContainer.dash.height
+        : this.dashContainer.dash.width;
+
+      this.dashContainer.dash.x = width / 2 - dashWidth / 2;
     }
 
     if (this.dashContainer._scaleDownExcess) {
@@ -415,7 +421,6 @@ export let Animator = class {
       this._preview = null;
     }
 
-    let isWithin = this._isWithinDash(pointer);
     if (isWithin) {
       this._isWithinCount = (this._isWithinCount || 0) + 1;
     } else {
@@ -468,7 +473,7 @@ export let Animator = class {
     });
 
     if (!nearestIcon) {
-      // this._overlay.visible = false;
+      this._overlay.visible = false;
     }
 
     this._nearestIcon = nearestIcon;
@@ -484,7 +489,9 @@ export let Animator = class {
     let icon_spacing =
       iconSize * (1.2 + this.extension.animation_spread / 4) * scaleFactor;
 
+    //------------------------
     // animation behavior
+    //------------------------
     if (animateIcons.length && nearestIcon) {
       let animation_type = this.extension.animation_type;
 
@@ -515,14 +522,22 @@ export let Animator = class {
 
       this.dashContainer.dash.style = '';
 
-      {
+      // TODO: buggy
+      if (anim.didAnimate) {
         let width = this.extension._vertical
           ? this.dashContainer.height
           : this.dashContainer.width;
 
-        this.dashContainer.dash.x =
-          width / 2 -
-          ((this._iconsCount + 1) * anim.iconSpacing * scaleFactor) / 2;
+        let dashWidth = this.extension._vertical
+          ? this.dashContainer.dash.height
+          : this.dashContainer.dash.width;
+
+        // this.dashContainer.dash.x =
+        //   width / 2 -
+        //   ((this._iconsCount + 1) * anim.iconSpacing * scaleFactor) / 2;
+
+        this.dashContainer.dash.x = width / 2 - dashWidth / 2;
+
         if (this.extension._vertical) {
           this.dashContainer.dash.style = `padding-bottom: ${
             padEnd + anim.padRight
@@ -537,12 +552,12 @@ export let Animator = class {
       // debug draw
       // todo move to overlay class
       if (this.extension.debug_visual) {
-        // this._overlay.state.monitor = monitor;
-        // this._overlay.objects = anim.debugDraw;
-        // this._overlay.visible = this.extension.debug_visual;
-        // this._overlay.set_position(monitor.x, monitor.y);
-        // this._overlay.set_size(monitor.width, monitor.height);
-        // this._overlay.redraw();
+        this._overlay.state.monitor = monitor;
+        this._overlay.objects = anim.debugDraw;
+        this._overlay.visible = this.extension.debug_visual;
+        this._overlay.set_position(monitor.x, monitor.y);
+        this._overlay.set_size(monitor.width, monitor.height);
+        this._overlay.redraw();
       }
     }
 
@@ -755,6 +770,8 @@ export let Animator = class {
     if (!didAnimate && !this._dragging && this._throttleDown <= 0) {
       this._throttleDown = THROTTLE_DOWN_FRAMES + THROTTLE_DOWN_DELAY_FRAMES;
     }
+
+    this._didAnimate = didAnimate;
   }
 
   _findIcons() {
@@ -886,7 +903,6 @@ export let Animator = class {
   }
 
   _onButtonEvent(obj, evt) {
-    Main._lastButtonEvent = evt;
     let pressed = evt.type() == Clutter.EventType.BUTTON_PRESS;
     let button1 = (evt.get_state() & Clutter.ModifierType.BUTTON1_MASK) != 0;
     let shift = (evt.get_state() & Clutter.ModifierType.SHIFT_MASK) != 0;

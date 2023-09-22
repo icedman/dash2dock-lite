@@ -114,7 +114,7 @@ export default class Preferences extends ExtensionPreferences {
     this.addMenu(window, builder);
 
     let toggle_experimental = () => {
-      let exp = false; // SettingsKeys.getValue('experimental-features');
+      let exp = false; // settingsKeys.getValue('experimental-features');
       builder.get_object('dock-location-row').visible = exp;
       builder.get_object('self-test-row').visible = exp;
     };

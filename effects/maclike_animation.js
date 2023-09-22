@@ -224,6 +224,7 @@ export const Animation = (animateIcons, pointer, settings) => {
     });
   }
 
+  let didAnimate = false;
   let idx = 0;
   animateIcons.forEach((a) => {
     let f = frames[idx++];
@@ -246,6 +247,7 @@ export const Animation = (animateIcons, pointer, settings) => {
     }
     a._targetScale = f._p;
     a._targetSpread = f.l;
+    didAnimate = didAnimate || a._targetScale > 1;
   });
 
   return {
@@ -255,5 +257,6 @@ export const Animation = (animateIcons, pointer, settings) => {
     padRight,
     iconSpacing,
     debugDraw,
+    didAnimate,
   };
 };

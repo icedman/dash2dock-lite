@@ -390,6 +390,7 @@ export const DockBackground = GObject.registerClass(
 
       let p1 = first.get_transformed_position();
       let p2 = last.get_transformed_position();
+
       if (!isNaN(p1[0]) && !isNaN(p1[1])) {
         // bottom
         this.x = p1[0] - padding;

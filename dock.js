@@ -27,7 +27,7 @@ export let Dock = GObject.registerClass(
   class Dock extends St.Widget {
     _init() {
       super._init({
-        name: 'd2dldotsContainer',
+        name: 'd2dlContainer',
         // vertical: true,
         reactive: true,
         track_hover: true,

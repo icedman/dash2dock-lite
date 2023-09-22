@@ -2,6 +2,7 @@
 
 import Gio from 'gi://Gio';
 import St from 'gi://St';
+
 const CustomStylesPath = '/tmp';
 
 export const Style = class {

@@ -2,17 +2,8 @@
 
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as Fav from 'resource:///org/gnome/shell/ui/appFavorites.js';
-// import { WeatherClient } from 'resource:///org/gnome/shell/misc/weather.js';
 
-import Meta from 'gi://Meta';
-import Shell from 'gi://Shell';
-import GObject from 'gi://GObject';
-import Clutter from 'gi://Clutter';
 import Gio from 'gi://Gio';
-import St from 'gi://St';
-
-// const Clock = Me.imports.apps.clock.Clock;
-// const Calendar = Me.imports.apps.calendar.Calendar;
 
 import { Clock } from './apps/clock.js';
 import { Calendar } from './apps/calendar.js';

@@ -75,7 +75,7 @@
           </object>
         </child>
         <child>
-          <object class="AdwActionRow">
+          <object class="AdwActionRow" id="lamp-app-animation-row">
             <property name="visible">true</property>
             <property name="title" translatable="yes">Lamp Animation</property>
             <property name="subtitle" translatable="yes">Add genie on a lamp animation on minimizing windows. Credit to https://github.com/hermes83/compiz-alike-magic-lamp-effect</property>

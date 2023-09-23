@@ -23,7 +23,7 @@
         </child>
         <child>
           <object class="AdwActionRow" id="dock-location-row">
-            <property name="visible">false</property>
+            <property name="visible">true</property>
             <property name="title" translatable="yes">Dock Location</property>
             <property name="subtitle" translatable="yes">Set dock position on the screen.</property>
             <property name="activatable-widget">dock-location</property>
@@ -100,6 +100,18 @@
             <property name="activatable-widget">autohide-dash</property>
             <child>
               <object class="GtkSwitch" id="autohide-dash">
+                <property name="valign">center</property>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="AdwActionRow">
+            <property name="title" translatable="yes">Dodge Only</property>
+            <property name="subtitle" translatable="yes">Hide the dock only when it overlaps with windows or when at fullscreen mode.</property>
+            <property name="activatable-widget">autohide-dodge</property>
+            <child>
+              <object class="GtkSwitch" id="autohide-dodge">
                 <property name="valign">center</property>
               </object>
             </child>

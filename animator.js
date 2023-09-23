@@ -238,7 +238,11 @@ export let Animator = class {
         ? this.dashContainer.dash.height
         : this.dashContainer.dash.width;
 
-      this.dashContainer.dash.x = width / 2 - dashWidth / 2;
+      if (this.extension._vertical) {
+        this.dashContainer.dash.y = width / 2 - dashWidth / 2;
+      } else {
+        this.dashContainer.dash.x = width / 2 - dashWidth / 2;
+      }
     }
 
     if (this.dashContainer._scaleDownExcess) {
@@ -532,11 +536,11 @@ export let Animator = class {
           ? this.dashContainer.dash.height
           : this.dashContainer.dash.width;
 
-        // this.dashContainer.dash.x =
-        //   width / 2 -
-        //   ((this._iconsCount + 1) * anim.iconSpacing * scaleFactor) / 2;
-
-        this.dashContainer.dash.x = width / 2 - dashWidth / 2;
+        if (this.extension._vertical) {
+          this.dashContainer.dash.y = width / 2 - dashWidth / 2;
+        } else {
+          this.dashContainer.dash.x = width / 2 - dashWidth / 2;
+        }
 
         if (this.extension._vertical) {
           this.dashContainer.dash.style = `padding-bottom: ${

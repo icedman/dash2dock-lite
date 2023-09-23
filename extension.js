@@ -324,6 +324,7 @@ export default class Dash2DockLiteExt extends Extension {
           this.animate();
           break;
         }
+        case 'autohide-dodge':
         case 'autohide-dash': {
           this._updateAutohide();
           break;

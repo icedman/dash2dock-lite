@@ -51,6 +51,11 @@
         <summary>Autohide dash panel</summary>
         <description>Animate dash icons on hover.</description>
     </key>
+    <key type="b" name="autohide-dodge">
+        <default>true</default>
+        <summary>Autohide dodge mode</summary>
+        <description>Autohide dash only when overlapping with windows.</description>
+    </key>
     <key type="b" name="pressure-sense">
         <default>false</default>
         <summary>Pressure sense</summary>

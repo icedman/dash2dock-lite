@@ -319,6 +319,14 @@ export let AutoHide = class {
       return false;
     }
 
+    if (this.animator._isWithinDash(pointer)) {
+      return false;
+    }
+
+    if (!this.extension.autohide_dodge) {
+      return true;
+    }
+
     // log('---');
     // log(pointer[1]);
     // log(dash_position[1]);

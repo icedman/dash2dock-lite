@@ -405,11 +405,11 @@ export let Dock = GObject.registerClass(
 
       let pos = dock_location || 0;
 
-      experimental_features = false;
+      // experimental_features = false;
       // dock position -- [left, right] are experimental
-      if (!experimental_features) {
-        pos = 0;
-      }
+      // if (!experimental_features) {
+      //   pos = 0;
+      // }
 
       this.extension._position = ['bottom', 'left', 'right', 'top'][pos];
       this.extension._vertical =

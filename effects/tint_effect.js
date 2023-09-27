@@ -7,9 +7,7 @@ import GLib from 'gi://GLib';
 import GObject from 'gi://GObject';
 import Clutter from 'gi://Clutter';
 
-let extensionDir = '';
-
-const getShaderSource = (_) => {
+const getShaderSource = (extensionDir) => {
   const SHADER_PATH = GLib.build_filenamev([
     extensionDir,
     'effects',
@@ -22,26 +20,6 @@ const getShaderSource = (_) => {
     log(`[d2dl] error loading shader from ${SHADER_PATH}: ${e}`);
     return null;
   }
-};
-
-let declarations = null;
-let code = null;
-
-const loadShader = () => {
-  let source = getShaderSource() || '';
-  let [decl, main] = source.split(/^.*?main\(\s?\)\s?/m);
-
-  decl = decl.trim();
-  main = main.trim().replace(/^[{}]/gm, '').trim();
-
-  declarations = decl;
-  code = main;
-  // return { declarations, code: main };
-};
-
-export const initEffects = (path) => {
-  extensionDir = path;
-  loadShader();
 };
 
 /// New Clutter Shader Effect that simply mixes a color in, the class applies
@@ -71,15 +49,16 @@ export const TintEffect = GObject.registerClass(
 
       super._init(params);
 
-      // set shader source
-
-      this._source = getShaderSource();
-
-      if (this._source) this.set_shader_source(this._source);
-
       // set shader color
 
       if (_color) this.color = _color;
+    }
+
+    preload(path) {
+      
+      // set shader source
+      this._source = getShaderSource(path);
+      if (this._source) this.set_shader_source(this._source);
 
       this.update_enabled();
     }

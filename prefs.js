@@ -18,7 +18,7 @@ export default class Preferences extends ExtensionPreferences {
     super(metadata);
 
     let iconTheme = Gtk.IconTheme.get_for_display(Gdk.Display.get_default());
-    let UIFolderPath = `${this.dir.get_path()}/ui`;
+    let UIFolderPath = `${this.path}/ui`;
     iconTheme.add_search_path(`${UIFolderPath}/icons`);
     // ExtensionUtils.initTranslations();
   }
@@ -59,10 +59,13 @@ export default class Preferences extends ExtensionPreferences {
   }
 
   addMenu(window, builder) {
-    let menu_util = builder.get_object('menu_util');
-    window.add(menu_util);
+    // let menu_util = builder.get_object('menu_util');
+    // window.add(menu_util);
 
     let headerbar = this.find(window, 'AdwHeaderBar');
+    if (!headerbar) {
+      return;
+    }
     headerbar.pack_start(builder.get_object('info_menu'));
 
     // setup menu actions
@@ -93,7 +96,7 @@ export default class Preferences extends ExtensionPreferences {
       actionGroup.add_action(act);
     });
 
-    window.remove(menu_util);
+    // window.remove(menu_util);
   }
 
   addButtonEvents(window, builder, settings) {
@@ -113,7 +116,7 @@ export default class Preferences extends ExtensionPreferences {
   fillPreferencesWindow(window) {
     let builder = new Gtk.Builder();
 
-    let UIFolderPath = `${this.dir.get_path()}/ui`;
+    let UIFolderPath = `${this.path}/ui`;
 
     builder.add_from_file(`${UIFolderPath}/general.ui`);
     builder.add_from_file(`${UIFolderPath}/appearance.ui`);
@@ -125,6 +128,8 @@ export default class Preferences extends ExtensionPreferences {
     window.add(builder.get_object('tweaks'));
     window.add(builder.get_object('others'));
     window.set_search_enabled(true);
+
+    // this.dump(window, 0);
 
     let settings = this.getSettings(schemaId);
     settings.set_string('msg-to-ext', '');

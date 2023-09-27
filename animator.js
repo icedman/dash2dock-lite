@@ -118,6 +118,7 @@ export let Animator = class {
           name: 'color',
           color: this.extension.icon_effect_color,
         });
+        effect.preload(this.extension.path);
         break;
       }
       case 2: {
@@ -125,6 +126,7 @@ export let Animator = class {
           name: 'color',
           color: this.extension.icon_effect_color,
         });
+        effect.preload(this.extension.path);
         break;
       }
     }

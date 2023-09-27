@@ -26,8 +26,6 @@ import { Dock } from './dock.js';
 import { Services } from './services.js';
 import { runTests } from './diagnostics.js';
 
-import { initEffects as initTintEffects } from './effects/tint_effect.js';
-import { initEffects as initMonoChromeEffects } from './effects/monochrome_effect.js';
 import * as LampAnimation from './effects/lamp_animation.js';
 
 import {
@@ -45,9 +43,6 @@ const ANIM_INTERVAL_PAD = 15;
 
 export default class Dash2DockLiteExt extends Extension {
   enable() {
-    initTintEffects(this.dir.get_path());
-    initMonoChromeEffects(this.dir.get_path());
-
     // for debugging - set to 255
     this._dash_opacity = 0;
 

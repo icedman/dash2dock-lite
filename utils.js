@@ -1,5 +1,4 @@
 import GLib from 'gi://GLib';
-import Gdk from 'gi://Gdk';
 
 // todo.. recompute ... seems to length the debounce hold out period
 const DEBOUNCE_PRECISION = 1;
@@ -12,19 +11,7 @@ const dummy_pointer = {
 };
 
 export const getPointer = () => {
-  let display = Gdk.Display.get_default();
-
-  // wayland?
-  if (!display) {
-    return dummy_pointer;
-  }
-
-  let deviceManager = display.get_device_manager();
-  if (!deviceManager) {
-    return dummy_pointer;
-  }
-  let pointer = deviceManager.get_client_pointer() || dummy_pointer;
-  return pointer;
+  return global.get_pointer();
 };
 
 export const warpPointer = (pointer, x, y) => {

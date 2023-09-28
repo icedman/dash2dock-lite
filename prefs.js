@@ -24,15 +24,49 @@ function updateMonitors(window, builder, settings) {
   monitors_model.splice(count, 6 - count, []);
 }
 
-function addMenu(window, builder) {
-  let menu_util = builder.get_object('menu_util');
-  window.add(menu_util);
+function find(n, name) {
+  if (n.get_name() == name) {
+    return n;
+  }
+  let c = n.get_first_child();
+  while (c) {
+    let cn = find(c, name);
+    if (cn) {
+      return cn;
+    }
+    c = c.get_next_sibling();
+  }
+  return null;
+}
 
-  const page = builder.get_object('menu_util');
-  const pages_stack = page.get_parent(); // AdwViewStack
-  const content_stack = pages_stack.get_parent().get_parent(); // GtkStack
-  const preferences = content_stack.get_parent(); // GtkBox
-  const headerbar = preferences.get_first_child(); // AdwHeaderBar
+function dump(n, l) {
+  let s = '';
+  for (let i = 0; i < l; i++) {
+    s += ' ';
+  }
+  print(`${s}${n.get_name()}`);
+  let c = n.get_first_child();
+  while (c) {
+    dump(c, l + 1);
+    c = c.get_next_sibling();
+  }
+}
+
+function addMenu(window, builder) {
+  // let menu_util = builder.get_object('menu_util');
+  // window.add(menu_util);
+
+  // const page = builder.get_object('menu_util');
+  // const pages_stack = page.get_parent(); // AdwViewStack
+  // const content_stack = pages_stack.get_parent().get_parent(); // GtkStack
+  // const preferences = content_stack.get_parent(); // GtkBox
+  // const headerbar = preferences.get_first_child(); // AdwHeaderBar
+  // headerbar.pack_start(builder.get_object('info_menu'));
+
+  let headerbar = this.find(window, 'AdwHeaderBar');
+  if (!headerbar) {
+    return;
+  }
   headerbar.pack_start(builder.get_object('info_menu'));
 
   // setup menu actions
@@ -63,7 +97,7 @@ function addMenu(window, builder) {
     actionGroup.add_action(act);
   });
 
-  window.remove(menu_util);
+  // window.remove(menu_util);
 }
 
 function addButtonEvents(window, builder, settings) {

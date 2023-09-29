@@ -17,7 +17,7 @@
 ### Notice
 
 * Gnome 45 port is ready for testing
-* Gnome 44 and prior will be under g44 branch - and will largely be unsupported.
+* Gnome 44 and prior will be under g44 branch
 
 ### Features
 

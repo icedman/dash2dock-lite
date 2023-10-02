@@ -435,7 +435,6 @@ const AbstractCommonMagicLampEffect = GObject.registerClass(
           this.timerId.disconnect(this.completedEvent);
           this.completedEvent = null;
         }
-        this.timerId.run_dispose();
         this.timerId = null;
       }
 

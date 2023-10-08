@@ -938,6 +938,8 @@ export let Animator = class {
     this._lastScrollEvent = evt;
     let pointer = global.get_pointer();
     if (this._nearestIcon) {
+      if (this._scrollCounter < -2 || this._scrollCounter > 2) this._scrollCounter = 0;
+
       let icon = this._nearestIcon;
       // log(`scroll - (${icon._pos}) (${pointer})`);
       let SCROLL_RESOLUTION =
@@ -946,7 +948,8 @@ export let Animator = class {
         (MAX_SCROLL_RESOLUTION * this.extension.scroll_sensitivity || 0);
       if (icon._appwell && icon._appwell.app) {
         this._lastScrollObject = icon;
-        switch (evt.direction) {
+        let direction = evt.get_scroll_direction();
+        switch (direction) {
           case Clutter.ScrollDirection.UP:
           case Clutter.ScrollDirection.LEFT:
             this._scrollCounter += 1 / SCROLL_RESOLUTION;
@@ -1093,10 +1096,8 @@ export let Animator = class {
     }
 
     let window = windows[focusId];
-
-    // log(`${focusId}/${window.get_id()}`);
-
     if (window) {
+      this._lockCycle();
       if (activeWs == window.get_workspace()) {
         window.raise();
         window.focus(0);

@@ -117,6 +117,8 @@ export default class Dash2DockLiteExt extends Extension {
     this.startUp();
 
     log('dash2dock-lite enabled');
+
+    Main.overview.d2dl = this;
   }
 
   disable() {

@@ -49,13 +49,12 @@ export const MonochromeEffect = GObject.registerClass(
       delete params.color;
 
       super._init(params);
-      
+
       // set shader color
       if (_color) this.color = _color;
     }
 
     preload(path) {
-
       // set shader source
       this._source = getShaderSource(path);
       if (this._source) this.set_shader_source(this._source);
@@ -104,6 +103,12 @@ export const MonochromeEffect = GObject.registerClass(
     }
 
     set blend(value) {
+      if (value > 0.5) {
+        value *= 0.75;
+        if (value < 0.5) {
+          value = 0.5;
+        }
+      }
       if (this._blend !== value) {
         this._blend = value;
 

@@ -6,6 +6,15 @@
 
 * Autohide disabled at certain monitor layouts
 
+# Release 36
+
+* Fix tint & monochrome settings
+* Improve animtion icon positions
+
+# Release 35
+
+* Gnome 45
+
 # Release 27
 
 * Improved animation

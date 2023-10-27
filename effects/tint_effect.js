@@ -55,7 +55,6 @@ export const TintEffect = GObject.registerClass(
     }
 
     preload(path) {
-      
       // set shader source
       this._source = getShaderSource(path);
       if (this._source) this.set_shader_source(this._source);
@@ -104,6 +103,12 @@ export const TintEffect = GObject.registerClass(
     }
 
     set blend(value) {
+      if (value > 0.5) {
+        value *= 0.75;
+        if (value < 0.5) {
+          value = 0.5;
+        }
+      }
       if (this._blend !== value) {
         this._blend = value;
 

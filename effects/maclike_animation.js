@@ -11,6 +11,8 @@ function gen_frames(settings) {
     debugDraw,
   } = settings;
 
+  dashWidth += iconSize * scaleFactor * 1.5;
+
   let frames = [];
   for (let i = 0; i < iconsCount; i++) {
     frames.push({

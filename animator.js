@@ -504,6 +504,7 @@ export let Animator = class {
       let vertical = this.extension._vertical
         ? this.dashContainer._position
         : 0;
+
       let anim = Animation(animateIcons, pointer, {
         iconsCount: animateIcons.length,
         iconSize,
@@ -520,6 +521,7 @@ export let Animator = class {
         animation_spread: this.extension.animation_spread,
         vertical,
       });
+      // let anim = {};
 
       // commit
       animateIcons.forEach((i) => {
@@ -648,6 +650,10 @@ export let Animator = class {
       // } else {
       //   icon._img.translation_x = 0;
       // }
+
+      if (scale <= 1.0) {
+        targetSpread = iconSpacing * scaleFactor;
+      }
 
       if (this.extension._vertical) {
         icon._container.height = targetSpread;
@@ -938,7 +944,8 @@ export let Animator = class {
     this._lastScrollEvent = evt;
     let pointer = global.get_pointer();
     if (this._nearestIcon) {
-      if (this._scrollCounter < -2 || this._scrollCounter > 2) this._scrollCounter = 0;
+      if (this._scrollCounter < -2 || this._scrollCounter > 2)
+        this._scrollCounter = 0;
 
       let icon = this._nearestIcon;
       // log(`scroll - (${icon._pos}) (${pointer})`);
@@ -1093,6 +1100,11 @@ export let Animator = class {
       }
 
       if (current_focus == focusId) return;
+    } else if (nw == 1) {
+      if (windows[0].is_hidden()) {
+        windows[0].unminimize();
+        windows[0].raise();
+      }
     }
 
     let window = windows[focusId];

@@ -54,7 +54,6 @@ export const ColorEffect = GObject.registerClass(
     }
 
     preload(path) {
-
       // set shader source
       this._source = getShaderSource(path);
       if (this._source) this.set_shader_source(this._source);

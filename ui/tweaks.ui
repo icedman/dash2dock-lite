@@ -2,7 +2,7 @@
 <interface>
   <object class="AdwPreferencesPage" id="tweaks">
     <property name="name">tweaks</property>
-    <property name="title" translatable="yes">Tweaks</property>
+    <property name="title" translatable="yes">Tweak</property>
     <property name="icon-name">applications-symbolic</property>
     <child>
       <object class="AdwPreferencesGroup">

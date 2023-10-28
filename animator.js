@@ -20,7 +20,8 @@ import {
 } from './dockItems.js';
 
 const ANIM_POS_COEF = 1.5;
-const ANIM_SCALE_COEF = 2.5;
+const ANIM_SCALE_COEF = 1.5 * 2;
+const ANIM_SPREAD_COEF = 1.25 * 1;
 const ANIM_ON_LEAVE_COEF = 2.0;
 const ANIM_ICON_RAISE = 0.6;
 const ANIM_ICON_SCALE = 1.5;
@@ -581,14 +582,17 @@ export let Animator = class {
     }
 
     let _scale_coef = ANIM_SCALE_COEF;
+    let _spread_coef = ANIM_SPREAD_COEF;
     let _pos_coef = ANIM_POS_COEF;
     if (this.extension.animation_fps > 0) {
       _pos_coef /= 1 + this.extension.animation_fps / 2;
       _scale_coef /= 1 + this.extension.animation_fps / 2;
+      _spread_coef /= 1 + this.extension.animation_fps / 2;
     }
     if (!nearestIcon) {
       _scale_coef *= ANIM_ON_LEAVE_COEF;
       _pos_coef *= ANIM_ON_LEAVE_COEF;
+      _spread_coef *= ANIM_ON_LEAVE_COEF;
     }
 
     let dotIndex = 0;
@@ -656,9 +660,15 @@ export let Animator = class {
       }
 
       if (this.extension._vertical) {
-        icon._container.height = targetSpread;
+        let newHeight =
+          (icon._container.height * _spread_coef + targetSpread) /
+          (_spread_coef + 1);
+        icon._container.height = newHeight;
       } else {
-        icon._container.width = targetSpread;
+        let newWidth =
+          (icon._container.width * _spread_coef + targetSpread) /
+          (_spread_coef + 1);
+        icon._container.width = newWidth;
       }
 
       // scale

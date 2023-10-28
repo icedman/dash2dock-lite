@@ -2,7 +2,7 @@
 <interface>
   <object class="AdwPreferencesPage" id="appearance">
     <property name="name">appearance</property>
-    <property name="title" translatable="yes">Appearance</property>
+    <property name="title" translatable="yes">Style</property>
     <property name="icon-name">dash-symbolic</property>
     <child>
       <object class="AdwPreferencesGroup">

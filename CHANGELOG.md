@@ -1,10 +1,15 @@
 # Roadmap
 
-* Features frozen - Please migrate to Anino Dock
+* Features frozen - unless you have a very nice suggestion :)
 
 # Current Issues
 
 * Autohide disabled at certain monitor layouts
+
+# Release 37,38,39
+
+* Fix unresponsive Apps Button when animation is disabled
+* Other bug fixes
 
 # Release 36
 

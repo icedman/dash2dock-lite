@@ -438,7 +438,7 @@ export let Animator = class {
       nearestIcon = null;
     }
 
-    // log(`${nearestIdx} ${nearestDistance}`);
+    this._nearestIcon = nearestIcon;
 
     //---------------------
     // disable animation when:
@@ -482,8 +482,6 @@ export let Animator = class {
     if (!nearestIcon) {
       this._overlay.visible = false;
     }
-
-    this._nearestIcon = nearestIcon;
 
     let px = pointer[0];
     let py = pointer[1];
@@ -602,6 +600,8 @@ export let Animator = class {
     // all icons scale up (scaleJump 0.08) when cursor within hover area
     let scaleJump = 0; // this._inDash ? 0.08 : 0;
 
+    let tooFar = false;
+
     // animate to target scale and position
     // todo .. make this velocity based
     animateIcons.forEach((icon) => {
@@ -622,6 +622,10 @@ export let Animator = class {
       icon.set_scale(1, 1);
       let from = this._get_position(icon);
       let dst = this._get_distance(from, icon._target);
+
+      if (dst > iconSize * scaleFactor) {
+        tooFar = true;
+      }
 
       scale = (fromScale * _scale_coef + scale) / (_scale_coef + 1);
 
@@ -706,6 +710,15 @@ export let Animator = class {
         }
       }
     });
+
+    if (tooFar) {
+      animateIcons.forEach((icon) => {
+        let pos = icon._target;
+        if (!isNaN(pos[0]) && !isNaN(pos[1])) {
+          icon.set_position(pos[0], pos[1]);
+        }
+      });
+    }
 
     this._dotsContainer.update({
       icons: animateIcons,

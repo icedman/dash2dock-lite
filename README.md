@@ -1,6 +1,6 @@
 <br/>
 <p align="center">
-  <h3 align="center">Dash2Dock Lite</h3>
+  <h3 align="center">Dash2Dock Animated</h3>
 
   <p align="center">
     A GNOME Shell 40+ Extension

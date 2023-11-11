@@ -203,14 +203,7 @@ app.connect('activate', (me) => {
 
   let menu_util = builder.get_object('menu_util');
   w.add(menu_util);
-  w.title = 'Dash2Dock Lite';
-
-  // const page = builder.get_object('menu_util');
-  // const pages_stack = page.get_parent(); // AdwViewStack
-  // const content_stack = pages_stack.get_parent().get_parent(); // GtkStack
-  // const preferences = content_stack.get_parent(); // GtkBox
-  // const headerbar = preferences.get_first_child(); // AdwHeaderBar
-  // headerbar.pack_start(builder.get_object('info_menu'));
+  w.title = 'Dash2Dock Animated';
 
   let headerbar = find(w, 'AdwHeaderBar');
   if (!headerbar) {

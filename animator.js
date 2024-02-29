@@ -1046,10 +1046,12 @@ export let Animator = class {
   _onFullScreen() {
     if (!this._iconsContainer) return;
     if (!this._isInFullscreen()) {
+      this.dashContainer.reactiveChild.show();
       this._iconsContainer.show();
       this._dotsContainer.show();
       this._background.show();
     } else {
+      this.dashContainer.reactiveChild.hide();
       this._iconsContainer.hide();
       this._dotsContainer.hide();
       this._background.hide();

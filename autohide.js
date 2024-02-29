@@ -268,8 +268,10 @@ export let AutoHide = class {
 
     if (this.extension._vertical) {
       this.dashContainer.set_position(x, this.target[1]);
+      this.dashContainer.reactiveChild.x = this.dashContainer.x;
     } else {
       this.dashContainer.set_position(this.target[0], y);
+      this.dashContainer.reactiveChild.y = this.dashContainer.y;
     }
     return this._animating;
   }

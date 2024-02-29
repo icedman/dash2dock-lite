@@ -22,6 +22,20 @@ const EDGE_DISTANCE = 20;
 
 let _preferredIconSizes = null;
 
+let Reactive = GObject.registerClass(
+  {},
+class Reactive extends St.Widget {
+  _init() {
+      super._init({
+        name: 'd2dlContainerReactive',
+        // vertical: true,
+        reactive: true,
+        track_hover: true,
+      });
+    }
+  }
+);
+
 export let Dock = GObject.registerClass(
   {},
   class Dock extends St.Widget {
@@ -29,14 +43,17 @@ export let Dock = GObject.registerClass(
       super._init({
         name: 'd2dlContainer',
         // vertical: true,
-        reactive: true,
-        track_hover: true,
+        reactive: false,
+        track_hover: false,
       });
 
       let pivot = new Point();
       pivot.x = 0.5;
       pivot.y = 0.5;
       this.pivot_point = pivot;
+
+      this.reactiveChild = new Reactive();
+      this.add_child(this.reactiveChild);
 
       this.animator = new Animator();
       this.animator.dashContainer = this;
@@ -53,7 +70,7 @@ export let Dock = GObject.registerClass(
       this.add_child(this.dash);
 
       this.listeners = [this.animator, this.autohider];
-      this.connectObject(
+      this.reactiveChild.connectObject(
         'button-press-event',
         this._onButtonEvent.bind(this),
         'motion-event',
@@ -89,7 +106,7 @@ export let Dock = GObject.registerClass(
       Main.layoutManager.addChrome(this, {
         affectsStruts: !this.extension.autohide_dash,
         // affectsStruts: true,
-        affectsInputRegion: true,
+        affectsInputRegion: false,
         trackFullscreen: true,
       });
 
@@ -109,6 +126,8 @@ export let Dock = GObject.registerClass(
           p: this.animator._iconsContainer,
           above: true,
         },
+
+        { c: this.reactiveChild, p: this, above: true },
       ];
 
       reparent.forEach((obj) => {
@@ -536,8 +555,14 @@ export let Dock = GObject.registerClass(
         this.dash.height = -1;
         this.dash.width = dockHeight * scaleFactor;
         this.dash.add_style_class_name('vertical');
+
+        this.reactiveChild.height = this._projectedWidth;
+        this.reactiveChild.width = this.dash.width;
+        this.reactiveChild.x = this.x;
+        this.reactiveChild.y = this.y + this._monitor.height / 2 - this._projectedWidth / 2;
       } else {
         let sw = this._monitor.width - cornerPad * 2;
+        // sw = (sw + (this._projectedWidth * 4)) / 5;
         // top/bottom
         this.set_size(sw, dockHeight * scaleFactor);
         this.dash.last_child.layout_manager.orientation = 0;
@@ -545,6 +570,11 @@ export let Dock = GObject.registerClass(
         this.dash.height = dockHeight * scaleFactor;
         this.dash.width = -1;
         this.dash.remove_style_class_name('vertical');
+
+        this.reactiveChild.width = this._projectedWidth;
+        this.reactiveChild.height = this.height;
+        this.reactiveChild.x = this.x + this._monitor.width / 2 - this._projectedWidth / 2;
+        this.reactiveChild.y = this.y;
       }
 
       if (this.autohider._enabled && !this.autohider._shown) {
@@ -565,7 +595,8 @@ export let Dock = GObject.registerClass(
         } else {
           // top/bottom
           this.set_position(
-            this._monitor.x + cornerPad,
+            // this._monitor.x + cornerPad,
+            cornerPad + (this._monitor.width / 2) - (this.width / 2),
             this._monitor.y + this._monitor.height - dockHeight * scaleFactor
           );
         }

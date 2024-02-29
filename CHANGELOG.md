@@ -6,6 +6,10 @@
 
 * Autohide disabled at certain monitor layouts
 
+# Release 40
+
+* Fix hit areas outside of dock region
+
 # Release 37,38,39
 
 * Fix unresponsive Apps Button when animation is disabled

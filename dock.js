@@ -24,8 +24,8 @@ let _preferredIconSizes = null;
 
 let Reactive = GObject.registerClass(
   {},
-class Reactive extends St.Widget {
-  _init() {
+  class Reactive extends St.Widget {
+    _init() {
       super._init({
         name: 'd2dlContainerReactive',
         // vertical: true,
@@ -560,9 +560,10 @@ export let Dock = GObject.registerClass(
           this.reactiveChild.height = this._projectedWidth;
           this.reactiveChild.width = this.dash.width;
           this.reactiveChild.x = this.x;
-          this.reactiveChild.y = this.y + this._monitor.height / 2 - this._projectedWidth / 2;
-        } catch(err) {
-          // null happens at first hover 
+          this.reactiveChild.y =
+            this.y + this._monitor.height / 2 - this._projectedWidth / 2;
+        } catch (err) {
+          // null happens at first hover
         }
       } else {
         let sw = this._monitor.width - cornerPad * 2;
@@ -578,10 +579,11 @@ export let Dock = GObject.registerClass(
         try {
           this.reactiveChild.width = this._projectedWidth;
           this.reactiveChild.height = this.height;
-          this.reactiveChild.x = this.x + this._monitor.width / 2 - this._projectedWidth / 2;
+          this.reactiveChild.x =
+            this.x + this._monitor.width / 2 - this._projectedWidth / 2;
           this.reactiveChild.y = this.y;
-        } catch(err) {
-          // null happens at first hover 
+        } catch (err) {
+          // null happens at first hover
         }
       }
 
@@ -604,7 +606,7 @@ export let Dock = GObject.registerClass(
           // top/bottom
           this.set_position(
             // this._monitor.x + cornerPad,
-            cornerPad + (this._monitor.width / 2) - (this.width / 2),
+            cornerPad + this._monitor.width / 2 - this.width / 2,
             this._monitor.y + this._monitor.height - dockHeight * scaleFactor
           );
         }

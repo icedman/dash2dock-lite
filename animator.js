@@ -497,7 +497,6 @@ export let Animator = class {
     //------------------------
     // animation behavior
     //------------------------
-
     if (nearestIdx != -1) {
       // if (!this.dash.has_style_class_name('dash-spread')) {
       // }
@@ -569,16 +568,38 @@ export let Animator = class {
       }
     }
 
+    let _scale_coef = ANIM_SCALE_COEF;
+    let _spread_coef = ANIM_SPREAD_COEF;
+    let _pos_coef = ANIM_POS_COEF;
+    if (this.extension.animation_fps > 0) {
+      _pos_coef /= 1 + this.extension.animation_fps / 2;
+      _scale_coef /= 1 + this.extension.animation_fps / 2;
+      _spread_coef /= 1 + this.extension.animation_fps / 2;
+    }
+    if (!nearestIcon) {
+      _scale_coef *= ANIM_ON_LEAVE_COEF;
+      _pos_coef *= ANIM_ON_LEAVE_COEF;
+      _spread_coef *= ANIM_ON_LEAVE_COEF;
+    }
+
     // interpolate
     // animate
     animateIcons.forEach((icon) => {
       let pos = icon.get_position();
-      let newX = (icon._pos[0] + pos[0] * 2) / 3;
-      let newY = pos[1]; // (icon._pos[1] + pos[1] * 2)/ 3;
+      let newX = (icon._pos[0] + pos[0] * _pos_coef) / (_pos_coef + 1);
+      let newY = icon._pos[1]; // (icon._pos[1] + pos[1] * 2)/ 3;
+
+      // too far
+      let dst = Math.abs(pos[0] - icon._pos[0]);
+      if (dst > iconSize * 2 * scaleFactor) {
+        newX = icon._pos[0];
+      }
+
       icon.set_position(newX, newY);
 
       let scale = icon.get_scale();
-      let newScale = (icon._targetScale + scale[0] * 2) / 3;
+      let newScale =
+        (icon._targetScale + scale[0] * _scale_coef) / (_scale_coef + 1);
       icon.set_scale(newScale, newScale);
     });
 

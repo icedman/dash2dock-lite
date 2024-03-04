@@ -232,8 +232,10 @@ export let Animator = class {
         : this.dashContainer.dash.width;
 
       if (this.extension._vertical) {
+        this.dashContainer.dash.x = 0;
         this.dashContainer.dash.y = width / 2 - dashWidth / 2;
       } else {
+        this.dashContainer.dash.y = 0;
         this.dashContainer.dash.x = width / 2 - dashWidth / 2;
       }
     }
@@ -359,7 +361,7 @@ export let Animator = class {
 
       icon._fixedPosition = [...pos];
       if (!this._dragging && bin.first_child) {
-        bin.first_child.opacity = this.extension._dash_opacity;
+        // bin.first_child.opacity = this.extension._dash_opacity;
         // todo make this small - so as not to mess up the layout
         // however, the icons appear when released from drag
         bin.first_child.width = iconSize * 0.8 * scaleFactor;
@@ -391,7 +393,6 @@ export let Animator = class {
 
       icon._target = pos;
       icon._targetScale = 1;
-      icon._targetSpread = iconSpacing * scaleFactor;
 
       if (icon === firstIcon) {
         if (this.extension._vertical) {
@@ -487,8 +488,8 @@ export let Animator = class {
     }
 
     // icons will spreadout when pointer hovers over the dash
-    let icon_spacing =
-      iconSize * (1.2 + this.extension.animation_spread / 4) * scaleFactor;
+    // let icon_spacing =
+    //   iconSize * (1.2 + this.extension.animation_spread / 4) * scaleFactor;
 
     //------------------------
     // animation behavior
@@ -586,7 +587,7 @@ export let Animator = class {
             if (dock_position == 'right') {
               pos[1] = pos[1] - offset;
             } else {
-              pos[1] = pos[1] + offset;
+              pos[1] = pos[1] - offset;
             }
           } else {
             pos[0] = pos[0] - offset;
@@ -599,7 +600,7 @@ export let Animator = class {
           let pos = right._pos;
           if (this.extension._vertical) {
             if (dock_position == 'right') {
-              pos[1] = pos[1] - offset;
+              pos[1] = pos[1] + offset;
             } else {
               pos[1] = pos[1] + offset;
             }
@@ -631,8 +632,14 @@ export let Animator = class {
       let pos = icon.get_position();
       // too far
       let dst = Math.abs(pos[0] - icon._pos[0]);
+      if (this.extension._vertical) {
+        dst = Math.abs(pos[1] - icon._pos[1]);
+      }
       if (dst > iconSize * 2 * scaleFactor) {
         tooFar = true;
+      }
+      if (dst > 2) {
+        didAnimate = true;
       }
     });
 
@@ -670,6 +677,7 @@ export let Animator = class {
 
       icon.set_position(newX, newY);
       icon._pos = [newX, newY];
+      icon._fixedPosition = [...icon._pos];
 
       let scale = icon.get_scale();
       let newScale =
@@ -681,27 +689,24 @@ export let Animator = class {
       if (!isNaN(newX) && !isNaN(newY)) {
         // todo find appsButton._label
         if (icon._label && !this._dragging) {
-          if (icon == nearestIcon) {
-            let lw = icon._label.width;
-            if (isNaN(lw)) {
-              lw = 200;
-            }
-            switch (dock_position) {
-              case 'left':
-                icon._label.x = newX + iconSize * scale[0] * 1.1 * scaleFactor;
-                break;
-              case 'right':
-                icon._label.x = newX - iconSize * scale[0] * 1.1 * scaleFactor;
-                icon._label.x -= lw / 1.2;
-                break;
-              case 'bottom':
-                icon._label.x = (-lw / 2 + icon.width / 2) * scaleFactor + newX;
-                icon._label.y = newY - iconSize * scale[0] * 0.9 * scaleFactor;
-                break;
-            }
-            if (this.extension._vertical) {
+          let lw = icon._label.width;
+          if (isNaN(lw)) {
+            lw = 200;
+          }
+          switch (dock_position) {
+            case 'left':
+              icon._label.x = newX + iconSize * scale[0] * 1.1 * scaleFactor;
               icon._label.y = newY;
-            }
+              break;
+            case 'right':
+              icon._label.x =
+                newX - iconSize * scale[0] * 1.1 * scaleFactor - lw / 1.2;
+              icon._label.y = newY;
+              break;
+            case 'bottom':
+              icon._label.x = (-lw / 2 + icon.width / 2) * scaleFactor + newX;
+              icon._label.y = newY - iconSize * scale[0] * 0.9 * scaleFactor;
+              break;
           }
         }
       }

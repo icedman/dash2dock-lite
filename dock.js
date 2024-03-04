@@ -55,7 +55,7 @@ export let Dock = GObject.registerClass(
       this.pivot_point = pivot;
 
       this.reactiveChild = new Reactive();
-      this.add_child(this.reactiveChild);
+      // this.add_child(this.reactiveChild);
 
       this.animator = new Animator();
       this.animator.dashContainer = this;
@@ -100,6 +100,7 @@ export let Dock = GObject.registerClass(
 
     undock() {
       this.animator.disable();
+      this.removeFromChrome();
     }
 
     addToChrome() {
@@ -156,6 +157,7 @@ export let Dock = GObject.registerClass(
         return;
       }
 
+      Main.uiGroup.remove_child(this.reactiveChild);
       Main.layoutManager.removeChrome(this);
       this._onChrome = false;
     }
@@ -666,16 +668,28 @@ export let Dock = GObject.registerClass(
           _duration: t,
           _func: (f, s) => {
             let res = Linear.easeNone(f._time, 0, travel, f._duration);
-            icon._img.translation_y = -res;
-            attached.translation_y = icon._img.translation_y;
+            if (this.extension._vertical) {
+              icon._img.translation_x =
+                this.extension._position == 'left' ? res : -res;
+              attached.translation_x = icon._img.translation_x;
+            } else {
+              icon._img.translation_y = -res;
+              attached.translation_y = icon._img.translation_y;
+            }
           },
         },
         {
           _duration: t * 3,
           _func: (f, s) => {
             let res = Bounce.easeOut(f._time, travel, -travel, f._duration);
-            icon._img.translation_y = -res;
-            attached.translation_y = icon._img.translation_y;
+            if (this.extension._vertical) {
+              icon._img.translation_x = icon._img.translation_x =
+                this.extension._position == 'left' ? res : -res;
+              attached.translation_x = icon._img.translation_x;
+            } else {
+              icon._img.translation_y = -res;
+              attached.translation_y = icon._img.translation_y;
+            }
           },
         },
       ];

@@ -208,6 +208,7 @@ export const DotsContainer = GObject.registerClass(
         // update the notification badge
         // todo ... move dots and badges to service?
 
+        icon._badge = null;
         let has_badge = false;
         if (
           icon._appwell &&

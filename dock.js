@@ -671,9 +671,15 @@ export let Dock = GObject.registerClass(
             if (this.extension._vertical) {
               icon._img.translation_x =
                 this.extension._position == 'left' ? res : -res;
+              if (icon._badge) {
+                icon._badge.translation_x = icon._img.translation_x;
+              }
               attached.translation_x = icon._img.translation_x;
             } else {
               icon._img.translation_y = -res;
+              if (icon._badge) {
+                icon._badge.translation_y = icon._img.translation_y;
+              }
               attached.translation_y = icon._img.translation_y;
             }
           },
@@ -685,9 +691,15 @@ export let Dock = GObject.registerClass(
             if (this.extension._vertical) {
               icon._img.translation_x = icon._img.translation_x =
                 this.extension._position == 'left' ? res : -res;
+              if (icon._badge) {
+                icon._badge.translation_x = icon._img.translation_x;
+              }
               attached.translation_x = icon._img.translation_x;
             } else {
               icon._img.translation_y = -res;
+              if (icon._badge) {
+                icon._badge.translation_y = icon._img.translation_y;
+              }
               attached.translation_y = icon._img.translation_y;
             }
           },
@@ -713,6 +725,8 @@ export let Dock = GObject.registerClass(
           },
         },
       ]);
+
+      // todo bounce the badge along with the icon
     }
   }
 );

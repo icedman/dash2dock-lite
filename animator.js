@@ -536,6 +536,7 @@ export let Animator = class {
         let adx = Math.abs(dx);
         let p = 1.0 - adx / threshold;
         let fp = p * 0.6 * (1 + magnify);
+        icon._p = p;
 
         // affect scale;
         if (magnify != 0) {
@@ -619,7 +620,7 @@ export let Animator = class {
       _pos_coef /= 1 + this.extension.animation_fps / 2;
       _scale_coef /= 1 + this.extension.animation_fps / 2;
       _spread_coef /= 1 + this.extension.animation_fps / 2;
-      
+
       _pos_coef *= 0.5;
       _scale_coef *= 0.5;
     }
@@ -638,10 +639,10 @@ export let Animator = class {
       if (this.extension._vertical) {
         dst = Math.abs(pos[1] - icon._pos[1]);
       }
-      if (dst > iconSize * 2 * scaleFactor) {
+      if (dst > iconSize * icon._targetScale * 2 * scaleFactor) {
         tooFar = true;
       }
-      if (dst > 2) {
+      if (dst > 2 && !tooFar) {
         didAnimate = true;
       }
     });
@@ -662,7 +663,7 @@ export let Animator = class {
         if (opacity < 10) {
           opacity = 10;
         }
-        opacity++;
+        opacity += 4;
         opacity *= 1.15;
         if (opacity >= 255) {
           opacity = 255;
@@ -675,7 +676,9 @@ export let Animator = class {
       }
 
       if (tooFar) {
-        icon.opacity = 0;
+        if (!didScale && !didAnimate) {
+          icon.opacity = 0;
+        }
         [newX, newY] = icon._pos;
       }
 
@@ -715,6 +718,10 @@ export let Animator = class {
         }
       }
     });
+
+    if (!tooFar && !this.didFadeIn) {
+      this.didFadeIn = true;
+    }
 
     this._dotsContainer.update({
       icons: animateIcons,
@@ -831,7 +838,7 @@ export let Animator = class {
       if (!this.debounceReadySeq) {
         this.debounceReadySeq = this.extension._loTimer.runDebounced(() => {
           this._invisible(false);
-          this._startAnimation();
+          this._beginAnimation();
         }, 100);
       } else {
         this.extension._loTimer.runDebounced(this.debounceReadySeq);
@@ -1013,7 +1020,7 @@ export let Animator = class {
   }
 
   _onEnterEvent() {
-    this._startAnimation();
+    this._beginAnimation();
   }
 
   _onLeaveEvent() {
@@ -1032,7 +1039,7 @@ export let Animator = class {
         // log(`>>${this._dotsCount} ${this._iconsCount}`);
 
         this._endAnimation();
-        this._startAnimation();
+        this._beginAnimation();
         this.relayout();
         // animate the added icon
       }
@@ -1059,12 +1066,6 @@ export let Animator = class {
   _isInFullscreen() {
     let monitor = this.dashContainer._monitor;
     return monitor.inFullscreen;
-  }
-
-  // todo: drop and just use beginAnimation which debouncesEndAnimation?
-  _startAnimation() {
-    this._beginAnimation();
-    // this._debounceEndAnimation();
   }
 
   _lockCycle() {

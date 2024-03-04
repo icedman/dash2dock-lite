@@ -44,7 +44,7 @@ const ANIM_INTERVAL_PAD = 15;
 export default class Dash2DockLiteExt extends Extension {
   enable() {
     // for debugging - set to 255
-    this._dash_opacity = 150;
+    this._dash_opacity = 0;
 
     // three available timers
     // for persistent runs

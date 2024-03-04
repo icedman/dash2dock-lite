@@ -562,11 +562,11 @@ export let Dock = GObject.registerClass(
         this.dash.width = dockHeight * scaleFactor;
         this.dash.add_style_class_name('vertical');
 
-        this.reactiveChild.height = this._projectedWidth;
+        let pw = this._projectedWidth - iconSize * 2;
+        this.reactiveChild.height = pw;
         this.reactiveChild.width = this.dash.width;
         this.reactiveChild.x = this.x;
-        this.reactiveChild.y =
-          this.y + this._monitor.height / 2 - this._projectedWidth / 2;
+        this.reactiveChild.y = this.y + this._monitor.height / 2 - pw / 2;
       } else {
         let sw = this._monitor.width - cornerPad * 2;
         // sw = (sw + (this._projectedWidth * 4)) / 5;
@@ -578,10 +578,10 @@ export let Dock = GObject.registerClass(
         this.dash.width = -1;
         this.dash.remove_style_class_name('vertical');
 
-        this.reactiveChild.width = this._projectedWidth;
+        let pw = this._projectedWidth * 0.9;
+        this.reactiveChild.width = pw;
         this.reactiveChild.height = this.height;
-        this.reactiveChild.x =
-          this.x + this._monitor.width / 2 - this._projectedWidth / 2;
+        this.reactiveChild.x = this.x + this._monitor.width / 2 - pw / 2;
         this.reactiveChild.y = this.y;
       }
 

@@ -985,13 +985,14 @@ export let Animator = class {
     let pad = 0;
     let x1 = this._dockExtension.x;
     let y1 = this._dockExtension.y;
-    let x2 = this.dashContainer.x + this.dashContainer.width;
-    let y2 = this.dashContainer.y + this.dashContainer.height;
+    let x2 = x1 + this.dashContainer.width;
+    let y2 = y1 + this.dashContainer.height;
     if (this.extension._vertical) {
-      x1 = this.dashContainer.x;
-      x2 += this.dashContainer.width + this._dockExtension.width;
-      y1 = this.dashContainer.y;
+      y2 = y1 + this.dashContainer._projectedWidth;
+    } else {
+      x2 = x1 + this.dashContainer._projectedWidth;
     }
+
     let [px, py] = p;
     return px + pad >= x1 && px - pad < x2 && py + pad >= y1 && py - pad < y2;
   }

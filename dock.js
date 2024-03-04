@@ -121,13 +121,13 @@ export let Dock = GObject.registerClass(
         { c: this.animator._iconsContainer, p: this.animator._dotsContainer },
         { c: this.animator._background, p: this.animator.dashContainer },
         { c: this.animator._dockExtension, p: this.animator._background },
+
+        { c: this.reactiveChild, p: this, above: false },
         {
           c: this.animator._overlay,
           p: this.animator._iconsContainer,
           above: true,
         },
-
-        { c: this.reactiveChild, p: this, above: true },
       ];
 
       reparent.forEach((obj) => {
@@ -655,7 +655,7 @@ export let Dock = GObject.registerClass(
       let scaleFactor = this._monitor.geometry_scale;
       let travel =
         (this.iconSize / 3) *
-        ((0.1 + this.extension.animation_rise) * 1.5) *
+        ((0.25 + this.extension.animation_bounce) * 1.5) *
         scaleFactor;
       icon._img.translation_y = 0;
 

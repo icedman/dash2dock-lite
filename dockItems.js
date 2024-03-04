@@ -223,7 +223,7 @@ export const DotsContainer = GObject.registerClass(
 
           let badgeParent = icon._badge.get_parent();
           badgeParent.set_position(
-            pos[0] + 4 * scaleFactor,
+            icon._pos[0],
             pos[1] - 4 * scaleFactor
           );
           badgeParent.width = iconSize;
@@ -235,6 +235,7 @@ export const DotsContainer = GObject.registerClass(
             notification_badge_style_options[notification_badge_style];
 
           icon._badge.visible = true;
+          icon._badge.opactiy = icon.opacity;
           icon._badge.set_state({
             count: count,
             color: notification_badge_color || [1, 1, 1, 1],
@@ -261,6 +262,7 @@ export const DotsContainer = GObject.registerClass(
           if (dot) {
             let dotParent = icon._dot.get_parent();
             dot.visible = true;
+            dot.opacity = icon.opacity;
             dotParent.width = iconSize;
             dotParent.height = iconSize;
             dotParent.set_scale(1, 1);
@@ -272,7 +274,10 @@ export const DotsContainer = GObject.registerClass(
                 dotParent.set_position(pos[0] - 8 * scaleFactor, pos[1]);
               }
             } else {
-              dotParent.set_position(pos[0], pos[1] + 8 * scaleFactor);
+              dotParent.set_position(
+                icon._pos[0],
+                pos[1] + 8 * scaleFactor
+              );
             }
             dot.set_scale(
               (iconSize * scaleFactor) / DOT_CANVAS_SIZE,

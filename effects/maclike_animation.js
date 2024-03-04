@@ -1,3 +1,6 @@
+/*
+// removed for more faster animation
+
 function gen_frames(settings) {
   let {
     iconsCount,
@@ -262,3 +265,5 @@ export const Animation = (animateIcons, pointer, settings) => {
     didAnimate,
   };
 };
+
+*/

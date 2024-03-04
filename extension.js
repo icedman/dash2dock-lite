@@ -257,7 +257,8 @@ export default class Dash2DockLiteExt extends Extension {
         }
         case 'animation-magnify':
         case 'animation-spread':
-        case 'animation-rise': {
+        case 'animation-rise':
+        case 'animation-bounce': {
           if (this.animate_icons) {
             this.animator.preview();
             this.animate();
@@ -432,9 +433,6 @@ export default class Dash2DockLiteExt extends Extension {
     Main.overview.connectObject(
       'showing',
       this._onOverviewShowing.bind(this),
-      this
-    );
-    Main.overview.connectObject(
       'hidden',
       this._onOverviewHidden.bind(this),
       this

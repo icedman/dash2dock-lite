@@ -6,6 +6,11 @@
 
 * Autohide disabled at certain monitor layouts
 
+# Release 43
+
+* Fix lag. Revamped animation for faster and more resource efficient animation.
+* Add bounce animation setting
+
 # Release 40
 
 * Fix hit areas outside of dock region

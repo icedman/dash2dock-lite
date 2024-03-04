@@ -517,7 +517,6 @@ export let Animator = class {
     let iconTable = [];
 
     // animate
-    // TODO ... vertical bar not yet working
     animateIcons.forEach((icon) => {
       let original_pos = this._get_position(icon._bin);
       icon._pos = [...original_pos];

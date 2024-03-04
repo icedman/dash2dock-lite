@@ -465,6 +465,8 @@ export let Dock = GObject.registerClass(
         distance -= 8;
       }
 
+      this._projectedWidth = iconSize * 3;
+
       // scale down icons to fit monitor
       this._scaleDownExcess = 0;
       if (this._icons) {
@@ -560,15 +562,11 @@ export let Dock = GObject.registerClass(
         this.dash.width = dockHeight * scaleFactor;
         this.dash.add_style_class_name('vertical');
 
-        try {
-          this.reactiveChild.height = this._projectedWidth;
-          this.reactiveChild.width = this.dash.width;
-          this.reactiveChild.x = this.x;
-          this.reactiveChild.y =
-            this.y + this._monitor.height / 2 - this._projectedWidth / 2;
-        } catch (err) {
-          // null happens at first hover
-        }
+        this.reactiveChild.height = this._projectedWidth;
+        this.reactiveChild.width = this.dash.width;
+        this.reactiveChild.x = this.x;
+        this.reactiveChild.y =
+          this.y + this._monitor.height / 2 - this._projectedWidth / 2;
       } else {
         let sw = this._monitor.width - cornerPad * 2;
         // sw = (sw + (this._projectedWidth * 4)) / 5;
@@ -580,15 +578,11 @@ export let Dock = GObject.registerClass(
         this.dash.width = -1;
         this.dash.remove_style_class_name('vertical');
 
-        try {
-          this.reactiveChild.width = this._projectedWidth;
-          this.reactiveChild.height = this.height;
-          this.reactiveChild.x =
-            this.x + this._monitor.width / 2 - this._projectedWidth / 2;
-          this.reactiveChild.y = this.y;
-        } catch (err) {
-          // null happens at first hover
-        }
+        this.reactiveChild.width = this._projectedWidth;
+        this.reactiveChild.height = this.height;
+        this.reactiveChild.x =
+          this.x + this._monitor.width / 2 - this._projectedWidth / 2;
+        this.reactiveChild.y = this.y;
       }
 
       if (this.autohider._enabled && !this.autohider._shown) {

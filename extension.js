@@ -44,7 +44,7 @@ const ANIM_INTERVAL_PAD = 15;
 export default class Dash2DockLiteExt extends Extension {
   enable() {
     // for debugging - set to 255
-    this._dash_opacity = 0;
+    this._dash_opacity = 150;
 
     // three available timers
     // for persistent runs
@@ -75,8 +75,6 @@ export default class Dash2DockLiteExt extends Extension {
       this._settingsKeys.setValue('animate-icons', true);
     }
 
-    this.dashContainer = new Dock(this);
-
     Main.overview.dash.last_child.visible = false;
     Main.overview.dash.opacity = 0;
 
@@ -84,6 +82,7 @@ export default class Dash2DockLiteExt extends Extension {
     this.services = new Services();
     this.services.extension = this;
 
+    this.dashContainer = new Dock(this);
     this._queryDisplay();
     this.dashContainer.dock();
 
@@ -131,10 +130,11 @@ export default class Dash2DockLiteExt extends Extension {
     Main.overview.dash.last_child.visible = true;
     Main.overview.dash.opacity = 255;
 
-    this.dashContainer.undock();
-
-    Main.layoutManager.removeChrome(this.dashContainer);
-    delete this.dashContainer;
+    this.containers.forEach((container) => {
+      container.undock();
+      Main.layoutManager.removeChrome(container);
+    });
+    this.containers = [];
     this.dashContainer = null;
 
     this.services.disable();
@@ -153,11 +153,15 @@ export default class Dash2DockLiteExt extends Extension {
   }
 
   animate() {
-    this.dashContainer._onEnterEvent();
+    this.containers.forEach((container) => {
+      container._onEnterEvent();
+    });
   }
 
   startUp() {
-    this.dashContainer.animator._invisible(true, true);
+    this._animators().forEach((animator) => {
+      animator._invisible(true, true);
+    });
 
     // todo... refactor this
     if (!this._startupSeq) {
@@ -165,7 +169,9 @@ export default class Dash2DockLiteExt extends Extension {
         this._updateLayout();
         this.animate();
         if (!this._vertical) {
-          this.dashContainer.animator._invisible(false, false);
+          this._animators().forEach((animator) => {
+            animator._invisible(false, false);
+          });
         }
       };
       this._startupSeq = this._hiTimer.runSequence([
@@ -173,13 +179,17 @@ export default class Dash2DockLiteExt extends Extension {
         { func, delay: 500 },
         {
           func: () => {
-            this.dashContainer.animator._invisible(false, false);
+            this._animators().forEach((animator) => {
+              animator._invisible(false, false);
+            });
           },
           delay: 50,
         },
         {
           func: () => {
-            this.dashContainer.animator._invisible(false, false);
+            this._animators().forEach((animator) => {
+              animator._invisible(false, false);
+            });
           },
           delay: 250,
         },
@@ -203,6 +213,7 @@ export default class Dash2DockLiteExt extends Extension {
       idx = Main.layoutManager.primaryIndex;
     }
 
+    // todo ... single container
     if (this.dashContainer) {
       this.dashContainer._monitorIndex = idx;
       this.dashContainer._monitor = this.monitor;
@@ -531,7 +542,9 @@ export default class Dash2DockLiteExt extends Extension {
   }
 
   _updateAnimationFPS() {
-    this.dashContainer.cancelAnimations();
+    this.containers.forEach((container) => {
+      container.cancelAnimations();
+    });
     this.animationInterval =
       ANIM_INTERVAL + (this.animation_fps || 0) * ANIM_INTERVAL_PAD;
     this._hiTimer.shutdown();
@@ -548,8 +561,6 @@ export default class Dash2DockLiteExt extends Extension {
   }
 
   _updateShrink(disable) {
-    if (!this.dashContainer) return;
-
     if (this.shrink_icons && !disable) {
       this.scale = 0.8; // * rescale_modifier;
     } else {
@@ -671,7 +682,9 @@ export default class Dash2DockLiteExt extends Extension {
   }
 
   _updateLayout(disable) {
-    this.dashContainer.layout(disable);
+    this.containers.forEach((container) => {
+      container.layout(disable);
+    });
   }
 
   _updateAutohide(disable) {
@@ -686,8 +699,10 @@ export default class Dash2DockLiteExt extends Extension {
     }
 
     if (!disable) {
-      this.dashContainer.removeFromChrome();
-      this.dashContainer.addToChrome();
+      this.containers.forEach((container) => {
+        container.removeFromChrome();
+        container.addToChrome();
+      });
     }
 
     if (this.animate_icons && !disable) {

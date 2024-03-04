@@ -675,6 +675,7 @@ export let Animator = class {
       let newScale =
         (icon._targetScale + scale[0] * _scale_coef) / (_scale_coef + 1);
       icon.set_scale(newScale, newScale);
+      icon._scale = newScale;
 
       // reposition labels
       if (!isNaN(newX) && !isNaN(newY)) {

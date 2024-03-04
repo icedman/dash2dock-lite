@@ -619,6 +619,9 @@ export let Animator = class {
       _pos_coef /= 1 + this.extension.animation_fps / 2;
       _scale_coef /= 1 + this.extension.animation_fps / 2;
       _spread_coef /= 1 + this.extension.animation_fps / 2;
+      
+      _pos_coef *= 0.5;
+      _scale_coef *= 0.5;
     }
     if (!nearestIcon) {
       _scale_coef *= ANIM_ON_LEAVE_COEF;
@@ -645,8 +648,9 @@ export let Animator = class {
 
     let bgOpacity = 255;
 
-    // interpolate
-    // animate
+    //-------------------
+    // interpolation / animation
+    //-------------------
     animateIcons.forEach((icon) => {
       let pos = icon.get_position();
       let newX = (icon._pos[0] + pos[0] * _pos_coef) / (_pos_coef + 1);

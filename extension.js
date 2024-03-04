@@ -78,7 +78,8 @@ export default class Dash2DockLiteExt extends Extension {
     this.dashContainer = new Dock();
     this.dashContainer.extension = this;
 
-    Main.overview.dash.visible = false;
+    Main.overview.dash.last_child.visible = false;
+    Main.overview.dash.opacity = 0;
 
     // service
     this.services = new Services();
@@ -136,7 +137,9 @@ export default class Dash2DockLiteExt extends Extension {
     this._updateLayout(true);
     this._updateAutohide(true);
 
-    Main.overview.dash.visible = true;
+    Main.overview.dash.last_child.visible = true;
+    Main.overview.dash.opacity = 255;
+    
     this.dashContainer.undock();
 
     Main.layoutManager.removeChrome(this.dashContainer);

@@ -222,10 +222,7 @@ export const DotsContainer = GObject.registerClass(
           let count = appNotices[icon._appwell.app.get_id()].count;
 
           let badgeParent = icon._badge.get_parent();
-          badgeParent.set_position(
-            icon._pos[0],
-            pos[1] - 4 * scaleFactor
-          );
+          badgeParent.set_position(icon._pos[0], pos[1] - 4 * scaleFactor);
           badgeParent.width = iconSize;
           badgeParent.height = iconSize;
           badgeParent.pivot_point = pivot;
@@ -274,10 +271,7 @@ export const DotsContainer = GObject.registerClass(
                 dotParent.set_position(pos[0] - 8 * scaleFactor, pos[1]);
               }
             } else {
-              dotParent.set_position(
-                icon._pos[0],
-                pos[1] + 8 * scaleFactor
-              );
+              dotParent.set_position(icon._pos[0], pos[1] + 8 * scaleFactor);
             }
             dot.set_scale(
               (iconSize * scaleFactor) / DOT_CANVAS_SIZE,

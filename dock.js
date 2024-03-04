@@ -39,13 +39,15 @@ let Reactive = GObject.registerClass(
 export let Dock = GObject.registerClass(
   {},
   class Dock extends St.Widget {
-    _init() {
+    _init(ext) {
       super._init({
         name: 'd2dlContainer',
         // vertical: true,
         reactive: false,
         track_hover: false,
       });
+
+      this.extension = ext;
 
       let pivot = new Point();
       pivot.x = 0.5;
@@ -57,9 +59,11 @@ export let Dock = GObject.registerClass(
 
       this.animator = new Animator();
       this.animator.dashContainer = this;
+      this.animator.extension = ext;
       this.autohider = new AutoHide();
       this.autohider.dashContainer = this;
       this.autohider.animator = this.animator;
+      this.autohider.extension = ext;
 
       this.dash = new Dash();
       this.dash.set_name('dash');

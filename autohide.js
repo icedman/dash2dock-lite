@@ -82,7 +82,7 @@ export let AutoHide = class {
   }
 
   _beginAnimation(t) {
-    if (this.extension.animator._dragging) {
+    if (this.animator._dragging) {
       return;
     }
 
@@ -212,7 +212,7 @@ export let AutoHide = class {
     // log('.');
     if (!this.dashContainer) return false;
 
-    if (this.extension.animator && this.extension.animator._dragging) {
+    if (this.animator && this.animator._dragging) {
       return false;
     }
 

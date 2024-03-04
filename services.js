@@ -404,9 +404,12 @@ export const Services = class {
     let favorites = Fav.getAppFavorites();
     if (favorites._getIds().includes(app)) {
       // thread safety hack
-      this.extension.animator._endAnimation();
-      this.extension.animator._previousFind = null;
-      this.extension.animator._throttleDown = 19;
+
+      this.extension._animators().forEach((animator) => {
+        animator._endAnimation();
+        animator._previousFind = null;
+        animator._throttleDown = 19;
+      });
 
       this.temporarilyMuteOverview();
       favorites.removeFavorite(app);

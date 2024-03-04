@@ -75,8 +75,7 @@ export default class Dash2DockLiteExt extends Extension {
       this._settingsKeys.setValue('animate-icons', true);
     }
 
-    this.dashContainer = new Dock();
-    this.dashContainer.extension = this;
+    this.dashContainer = new Dock(this);
 
     Main.overview.dash.last_child.visible = false;
     Main.overview.dash.opacity = 0;
@@ -85,22 +84,14 @@ export default class Dash2DockLiteExt extends Extension {
     this.services = new Services();
     this.services.extension = this;
 
-    // animator
-    this.animator = this.dashContainer.animator;
-    this.animator.extension = this;
-
-    // autohider
-    this.autohider = this.dashContainer.autohider;
-    this.autohider.extension = this;
-    this.autohider.animator = this.animator;
-
     this._queryDisplay();
     this.dashContainer.dock();
 
     // todo follow animator and autohider protocol
     this.services.enable();
 
-    this.listeners = [this.services, this.autohider, this.animator];
+    this.listeners = [this.services];
+    this.containers = [this.dashContainer];
 
     this._onCheckServices();
 
@@ -139,7 +130,7 @@ export default class Dash2DockLiteExt extends Extension {
 
     Main.overview.dash.last_child.visible = true;
     Main.overview.dash.opacity = 255;
-    
+
     this.dashContainer.undock();
 
     Main.layoutManager.removeChrome(this.dashContainer);
@@ -263,7 +254,9 @@ export default class Dash2DockLiteExt extends Extension {
         case 'animation-rise':
         case 'animation-bounce': {
           if (this.animate_icons) {
-            this.animator.preview();
+            this._animators().forEach((animator) => {
+              animator.preview();
+            });
             this.animate();
           }
           break;
@@ -282,7 +275,9 @@ export default class Dash2DockLiteExt extends Extension {
           break;
         }
         case 'favorites-only': {
-          this.animator.relayout();
+          this._animators().forEach((animator) => {
+            animator.relayout();
+          });
           this._updateLayout();
           this.animate();
           break;
@@ -292,13 +287,20 @@ export default class Dash2DockLiteExt extends Extension {
         case 'icon-resolution': {
           this._disable_borders = this.border_radius > 0;
           this._updateIconResolution();
-          this.animator._previousFind = null;
-          this.animator._iconsContainer.clear();
+          this._animators().forEach((animator) => {
+            animator._previousFind = null;
+            animator._iconsContainer.clear();
+          });
           if (this.autohide_dash) {
-            this.autohider.disable();
-            this.autohider.enable();
+            this._autohiders().forEach((autohider) => {
+              autohider.disable();
+              autohider.enable();
+            });
           }
-          this.animator._background.visible = false;
+
+          this._animators().forEach((animator) => {
+            animator._background.visible = false;
+          });
           this._updateStyle();
           this._updateLayout();
           this.animate();
@@ -306,15 +308,21 @@ export default class Dash2DockLiteExt extends Extension {
         }
         case 'icon-effect': {
           if (this.animate_icons) {
-            this.animator._updateIconEffect();
+            this._animators().forEach((animator) => {
+              animator._updateIconEffect();
+            });
             this._updateLayout();
             this.animate();
           }
           break;
         }
         case 'icon-effect-color': {
-          if (this.animate_icons && this.animator.iconEffect) {
-            this.animator.iconEffect.color = this.icon_effect_color;
+          if (this.animate_icons) {
+            this._animators().forEach((animator) => {
+              if (animator.iconEffect) {
+                animator.iconEffect.color = this.icon_effect_color;
+              }
+            });
             this.animate();
           }
           break;
@@ -472,14 +480,33 @@ export default class Dash2DockLiteExt extends Extension {
       this.services.disable();
       this.services.enable();
     }
-    this.animator._previousFind = null;
-    this.animator._iconsContainer.clear();
+    this._animators().forEach((animator) => {
+      animator._previousFind = null;
+      animator._iconsContainer.clear();
+    });
     this._updateStyle();
     this.animate();
   }
 
+  _animators() {
+    return this.containers.map((c) => {
+      return c.animator;
+    });
+  }
+
+  _autohiders() {
+    return this.containers.map((c) => {
+      return c.autohider;
+    });
+  }
+
   _onFocusWindow() {
-    this.listeners
+    let listeners = [
+      ...this.listeners,
+      ...this._animators(),
+      ...this._autohiders(),
+    ];
+    listeners
       .filter((l) => {
         return l._enabled;
       })
@@ -489,7 +516,12 @@ export default class Dash2DockLiteExt extends Extension {
   }
 
   _onFullScreen() {
-    this.listeners
+    let listeners = [
+      ...this.listeners,
+      ...this._animators(),
+      ...this._autohiders(),
+    ];
+    listeners
       .filter((l) => {
         return l._enabled;
       })
@@ -525,7 +557,9 @@ export default class Dash2DockLiteExt extends Extension {
     }
 
     if (this.animate_icons) {
-      this.animator.relayout();
+      this._animators().forEach((animator) => {
+        animator.relayout();
+      });
     }
   }
 
@@ -626,9 +660,13 @@ export default class Dash2DockLiteExt extends Extension {
             'border-top: 0px; border-right: 0px; border-bottom: 0px;';
         }
       }
-      this.animator._background.style = `border: ${this.border_thickness}px solid rgba(${rgba}) !important; ${disable_borders}`;
+      this._animators().forEach((animator) => {
+        animator._background.style = `border: ${this.border_thickness}px solid rgba(${rgba}) !important; ${disable_borders}`;
+      });
     } else {
-      this.animator._background.style = '';
+      this._animators().forEach((animator) => {
+        animator._background.style = '';
+      });
     }
   }
 
@@ -638,9 +676,13 @@ export default class Dash2DockLiteExt extends Extension {
 
   _updateAutohide(disable) {
     if (this.autohide_dash && !disable) {
-      this.autohider.enable();
+      this._autohiders().forEach((autohider) => {
+        autohider.enable();
+      });
     } else {
-      this.autohider.disable();
+      this._autohiders().forEach((autohider) => {
+        autohider.disable();
+      });
     }
 
     if (!disable) {
@@ -659,24 +701,30 @@ export default class Dash2DockLiteExt extends Extension {
 
   _onOverviewShowing() {
     this._inOverview = true;
-    if (this.autohider._enabled) {
-      this.autohider._debounceCheckHide();
-    }
+    this._autohiders().forEach((autohider) => {
+      if (autohider._enabled) {
+        autohider._debounceCheckHide();
+      }
+    });
     // log('_onOverviewShowing');
   }
 
   _onOverviewHidden() {
     this._inOverview = false;
-    if (this.autohider._enabled) {
-      this.autohider._debounceCheckHide();
-    }
+    this._autohiders().forEach((autohider) => {
+      if (autohider._enabled) {
+        autohider._debounceCheckHide();
+      }
+    });
     // log('_onOverviewHidden');
   }
 
   _onSessionUpdated() {
-    if (this.animator) {
-      this.animator.relayout();
-    }
+    this._animators().forEach((animator) => {
+      if (animator) {
+        animator.relayout();
+      }
+    });
   }
 
   _onCheckServices() {

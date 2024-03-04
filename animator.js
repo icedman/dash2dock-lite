@@ -528,9 +528,9 @@ export let Animator = class {
       icon._container.opacity = 0;
 
       let scale = 1;
-      let dx = original_pos[0] - pointer[0];
+      let dx = original_pos[0] - px;
       if (this.extension._vertical) {
-        dx = original_pos[1] - pointer[1];
+        dx = original_pos[1] - py;
       }
       if (dx * dx < threshold * threshold && nearestIdx != -1) {
         let adx = Math.abs(dx);

@@ -474,10 +474,6 @@ export let Animator = class {
       py = nearestIcon._pos[1];
     }
 
-    // icons will spreadout when pointer hovers over the dash
-    // let icon_spacing =
-    //   iconSize * (1.2 + this.extension.animation_spread / 4) * scaleFactor;
-
     //------------------------
     // animation behavior
     //------------------------
@@ -490,12 +486,6 @@ export let Animator = class {
     if (magnify > 0.5 && spread < 0.55) {
       spread = 0.55 + spread * 0.2;
     }
-
-    // if (nearestIdx != -1) {
-    //   this.dash.add_style_class_name('dash-spread');
-    // } else {
-    //   this.dash.remove_style_class_name('dash-spread');
-    // }
 
     let padding = 10;
     let threshold = (iconSize + padding) * 2.5;

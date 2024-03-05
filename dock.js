@@ -28,7 +28,6 @@ let Reactive = GObject.registerClass(
     _init() {
       super._init({
         name: 'd2dlContainerReactive',
-        // vertical: true,
         reactive: true,
         track_hover: true,
       });
@@ -133,6 +132,7 @@ export let Dock = GObject.registerClass(
         { c: this.animator._background, p: this.animator.dashContainer },
         { c: this.animator._dockExtension, p: this.animator._background },
 
+        // here... scrolling doesn't work
         // { c: this.reactiveChild, p: this, above: false },
 
         {
@@ -141,6 +141,7 @@ export let Dock = GObject.registerClass(
           above: true,
         },
 
+        // here... labels don't work
         { c: this.reactiveChild, p: this, above: true },
       ];
 

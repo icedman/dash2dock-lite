@@ -29,8 +29,8 @@ publish:
 	cp -R preferences ./build
 	cp -R effects ./build
 	rm -rf ./*.zip
-	rm build/apps/*.desktop
-	rm build/*_.js
+	rm -rf build/apps/*.desktop
+	rm -rf build/*_.js
 	cd build ; \
 	zip -qr ../dash2dock-lite@icedman.github.com.zip .
 

@@ -39,7 +39,8 @@ export const Services = class {
       new ServiceCounter('trash', 1000 * 15, this.checkTrash.bind(this)),
       new ServiceCounter(
         'clock',
-        1000 * 60,
+        1000 * 60, // every minute
+        // 1000 * 1, // every second
         () => {
           if (this.clock) {
             this.clock.redraw();

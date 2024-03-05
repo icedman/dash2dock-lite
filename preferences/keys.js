@@ -77,6 +77,11 @@ export const SettingsKeys = () => {
       key_maps: {},
       test: { pointer: 'slide-down' },
     },
+    'autohide-speed': {
+      default_value: 0.5,
+      widget_type: 'scale',
+      test: { pointer: 'slide-through', values: [0, 0.5, 1] },
+    },
     'background-color': {
       default_value: [0, 0, 0, 0.5],
       widget_type: 'color',

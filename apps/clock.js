@@ -31,9 +31,10 @@ export const Clock = GObject.registerClass(
     }
 
     on_draw(canvas, ctx, width, height) {
-      const back_color = 'black';
-      const hour_color = 'white';
-      const minute_color = 'red';
+      let back_color = 'black';
+      let hour_color = 'white';
+      let minute_color = 'white';
+      let second_color = 'red';
 
       ctx.setOperator(Cairo.Operator.CLEAR);
       ctx.paint();
@@ -54,8 +55,9 @@ export const Clock = GObject.registerClass(
       Drawing.draw_circle(ctx, [0.2, 0.2, 0.2, 1.0], 0, 0, bgSize);
 
       const d0 = new Date();
-      let h0 = d0.getHours();
+      const h0 = d0.getHours();
       const m0 = d0.getMinutes();
+      const s0 = d0.getSeconds();
 
       ctx.save();
       ctx.moveTo(0, 0);
@@ -66,6 +68,8 @@ export const Clock = GObject.registerClass(
         (h0 * 30 + (m0 * 30) / 60) * (Math.PI / 180),
         -Math.floor(size / 3.7)
       );
+      ctx.setLineWidth(2);
+      minute_color = second_color;
       Drawing.draw_rotated_line(
         ctx,
         minute_color,
@@ -73,6 +77,14 @@ export const Clock = GObject.registerClass(
         m0 * 6 * (Math.PI / 180),
         -Math.floor(size / 2.7)
       );
+      // ctx.setLineWidth(1);
+      // Drawing.draw_rotated_line(
+      //   ctx,
+      //   second_color,
+      //   size / 33,
+      //   s0 * 6 * (Math.PI / 180),
+      //   -Math.floor(size / 2.7)
+      // );
       ctx.restore();
       ctx.$dispose();
     }

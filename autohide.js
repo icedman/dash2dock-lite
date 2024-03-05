@@ -128,6 +128,9 @@ export let AutoHide = class {
     if (this.extension.pressure_sense && !this._shown) {
       let monitor = this.dashContainer._monitor;
       let pointer = global.get_pointer();
+      if (this.extension.simulated_pointer) {
+        pointer = [...this.extension.simulated_pointer];
+      }
 
       let sw = monitor.width;
       let sh = monitor.height;
@@ -244,7 +247,7 @@ export let AutoHide = class {
 
     this._animating = false;
     let travel = this.dashContainer._dockHeight;
-    let speed = travel / 150;
+    let speed = travel / (50 + (450 - 450 * this.extension.autohide_speed));
     let dx = this.target[0] - x;
     let dy = this.target[1] - y;
     if (
@@ -315,6 +318,9 @@ export let AutoHide = class {
       return false;
     }
     let pointer = global.get_pointer();
+    if (this.extension.simulated_pointer) {
+      pointer = [...this.extension.simulated_pointer];
+    }
     let dash_position = this.dashContainer._fixedPosition;
 
     if (this.dashContainer._disableAutohide) {

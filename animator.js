@@ -215,6 +215,10 @@ export let Animator = class {
     let pointer = global.get_pointer();
     let monitor = this.dashContainer._monitor;
 
+    if (this.extension.simulated_pointer) {
+      pointer = [...this.extension.simulated_pointer];
+    }
+
     let padEnd = 0;
     let padEndPos = '';
     this.dashContainer.dash.style = '';
@@ -338,24 +342,6 @@ export let Animator = class {
 
     let idx = 0;
     animateIcons.forEach((icon) => {
-      // if (this.extension._vertical) {
-      //   icon._pos[0] = this.dashContainer.x;
-      //   if (this.dashContainer._position == 'right') {
-      //     icon._pos[0] += this.dashContainer._dashHeight / 2;
-      //     icon._pos[0] += this.dashContainer._dockPadding;
-      //     icon._pos[0] -= (iconSize / 2) * scaleFactor;
-      //   } else {
-      //     icon._pos[0] += effective_edge_distance;
-      //     icon._pos[0] += this.dashContainer._dashHeight / 2;
-      //     icon._pos[0] -= (iconSize / 2) * scaleFactor;
-      //   }
-      // } else {
-      //   icon._pos[1] = this.dashContainer.y;
-      //   icon._pos[1] += this.dashContainer._dashHeight / 2;
-      //   icon._pos[1] += this.dashContainer._dockPadding;
-      //   icon._pos[1] -= (iconSize / 2) * scaleFactor;
-      // }
-
       let bin = icon._bin;
       let pos = [...icon._pos];
 
@@ -380,6 +366,7 @@ export let Animator = class {
       let dst = this._get_distance(pointer, bposcenter);
 
       if (
+        isWithin &&
         (nearestDistance == -1 || nearestDistance > dst) &&
         dst < iconSize * ANIM_ICON_HIT_AREA * scaleFactor
       ) {
@@ -455,9 +442,9 @@ export let Animator = class {
     // when hidden and not peeking
     if (!this.extension.peek_hidden_icons) {
       if (
-        this.extension.autohider &&
-        this.extension.autohider._enabled &&
-        !this.extension.autohider._shown
+        this.dashContainer.autohider &&
+        this.dashContainer.autohider._enabled &&
+        !this.dashContainer.autohider._shown
       ) {
         nearestIcon = null;
       }
@@ -504,13 +491,11 @@ export let Animator = class {
       spread = 0.55 + spread * 0.2;
     }
 
-    if (nearestIdx != -1) {
-      // if (!this.dash.has_style_class_name('dash-spread')) {
-      // }
-      this.dash.add_style_class_name('dash-spread');
-    } else {
-      this.dash.remove_style_class_name('dash-spread');
-    }
+    // if (nearestIdx != -1) {
+    //   this.dash.add_style_class_name('dash-spread');
+    // } else {
+    //   this.dash.remove_style_class_name('dash-spread');
+    // }
 
     let padding = 10;
     let threshold = (iconSize + padding) * 2.5;
@@ -998,20 +983,38 @@ export let Animator = class {
     }
   }
 
-  _isWithinDash(p) {
-    let pad = 0;
-    let x1 = this._dockExtension.x;
-    let y1 = this._dockExtension.y;
-    let x2 = x1 + this.dashContainer.width;
-    let y2 = y1 + this.dashContainer.height;
-    if (this.extension._vertical) {
-      y2 = y1 + this.dashContainer._projectedWidth;
-    } else {
-      x2 = x1 + this.dashContainer._projectedWidth;
-    }
-
+  _isInRect(r, p, pad) {
+    let [x1, y1, w, h] = r;
+    let x2 = x1 + w;
+    let y2 = y1 + h;
     let [px, py] = p;
     return px + pad >= x1 && px - pad < x2 && py + pad >= y1 && py - pad < y2;
+  }
+
+  _isWithinDash(p) {
+    let pad = 0;
+    return (
+      this._isInRect(
+        [
+          this._dockExtension.x,
+          this._dockExtension.y,
+          this._dockExtension.width,
+          this._dockExtension.height,
+        ],
+        p,
+        0
+      ) ||
+      this._isInRect(
+        [
+          this.dashContainer.reactiveChild.x,
+          this.dashContainer.reactiveChild.y,
+          this.dashContainer.reactiveChild.width,
+          this.dashContainer.reactiveChild.height,
+        ],
+        p,
+        0
+      )
+    );
   }
 
   _onMotionEvent() {

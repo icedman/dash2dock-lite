@@ -84,6 +84,25 @@
             </child>
           </object>
         </child>
+        <child>
+          <object class="AdwActionRow">
+            <property name="title" translatable="yes">Autohide Speed</property>
+            <property name="subtitle" translatable="yes">Set autohide animation speed.</property>
+            <property name="activatable-widget">autohide-speed</property>
+            <child>
+              <object class="GtkScale" id="autohide-speed">
+                <property name="valign">center</property>
+                <property name="hexpand">true</property>
+                <property name="width-request">140px</property>
+                <property name="draw-value">true</property>
+                <property name="value-pos">right</property>
+                <property name="orientation">horizontal</property>
+                <property name="digits">2</property>
+                <property name="adjustment">autohide-speed-adjust</property>
+              </object>
+            </child>
+          </object>
+        </child>
       </object>
     </child>
     <child>
@@ -201,6 +220,11 @@
     <property name="step-increment">0.01</property>
   </object>
   <object class="GtkAdjustment" id="animation-bounce-adjust">
+    <property name="lower">0.0</property>
+    <property name="upper">1.0</property>
+    <property name="step-increment">0.01</property>
+  </object>
+  <object class="GtkAdjustment" id="autohide-speed-adjust">
     <property name="lower">0.0</property>
     <property name="upper">1.0</property>
     <property name="step-increment">0.01</property>

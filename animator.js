@@ -952,6 +952,7 @@ export let Animator = class {
     }
   }
 
+  // todo -- move to the dock
   _onScrollEvent(obj, evt) {
     this._lastScrollEvent = evt;
     let pointer = global.get_pointer();
@@ -960,7 +961,8 @@ export let Animator = class {
         this._scrollCounter = 0;
 
       let icon = this._nearestIcon;
-      // log(`scroll - (${icon._pos}) (${pointer})`);
+      // console.log(`scroll - (${icon._pos}) (${pointer})`);
+
       let SCROLL_RESOLUTION =
         MIN_SCROLL_RESOLUTION +
         MAX_SCROLL_RESOLUTION -

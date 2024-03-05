@@ -33,6 +33,15 @@ function add_move_pointer(seqs, x, y, delay, ext) {
     },
     delay,
   });
+
+  seqs.push({
+    x: x,
+    y: y,
+    func: (t) => {
+      ext.simulated_pointer = null;
+    },
+    delay: 5,
+  });
 }
 
 function add_slide_pointer(seqs, x, y, x2, y2, intervals, delay, ext) {
@@ -55,6 +64,15 @@ function add_slide_pointer(seqs, x, y, x2, y2, intervals, delay, ext) {
     x += dx;
     y += dy;
   }
+
+  seqs.push({
+    x: x,
+    y: y,
+    func: (t) => {
+      ext.simulated_pointer = null;
+    },
+    delay: 5,
+  });
 }
 
 function add_test_values(seqs, extension, settings, name, value, values) {

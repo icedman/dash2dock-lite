@@ -78,6 +78,7 @@ export const IconsContainer = GObject.registerClass(
         ...(params || {}),
       });
       this._icons = [];
+      this.reactive = true;
     }
 
     _precreate_icons(length) {
@@ -317,7 +318,7 @@ export const DockExtension = GObject.registerClass(
     }
 
     vfunc_scroll_event(scrollEvent) {
-      this._onScrollEvent({}, scrollEvent);
+      this.dashContainer._onScrollEvent({}, scrollEvent);
       return Clutter.EVENT_PROPAGATE;
     }
 

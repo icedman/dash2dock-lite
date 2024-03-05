@@ -33,6 +33,11 @@ let Reactive = GObject.registerClass(
         track_hover: true,
       });
     }
+
+    vfunc_scroll_event(scrollEvent) {
+      this.dashContainer._onScrollEvent({}, scrollEvent);
+      return Clutter.EVENT_PROPAGATE;
+    }
   }
 );
 
@@ -55,7 +60,7 @@ export let Dock = GObject.registerClass(
       this.pivot_point = pivot;
 
       this.reactiveChild = new Reactive();
-      // this.add_child(this.reactiveChild);
+      this.reactiveChild.dashContainer = this;
 
       this.animator = new Animator();
       this.animator.dashContainer = this;
@@ -89,10 +94,11 @@ export let Dock = GObject.registerClass(
       );
     }
 
-    vfunc_scroll_event(scrollEvent) {
-      this._onScrollEvent({}, scrollEvent);
-      return Clutter.EVENT_PROPAGATE;
-    }
+    // vfunc_scroll_event(scrollEvent) {
+    //   this._onScrollEvent({}, scrollEvent);
+    //   console.log('scrolling');
+    //   return Clutter.EVENT_PROPAGATE;
+    // }
 
     dock() {
       this.animator.enable();
@@ -127,12 +133,15 @@ export let Dock = GObject.registerClass(
         { c: this.animator._background, p: this.animator.dashContainer },
         { c: this.animator._dockExtension, p: this.animator._background },
 
-        { c: this.reactiveChild, p: this, above: false },
+        // { c: this.reactiveChild, p: this, above: false },
+
         {
           c: this.animator._overlay,
           p: this.animator._iconsContainer,
           above: true,
         },
+
+        { c: this.reactiveChild, p: this, above: true },
       ];
 
       reparent.forEach((obj) => {

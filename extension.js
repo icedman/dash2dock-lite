@@ -552,7 +552,7 @@ export default class Dash2DockLiteExt extends Extension {
   }
 
   _updateLampAnimation(disable) {
-    this.lamp_app_animation = false;
+    this.lamp_app_animation = false; // disable
     if (this.lamp_app_animation && !disable) {
       LampAnimation.enable();
     } else {

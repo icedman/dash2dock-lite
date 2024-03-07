@@ -32,11 +32,6 @@ let Reactive = GObject.registerClass(
         track_hover: true,
       });
     }
-
-    vfunc_scroll_event(scrollEvent) {
-      this.dashContainer._onScrollEvent({}, scrollEvent);
-      return Clutter.EVENT_PROPAGATE;
-    }
   }
 );
 
@@ -78,6 +73,19 @@ export let Dock = GObject.registerClass(
       this.add_child(this.dash);
 
       this.listeners = [this.animator, this.autohider];
+      this.connectObject(
+        'button-press-event',
+        this._onButtonEvent.bind(this),
+        'motion-event',
+        this._onMotionEvent.bind(this),
+        'enter-event',
+        this._onEnterEvent.bind(this),
+        'leave-event',
+        this._onLeaveEvent.bind(this),
+        'destroy',
+        () => {},
+        this
+      );
       this.reactiveChild.connectObject(
         'button-press-event',
         this._onButtonEvent.bind(this),
@@ -93,11 +101,10 @@ export let Dock = GObject.registerClass(
       );
     }
 
-    // vfunc_scroll_event(scrollEvent) {
-    //   this._onScrollEvent({}, scrollEvent);
-    //   console.log('scrolling');
-    //   return Clutter.EVENT_PROPAGATE;
-    // }
+    vfunc_scroll_event(scrollEvent) {
+      this._onScrollEvent({}, scrollEvent);
+      return Clutter.EVENT_PROPAGATE;
+    }
 
     dock() {
       this.animator.enable();
@@ -133,7 +140,7 @@ export let Dock = GObject.registerClass(
         { c: this.animator._dockExtension, p: this.animator._background },
 
         // here... scrolling doesn't work
-        // { c: this.reactiveChild, p: this, above: false },
+        { c: this.reactiveChild, p: this, above: false },
 
         {
           c: this.animator._overlay,
@@ -141,8 +148,8 @@ export let Dock = GObject.registerClass(
           above: true,
         },
 
-        // here... labels don't work
-        { c: this.reactiveChild, p: this, above: true },
+        // here... labels and dragging to rearrange don't work
+        // { c: this.reactiveChild, p: this, above: true },
       ];
 
       reparent.forEach((obj) => {

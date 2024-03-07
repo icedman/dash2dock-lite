@@ -132,7 +132,6 @@ export default class Dash2DockLiteExt extends Extension {
 
     this.containers.forEach((container) => {
       container.undock();
-      Main.layoutManager.removeChrome(container);
     });
     this.containers = [];
     this.dashContainer = null;

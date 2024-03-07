@@ -15,7 +15,6 @@ import {
   DotsContainer,
   DockExtension,
   DockBackground,
-  // explodeDashIcon,
 } from './dockItems.js';
 
 const ANIM_POS_COEF = 1.5;
@@ -29,7 +28,7 @@ const ANIM_REENABLE_DELAY = 250;
 const ANIM_DEBOUNCE_END_DELAY = 750;
 const ANIM_PREVIEW_DURATION = 1200;
 
-const FIND_ICONS_SKIP_FRAMES = 16;
+const FIND_ICONS_SKIP_FRAMES = 32; // 16;
 const THROTTLE_DOWN_FRAMES = 30;
 const THROTTLE_DOWN_DELAY_FRAMES = 20;
 
@@ -244,13 +243,13 @@ export let Animator = class {
       }
     }
 
-    if (this.dashContainer._scaleDownExcess) {
-      padEnd =
-        this.dashContainer._scaleDownExcess /
-        (this.extension._vertical ? 2 : 8);
-      let pos = this.extension._vertical ? 'bottom' : 'right';
-      this.dashContainer.dash.style += `padding-${pos}: ${padEnd}px;`;
-    }
+    // if (this.dashContainer._scaleDownExcess) {
+      // padEnd =
+      //   this.dashContainer._scaleDownExcess /
+      //   (this.extension._vertical ? 2 : 8);
+      // let pos = this.extension._vertical ? 'bottom' : 'right';
+      // this.dashContainer.dash.style += `padding-${pos}: ${padEnd}px;`;
+    // }
 
     let pivot = new Point();
     pivot.x = 0.5;
@@ -549,8 +548,19 @@ export let Animator = class {
     });
 
     // spread
-    for (let i = 0; i < iconTable.length; i++) {
+    for (let i = -1; i < iconTable.length + 1; i++) {
+      if (iconTable.length < 2) break;
       let icon = iconTable[i];
+      if (i == -1) {
+        icon = {
+          _scale: (iconTable[i+1]._scale + iconTable[i+2]._scale) / 2
+        };
+      }
+      if (i == iconTable.length) {
+        icon = {
+          _scale: (iconTable[i-1]._scale + iconTable[i-2]._scale) / 2
+        };
+      }
       if (icon._scale != 1) {
         // affect spread
         let offset = (icon._scale - 1) * iconSize * spread * 0.8;
@@ -633,7 +643,9 @@ export let Animator = class {
       let newY = icon._pos[1]; // (icon._pos[1] + pos[1] * 2)/ 3;
 
       // fade in
-      if (icon.opacity < 255) {
+      if (this._dragging && icon._container == this._dragged) {
+        icon.opacity = 50;
+      } else if (!this._dragging && icon.opacity < 255) {
         let opacity = icon.opacity;
         if (opacity < 10) {
           opacity = 10;
@@ -646,8 +658,7 @@ export let Animator = class {
         icon.opacity = opacity;
         bgOpacity = opacity;
       } else {
-        icon.opacity =
-          this._dragging && this._dragged == icon._container ? 50 : 255;
+        icon.opacity = 255;
       }
 
       if (tooFar) {

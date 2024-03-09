@@ -393,18 +393,24 @@ export const DockBackground = GObject.registerClass(
       let p2 = last.get_transformed_position();
 
       if (!isNaN(p1[0]) && !isNaN(p1[1])) {
-        // bottom
-        this.x = p1[0] - padding;
-        this.y = first._fixedPosition[1] - padding; // p1[1] - padding
+        let tx = first._icon.translationX;
+        let ty = first._icon.translationY;
+        let tx2 = last._icon.translationX;
+        let ty2 = last._icon.translationY;
 
+        // bottom
+        this.x = p1[0] - padding + tx;
+        this.y = first._fixedPosition[1] - padding / 2 - ty;
         if (p2[1] > p1[1]) {
           this.y = p2[1] - padding;
         }
         let width =
+          -tx +
+          tx2 +
           p2[0] -
           p1[0] +
           iconSize * scaleFactor * last._targetScale +
-          padding * 2;
+          padding * 3;
         let height = iconSize * scaleFactor + padding * 2;
 
         if (!isNaN(width)) {
@@ -432,8 +438,6 @@ export const DockBackground = GObject.registerClass(
             p1[1] +
             iconSize * scaleFactor * last._targetScale +
             padding * 2;
-
-          // log(`${width} ${height}`);
         }
 
         if (panel_mode) {

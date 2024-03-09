@@ -25,7 +25,6 @@ import { Style } from './style.js';
 import { Dock } from './dock.js';
 import { Services } from './services.js';
 import { runTests } from './diagnostics.js';
-import { D2DaDock } from './dock2.js';
 
 import * as LampAnimation from './effects/lamp_animation.js';
 
@@ -43,22 +42,6 @@ const ANIM_INTERVAL = 15;
 const ANIM_INTERVAL_PAD = 15;
 
 export default class Dash2DockLiteExt extends Extension {
-  createDock() {
-    let d = new D2DaDock({ extension: this });
-    d.extension = this;
-    d.addToChrome();
-    d.layout();
-    this.dock = d;
-    return d;
-  }
-
-  destroyDock() {
-    if (!this.dock) return;
-    this.dock.removeFromChrome();
-    delete this.dock;
-    this.dock = null;
-  }
-
   enable() {
     // for debugging - set to 255
     this._dash_opacity = 0;
@@ -101,12 +84,13 @@ export default class Dash2DockLiteExt extends Extension {
 
     this.dashContainer = new Dock(this);
     this._queryDisplay();
-    // this.dashContainer.dock();
+    this.dashContainer.dock();
 
     // todo follow animator and autohider protocol
     this.services.enable();
 
-    this.containers = []; // [this.dashContainer];
+    this.listeners = [this.services];
+    this.containers = [this.dashContainer];
 
     this._onCheckServices();
 
@@ -119,10 +103,7 @@ export default class Dash2DockLiteExt extends Extension {
     this._updateTrashIcon();
     this._updateStyle();
 
-    // this._addEvents();
-
-    this.createDock();
-    this.listeners = [...this.listeners, this.dock];
+    this._addEvents();
 
     this.startUp();
 
@@ -132,8 +113,6 @@ export default class Dash2DockLiteExt extends Extension {
   }
 
   disable() {
-    this.destroyDock();
-
     this._timer?.shutdown();
     this._hiTimer?.shutdown();
     this._loTimer?.shutdown();
@@ -153,6 +132,7 @@ export default class Dash2DockLiteExt extends Extension {
 
     this.containers.forEach((container) => {
       container.undock();
+      Main.layoutManager.removeChrome(container);
     });
     this.containers = [];
     this.dashContainer = null;
@@ -193,9 +173,6 @@ export default class Dash2DockLiteExt extends Extension {
             animator._invisible(false, false);
           });
         }
-        if (this.dock) {
-          this.dock.layout();
-        }
       };
       this._startupSeq = this._hiTimer.runSequence([
         { func, delay: 50 },
@@ -205,7 +182,6 @@ export default class Dash2DockLiteExt extends Extension {
             this._animators().forEach((animator) => {
               animator._invisible(false, false);
             });
-            this.dock.animate();
           },
           delay: 50,
         },

@@ -8,6 +8,10 @@
 /*  border: 2px solid red; */
 }
 
+#d2daDock {
+/*  border: 2px solid red; */
+}
+
 #d2dlReactExtension,
 #d2dlContainerReactive {
 /*  border: 2px solid red; */
@@ -18,10 +22,11 @@
 /*  padding: 0px !important;*/
 }
 
+#d2daDock #dash .dash-item-container
 #d2dlContainer #dash .dash-item-container {
  /* border: 2px solid red; */
-  padding-left: 0px !important;
-  padding-right: 0px !important;
+/*  padding-left: 0px !important;*/
+/*  padding-right: 0px !important;*/
 }
 
 #d2dlContainer #dash.dash-spread .dash-item-container  {

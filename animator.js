@@ -164,6 +164,12 @@ export let Animator = class {
   }
 
   _animate() {
+    return;
+    // if (this.extension.dock) {
+    //   this.extension.dock.animated = true;
+    //   this.extension.dock.animate();
+    // }
+
     if (!this._iconsContainer || !this.dashContainer) return;
     this.dash = this.dashContainer.dash;
 
@@ -244,11 +250,11 @@ export let Animator = class {
     }
 
     // if (this.dashContainer._scaleDownExcess) {
-      // padEnd =
-      //   this.dashContainer._scaleDownExcess /
-      //   (this.extension._vertical ? 2 : 8);
-      // let pos = this.extension._vertical ? 'bottom' : 'right';
-      // this.dashContainer.dash.style += `padding-${pos}: ${padEnd}px;`;
+    // padEnd =
+    //   this.dashContainer._scaleDownExcess /
+    //   (this.extension._vertical ? 2 : 8);
+    // let pos = this.extension._vertical ? 'bottom' : 'right';
+    // this.dashContainer.dash.style += `padding-${pos}: ${padEnd}px;`;
     // }
 
     let pivot = new Point();
@@ -531,6 +537,7 @@ export let Animator = class {
 
         didScale = true;
       }
+
       // icon.set_scale(scale, scale);
       icon._scale = scale;
       icon._targetScale = scale;
@@ -553,12 +560,12 @@ export let Animator = class {
       let icon = iconTable[i];
       if (i == -1) {
         icon = {
-          _scale: (iconTable[i+1]._scale + iconTable[i+2]._scale) / 2
+          _scale: (iconTable[i + 1]._scale + iconTable[i + 2]._scale) / 2,
         };
       }
       if (i == iconTable.length) {
         icon = {
-          _scale: (iconTable[i-1]._scale + iconTable[i-2]._scale) / 2
+          _scale: (iconTable[i - 1]._scale + iconTable[i - 2]._scale) / 2,
         };
       }
       if (icon._scale != 1) {
@@ -743,7 +750,7 @@ export let Animator = class {
         panel_mode: this.extension.panel_mode,
         dashContainer: this.dashContainer,
       });
-      this._background.opacity = bgOpacity;
+      // this._background.opacity = 1;
 
       if (this.extension._disable_borders && this._background.width > 0) {
         this.extension._disable_borders = false;
@@ -901,6 +908,11 @@ export let Animator = class {
   }
 
   _endAnimation() {
+    if (this.extension.dock) {
+      this.extension.dock.animated = false;
+      this.extension.dock.animate();
+    }
+
     if (this.extension._hiTimer) {
       this.extension._hiTimer.cancel(this._animationSeq);
       this.extension._loTimer.cancel(this.debounceEndSeq);

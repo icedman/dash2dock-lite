@@ -12,6 +12,7 @@ import { MonochromeEffect } from './effects/monochrome_effect.js';
 
 import { DockBackground } from './dockItems.js';
 import { Bounce, Linear } from './effects/easing.js';
+import { AutoHide } from './autohide.js';
 
 const Point = Graphene.Point;
 
@@ -87,6 +88,11 @@ export let D2DaDock = GObject.registerClass(
 
       this.dash.opacity = 0;
 
+      this.autohider = new AutoHide();
+      this.autohider.dashContainer = this;
+      this.autohider.extension = this.extension;
+      this.autohider.enable();
+
       this._enabled = true;
     }
 
@@ -106,6 +112,11 @@ export let D2DaDock = GObject.registerClass(
     }
     _onFocusWindow(evt) {
       this._beginAnimation();
+      return Clutter.EVENT_PROPAGATE;
+    }
+    _onAppsChanged(evt) {
+      this._beginAnimation();
+      this.autohider._debounceCheckHide();
       return Clutter.EVENT_PROPAGATE;
     }
 
@@ -758,6 +769,12 @@ export let D2DaDock = GObject.registerClass(
       });
 
       let targetY = 0;
+
+      if (this._hidden && this.autohide_dash) {
+        if (isWithin) {
+          this.slideIn();
+        }
+      }
 
       // dash hide/show
       if (this._hidden) {

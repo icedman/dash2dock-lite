@@ -40,24 +40,6 @@ export let AutoHide = class {
 
     this._debounceCheckHide();
 
-    this.extension._loTimer.runSequence([
-      {
-        func: () => {
-          if (isNaN(this.dashContainer._fixedPosition)) {
-            this._checkHide();
-            this.dashContainer.layout();
-          }
-        },
-        delay: 500,
-      },
-      {
-        func: () => {
-          this._checkHide();
-        },
-        delay: 500,
-      },
-    ]);
-
     log('autohide enabled');
   }
 
@@ -79,43 +61,6 @@ export let AutoHide = class {
     });
 
     log('autohide disabled');
-  }
-
-  _beginAnimation(t) {
-    if (this.animator._dragging) {
-      return;
-    }
-
-    if (t) {
-      this.target = this.dashContainer._fixedPosition;
-    } else {
-      this.target = this.dashContainer._hidePosition;
-    }
-
-    this.animationInterval = this.extension.animationInterval;
-    if (this.extension._hiTimer && this._animate()) {
-      if (!this._animationSeq) {
-        this._animationSeq = this.extension._hiTimer.runLoop(
-          () => {
-            this._animate();
-          },
-          this.animationInterval,
-          'autohideTimer'
-        );
-      } else {
-        this.extension._hiTimer.runLoop(this._animationSeq);
-      }
-    }
-  }
-
-  _endAnimation() {
-    if (this.extension._hiTimer) {
-      this.extension._hiTimer.cancel(this._animationSeq);
-    }
-
-    if (this.dashContainer) {
-      this.dashContainer.remove_style_class_name('hi');
-    }
   }
 
   _getScaleFactor() {
@@ -146,7 +91,7 @@ export let AutoHide = class {
         dy = dy * dy;
       }
 
-      if (this.extension._vertical) {
+      if (this.dashContainer.isVertical()) {
         if (
           // right
           (this.extension._position == 'right' &&
@@ -202,81 +147,13 @@ export let AutoHide = class {
   show() {
     this.frameDelay = 0;
     this._shown = true;
-    this._beginAnimation(true);
+    this.dashContainer.slideIn();
   }
 
   hide() {
     this.frameDelay = 10;
     this._shown = false;
-    this._beginAnimation(false);
-  }
-
-  _animate() {
-    // log('.');
-    if (!this.dashContainer) return false;
-
-    if (this.animator && this.animator._dragging) {
-      return false;
-    }
-
-    if (this._preview && this._preview > 0) {
-      this._preview -= this.animationInterval;
-    }
-
-    let x = this.dashContainer.position.x;
-    let y = this.dashContainer.position.y;
-
-    // temporarily disable autohide
-    if (this.animator && this.animator._enabled && this.animator._dragging) {
-      x = this.dashContainer._fixedPosition.x;
-      y = this.dashContainer._fixedPosition.y;
-
-      this.dashContainer.set_position(x, y);
-      this._endAnimation();
-      this.animator._endAnimation();
-      return true;
-    }
-
-    if (this.frameDelay && this.frameDelay-- > 0) {
-      return true;
-    }
-
-    if (this.extension.debug_visual) {
-      this.dashContainer.add_style_class_name('hi');
-    }
-
-    this._animating = false;
-    let travel = this.dashContainer._dockHeight;
-    let speed = travel / (50 + (450 - 450 * this.extension.autohide_speed));
-    let dx = this.target[0] - x;
-    let dy = this.target[1] - y;
-    if (
-      (Math.sqrt(dx * dx) <= speed * this.animationInterval &&
-        Math.sqrt(dy * dy) <= speed * this.animationInterval) ||
-      this.animator._dragging
-    ) {
-      x = this.target[0];
-      y = this.target[1];
-      this._endAnimation();
-    } else {
-      x += speed * (dx < 0 ? -1 : 1) * this.animationInterval;
-      y += speed * (dy < 0 ? -1 : 1) * this.animationInterval;
-      this._animating = true;
-
-      // animate the icons if needed
-      if (this.animator && this.animator._enabled) {
-        this.animator._beginAnimation('autohider');
-      }
-    }
-
-    if (this.extension._vertical) {
-      this.dashContainer.set_position(x, this.target[1]);
-      this.dashContainer.reactiveChild.x = this.dashContainer.x;
-    } else {
-      this.dashContainer.set_position(this.target[0], y);
-      this.dashContainer.reactiveChild.y = this.dashContainer.y;
-    }
-    return this._animating;
+    this.dashContainer.slideOut();
   }
 
   _track(window) {
@@ -321,13 +198,15 @@ export let AutoHide = class {
     if (this.extension.simulated_pointer) {
       pointer = [...this.extension.simulated_pointer];
     }
-    let dash_position = this.dashContainer._fixedPosition;
+
+    // inaccurate
+    let dash_position = [this.dashContainer.x, this.dashContainer.y];
 
     if (this.dashContainer._disableAutohide) {
       return false;
     }
 
-    if (this.animator._isWithinDash(pointer)) {
+    if (this.dashContainer._isWithinDash(pointer)) {
       return false;
     }
 
@@ -339,8 +218,8 @@ export let AutoHide = class {
     // log(pointer[1]);
     // log(dash_position[1]);
 
-    if (this.extension._vertical) {
-      if (this.extension._position == 'right') {
+    if (this.dashContainer.isVertical()) {
+      if (this.dashContainer.position == 'right') {
         // right
         if (pointer[0] > dash_position[0]) {
           return false;
@@ -378,7 +257,7 @@ export let AutoHide = class {
     windows.forEach((w) => {
       let frame = w.get_frame_rect();
       // log (`${frame.y} + ${frame.height}`);
-      if (this.extension._vertical) {
+      if (this.dashContainer.isVertical()) {
         if (this.extension._position == 'right') {
           if (frame.x + frame.width >= dash_position[0]) {
             isOverlapped = true;

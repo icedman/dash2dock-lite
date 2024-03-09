@@ -185,20 +185,16 @@ export default class Dash2DockLiteExt extends Extension {
   }
 
   startUp() {
-    this._animators().forEach((animator) => {
-      animator._invisible(true, true);
-    });
-
     // todo... refactor this
     if (!this._startupSeq) {
       let func = () => {
         this._updateLayout();
         // this.animate();
-        if (!this._vertical) {
-          this._animators().forEach((animator) => {
-            animator._invisible(false, false);
-          });
-        }
+        // if (!this._vertical) {
+        //   this._animators().forEach((animator) => {
+        //     animator._invisible(false, false);
+        //   });
+        // }
         if (this.dock) {
           this.dock.layout();
         }
@@ -208,19 +204,12 @@ export default class Dash2DockLiteExt extends Extension {
         { func, delay: 500 },
         {
           func: () => {
-            this._animators().forEach((animator) => {
-              animator._invisible(false, false);
-            });
             this.dock.animate();
           },
           delay: 50,
         },
         {
-          func: () => {
-            this._animators().forEach((animator) => {
-              animator._invisible(false, false);
-            });
-          },
+          func: () => {},
           delay: 250,
         },
       ]);
@@ -295,10 +284,6 @@ export default class Dash2DockLiteExt extends Extension {
         case 'animation-rise':
         case 'animation-bounce': {
           if (this.animate_icons) {
-            this._animators().forEach((animator) => {
-              animator.preview();
-            });
-            this.animate();
           }
           break;
         }
@@ -316,9 +301,6 @@ export default class Dash2DockLiteExt extends Extension {
           break;
         }
         case 'favorites-only': {
-          this._animators().forEach((animator) => {
-            animator.relayout();
-          });
           this._updateLayout();
           this.animate();
           break;
@@ -328,20 +310,6 @@ export default class Dash2DockLiteExt extends Extension {
         case 'icon-resolution': {
           this._disable_borders = this.border_radius > 0;
           this._updateIconResolution();
-          this._animators().forEach((animator) => {
-            animator._previousFind = null;
-            animator._iconsContainer.clear();
-          });
-          if (this.autohide_dash) {
-            this._autohiders().forEach((autohider) => {
-              autohider.disable();
-              autohider.enable();
-            });
-          }
-
-          this._animators().forEach((animator) => {
-            animator._background.visible = false;
-          });
           this._updateStyle();
           this._updateLayout();
           this.animate();
@@ -349,9 +317,6 @@ export default class Dash2DockLiteExt extends Extension {
         }
         case 'icon-effect': {
           if (this.animate_icons) {
-            this._animators().forEach((animator) => {
-              animator._updateIconEffect();
-            });
             this._updateLayout();
             this.animate();
           }
@@ -359,11 +324,11 @@ export default class Dash2DockLiteExt extends Extension {
         }
         case 'icon-effect-color': {
           if (this.animate_icons) {
-            this._animators().forEach((animator) => {
-              if (animator.iconEffect) {
-                animator.iconEffect.color = this.icon_effect_color;
-              }
-            });
+            // this._animators().forEach((animator) => {
+            //   if (animator.iconEffect) {
+            //     animator.iconEffect.color = this.icon_effect_color;
+            //   }
+            // });
             this.animate();
           }
           break;
@@ -449,11 +414,11 @@ export default class Dash2DockLiteExt extends Extension {
     this._appSystem.connectObject(
       'installed-changed',
       () => {
-        this.animate();
+        this.dock._onAppsChanged();
       },
       'app-state-changed',
       () => {
-        this.animate();
+        this.dock._onAppsChanged();
       },
       this
     );
@@ -462,7 +427,7 @@ export default class Dash2DockLiteExt extends Extension {
     this._appFavorites.connectObject(
       'changed',
       () => {
-        this.animate();
+        this.dock._onAppsChanged();
       },
       this
     );
@@ -537,32 +502,12 @@ export default class Dash2DockLiteExt extends Extension {
       this.services.disable();
       this.services.enable();
     }
-    this._animators().forEach((animator) => {
-      animator._previousFind = null;
-      animator._iconsContainer.clear();
-    });
     this._updateStyle();
     this.animate();
   }
 
-  _animators() {
-    return this.containers.map((c) => {
-      return c.animator;
-    });
-  }
-
-  _autohiders() {
-    return this.containers.map((c) => {
-      return c.autohider;
-    });
-  }
-
   _onFocusWindow() {
-    let listeners = [
-      ...this.listeners,
-      ...this._animators(),
-      ...this._autohiders(),
-    ];
+    let listeners = [...this.listeners];
     listeners
       .filter((l) => {
         return l._enabled;
@@ -573,11 +518,7 @@ export default class Dash2DockLiteExt extends Extension {
   }
 
   _onFullScreen() {
-    let listeners = [
-      ...this.listeners,
-      ...this._animators(),
-      ...this._autohiders(),
-    ];
+    let listeners = [...this.listeners];
     listeners
       .filter((l) => {
         return l._enabled;
@@ -614,9 +555,9 @@ export default class Dash2DockLiteExt extends Extension {
     }
 
     if (this.animate_icons) {
-      this._animators().forEach((animator) => {
-        animator.relayout();
-      });
+      // this._animators().forEach((animator) => {
+      //   animator.relayout();
+      // });
     }
   }
 
@@ -717,13 +658,13 @@ export default class Dash2DockLiteExt extends Extension {
             'border-top: 0px; border-right: 0px; border-bottom: 0px;';
         }
       }
-      this._animators().forEach((animator) => {
-        animator._background.style = `border: ${this.border_thickness}px solid rgba(${rgba}) !important; ${disable_borders}`;
-      });
+      // this._animators().forEach((animator) => {
+      //   animator._background.style = `border: ${this.border_thickness}px solid rgba(${rgba}) !important; ${disable_borders}`;
+      // });
     } else {
-      this._animators().forEach((animator) => {
-        animator._background.style = '';
-      });
+      // this._animators().forEach((animator) => {
+      //   animator._background.style = '';
+      // });
     }
   }
 
@@ -735,13 +676,13 @@ export default class Dash2DockLiteExt extends Extension {
 
   _updateAutohide(disable) {
     if (this.autohide_dash && !disable) {
-      this._autohiders().forEach((autohider) => {
-        autohider.enable();
-      });
+      // this._autohiders().forEach((autohider) => {
+      //   autohider.enable();
+      // });
     } else {
-      this._autohiders().forEach((autohider) => {
-        autohider.disable();
-      });
+      // this._autohiders().forEach((autohider) => {
+      //   autohider.disable();
+      // });
     }
 
     if (!disable) {
@@ -762,30 +703,30 @@ export default class Dash2DockLiteExt extends Extension {
 
   _onOverviewShowing() {
     this._inOverview = true;
-    this._autohiders().forEach((autohider) => {
-      if (autohider._enabled) {
-        autohider._debounceCheckHide();
-      }
-    });
+    // this._autohiders().forEach((autohider) => {
+    //   if (autohider._enabled) {
+    //     autohider._debounceCheckHide();
+    //   }
+    // });
     // log('_onOverviewShowing');
   }
 
   _onOverviewHidden() {
     this._inOverview = false;
-    this._autohiders().forEach((autohider) => {
-      if (autohider._enabled) {
-        autohider._debounceCheckHide();
-      }
-    });
+    // this._autohiders().forEach((autohider) => {
+    //   if (autohider._enabled) {
+    //     autohider._debounceCheckHide();
+    //   }
+    // });
     // log('_onOverviewHidden');
   }
 
   _onSessionUpdated() {
-    this._animators().forEach((animator) => {
-      if (animator) {
-        animator.relayout();
-      }
-    });
+    // this._animators().forEach((animator) => {
+    //   if (animator) {
+    //     animator.relayout();
+    //   }
+    // });
   }
 
   _onCheckServices() {

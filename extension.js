@@ -18,7 +18,10 @@
  */
 
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
+import * as Fav from 'resource:///org/gnome/shell/ui/appFavorites.js';
+
 import St from 'gi://St';
+import Shell from 'gi://Shell';
 
 import { Timer } from './timer.js';
 import { Style } from './style.js';
@@ -95,6 +98,8 @@ export default class Dash2DockLiteExt extends Extension {
     Main.overview.dash.last_child.visible = false;
     Main.overview.dash.opacity = 0;
 
+    this.docks = [];
+
     // service
     this.services = new Services();
     this.services.extension = this;
@@ -119,10 +124,11 @@ export default class Dash2DockLiteExt extends Extension {
     this._updateTrashIcon();
     this._updateStyle();
 
-    // this._addEvents();
+    this._addEvents();
 
     this.createDock();
     this.listeners = [...this.listeners, this.dock];
+    this.docks = [this.dock];
 
     this.startUp();
 
@@ -173,8 +179,8 @@ export default class Dash2DockLiteExt extends Extension {
   }
 
   animate() {
-    this.containers.forEach((container) => {
-      container._onEnterEvent();
+    this.docks.forEach((dock) => {
+      dock._beginAnimation();
     });
   }
 
@@ -187,7 +193,7 @@ export default class Dash2DockLiteExt extends Extension {
     if (!this._startupSeq) {
       let func = () => {
         this._updateLayout();
-        this.animate();
+        // this.animate();
         if (!this._vertical) {
           this._animators().forEach((animator) => {
             animator._invisible(false, false);
@@ -438,11 +444,28 @@ export default class Dash2DockLiteExt extends Extension {
   }
 
   _addEvents() {
-    // Main.sessionMode.connectObject(
-    //   'updated',
-    //   () => this._onSessionUpdated(),
-    //   this
-    // );
+    this._appSystem = Shell.AppSystem.get_default();
+
+    this._appSystem.connectObject(
+      'installed-changed',
+      () => {
+        this.animate();
+      },
+      'app-state-changed',
+      () => {
+        this.animate();
+      },
+      this
+    );
+
+    this._appFavorites = Fav.getAppFavorites();
+    this._appFavorites.connectObject(
+      'changed',
+      () => {
+        this.animate();
+      },
+      this
+    );
 
     Main.layoutManager.connectObject(
       // 'startup-complete',
@@ -465,10 +488,6 @@ export default class Dash2DockLiteExt extends Extension {
     );
 
     global.display.connectObject(
-      // 'window-demands-attention',
-      // () => { log('window-demands-attention') },
-      // 'window-marked-urgent',
-      // () => { log('window-marked-urgent') },
       'notify::focus-window',
       this._onFocusWindow.bind(this),
       'in-fullscreen-changed',
@@ -501,6 +520,9 @@ export default class Dash2DockLiteExt extends Extension {
   }
 
   _removeEvents() {
+    this._appSystem.disconnectObject(this);
+    this._appFavorites.disconnectObject(this);
+
     // Main.sessionMode.disconnectObject(this);
     Main.messageTray.disconnectObject(this);
     Main.overview.disconnectObject(this);

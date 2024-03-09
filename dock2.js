@@ -106,7 +106,6 @@ export let D2DaDock = GObject.registerClass(
     }
     _onFocusWindow(evt) {
       this._beginAnimation();
-      console.log(123);
       return Clutter.EVENT_PROPAGATE;
     }
 
@@ -754,7 +753,7 @@ export let D2DaDock = GObject.registerClass(
         // labels
         if (icon._label) {
           icon._label.translationX = translationX;
-          icon._label.translationY = translationY - iconSize / 2 * newScale;
+          icon._label.translationY = translationY - (iconSize / 2) * newScale;
         }
       });
 
@@ -764,7 +763,8 @@ export let D2DaDock = GObject.registerClass(
       if (this._hidden) {
         targetY = this.dash.height + 1 * scaleFactor;
       }
-      this.dash.translationY = (this.dash.translationY * _pos_coef + targetY)/(_pos_coef+1);
+      this.dash.translationY =
+        (this.dash.translationY * _pos_coef + targetY) / (_pos_coef + 1);
 
       {
         let padding = iconSize * 0.4;

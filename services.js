@@ -473,10 +473,11 @@ export const Services = class {
     // clock
     if (icon.icon_name == 'org.gnome.clocks') {
       if (this.extension.clock_icon) {
-        let clock = this.clock;
+        let clock = item._clock;
         if (!clock) {
           clock = new Clock(CANVAS_SIZE);
           this.clock = clock;
+          item._clock = clock;
           item._appwell.first_child.add_child(clock);
         }
         if (clock) {
@@ -495,10 +496,11 @@ export const Services = class {
     // calender
     if (icon.icon_name == 'org.gnome.Calendar') {
       if (this.extension.calendar_icon) {
-        let calender = this.calender;
+        let calender = item._calender;
         if (!calender) {
           calender = new Calendar(CANVAS_SIZE);
           this.calender = calender;
+          item._calender = calender;
           item._appwell.first_child.add_child(calender);
         }
         if (calender) {

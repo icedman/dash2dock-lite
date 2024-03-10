@@ -407,6 +407,18 @@ export let D2DaDock = GObject.registerClass(
             this._icons = null;
           });
         }
+
+        let { _draggable } = icon;
+        if (_draggable && !_draggable._dragBeginId) {
+          _draggable._dragBeginId = _draggable.connect('drag-begin', () => {
+            this._dragging = true;
+            this._dragged = icon;
+          });
+          _draggable._dragEndId = _draggable.connect('drag-end', () => {
+            this._dragging = false;
+            this._icons = null;
+          });
+        }
       });
 
       return icons;
@@ -718,6 +730,8 @@ export let D2DaDock = GObject.registerClass(
         if (!icon._pos) {
           return;
         }
+
+        icon.opacity = (icon == this._dragged && this._dragging) ? 50 : 255;
       });
 
       // spread

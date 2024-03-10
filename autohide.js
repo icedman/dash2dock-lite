@@ -33,6 +33,7 @@ const handledWindowTypes = [
 
 export let AutoHide = class {
   enable() {
+    if (this._enabled) return;
     // log('enable autohide');
     this._enabled = true;
     this._shown = true;
@@ -44,6 +45,7 @@ export let AutoHide = class {
   }
 
   disable() {
+    if (!this._enabled) return;
     if (this.extension._hiTimer) {
       this.extension._hiTimer.cancel(this._animationSeq);
     }
@@ -206,9 +208,9 @@ export let AutoHide = class {
       return false;
     }
 
-    if (this.dashContainer._isWithinDash(pointer)) {
-      return false;
-    }
+    // if (this.dashContainer._isWithinDash(pointer)) {
+    //   return false;
+    // }
 
     if (!this.extension.autohide_dodge) {
       return true;

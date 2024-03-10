@@ -404,14 +404,8 @@ export const DockBackground = GObject.registerClass(
         if (p2[1] > p1[1]) {
           this.y = p2[1] - padding;
         }
-        let width =
-          -tx +
-          tx2 +
-          p2[0] -
-          p1[0] +
-          iconSize * scaleFactor * last._targetScale +
-          padding * 3;
-        let height = iconSize * scaleFactor + padding * 2;
+        let width = dashContainer.dash.width + Math.abs(tx) + tx2 + padding;
+        let height = (iconSize + padding * 2.5) * scaleFactor;
 
         if (!isNaN(width)) {
           this.width = width;

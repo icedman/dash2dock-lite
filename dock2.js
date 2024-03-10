@@ -13,6 +13,9 @@ import { MonochromeEffect } from './effects/monochrome_effect.js';
 import { DockBackground } from './dockItems.js';
 import { Bounce, Linear } from './effects/easing.js';
 import { AutoHide } from './autohide.js';
+import { Dot } from './apps/dot.js';
+
+const DOT_CANVAS_SIZE = 96;
 
 const Point = Graphene.Point;
 
@@ -46,8 +49,8 @@ export let D2DaDock = GObject.registerClass(
     _init(params) {
       super._init({
         name: 'd2daDock',
-        reactive: true,
-        track_hover: true,
+        reactive: false,
+        track_hover: false,
         width: 0,
         height: 0,
         clip_to_allocation: true,
@@ -56,7 +59,7 @@ export let D2DaDock = GObject.registerClass(
       });
 
       this.extension = params.extension;
-      this.autohide_dash = this.extension.autohide_dash;
+      this.autohide_dash = this.extension.a_dash;
       this.apps_icon = this.extension.apps_icon;
       this.favorites_only = this.extension.favorites_only;
 
@@ -92,8 +95,13 @@ export let D2DaDock = GObject.registerClass(
       this.autohider.dashContainer = this;
       this.autohider.extension = this.extension;
       this.autohider.enable();
+    }
 
-      this._enabled = true;
+    undock() {
+      this._endAnimation();
+      this.dash._box.remove_effect_by_name('icon-effect');
+      this.autohider.disable();
+      this.removeFromChrome();
     }
 
     _onButtonPressEvent(evt) {
@@ -108,10 +116,12 @@ export let D2DaDock = GObject.registerClass(
       return Clutter.EVENT_PROPAGATE;
     }
     _onLeaveEvent(evt) {
+      this._debounceEndAnimation();
       return Clutter.EVENT_PROPAGATE;
     }
     _onFocusWindow(evt) {
       this._beginAnimation();
+      this.autohider._debounceCheckHide();
       return Clutter.EVENT_PROPAGATE;
     }
     _onAppsChanged(evt) {
@@ -144,7 +154,7 @@ export let D2DaDock = GObject.registerClass(
     }
 
     _updateIconEffect() {
-      this.dash._box.remove_effect_by_name('icon-effect');
+      this.dash._box.get_parent().remove_effect_by_name('icon-effect');
       let effect = this._createEffect(this.extension.icon_effect);
       if (effect) {
         this.dash._box.get_parent().add_effect_with_name('icon-effect', effect);
@@ -203,6 +213,7 @@ export let D2DaDock = GObject.registerClass(
 
       Main.layoutManager.removeChrome(this);
       this._onChrome = false;
+      this.dash._box.get_parent().remove_effect_by_name('icon-effect');
     }
 
     isVertical() {
@@ -321,16 +332,30 @@ export let D2DaDock = GObject.registerClass(
         let bin = boxlayout.first_child;
         let icon = bin.first_child;
 
+        icongrid.style = 'background: none !important;';
+
         c._bin = bin;
         c._label = label;
         c._draggable = draggable;
         c._appwell = appwell;
+        c._dot = appwell._dot;
+        c._dot.opacity = 0;
         if (icon) {
           c._icon = icon;
+          c._icon.reactive = true;
           let pv = new Point();
           pv.x = 0.5;
           pv.y = 0.5;
           icon.pivot_point = pv;
+        }
+
+        if (!c._dotCanvas) {
+          let dot = new Dot(DOT_CANVAS_SIZE);
+          let pdot = new St.Widget();
+          pdot.add_child(dot);
+          dot.set_position(0, 0);
+          c.add_child(pdot);
+          c._dotCanvas = dot;
         }
       });
 
@@ -427,7 +452,7 @@ export let D2DaDock = GObject.registerClass(
 
       let iconSize = this._preferredIconSize();
       let iconSizeSpaced =
-        iconSize * scaleFactor * (1.2 + animation_spread / 4);
+        iconSize * scaleFactor * (1.2 + animation_spread / 2);
 
       let projectedWidth =
         iconSize +
@@ -446,6 +471,9 @@ export let D2DaDock = GObject.registerClass(
       iconSizeSpaced *= scaleDown;
       projectedWidth *= scaleDown;
       this._projectedWidth = projectedWidth;
+
+      this._edge_distance =
+        (this.extension.edge_distance || 0) * 20 * scaleFactor;
 
       this._icons.forEach((icon) => {
         icon.width = iconSizeSpaced * scaleFactor;
@@ -517,6 +545,7 @@ export let D2DaDock = GObject.registerClass(
 
       let m = this.getMonitor();
       let pointer = global.get_pointer();
+      let vertical = this.isVertical();
 
       // pointer[0] = m.width / 2;
       // pointer[1] = m.height - 30;
@@ -592,6 +621,16 @@ export let D2DaDock = GObject.registerClass(
 
         idx++;
       });
+
+      if (nearestIcon) {
+        // console.log(nearestIcon.get_parent()); // dash-item-container
+        // console.log(nearestIcon.get_style_class_name()); // dash-item-container
+        // console.log(nearestIcon.first_child.get_style_class_name()); // app-well-app
+        // console.log(nearestIcon.first_child.first_child.get_style_class_name());
+        // console.log(nearestIcon.first_child.first_child.first_child.get_style_class_name()); // overview-icon
+        // console.log(nearestIcon.first_child.first_child.first_child.first_child.get_style_class_name());
+        // console.log(nearestIcon.first_child.first_child.first_child.first_child.first_child.get_style_class_name());
+      }
 
       if (!this._preview && !isWithin) {
         nearestIcon = null;
@@ -692,16 +731,6 @@ export let D2DaDock = GObject.registerClass(
       for (let i = 0; i < iconTable.length; i++) {
         if (iconTable.length < 2) break;
         let icon = iconTable[i];
-        if (i == -1) {
-          icon = {
-            _scale: (iconTable[i + 1]._scale + iconTable[i + 2]._scale) / 2,
-          };
-        }
-        if (i == iconTable.length) {
-          icon = {
-            _scale: (iconTable[i - 1]._scale + iconTable[i - 2]._scale) / 2,
-          };
-        }
         if (icon._scale != 1) {
           // affect spread
           let offset = (icon._scale - 1) * iconSize * spread * 0.8;
@@ -752,11 +781,9 @@ export let D2DaDock = GObject.registerClass(
         let oldX = icon._icon.translationX;
         let oldY = icon._icon.translationY;
         let translationX =
-          (oldX + icon._translate * !this.isVertical() * _pos_coef) /
-          (_pos_coef + 1);
+          (oldX + icon._translate * !vertical * _pos_coef) / (_pos_coef + 1);
         let translationY =
-          (oldY + icon._translate * this.isVertical() * _pos_coef) /
-          (_pos_coef + 1);
+          (oldY + icon._translate * vertical * _pos_coef) / (_pos_coef + 1);
 
         icon._icon.translationX = translationX;
         icon._icon.translationY = translationY;
@@ -765,6 +792,40 @@ export let D2DaDock = GObject.registerClass(
         if (icon._label) {
           icon._label.translationX = translationX;
           icon._label.translationY = translationY - (iconSize / 2) * newScale;
+        }
+
+        // dots
+        let appCount = icon._appwell ? icon._appwell.app.get_n_windows() : 0;
+        let style = null;
+        let dot = icon._dotCanvas;
+        if (dot) {
+          dot.visible = appCount > 0;
+          if (dot.visible) {
+            dot.set_scale(
+              (iconSize * scaleFactor) / DOT_CANVAS_SIZE,
+              (iconSize * scaleFactor) / DOT_CANVAS_SIZE
+            );
+
+            dot.get_parent().width = iconSize * scaleFactor;
+            dot.get_parent().height = iconSize * scaleFactor;
+            dot.style = 'border:2px solid yellow !important';
+
+            dot.translationX = icon._icon.translationX;
+            dot.translationY = icon._icon.translationY;
+
+            let options = this.extension.running_indicator_style_options;
+            let running_indicator_style =
+              options[this.extension.running_indicator_style];
+            let running_indicator_color =
+              this.extension.running_indicator_color;
+
+            dot.set_state({
+              count: appCount,
+              color: running_indicator_color || [1, 1, 1, 1],
+              style: running_indicator_style || 'default',
+              rotate: vertical ? (this._position == 'right' ? -90 : 90) : 0,
+            });
+          }
         }
       });
 
@@ -780,9 +841,13 @@ export let D2DaDock = GObject.registerClass(
       if (this._hidden) {
         targetY = this.dash.height + 1 * scaleFactor;
       }
+
+      // dash edge
+      targetY -= this._edge_distance;
       this.dash.translationY =
         (this.dash.translationY * _pos_coef + targetY) / (_pos_coef + 1);
 
+      // background
       {
         let padding = iconSize * 0.4;
         this._background.update({
@@ -798,8 +863,10 @@ export let D2DaDock = GObject.registerClass(
         });
         this._background.x -= this.x;
         this._background.y -= this.y;
-        this._background.translationX = this.dash.translationX;
-        this._background.translationY = this.dash.translationY;
+        this._background.translationX =
+          this.dash.translationX + this._edge_distance * this.isVertical();
+        this._background.translationY =
+          this.dash.translationY + this._edge_distance * !this.isVertical();
       }
 
       Main.panel.first_child.style = 'border:1px solid magenta';

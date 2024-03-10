@@ -9,7 +9,7 @@
 }
 
 #d2daDock {
-/*  border: 2px solid red; */
+  border: 2px solid red; 
 }
 
 #d2dlReactExtension,
@@ -17,19 +17,23 @@
 /*  border: 2px solid red; */
 }
 
+/* #d2daDock #dash, */
 #d2dlContainer #dash * {
-/*  margin: 0px !important;*/
-/*  padding: 0px !important;*/
+ margin: 0px !important;
+ padding: 0px !important;
 }
 
-#d2daDock #dash .dash-item-container
+#d2daDock #dash .dash-item-container .overview-icon:hover,
+#d2daDock #dash .dash-item-container .overview-icon:focus,
+#d2daDock #dash .dash-item-container .overview-icon:active,
 #d2dlContainer #dash .dash-item-container {
- /* border: 2px solid red; */
+  background-color: none !important;
+ border: 2px solid red;
 /*  padding-left: 0px !important;*/
 /*  padding-right: 0px !important;*/
 }
 
-#d2dlContainer #dash.dash-spread .dash-item-container  {
+#d2dlContainer #dash.dash-spread .dash-item-container {
   padding-left: 1px !important;
   padding-right: 1px !important;
 }

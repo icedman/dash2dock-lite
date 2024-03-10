@@ -83,14 +83,13 @@ export default class Dash2DockLiteExt extends Extension {
     this.services.extension = this;
 
     this.dashContainer = new Dock(this);
-    this._queryDisplay();
     this.dashContainer.dock();
 
     // todo follow animator and autohider protocol
     this.services.enable();
 
     this.listeners = [this.services];
-    this.containers = [this.dashContainer];
+    this.docks = [this.dashContainer];
 
     this._onCheckServices();
 
@@ -130,11 +129,11 @@ export default class Dash2DockLiteExt extends Extension {
     Main.overview.dash.last_child.visible = true;
     Main.overview.dash.opacity = 255;
 
-    this.containers.forEach((container) => {
+    this.docks.forEach((container) => {
       container.undock();
       Main.layoutManager.removeChrome(container);
     });
-    this.containers = [];
+    this.docks = [];
     this.dashContainer = null;
 
     this.services.disable();
@@ -153,7 +152,7 @@ export default class Dash2DockLiteExt extends Extension {
   }
 
   animate() {
-    this.containers.forEach((container) => {
+    this.docks.forEach((container) => {
       container._onEnterEvent();
     });
   }
@@ -500,13 +499,13 @@ export default class Dash2DockLiteExt extends Extension {
   }
 
   _animators() {
-    return this.containers.map((c) => {
+    return this.docks.map((c) => {
       return c.animator;
     });
   }
 
   _autohiders() {
-    return this.containers.map((c) => {
+    return this.docks.map((c) => {
       return c.autohider;
     });
   }
@@ -542,7 +541,7 @@ export default class Dash2DockLiteExt extends Extension {
   }
 
   _updateAnimationFPS() {
-    this.containers.forEach((container) => {
+    this.docks.forEach((container) => {
       container.cancelAnimations();
     });
     this.animationInterval =
@@ -682,7 +681,7 @@ export default class Dash2DockLiteExt extends Extension {
   }
 
   _updateLayout(disable) {
-    this.containers.forEach((container) => {
+    this.docks.forEach((container) => {
       container.layout(disable);
     });
   }
@@ -699,7 +698,7 @@ export default class Dash2DockLiteExt extends Extension {
     }
 
     if (!disable) {
-      this.containers.forEach((container) => {
+      this.docks.forEach((container) => {
         container.removeFromChrome();
         container.addToChrome();
       });

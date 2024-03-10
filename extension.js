@@ -55,11 +55,11 @@ export default class Dash2DockLiteExt extends Extension {
     return d;
   }
 
-  destroyDock() {
-    if (!this.dock) return;
-    this.dock.removeFromChrome();
-    delete this.dock;
-    this.dock = null;
+  destroyDocks() {
+    (this.docks || []).forEach((dock) => {
+      dock.removeFromChrome();
+      this.dock = null;
+    });
   }
 
   enable() {
@@ -106,12 +106,9 @@ export default class Dash2DockLiteExt extends Extension {
 
     this.dashContainer = new Dock(this);
     this._queryDisplay();
-    // this.dashContainer.dock();
 
     // todo follow animator and autohider protocol
     this.services.enable();
-
-    this.containers = []; // [this.dashContainer];
 
     this._onCheckServices();
 
@@ -127,8 +124,8 @@ export default class Dash2DockLiteExt extends Extension {
     this._addEvents();
 
     this.createDock();
-    this.listeners = [...this.listeners, this.dock];
-    this.docks = [this.dock];
+    this.docks.push(this.dock);
+    this.listeners = [...this.listeners, ...this.docks];
 
     this.startUp();
 
@@ -138,8 +135,6 @@ export default class Dash2DockLiteExt extends Extension {
   }
 
   disable() {
-    this.destroyDock();
-
     this._timer?.shutdown();
     this._hiTimer?.shutdown();
     this._loTimer?.shutdown();
@@ -157,14 +152,15 @@ export default class Dash2DockLiteExt extends Extension {
     Main.overview.dash.last_child.visible = true;
     Main.overview.dash.opacity = 255;
 
-    this.containers.forEach((container) => {
+    this.docks.forEach((container) => {
       container.undock();
     });
-    this.containers = [];
+    this.docks = [];
     this.dashContainer = null;
 
+    this.destroyDocks();
+
     this.services.disable();
-    delete this.services;
     this.services = null;
 
     this._timer = null;
@@ -216,6 +212,12 @@ export default class Dash2DockLiteExt extends Extension {
     } else {
       this._hiTimer.runSequence(this._startupSeq);
     }
+  }
+
+  _autohiders() {
+    return this.docks.map((d) => {
+      return d.autohider;
+    });
   }
 
   _queryDisplay() {
@@ -414,11 +416,11 @@ export default class Dash2DockLiteExt extends Extension {
     this._appSystem.connectObject(
       'installed-changed',
       () => {
-        this.dock._onAppsChanged();
+        this._onAppsChanged();
       },
       'app-state-changed',
       () => {
-        this.dock._onAppsChanged();
+        this._onAppsChanged();
       },
       this
     );
@@ -427,7 +429,7 @@ export default class Dash2DockLiteExt extends Extension {
     this._appFavorites.connectObject(
       'changed',
       () => {
-        this.dock._onAppsChanged();
+        this._onAppsChanged();
       },
       this
     );
@@ -487,8 +489,6 @@ export default class Dash2DockLiteExt extends Extension {
   _removeEvents() {
     this._appSystem.disconnectObject(this);
     this._appFavorites.disconnectObject(this);
-
-    // Main.sessionMode.disconnectObject(this);
     Main.messageTray.disconnectObject(this);
     Main.overview.disconnectObject(this);
     Main.layoutManager.disconnectObject(this);
@@ -508,28 +508,27 @@ export default class Dash2DockLiteExt extends Extension {
 
   _onFocusWindow() {
     let listeners = [...this.listeners];
-    listeners
-      .filter((l) => {
-        return l._enabled;
-      })
-      .forEach((l) => {
-        if (l._onFocusWindow) l._onFocusWindow();
-      });
+    listeners.forEach((l) => {
+      if (l._onFocusWindow) l._onFocusWindow();
+    });
+  }
+
+  _onAppsChanged() {
+    let listeners = [...this.listeners];
+    listeners.forEach((l) => {
+      if (l._onAppsChanged) l._onAppsChanged();
+    });
   }
 
   _onFullScreen() {
     let listeners = [...this.listeners];
-    listeners
-      .filter((l) => {
-        return l._enabled;
-      })
-      .forEach((l) => {
-        if (l._onFullScreen) l._onFullScreen();
-      });
+    listeners.forEach((l) => {
+      if (l._onFullScreen) l._onFullScreen();
+    });
   }
 
   _updateAnimationFPS() {
-    this.containers.forEach((container) => {
+    this.docks.forEach((container) => {
       container.cancelAnimations();
     });
     this.animationInterval =
@@ -669,24 +668,24 @@ export default class Dash2DockLiteExt extends Extension {
   }
 
   _updateLayout(disable) {
-    this.containers.forEach((container) => {
+    this.docks.forEach((container) => {
       container.layout(disable);
     });
   }
 
   _updateAutohide(disable) {
     if (this.autohide_dash && !disable) {
-      // this._autohiders().forEach((autohider) => {
-      //   autohider.enable();
-      // });
+      this._autohiders().forEach((autohider) => {
+        autohider.enable();
+      });
     } else {
-      // this._autohiders().forEach((autohider) => {
-      //   autohider.disable();
-      // });
+      this._autohiders().forEach((autohider) => {
+        autohider.disable();
+      });
     }
 
     if (!disable) {
-      this.containers.forEach((container) => {
+      this.docks.forEach((container) => {
         container.removeFromChrome();
         container.addToChrome();
       });
@@ -703,30 +702,26 @@ export default class Dash2DockLiteExt extends Extension {
 
   _onOverviewShowing() {
     this._inOverview = true;
-    // this._autohiders().forEach((autohider) => {
-    //   if (autohider._enabled) {
-    //     autohider._debounceCheckHide();
-    //   }
-    // });
+    this._autohiders().forEach((autohider) => {
+      autohider._debounceCheckHide();
+    });
     // log('_onOverviewShowing');
   }
 
   _onOverviewHidden() {
     this._inOverview = false;
-    // this._autohiders().forEach((autohider) => {
-    //   if (autohider._enabled) {
-    //     autohider._debounceCheckHide();
-    //   }
-    // });
+    this._autohiders().forEach((autohider) => {
+      autohider._debounceCheckHide();
+    });
     // log('_onOverviewHidden');
   }
 
   _onSessionUpdated() {
-    // this._animators().forEach((animator) => {
-    //   if (animator) {
-    //     animator.relayout();
-    //   }
-    // });
+    this._animators().forEach((animator) => {
+      if (animator) {
+        animator.relayout();
+      }
+    });
   }
 
   _onCheckServices() {

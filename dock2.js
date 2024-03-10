@@ -357,6 +357,15 @@ export let D2DaDock = GObject.registerClass(
           c.add_child(pdot);
           c._dotCanvas = dot;
         }
+
+        if (!c._badgeCanvas) {
+          let dot = new Dot(DOT_CANVAS_SIZE);
+          let pdot = new St.Widget();
+          pdot.add_child(dot);
+          dot.set_position(0, 0);
+          c.add_child(pdot);
+          c._badgeCanvas = dot;
+        }
       });
 
       try {
@@ -479,12 +488,6 @@ export let D2DaDock = GObject.registerClass(
         icon.width = iconSizeSpaced * scaleFactor;
         icon.height = iconSizeSpaced * scaleFactor;
       });
-
-      // todo .. scale down to fit monitor
-
-      // console.log(`projectedWidth ${this._projectedWidth}`);
-      // console.log(`iconSize ${iconSize}`);
-      // console.log(`scaleFactor ${scaleFactor}`);
 
       width = this._projectedWidth * scaleFactor;
       height = iconSizeSpaced * 1.5 * scaleFactor;
@@ -621,16 +624,6 @@ export let D2DaDock = GObject.registerClass(
 
         idx++;
       });
-
-      if (nearestIcon) {
-        // console.log(nearestIcon.get_parent()); // dash-item-container
-        // console.log(nearestIcon.get_style_class_name()); // dash-item-container
-        // console.log(nearestIcon.first_child.get_style_class_name()); // app-well-app
-        // console.log(nearestIcon.first_child.first_child.get_style_class_name());
-        // console.log(nearestIcon.first_child.first_child.first_child.get_style_class_name()); // overview-icon
-        // console.log(nearestIcon.first_child.first_child.first_child.first_child.get_style_class_name());
-        // console.log(nearestIcon.first_child.first_child.first_child.first_child.first_child.get_style_class_name());
-      }
 
       if (!this._preview && !isWithin) {
         nearestIcon = null;
@@ -794,37 +787,88 @@ export let D2DaDock = GObject.registerClass(
           icon._label.translationY = translationY - (iconSize / 2) * newScale;
         }
 
+        // badges
+        {
+          let appNotices = icon._appwell
+            ? this.extension.services._appNotices[icon._appwell.app.get_id()]
+            : null;
+          let noticesCount = 0;
+          if (appNotices) {
+            noticesCount = appNotices.count;
+          }
+          // noticesCount = 1;
+          let badge = icon._badgeCanvas;
+          if (badge) {
+            let style = null;
+            badge.visible = noticesCount > 0;
+            if (badge.visible) {
+              badge.set_scale(
+                (iconSize * scaleFactor) / DOT_CANVAS_SIZE,
+                (iconSize * scaleFactor) / DOT_CANVAS_SIZE
+              );
+
+              badge.get_parent().width = iconSize * scaleFactor;
+              badge.get_parent().height = iconSize * scaleFactor;
+              badge
+                .get_parent()
+                .set_position(
+                  icon._icon.width * 0.65 * icon._icon.scaleX,
+                  -icon._icon.height * 0.72 * icon._icon.scaleY
+                );
+
+              badge.translationX = icon._icon.translationX;
+              badge.translationY = icon._icon.translationY;
+
+              let options = this.extension.notification_badge_style_options;
+              let notification_badge_style =
+                options[this.extension.notification_badge_style];
+              let notification_badge_color =
+                this.extension.notification_badge_color;
+
+              badge.set_state({
+                count: noticesCount,
+                color: notification_badge_color || [1, 1, 1, 1],
+                style: notification_badge_style || 'default',
+                // rotate: 180,
+                // translate: [0, 0],
+              });
+            }
+          }
+        }
+
         // dots
-        let appCount = icon._appwell ? icon._appwell.app.get_n_windows() : 0;
-        let style = null;
-        let dot = icon._dotCanvas;
-        if (dot) {
-          dot.visible = appCount > 0;
-          if (dot.visible) {
-            dot.set_scale(
-              (iconSize * scaleFactor) / DOT_CANVAS_SIZE,
-              (iconSize * scaleFactor) / DOT_CANVAS_SIZE
-            );
+        {
+          let appCount = icon._appwell ? icon._appwell.app.get_n_windows() : 0;
+          let dot = icon._dotCanvas;
+          // appCount = 1;
+          if (dot) {
+            let style = null;
+            dot.visible = appCount > 0;
+            if (dot.visible) {
+              dot.set_scale(
+                (iconSize * scaleFactor) / DOT_CANVAS_SIZE,
+                (iconSize * scaleFactor) / DOT_CANVAS_SIZE
+              );
 
-            dot.get_parent().width = iconSize * scaleFactor;
-            dot.get_parent().height = iconSize * scaleFactor;
-            dot.style = 'border:2px solid yellow !important';
+              dot.get_parent().width = iconSize * scaleFactor;
+              dot.get_parent().height = iconSize * scaleFactor;
 
-            dot.translationX = icon._icon.translationX;
-            dot.translationY = icon._icon.translationY;
+              dot.translationX = icon._icon.translationX;
+              dot.translationY = icon._icon.translationY;
 
-            let options = this.extension.running_indicator_style_options;
-            let running_indicator_style =
-              options[this.extension.running_indicator_style];
-            let running_indicator_color =
-              this.extension.running_indicator_color;
+              let options = this.extension.running_indicator_style_options;
+              let running_indicator_style =
+                options[this.extension.running_indicator_style];
+              let running_indicator_color =
+                this.extension.running_indicator_color;
 
-            dot.set_state({
-              count: appCount,
-              color: running_indicator_color || [1, 1, 1, 1],
-              style: running_indicator_style || 'default',
-              rotate: vertical ? (this._position == 'right' ? -90 : 90) : 0,
-            });
+              dot.set_state({
+                count: appCount,
+                color: running_indicator_color || [1, 1, 1, 1],
+                style: running_indicator_style || 'default',
+                rotate: vertical ? (this._position == 'right' ? -90 : 90) : 0,
+              });
+            }
           }
         }
       });

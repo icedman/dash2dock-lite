@@ -185,12 +185,6 @@ export default class Dash2DockLiteExt extends Extension {
     if (!this._startupSeq) {
       let func = () => {
         this._updateLayout();
-        // this.animate();
-        // if (!this._vertical) {
-        //   this._animators().forEach((animator) => {
-        //     animator._invisible(false, false);
-        //   });
-        // }
         if (this.dock) {
           this.dock.layout();
         }
@@ -200,12 +194,14 @@ export default class Dash2DockLiteExt extends Extension {
         { func, delay: 500 },
         {
           func: () => {
-            this.dock.animate();
+            this.dock._beginAnimation();
           },
           delay: 50,
         },
         {
-          func: () => {},
+          func: () => {
+            this.dock._debounceEndAnimation();
+          },
           delay: 250,
         },
       ]);

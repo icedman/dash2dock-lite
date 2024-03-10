@@ -499,7 +499,7 @@ export let D2DaDock = GObject.registerClass(
       this.width = vertical ? height : width;
       this.height = vertical ? width : height;
 
-      if (this.animated) {
+      if (this.animated && !this.extension.autohide_dash) {
         this.width *= vertical ? 1.5 : 1;
         this.height *= !vertical ? 1.5 : 1;
         this.width += !vertical * iconSizeSpaced * 2.5 * scaleFactor;

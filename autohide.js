@@ -204,7 +204,7 @@ export let AutoHide = class {
     // inaccurate
     let dash_position = [this.dashContainer.x, this.dashContainer.y];
 
-    if (this.dashContainer._disableAutohide) {
+    if (!this.extension.autohide_dash) {
       return false;
     }
 

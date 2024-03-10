@@ -24,3 +24,9 @@
 /*  padding-left: 1px !important;*/
 /*  padding-right: 1px !important;*/
 }
+
+#d2daDock #dash .show-apps:checked,
+#d2daDock #dash .show-apps:active,
+#d2daDock #dash .show-apps:hover {
+     background-color: rgba(0,0,0,0) !important;
+}

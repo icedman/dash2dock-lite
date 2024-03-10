@@ -95,7 +95,7 @@ export default class Dash2DockLiteExt extends Extension {
       this._settingsKeys.setValue('animate-icons', true);
     }
 
-    Main.overview.dash.last_child.visible = false;
+    Main.overview.dash.last_child.reactive = false;
     Main.overview.dash.opacity = 0;
 
     this.docks = [];

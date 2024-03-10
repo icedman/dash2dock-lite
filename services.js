@@ -4,6 +4,10 @@ import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as Fav from 'resource:///org/gnome/shell/ui/appFavorites.js';
 
 import Gio from 'gi://Gio';
+import St from 'gi://St';
+import Graphene from 'gi://Graphene';
+
+const Point = Graphene.Point;
 
 import { Clock } from './apps/clock.js';
 import { Calendar } from './apps/calendar.js';
@@ -428,7 +432,7 @@ export const Services = class {
   }
 
   redraw() {
-    let widgets = [this.clock, this.calendar];
+    let widgets = [this.clockCanvas, this.calendar];
     widgets.forEach((w) => {
       if (w) {
         w.settings = {
@@ -445,14 +449,16 @@ export const Services = class {
     });
   }
 
-  updateIcon(icon, settings) {
+  updateIcon(item, settings) {
+    if (!item) {
+      return;
+    }
+    let icon = item._icon;
     if (!icon || !icon.icon_name) {
       return;
     }
 
-    let { scaleFactor } = settings;
-    // monitor scale
-    // this.scaleFactor = St.ThemeContext.get_for_stage(global.stage).scale_factor;
+    let { scaleFactor, iconSize } = settings;
 
     // the trash
     if (this.extension.trash_icon && icon.icon_name.startsWith('user-trash')) {
@@ -466,67 +472,45 @@ export const Services = class {
 
     // clock
     if (icon.icon_name == 'org.gnome.clocks') {
-      let p = icon.get_parent();
       if (this.extension.clock_icon) {
-        if (!p.clock) {
-          let clock = new Clock(CANVAS_SIZE);
-          clock.visible = false;
-          clock.reactive = false;
+        let clock = this.clock;
+        if (!clock) {
+          clock = new Clock(CANVAS_SIZE);
           this.clock = clock;
-          p.clock = this.clock;
-          didCreate = true;
+          item._appwell.first_child.add_child(clock);
         }
-        if (p.clock) {
-          p.clock._icon = icon;
-          let scale =
-            icon.icon_size / this.extension.icon_quality / CANVAS_SIZE;
-          scale *= scaleFactor;
-          p.clock.set_scale(scale, scale);
-          p.clock.show();
-          p.clock.reactive = false;
-
-          let pp = this.clock.get_parent();
-          if (pp != p) {
-            pp?.remove_child(p);
-            p.add_child(this.clock);
-          }
+        if (clock) {
+          clock.width = item._icon.width;
+          clock.height = item._icon.height;
+          clock.set_scale(item._icon.scaleX, item._icon.scaleY);
+          clock.pivot_point = item._icon.pivot_point;
+          clock.translationX = item._icon.translationX;
+          clock.translationY = item._icon.translationY;
         }
       } else {
-        if (p.clock) {
-          p.clock.hide();
-        }
+        this.clock?.hide();
       }
     }
 
-    // calendar
+    // calender
     if (icon.icon_name == 'org.gnome.Calendar') {
-      let p = icon.get_parent();
       if (this.extension.calendar_icon) {
-        if (!p.calendar) {
-          let calendar = new Calendar(CANVAS_SIZE);
-          calendar.visible = false;
-          calendar.reactive = false;
-          this.calendar = calendar;
-          p.calendar = this.calendar;
-          didCreate = true;
+        let calender = this.calender;
+        if (!calender) {
+          calender = new Calendar(CANVAS_SIZE);
+          this.calender = calender;
+          item._appwell.first_child.add_child(calender);
         }
-        if (p.calendar) {
-          let scale =
-            icon.icon_size / this.extension.icon_quality / CANVAS_SIZE;
-          scale *= scaleFactor;
-          p.calendar.set_scale(scale, scale);
-          p.calendar.show();
-          p.calendar.reactive = false;
-          let pp = this.calendar.get_parent();
-          if (pp != p) {
-            pp?.remove_child(p);
-            p.add_child(this.calendar);
-          }
+        if (calender) {
+          calender.width = item._icon.width;
+          calender.height = item._icon.height;
+          calender.set_scale(item._icon.scaleX, item._icon.scaleY);
+          calender.pivot_point = item._icon.pivot_point;
+          calender.translationX = item._icon.translationX;
+          calender.translationY = item._icon.translationY;
         }
       } else {
-        if (p.calendar) {
-          p.calendar.hide();
-        }
+        this.calender?.hide();
       }
     }
 

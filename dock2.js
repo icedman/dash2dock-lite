@@ -59,9 +59,6 @@ export let D2DaDock = GObject.registerClass(
       });
 
       this.extension = params.extension;
-      this.autohide_dash = this.extension.a_dash;
-      this.apps_icon = this.extension.apps_icon;
-      this.favorites_only = this.extension.favorites_only;
 
       this._position = DockPosition.BOTTOM;
       // this._position = DockPosition.LEFT;
@@ -198,7 +195,7 @@ export let D2DaDock = GObject.registerClass(
       this._updateIconEffect();
 
       Main.layoutManager.addChrome(this, {
-        affectsStruts: !this.autohide_dash,
+        affectsStruts: !this.extension.autohide_dash,
         affectsInputRegion: false,
         trackFullscreen: true,
       });
@@ -249,7 +246,7 @@ export let D2DaDock = GObject.registerClass(
       if (!this.dash) return [];
 
       if (this.dash._showAppsIcon) {
-        this.dash._showAppsIcon.visible = this.apps_icon;
+        this.dash._showAppsIcon.visible = this.extension.apps_icon;
       }
 
       if (
@@ -259,34 +256,35 @@ export let D2DaDock = GObject.registerClass(
         return this._icons;
       }
 
-      this._separators = [];
+      let separators = [];
 
       // hook on showApps
       if (this.dash.showAppsButton && !this.dash.showAppsButton._checkEventId) {
+        this.dash.showAppsButton.reactive = true;
         this.dash.showAppsButton._checkEventId =
           this.dash.showAppsButton.connect('notify::checked', () => {
-            if (!Main.overview.visible) {
-              Main.uiGroup
-                .find_child_by_name('overview')
-                ._controls._toggleAppsPage();
+            if (Main.overview.visible && !this.dash.showAppsButton.checked) {
+              // Main.uiGroup
+              //   .find_child_by_name('overview').hide();
+              // return;
             }
+            Main.uiGroup
+              .find_child_by_name('overview')
+              ._controls._toggleAppsPage();
           });
       }
 
       // W: breakable
       let icons = this.dash._box.get_children().filter((actor) => {
-        if (!actor.child) {
-          let cls = actor.get_style_class_name();
-          if (cls === 'dash-separator') {
-            // actor.visible = false;
-            // actor.width = (this.iconSize / 8) * (this.scaleFactor || 1);
-            // actor.height = (this.iconSize / 8) * (this.scaleFactor || 1);
-            this._separators.push(actor);
-          }
+        actor._cls = actor.get_style_class_name();
+        if (actor._cls === 'dash-separator') {
+          separators.push(actor);
           return false;
         }
 
-        actor._cls = actor.get_style_class_name();
+        if (!actor.child) {
+          return false;
+        }
 
         if (actor.child._delegate && actor.child._delegate.icon) {
           // hook activate function
@@ -304,8 +302,11 @@ export let D2DaDock = GObject.registerClass(
         return false;
       });
 
+      this._separators = separators;
+      console.log(separators);
+
       // hide running apps
-      if (this.favorites_only) {
+      if (this.extension.favorites_only) {
         let favorites = Fav.getAppFavorites();
         let favorite_ids = favorites._getIds();
         icons = icons.filter((i) => {
@@ -321,6 +322,8 @@ export let D2DaDock = GObject.registerClass(
         });
       }
 
+      let noAnimation = !this.extension.animate_icons_unmute;
+
       icons.forEach((c) => {
         // W: breakable
         let label = c.label;
@@ -332,7 +335,7 @@ export let D2DaDock = GObject.registerClass(
         let bin = boxlayout.first_child;
         let icon = bin.first_child;
 
-        icongrid.style = 'background: none !important;';
+        icongrid.style = noAnimation ? '' : 'background: none !important;';
 
         c._bin = bin;
         c._label = label;
@@ -386,9 +389,10 @@ export let D2DaDock = GObject.registerClass(
             c._label = widget._delegate.label;
             c._showApps = appsButton;
             // make virtually unclickable
-            appsButton.reactive = false;
+            // appsButton.reactive = true;
             // appsButton.width = 1;
             // appsButton.height = 1;
+            appsButton.track_hover = false;
             icons.push(c);
           }
         }
@@ -461,7 +465,7 @@ export let D2DaDock = GObject.registerClass(
 
       let iconSize = this._preferredIconSize();
       let iconSizeSpaced =
-        iconSize * scaleFactor * (1.2 + animation_spread / 2);
+        iconSize * scaleFactor * (1.05 + (2 * animation_spread - 1));
 
       let projectedWidth =
         iconSize +
@@ -625,7 +629,8 @@ export let D2DaDock = GObject.registerClass(
         idx++;
       });
 
-      if (!this._preview && !isWithin) {
+      let noAnimation = !this.extension.animate_icons_unmute;
+      if ((!this._preview && !isWithin) || noAnimation) {
         nearestIcon = null;
       }
 
@@ -676,7 +681,7 @@ export let D2DaDock = GObject.registerClass(
         if (this.extension._vertical) {
           dx = original_pos[1] - py;
         }
-        if (dx * dx < threshold * threshold && nearestIdx != -1) {
+        if (dx * dx < threshold * threshold && nearestIcon) {
           let adx = Math.abs(dx);
           let p = 1.0 - adx / threshold;
           let fp = p * 0.6 * (1 + magnify);
@@ -704,11 +709,6 @@ export let D2DaDock = GObject.registerClass(
 
         icon._scale = scale;
         icon._targetScale = scale;
-
-        // icon.set_size(iconSize, iconSize);
-        // if (icon._img) {
-        //   icon._img.set_icon_size(iconSize * this.extension.icon_quality);
-        // }
 
         icon._icon.set_size(iconSize, iconSize);
         if (icon._icon._img) {
@@ -798,84 +798,78 @@ export let D2DaDock = GObject.registerClass(
           }
           // noticesCount = 1;
           let badge = icon._badgeCanvas;
-          if (badge) {
-            let style = null;
-            badge.visible = noticesCount > 0;
-            if (badge.visible) {
-              badge.set_scale(
-                (iconSize * scaleFactor) / DOT_CANVAS_SIZE,
-                (iconSize * scaleFactor) / DOT_CANVAS_SIZE
-              );
 
-              badge.get_parent().width = iconSize * scaleFactor;
-              badge.get_parent().height = iconSize * scaleFactor;
-              badge
-                .get_parent()
-                .set_position(
-                  icon._icon.width * 0.65 * icon._icon.scaleX,
-                  -icon._icon.height * 0.72 * icon._icon.scaleY
-                );
+          if (!badge && icon._appwell) {
+            badge = new Dot(DOT_CANVAS_SIZE);
+            icon._badge = badge;
+            icon._appwell.first_child.add_child(badge);
+          }
+          if (badge && noticesCount > 0) {
+            badge.width = icon._icon.width;
+            badge.height = icon._icon.height;
+            badge.set_scale(icon._icon.scaleX, icon._icon.scaleY);
+            badge.pivot_point = icon._icon.pivot_point;
+            badge.translationX = icon._icon.translationX + 4;
+            badge.translationY = icon._icon.translationY - 4;
 
-              badge.translationX = icon._icon.translationX;
-              badge.translationY = icon._icon.translationY;
+            let options = this.extension.notification_badge_style_options;
+            let notification_badge_style =
+              options[this.extension.notification_badge_style];
+            let notification_badge_color =
+              this.extension.notification_badge_color;
 
-              let options = this.extension.notification_badge_style_options;
-              let notification_badge_style =
-                options[this.extension.notification_badge_style];
-              let notification_badge_color =
-                this.extension.notification_badge_color;
-
-              badge.set_state({
-                count: noticesCount,
-                color: notification_badge_color || [1, 1, 1, 1],
-                style: notification_badge_style || 'default',
-                // rotate: 180,
-                // translate: [0, 0],
-              });
-            }
+            badge.set_state({
+              count: noticesCount,
+              color: notification_badge_color || [1, 1, 1, 1],
+              style: notification_badge_style || 'default',
+              rotate: 180,
+              translate: [0.4, 0],
+            });
           }
         }
 
         // dots
         {
           let appCount = icon._appwell ? icon._appwell.app.get_n_windows() : 0;
-          let dot = icon._dotCanvas;
           // appCount = 1;
-          if (dot) {
-            let style = null;
-            dot.visible = appCount > 0;
-            if (dot.visible) {
-              dot.set_scale(
-                (iconSize * scaleFactor) / DOT_CANVAS_SIZE,
-                (iconSize * scaleFactor) / DOT_CANVAS_SIZE
-              );
 
-              dot.get_parent().width = iconSize * scaleFactor;
-              dot.get_parent().height = iconSize * scaleFactor;
-
-              dot.translationX = icon._icon.translationX;
-              dot.translationY = icon._icon.translationY;
-
-              let options = this.extension.running_indicator_style_options;
-              let running_indicator_style =
-                options[this.extension.running_indicator_style];
-              let running_indicator_color =
-                this.extension.running_indicator_color;
-
-              dot.set_state({
-                count: appCount,
-                color: running_indicator_color || [1, 1, 1, 1],
-                style: running_indicator_style || 'default',
-                rotate: vertical ? (this._position == 'right' ? -90 : 90) : 0,
-              });
-            }
+          let dots = icon._dots;
+          if (!dots && icon._appwell) {
+            dots = new Dot(DOT_CANVAS_SIZE);
+            icon._dots = dots;
+            icon._appwell.first_child.add_child(dots);
           }
+          if (dots && appCount > 0) {
+            dots.width = icon._icon.width;
+            dots.height = icon._icon.height;
+            // dots.set_scale(icon._icon.scaleX, icon._icon.scaleY);
+            dots.pivot_point = icon._icon.pivot_point;
+            dots.translationX = icon._icon.translationX;
+            dots.translationY = icon._icon.translationY + 8;
+
+            let options = this.extension.running_indicator_style_options;
+            let running_indicator_style =
+              options[this.extension.running_indicator_style];
+            let running_indicator_color =
+              this.extension.running_indicator_color;
+
+            dots.set_state({
+              count: appCount,
+              color: running_indicator_color || [1, 1, 1, 1],
+              style: running_indicator_style || 'default',
+              rotate: vertical ? (this._position == 'right' ? -90 : 90) : 0,
+            });
+          }
+        }
+
+        // custom icons
+        if (this.extension.services) {
+          this.extension.services.updateIcon(icon, { scaleFactor, iconSize });
         }
       });
 
       let targetY = 0;
-
-      if (this._hidden && this.autohide_dash) {
+      if (this._hidden && this.extension.autohide_dash) {
         if (isWithin) {
           this.slideIn();
         }

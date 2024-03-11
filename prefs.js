@@ -146,6 +146,8 @@ export default class Preferences extends ExtensionPreferences {
     this.updateMonitors(window, builder, settings);
     this.addMenu(window, builder);
 
+    builder.get_object('peek-hidden-icons-row').visible = false;
+
     let toggle_experimental = () => {
       let exp = false; // settingsKeys.getValue('experimental-features');
       // builder.get_object('dock-location-row').visible = exp;

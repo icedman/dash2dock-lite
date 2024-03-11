@@ -8,9 +8,6 @@ import Clutter from 'gi://Clutter';
 import Graphene from 'gi://Graphene';
 import St from 'gi://St';
 
-// const ExtensionUtils = imports.misc.extensionUtils;
-// const Me = ExtensionUtils.getCurrentExtension();
-
 const Point = Graphene.Point;
 
 const HIDE_ANIMATION_INTERVAL = 15;
@@ -18,6 +15,8 @@ const HIDE_ANIMATION_INTERVAL_PAD = 15;
 const DEBOUNCE_HIDE_TIMEOUT = 120;
 const PRESSURE_SENSE_DISTANCE = 20;
 const HIDE_PREVIEW_DURATION = 750;
+
+const DWELL_COUNT = 24;
 
 // some codes lifted from dash-to-dock intellihide
 const handledWindowTypes = [
@@ -34,14 +33,12 @@ const handledWindowTypes = [
 export let AutoHide = class {
   enable() {
     if (this._enabled) return;
-    // log('enable autohide');
+    // console.log('enable autohide');
     this._enabled = true;
     this._shown = true;
     this._dwell = 0;
 
-    this._debounceCheckHide();
-
-    log('autohide enabled');
+    console.log('autohide enabled');
   }
 
   disable() {
@@ -62,11 +59,10 @@ export let AutoHide = class {
       }
     });
 
-    log('autohide disabled');
+    console.log('autohide disabled');
   }
 
   _getScaleFactor() {
-    // let scaleFactor = St.ThemeContext.get_for_stage(global.stage).scale_factor;
     let scaleFactor = this.dashContainer._monitor.geometry_scale;
     return scaleFactor;
   }
@@ -107,6 +103,7 @@ export let AutoHide = class {
           this._dwell++;
         } else {
           this._dwell = 0;
+          this.last_pointer = pointer;
         }
       } else {
         // bottom
@@ -114,14 +111,13 @@ export let AutoHide = class {
           this._dwell++;
         } else {
           this._dwell = 0;
+          this.last_pointer = pointer;
         }
       }
 
-      if (this._dwell > 12) {
+      if (this._dwell > DWELL_COUNT) {
         this.show();
       }
-
-      this.last_pointer = pointer;
     }
   }
 
@@ -153,6 +149,7 @@ export let AutoHide = class {
   }
 
   hide() {
+    this._dwell = 0;
     this.frameDelay = 10;
     this._shown = false;
     this.dashContainer.slideOut();
@@ -208,17 +205,13 @@ export let AutoHide = class {
       return false;
     }
 
-    // if (this.dashContainer._isWithinDash(pointer)) {
-    //   return false;
-    // }
+    if (this.dashContainer._isWithinDash(pointer)) {
+      return false;
+    }
 
     if (!this.extension.autohide_dodge) {
       return true;
     }
-
-    // log('---');
-    // log(pointer[1]);
-    // log(dash_position[1]);
 
     if (this.dashContainer.isVertical()) {
       if (this.dashContainer.position == 'right') {
@@ -278,10 +271,6 @@ export let AutoHide = class {
     });
 
     this.windows = windows;
-
-    // log(dash_position[1]);
-    // log(isOverlapped);
-    // log(windows);
 
     if (this._preview && this._preview > 0) {
       return true;

@@ -10,12 +10,7 @@ import { TintEffect } from './effects/tint_effect.js';
 import { MonochromeEffect } from './effects/monochrome_effect.js';
 import { DebugOverlay } from './apps/overlay.js';
 
-import {
-  IconsContainer,
-  DotsContainer,
-  DockExtension,
-  DockBackground,
-} from './dockItems.js';
+import { DockBackground } from './dockItems.js';
 
 const ANIM_POS_COEF = 1.5;
 const ANIM_SCALE_COEF = 1.5 * 2;

@@ -1,6 +1,8 @@
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as Fav from 'resource:///org/gnome/shell/ui/appFavorites.js';
 
+import Meta from 'gi://Meta';
+import Shell from 'gi://Shell';
 import GObject from 'gi://GObject';
 import Clutter from 'gi://Clutter';
 import Graphene from 'gi://Graphene';
@@ -96,6 +98,20 @@ export let D2DaDock = GObject.registerClass(
       this.struts = new St.Widget({
         name: 'd2daDockStruts',
       });
+      this.dwell = new St.Widget({
+        name: 'd2daDockDwell',
+        reactive: true,
+        track_hover: true,
+      });
+      this.dwell.connectObject(
+        'motion-event',
+        this.autohider._onMotionEvent.bind(this.autohider),
+        'enter-event',
+        this.autohider._onEnterEvent.bind(this.autohider),
+        'leave-event',
+        this.autohider._onLeaveEvent.bind(this.autohider),
+        this
+      );
     }
 
     undock() {
@@ -108,11 +124,14 @@ export let D2DaDock = GObject.registerClass(
     _onButtonPressEvent(evt) {
       if (this._nearestIcon && this._nearestIcon._showApps) {
         Main.uiGroup.find_child_by_name('overview')._controls._toggleAppsPage();
+        return Clutter.EVENT_PROPAGATE;
       }
+
       return Clutter.EVENT_PROPAGATE;
     }
     _onMotionEvent(evt) {
       this._beginAnimation();
+      this.autohider._debounceCheckHide();
       return Clutter.EVENT_PROPAGATE;
     }
     _onEnterEvent(evt) {
@@ -120,6 +139,7 @@ export let D2DaDock = GObject.registerClass(
       return Clutter.EVENT_PROPAGATE;
     }
     _onLeaveEvent(evt) {
+      this.autohider._debounceCheckHide();
       this._debounceEndAnimation();
       return Clutter.EVENT_PROPAGATE;
     }
@@ -167,13 +187,17 @@ export let D2DaDock = GObject.registerClass(
     }
 
     slideIn() {
-      this._hidden = false;
-      this._beginAnimation();
+      if (this._hidden) {
+        this._hidden = false;
+        this._beginAnimation();
+      }
     }
 
     slideOut() {
-      this._hidden = true;
-      this._beginAnimation();
+      if (!this._hidden) {
+        this._hidden = true;
+        this._beginAnimation();
+      }
     }
 
     getMonitor() {
@@ -213,6 +237,12 @@ export let D2DaDock = GObject.registerClass(
         trackFullscreen: true,
       });
 
+      Main.layoutManager.addChrome(this.dwell, {
+        affectsStruts: false,
+        affectsInputRegion: false,
+        trackFullscreen: true,
+      });
+
       this._onChrome = true;
     }
 
@@ -222,6 +252,7 @@ export let D2DaDock = GObject.registerClass(
       }
       Main.layoutManager.removeChrome(this.struts);
       Main.layoutManager.removeChrome(this);
+      Main.layoutManager.removeChrome(this.dwell);
       this._onChrome = false;
       this.dash._box.get_parent().remove_effect_by_name('icon-effect');
     }
@@ -255,18 +286,77 @@ export let D2DaDock = GObject.registerClass(
       return iconSize;
     }
 
+    _maybeMinimizeOrMaximize(app) {
+      let windows = app.get_windows();
+      if (!windows.length) return;
+
+      let event = Clutter.get_current_event();
+      let modifiers = event ? event.get_state() : 0;
+      let pressed = event.type() == Clutter.EventType.BUTTON_PRESS;
+      let button1 = (modifiers & Clutter.ModifierType.BUTTON1_MASK) != 0;
+      let button2 = (modifiers & Clutter.ModifierType.BUTTON2_MASK) != 0;
+      let button3 = (modifiers & Clutter.ModifierType.BUTTON3_MASK) != 0;
+      let shift = (modifiers & Clutter.ModifierType.SHIFT_MASK) != 0;
+      let isMiddleButton = button3; // middle?
+      let isCtrlPressed = (modifiers & Clutter.ModifierType.CONTROL_MASK) != 0;
+      let openNewWindow =
+        app.can_open_new_window() &&
+        app.state == Shell.AppState.RUNNING &&
+        (isCtrlPressed || isMiddleButton);
+      if (openNewWindow) return;
+
+      let workspaceManager = global.workspace_manager;
+      let activeWs = workspaceManager.get_active_workspace();
+      let focusedWindow = null;
+
+      windows.forEach((w) => {
+        if (w.has_focus()) {
+          focusedWindow = w;
+        }
+      });
+
+      // delay - allow dash to actually call 'activate' first
+      if (focusedWindow) {
+        this.extension._hiTimer.runOnce(() => {
+          if (shift) {
+            if (focusedWindow.get_maximized() == 3) {
+              focusedWindow.unmaximize(3);
+            } else {
+              focusedWindow.maximize(3);
+            }
+          } else {
+            windows.forEach((w) => {
+              w.minimize();
+            });
+          }
+        }, 50);
+      } else {
+        this.extension._hiTimer.runOnce(() => {
+          windows.forEach((w) => {
+            if (w.is_hidden()) {
+              w.unminimize();
+              if (w.has_focus()) {
+                w.raise();
+              }
+            }
+          });
+        }, 50);
+      }
+    }
+
     _findIcons() {
       if (!this.dash) return [];
-
-      if (this.dash._showAppsIcon) {
-        this.dash._showAppsIcon.visible = this.extension.apps_icon;
-      }
 
       if (
         this._icons &&
         this._icons.length >= this.dash._box.get_children().length
       ) {
+        // return cached
         return this._icons;
+      }
+
+      if (this.dash._showAppsIcon) {
+        this.dash._showAppsIcon.visible = this.extension.apps_icon;
       }
 
       let separators = [];
@@ -288,8 +378,8 @@ export let D2DaDock = GObject.registerClass(
           if (actor.child.activate && !actor.child._activate) {
             actor.child._activate = actor.child.activate;
             actor.child.activate = () => {
-              // this._maybeBounce(actor);
-              // this._maybeMinimizeOrMaximize(actor.child.app);
+              this._maybeBounce(actor);
+              this._maybeMinimizeOrMaximize(actor.child.app);
               actor.child._activate();
             };
           }
@@ -562,9 +652,6 @@ export let D2DaDock = GObject.registerClass(
       let pointer = global.get_pointer();
       let vertical = this.isVertical();
 
-      // pointer[0] = m.width / 2;
-      // pointer[1] = m.height - 30;
-
       let [px, py] = pointer;
 
       let p = new Point();
@@ -835,18 +922,11 @@ export let D2DaDock = GObject.registerClass(
               rotate: 180,
               translate: [0.4, 0],
             });
+            badge.show();
+          } else {
+            badge?.hide();
           }
         }
-
-        // separators
-        this._separators.forEach((actor) => {
-          let prev = actor.get_previous_sibling();
-          let next = actor.get_next_sibling();
-          if (prev && next) {
-            actor.translationX =
-              (prev._icon.translationX + next._icon.translationX) / 2;
-          }
-        });
 
         // dots
         {
@@ -879,6 +959,9 @@ export let D2DaDock = GObject.registerClass(
               style: running_indicator_style || 'default',
               rotate: vertical ? (this._position == 'right' ? -90 : 90) : 0,
             });
+            dots.show();
+          } else {
+            dots?.hide();
           }
         }
 
@@ -888,22 +971,22 @@ export let D2DaDock = GObject.registerClass(
         }
       });
 
+      // separators
+      this._separators.forEach((actor) => {
+        let prev = actor.get_previous_sibling();
+        let next = actor.get_next_sibling();
+        if (prev && next) {
+          actor.translationX =
+            (prev._icon.translationX + next._icon.translationX) / 2;
+        }
+      });
+
       let targetY = 0;
       if (this._hidden && this.extension.autohide_dash) {
         if (isWithin) {
           this.slideIn();
         }
       }
-
-      // dash hide/show
-      if (this._hidden) {
-        targetY = this.dash.height + 1 * scaleFactor;
-      }
-
-      // dash edge
-      targetY -= this._edge_distance;
-      this.dash.translationY =
-        (this.dash.translationY * _pos_coef + targetY) / (_pos_coef + 1);
 
       // background
       {
@@ -926,12 +1009,30 @@ export let D2DaDock = GObject.registerClass(
         this._background.translationY =
           this.dash.translationY + this._edge_distance * !this.isVertical();
 
+        // allied areas
         this.struts.width = this.width;
         this.struts.height =
           this._background.height + iconSize * 0.25 * scaleFactor;
         this.struts.x = this.x;
         this.struts.y = this.y + this.height - this.struts.height;
+
+        let dwellHeight = 4;
+        this.dwell.width = this.width;
+        this.dwell.height = dwellHeight;
+        this.dwell.x = this.x;
+        this.dwell.y = this.y + this.height - this.dwell.height;
       }
+
+      // dash hide/show
+      if (this._hidden) {
+        targetY =
+          this._background.height + this._edge_distance * 2 * scaleFactor;
+      }
+
+      // dash edge
+      targetY -= this._edge_distance;
+      this.dash.translationY =
+        (this.dash.translationY * _pos_coef + targetY) / (_pos_coef + 1);
 
       Main.panel.first_child.add_style_class_name('hi');
       this.dash.opacity = 255;
@@ -969,7 +1070,7 @@ export let D2DaDock = GObject.registerClass(
 
     _beginAnimation(caller) {
       // if (caller) {
-      //   log(`animation triggered by ${caller}`);
+      //   console.log(`animation triggered by ${caller}`);
       // }
 
       if (this.extension._hiTimer && this.debounceEndSeq) {
@@ -999,6 +1100,7 @@ export let D2DaDock = GObject.registerClass(
         this.extension._loTimer.cancel(this.debounceEndSeq);
         Main.panel.first_child.remove_style_class_name('hi');
       }
+      this.autohider._debounceCheckHide();
     }
 
     _debounceEndAnimation() {
@@ -1015,6 +1117,78 @@ export let D2DaDock = GObject.registerClass(
           this.extension._loTimer.runDebounced(this.debounceEndSeq);
         }
       }
+    }
+
+    _maybeBounce(container) {
+      if (!this.extension.open_app_animation) {
+        return;
+      }
+      if (container.child.app && !container.child.app.get_n_windows()) {
+        if (container._appwell) {
+          this._bounceIcon(container._appwell);
+        }
+      }
+    }
+
+    _bounceIcon(appwell) {
+      let scaleFactor = this.getMonitor().geometry_scale;
+      let travel =
+        (this._iconSize / 3) *
+        ((0.25 + this.extension.animation_bounce) * 1.5) *
+        scaleFactor;
+      appwell.translation_y = 0;
+
+      let t = 250;
+      let _frames = [
+        {
+          _duration: t,
+          _func: (f, s) => {
+            let res = Linear.easeNone(f._time, 0, travel, f._duration);
+            if (this.extension._vertical) {
+              appwell.translation_x =
+                this.extension._position == 'left' ? res : -res;
+              if (icon._badge) {
+                icon._badge.translation_x = appwell.translation_x;
+              }
+            } else {
+              appwell.translation_y = -res;
+            }
+          },
+        },
+        {
+          _duration: t * 3,
+          _func: (f, s) => {
+            let res = Bounce.easeOut(f._time, travel, -travel, f._duration);
+            if (this.extension._vertical) {
+              appwell.translation_x = appwell.translation_x =
+                this.extension._position == 'left' ? res : -res;
+            } else {
+              appwell.translation_y = -res;
+            }
+          },
+        },
+      ];
+
+      let frames = [];
+      for (let i = 0; i < 3; i++) {
+        _frames.forEach((b) => {
+          frames.push({
+            ...b,
+          });
+        });
+      }
+
+      this.extension._hiTimer.runAnimation([
+        ...frames,
+        {
+          _duration: 10,
+          _func: (f, s) => {
+            appwell.translation_y = 0;
+          },
+        },
+      ]);
+
+      // todo bounce the badge along with the icon
     }
   }
 );

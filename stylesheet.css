@@ -1,7 +1,7 @@
 /* reminder: minimize styling overrides! */
 
 .hi {
-/*     border: 2px solid magenta !important;*/
+     border: 2px solid magenta !important;
 }
 
 #d2daDock {
@@ -9,6 +9,10 @@
 }
 
 #d2daDockStruts {
+/*  border: 2px solid yellow; */
+}
+
+#d2daDockDwell {
 /*  border: 2px solid yellow; */
 }
 

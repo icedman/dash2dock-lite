@@ -62,10 +62,14 @@ export const DockBackground = GObject.registerClass(
         this.x -= dashContainer.x;
         this.y -= dashContainer.y;
 
-        // adjust
-        let ah = (this.height - iconSize * scaleFactor) * 0.1;
-        this.y += ah / 2;
-        this.height -= ah;
+        // adjust padding
+        let az =
+          (this.height - iconSize * scaleFactor) *
+          (0.6 - 0.8 * dashContainer.extension.dock_padding);
+        this.x += az / 2;
+        this.width -= az;
+        this.y += az / 2;
+        this.height -= az;
 
         // console.log(`${this.height} ${iconSize * scaleFactor} ${first.first_child.height} ${ah}`);
 

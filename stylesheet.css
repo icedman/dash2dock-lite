@@ -16,14 +16,11 @@
 /*  border: 2px solid yellow; */
 }
 
-#d2daDock #dash,
-#d2daDock #dash * {
+#d2daDock * {
  margin: 0px !important;
  padding: 0px !important;
 }
 
 #d2daDock #dash .dash-item-container {
 /*  border: 2px solid magenta;*/
-/*  padding-left: 0px !important;*/
-/*  padding-right: 0px !important;*/
 }

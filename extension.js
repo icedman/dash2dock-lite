@@ -337,6 +337,7 @@ export default class Dash2DockLiteExt extends Extension {
           this._updateAutohide();
           break;
         }
+        case 'dock-padding':
         case 'edge-distance': {
           this.animate();
           break;

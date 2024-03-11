@@ -67,7 +67,7 @@ export let Dock = GObject.registerClass(
       this.extension = params.extension;
 
       this._position = DockPosition.BOTTOM;
-      // this._position = DockPosition.LEFT;
+      // this._position = DockPosition.TOP;
       this._alignment = DockAlignment.CENTER;
       this._monitorIndex = Main.layoutManager.primaryIndex;
 
@@ -520,6 +520,13 @@ export let Dock = GObject.registerClass(
     }
 
     layout() {
+      let locations = [
+        DockPosition.BOTTOM,
+        DockPosition.LEFT,
+        DockPosition.RIGHT,
+      ];
+      this._position =
+        locations[this.extension.dock_location] || DockPosition.BOTTOM;
       this._icons = this._findIcons();
 
       let m = this.getMonitor();
@@ -610,8 +617,8 @@ export let Dock = GObject.registerClass(
       this.height = vertical ? width : height;
 
       if (this.animated) {
-        this.width *= vertical ? 1.15 : 1;
-        this.height *= !vertical ? 1.15 : 1;
+        this.width *= vertical ? 1.25 : 1;
+        this.height *= !vertical ? 1.25 : 1;
         this.width += !vertical * iconSizeSpaced * 2.5 * scaleFactor;
         this.height += vertical * iconSizeSpaced * 2.5 * scaleFactor;
 
@@ -658,6 +665,9 @@ export let Dock = GObject.registerClass(
         this.dash.y = this.height * f.edgeY + this.dash.height * f.offsetY;
       }
 
+      this._iconSizeScaledDown = iconSize;
+      this._scaledDown = scaleDown;
+
       // resize dash icons
       // console.log(this.dash.height);
       // console.log('---------------');
@@ -681,7 +691,7 @@ export let Dock = GObject.registerClass(
       this.animated = animated;
 
       let animateIcons = this._icons;
-      let iconSize = this._iconSize;
+      let iconSize = this._iconSizeScaledDown;
       let scaleFactor = this._scaleFactor;
 
       let nearestIdx = -1;
@@ -778,7 +788,7 @@ export let Dock = GObject.registerClass(
       }
 
       let padding = 10;
-      let threshold = (iconSize + padding) * 2.5;
+      let threshold = (iconSize + padding) * 2.5 * scaleFactor;
 
       let iconTable = [];
 
@@ -842,7 +852,8 @@ export let Dock = GObject.registerClass(
         let icon = iconTable[i];
         if (icon._scale != 1) {
           // affect spread
-          let offset = (icon._scale - 1) * iconSize * spread * 0.8;
+          let offset =
+            (icon._scale - 1) * iconSize * scaleFactor * spread * 0.8;
 
           // left
           for (let j = i - 1; j >= 0; j--) {
@@ -874,6 +885,14 @@ export let Dock = GObject.registerClass(
         // _spread_coef *= ANIM_ON_LEAVE_COEF;
       }
 
+      let pivots = {
+        bottom: { x: 0.5, y: 1 },
+        top: { x: 0.5, y: 0 },
+        left: { x: 0, y: 0.5 },
+        right: { x: 1, y: 0.5 },
+      };
+      let pivot = pivots[this._position];
+
       animateIcons.forEach((icon) => {
         let scale = icon._icon.get_scale();
 
@@ -882,8 +901,8 @@ export let Dock = GObject.registerClass(
         icon._scale = newScale;
 
         let pv = new Point();
-        pv.x = 0.5;
-        pv.y = 1;
+        pv.x = pivot.x;
+        pv.y = pivot.y;
         icon._icon.pivot_point = pv;
         icon._icon.set_scale(newScale, newScale);
 
@@ -900,8 +919,11 @@ export let Dock = GObject.registerClass(
         // todo center the appwell (scaling correction)
         let child = icon._appwell || icon.first_child;
         if (child && scaleFactor > 1) {
-          child.x = (icon.width - child.width) / 2.5;
-          child.y = (icon.height - child.height) / 1.5;
+          let correction = icon._icon.height * scaleFactor - icon._icon.height;
+          if (!icon._appwell) {
+            child.x = correction;
+          }
+          child.y = correction;
         }
 
         // labels

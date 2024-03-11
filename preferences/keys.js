@@ -179,6 +179,10 @@ export const SettingsKeys = () => {
       default_value: [1, 1, 1, 1],
       widget_type: 'color',
     },
+    'dock-padding': {
+      default_value: 0.5,
+      widget_type: 'scale',
+    },
     'panel-mode': {
       default_value: false,
       widget_type: 'switch',
@@ -226,6 +230,7 @@ export const SettingsKeys = () => {
     'dock-location': {
       default_value: 0,
       widget_type: 'dropdown',
+      // options: ['default', 'dot', 'dash', 'square', 'triangle', 'diamond'],
       test: { values: [0, 1, 2, 3] },
     },
     'icon-resolution': {

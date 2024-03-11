@@ -108,6 +108,25 @@
         </child>
         <child>
           <object class="AdwActionRow">
+            <property name="title" translatable="yes">Dock padding</property>
+            <property name="subtitle" translatable="yes">Set dash padding size.</property>
+            <property name="activatable-widget">dock-padding</property>
+            <child>
+              <object class="GtkScale" id="dock-padding">
+                <property name="valign">center</property>
+                <property name="hexpand">true</property>
+                <property name="width-request">140px</property>
+                <property name="draw-value">false</property>
+                <property name="value-pos">right</property>
+                <property name="orientation">horizontal</property>
+                <property name="digits">0</property>
+                <property name="adjustment">dock-padding-adjust</property>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="AdwActionRow">
             <property name="title" translatable="yes">Border Radius</property>
             <property name="subtitle" translatable="yes">Set dash background border radius.</property>
             <property name="activatable-widget">border-radius</property>
@@ -322,6 +341,11 @@
         </child>
       </object>
     </child>
+  </object>
+  <object class="GtkAdjustment" id="dock-padding-adjust">
+    <property name="lower">0.0</property>
+    <property name="upper">1.0</property>
+    <property name="step-increment">0.01</property>
   </object>
   <object class="GtkAdjustment" id="icon-size-adjust">
     <property name="lower">0.0</property>

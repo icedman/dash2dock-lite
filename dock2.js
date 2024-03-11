@@ -92,6 +92,10 @@ export let D2DaDock = GObject.registerClass(
       this.autohider.dashContainer = this;
       this.autohider.extension = this.extension;
       this.autohider.enable();
+
+      this.struts = new St.Widget({
+        name: 'd2daDockStruts',
+      });
     }
 
     undock() {
@@ -102,6 +106,9 @@ export let D2DaDock = GObject.registerClass(
     }
 
     _onButtonPressEvent(evt) {
+      if (this._nearestIcon && this._nearestIcon._showApps) {
+        Main.uiGroup.find_child_by_name('overview')._controls._toggleAppsPage();
+      }
       return Clutter.EVENT_PROPAGATE;
     }
     _onMotionEvent(evt) {
@@ -194,8 +201,14 @@ export let D2DaDock = GObject.registerClass(
 
       this._updateIconEffect();
 
-      Main.layoutManager.addChrome(this, {
+      Main.layoutManager.addChrome(this.struts, {
         affectsStruts: !this.extension.autohide_dash,
+        affectsInputRegion: false,
+        trackFullscreen: true,
+      });
+
+      Main.layoutManager.addChrome(this, {
+        affectsStruts: false,
         affectsInputRegion: false,
         trackFullscreen: true,
       });
@@ -207,7 +220,7 @@ export let D2DaDock = GObject.registerClass(
       if (!this._onChrome) {
         return;
       }
-
+      Main.layoutManager.removeChrome(this.struts);
       Main.layoutManager.removeChrome(this);
       this._onChrome = false;
       this.dash._box.get_parent().remove_effect_by_name('icon-effect');
@@ -258,22 +271,6 @@ export let D2DaDock = GObject.registerClass(
 
       let separators = [];
 
-      // hook on showApps
-      if (this.dash.showAppsButton && !this.dash.showAppsButton._checkEventId) {
-        this.dash.showAppsButton.reactive = true;
-        this.dash.showAppsButton._checkEventId =
-          this.dash.showAppsButton.connect('notify::checked', () => {
-            if (Main.overview.visible && !this.dash.showAppsButton.checked) {
-              // Main.uiGroup
-              //   .find_child_by_name('overview').hide();
-              // return;
-            }
-            Main.uiGroup
-              .find_child_by_name('overview')
-              ._controls._toggleAppsPage();
-          });
-      }
-
       // W: breakable
       let icons = this.dash._box.get_children().filter((actor) => {
         actor._cls = actor.get_style_class_name();
@@ -303,7 +300,6 @@ export let D2DaDock = GObject.registerClass(
       });
 
       this._separators = separators;
-      console.log(separators);
 
       // hide running apps
       if (this.extension.favorites_only) {
@@ -389,7 +385,7 @@ export let D2DaDock = GObject.registerClass(
             c._label = widget._delegate.label;
             c._showApps = appsButton;
             // make virtually unclickable
-            // appsButton.reactive = true;
+            appsButton.reactive = false;
             // appsButton.width = 1;
             // appsButton.height = 1;
             appsButton.track_hover = false;
@@ -511,7 +507,7 @@ export let D2DaDock = GObject.registerClass(
       this.width = vertical ? height : width;
       this.height = vertical ? width : height;
 
-      if (this.animated && !this.extension.autohide_dash) {
+      if (this.animated) {
         this.width *= vertical ? 1.5 : 1;
         this.height *= !vertical ? 1.5 : 1;
         this.width += !vertical * iconSizeSpaced * 2.5 * scaleFactor;
@@ -731,7 +727,7 @@ export let D2DaDock = GObject.registerClass(
           return;
         }
 
-        icon.opacity = (icon == this._dragged && this._dragging) ? 50 : 255;
+        icon.opacity = icon == this._dragged && this._dragging ? 50 : 255;
       });
 
       // spread
@@ -842,6 +838,16 @@ export let D2DaDock = GObject.registerClass(
           }
         }
 
+        // separators
+        this._separators.forEach((actor) => {
+          let prev = actor.get_previous_sibling();
+          let next = actor.get_next_sibling();
+          if (prev && next) {
+            actor.translationX =
+              (prev._icon.translationX + next._icon.translationX) / 2;
+          }
+        });
+
         // dots
         {
           let appCount = icon._appwell ? icon._appwell.app.get_n_windows() : 0;
@@ -919,9 +925,15 @@ export let D2DaDock = GObject.registerClass(
           this.dash.translationX + this._edge_distance * this.isVertical();
         this._background.translationY =
           this.dash.translationY + this._edge_distance * !this.isVertical();
+
+        this.struts.width = this.width;
+        this.struts.height =
+          this._background.height + iconSize * 0.25 * scaleFactor;
+        this.struts.x = this.x;
+        this.struts.y = this.y + this.height - this.struts.height;
       }
 
-      Main.panel.first_child.style = 'border:1px solid magenta';
+      Main.panel.first_child.add_style_class_name('hi');
       this.dash.opacity = 255;
 
       if (didScale) {
@@ -985,7 +997,7 @@ export let D2DaDock = GObject.registerClass(
       if (this.extension._hiTimer) {
         this.extension._hiTimer.cancel(this._animationSeq);
         this.extension._loTimer.cancel(this.debounceEndSeq);
-        Main.panel.first_child.style = '';
+        Main.panel.first_child.remove_style_class_name('hi');
       }
     }
 

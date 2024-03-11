@@ -49,9 +49,9 @@ const ANIM_PREVIEW_DURATION = 1200;
 const MIN_SCROLL_RESOLUTION = 4;
 const MAX_SCROLL_RESOLUTION = 10;
 
-export let D2DaDock = GObject.registerClass(
+export let Dock = GObject.registerClass(
   {},
-  class D2DaDock extends St.Widget {
+  class Dock extends St.Widget {
     _init(params) {
       super._init({
         name: 'd2daDock',
@@ -571,8 +571,7 @@ export let D2DaDock = GObject.registerClass(
       let animation_magnify = 0.75;
 
       let iconSize = this._preferredIconSize();
-      let iconSizeSpaced =
-        iconSize * scaleFactor * (1.05 + (2 * animation_spread - 1));
+      let iconSizeSpaced = iconSize * (1.05 + (2 * animation_spread - 1));
 
       let projectedWidth =
         iconSize +
@@ -595,6 +594,10 @@ export let D2DaDock = GObject.registerClass(
       this._edge_distance =
         (this.extension.edge_distance || 0) * 20 * scaleFactor;
 
+      if (this.extension.panel_mode) {
+        this._edge_distance = -10;
+      }
+
       this._icons.forEach((icon) => {
         icon.width = iconSizeSpaced * scaleFactor;
         icon.height = iconSizeSpaced * scaleFactor;
@@ -607,8 +610,8 @@ export let D2DaDock = GObject.registerClass(
       this.height = vertical ? width : height;
 
       if (this.animated) {
-        this.width *= vertical ? 1.5 : 1;
-        this.height *= !vertical ? 1.5 : 1;
+        this.width *= vertical ? 1.15 : 1;
+        this.height *= !vertical ? 1.15 : 1;
         this.width += !vertical * iconSizeSpaced * 2.5 * scaleFactor;
         this.height += vertical * iconSizeSpaced * 2.5 * scaleFactor;
 
@@ -637,6 +640,12 @@ export let D2DaDock = GObject.registerClass(
         m.height * f.edgeY +
         this.height * f.offsetY +
         (m.height / 2 - this.height / 2) * f.centerY;
+
+      // todo vertical
+      if (this.extension.panel_mode) {
+        this.x = m.x;
+        this.width = m.width;
+      }
 
       // center the dash
       this.dash.x = this.width / 2 - this.dash.width / 2;
@@ -682,6 +691,7 @@ export let D2DaDock = GObject.registerClass(
       animateIcons.forEach((c) => {
         c._container = c;
         c._pos = this._get_position(c);
+        c._fixedPosition = this._get_position(c);
       });
 
       // sort
@@ -697,7 +707,7 @@ export let D2DaDock = GObject.registerClass(
         let bin = icon._bin;
         let pos = [...icon._pos];
 
-        icon._fixedPosition = [...pos];
+        // icon._fixedPosition = [...pos];
         if (!this._dragging && bin.first_child) {
           // bin.first_child.opacity = this.extension._dash_opacity;
           // todo make this small - so as not to mess up the layout
@@ -812,7 +822,7 @@ export let D2DaDock = GObject.registerClass(
         }
 
         icon._scale = scale;
-        icon._targetScale = scale;
+        icon._targetScale = scale * scaleFactor;
 
         icon._icon.set_size(iconSize, iconSize);
         if (icon._icon._img) {
@@ -886,6 +896,13 @@ export let D2DaDock = GObject.registerClass(
 
         icon._icon.translationX = translationX;
         icon._icon.translationY = translationY;
+
+        // todo center the appwell (scaling correction)
+        let child = icon._appwell || icon.first_child;
+        if (child && scaleFactor > 1) {
+          child.x = (icon.width - child.width) / 2.5;
+          child.y = (icon.height - child.height) / 1.5;
+        }
 
         // labels
         if (icon._label) {
@@ -984,7 +1001,7 @@ export let D2DaDock = GObject.registerClass(
       this._separators.forEach((actor) => {
         let prev = actor.get_previous_sibling();
         let next = actor.get_next_sibling();
-        if (prev && next) {
+        if (prev && next && prev._icon && next._icon) {
           actor.translationX =
             (prev._icon.translationX + next._icon.translationX) / 2;
         }
@@ -1019,15 +1036,9 @@ export let D2DaDock = GObject.registerClass(
           scaleFactor,
           position: this._position,
           vertical: this.isVertical(),
-          // panel_mode: this.extension.panel_mode,
+          panel_mode: this.extension.panel_mode,
           dashContainer: this,
         });
-        this._background.x -= this.x;
-        this._background.y -= this.y;
-        this._background.translationX =
-          this.dash.translationX + this._edge_distance * this.isVertical();
-        this._background.translationY =
-          this.dash.translationY + this._edge_distance * !this.isVertical();
 
         // allied areas
         this.struts.width = this.width;

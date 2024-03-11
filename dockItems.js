@@ -48,51 +48,58 @@ export const DockBackground = GObject.registerClass(
 
         // bottom
         this.x = p1[0] - padding + tx;
-        this.y = first._fixedPosition[1] - padding / 2 - ty;
-        if (p2[1] > p1[1]) {
-          this.y = p2[1] - padding;
-        }
+        this.y = first._fixedPosition[1];
         let width = dashContainer.dash.width + Math.abs(tx) + tx2 + padding;
-        let height = (iconSize + padding * 2.5) * scaleFactor;
+        let height = dashContainer.dash.height;
 
         if (!isNaN(width)) {
           this.width = width;
         }
-        if (!isNaN(width)) {
+        if (!isNaN(height)) {
           this.height = height;
         }
 
+        this.x -= dashContainer.x;
+        this.y -= dashContainer.y;
+
+        // adjust
+        let ah = (this.height - iconSize * scaleFactor) * 0.1;
+        this.y += ah / 2;
+        this.height -= ah;
+
+        // console.log(`${this.height} ${iconSize * scaleFactor} ${first.first_child.height} ${ah}`);
+
         // vertical
-        if (vertical) {
-          this.x = p1[0] - padding;
-          this.y = first._fixedPosition[1] - padding; // p1[1] - padding
+        // if (vertical) {
+        //   this.x = p1[0] - padding;
+        //   this.y = first._fixedPosition[1] - padding; // p1[1] - padding
 
-          if (position == 'right' && p2[0] > p1[0]) {
-            this.x = p2[0] - padding;
-          }
-          if (position == 'left' && p2[0] < p1[0]) {
-            this.x = p2[0] - padding;
-          }
+        //   if (position == 'right' && p2[0] > p1[0]) {
+        //     this.x = p2[0] - padding;
+        //   }
+        //   if (position == 'left' && p2[0] < p1[0]) {
+        //     this.x = p2[0] - padding;
+        //   }
 
-          this.width = iconSize * scaleFactor + padding * 2;
-          this.height =
-            p2[1] -
-            p1[1] +
-            iconSize * scaleFactor * last._targetScale +
-            padding * 2;
-        }
+        //   this.width = iconSize * scaleFactor + padding * 2;
+        //   this.height =
+        //     p2[1] -
+        //     p1[1] +
+        //     iconSize * scaleFactor * last._targetScale +
+        //     padding * 2;
+        // }
 
-        if (panel_mode) {
-          if (vertical) {
-            this.y = dashContainer.y;
-            this.height = dashContainer.height;
-          } else {
-            let pad = 0; //dashContainer.cornerPad || 0;
-            this.x = dashContainer.x - pad;
-            this.width = dashContainer.width + pad * 2;
-            this.height++;
-          }
-        }
+        // if (panel_mode) {
+        //   if (vertical) {
+        //     this.y = dashContainer.y;
+        //     this.height = dashContainer.height;
+        //   } else {
+        //     let pad = 0; //dashContainer.cornerPad || 0;
+        //     this.x = dashContainer.x - pad;
+        //     this.width = dashContainer.width + pad * 2;
+        //     this.height++;
+        //   }
+        // }
       }
     }
   }

@@ -28,7 +28,6 @@ import { Style } from './style.js';
 import { Dock } from './dock.js';
 import { Services } from './services.js';
 import { runTests } from './diagnostics.js';
-import { D2DaDock } from './dock.js';
 
 import * as LampAnimation from './effects/lamp_animation.js';
 
@@ -47,7 +46,7 @@ const ANIM_INTERVAL_PAD = 15;
 
 export default class Dash2DockLiteExt extends Extension {
   createDock() {
-    let d = new D2DaDock({ extension: this });
+    let d = new Dock({ extension: this });
     d.extension = this;
     d.addToChrome();
     d.layout();

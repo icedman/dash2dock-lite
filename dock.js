@@ -66,8 +66,6 @@ export let Dock = GObject.registerClass(
 
       this.extension = params.extension;
 
-      this._position = DockPosition.BOTTOM;
-      // this._position = DockPosition.TOP;
       this._alignment = DockAlignment.CENTER;
       this._monitorIndex = Main.layoutManager.primaryIndex;
 
@@ -527,6 +525,12 @@ export let Dock = GObject.registerClass(
       ];
       this._position =
         locations[this.extension.dock_location] || DockPosition.BOTTOM;
+
+      // this._position = DockPosition.LEFT;
+      // this._position = DockPosition.RIGHT;
+      // this._position = DockPosition.BOTTOM;
+      // this._position = DockPosition.TOP;
+
       this._icons = this._findIcons();
 
       let m = this.getMonitor();
@@ -802,7 +806,7 @@ export let Dock = GObject.registerClass(
 
         let scale = 1;
         let dx = original_pos[0] - px;
-        if (this.extension._vertical) {
+        if (vertical) {
           dx = original_pos[1] - py;
         }
         if (dx * dx < threshold * threshold && nearestIcon) {
@@ -885,14 +889,6 @@ export let Dock = GObject.registerClass(
         // _spread_coef *= ANIM_ON_LEAVE_COEF;
       }
 
-      let pivots = {
-        bottom: { x: 0.5, y: 1 },
-        top: { x: 0.5, y: 0 },
-        left: { x: 0, y: 0.5 },
-        right: { x: 1, y: 0.5 },
-      };
-      let pivot = pivots[this._position];
-
       animateIcons.forEach((icon) => {
         let scale = icon._icon.get_scale();
 
@@ -900,9 +896,17 @@ export let Dock = GObject.registerClass(
           (icon._targetScale + scale[0] * _scale_coef) / (_scale_coef + 1);
         icon._scale = newScale;
 
+        let flags = {
+          bottom: { x: 0.5, y: 1, lx: 0, ly: 0.5 * newScale },
+          top: { x: 0.5, y: 0, lx: 0, ly: -1.75 * newScale },
+          left: { x: 0, y: 0.5, lx: -1.25 * newScale, ly: -1.25 },
+          right: { x: 1, y: 0.5, lx: 1.5 * newScale , ly: -1.25 },
+        };
+        let pvd = flags[this._position];
+
         let pv = new Point();
-        pv.x = pivot.x;
-        pv.y = pivot.y;
+        pv.x = pvd.x;
+        pv.y = pvd.y;
         icon._icon.pivot_point = pv;
         icon._icon.set_scale(newScale, newScale);
 
@@ -928,8 +932,10 @@ export let Dock = GObject.registerClass(
 
         // labels
         if (icon._label) {
-          icon._label.translationX = translationX;
-          icon._label.translationY = translationY - (iconSize / 2) * newScale;
+          icon._label.translationX =
+            translationX - iconSize * pvd.lx;
+          icon._label.translationY =
+            translationY - iconSize * pvd.ly;
         }
 
         // badges
@@ -990,10 +996,9 @@ export let Dock = GObject.registerClass(
           if (dots && appCount > 0) {
             dots.width = icon._icon.width;
             dots.height = icon._icon.height;
-            // dots.set_scale(icon._icon.scaleX, icon._icon.scaleY);
             dots.pivot_point = icon._icon.pivot_point;
-            dots.translationX = icon._icon.translationX;
-            dots.translationY = icon._icon.translationY + 8;
+            dots.translationX = vertical * (this._position == 'left' ? -6 : 6); 
+            dots.translationY = icon._icon.translationY + (!vertical * 8); 
 
             let options = this.extension.running_indicator_style_options;
             let running_indicator_style =
@@ -1026,9 +1031,14 @@ export let Dock = GObject.registerClass(
         if (prev && next && prev._icon && next._icon) {
           actor.translationX =
             (prev._icon.translationX + next._icon.translationX) / 2;
+          actor.translationY =
+            (prev._icon.translationY + next._icon.translationY) / 2;
+          actor.width = !vertical ? 2 : iconSize * 0.75 * scaleFactor;
+          actor.height = vertical ? 2 : iconSize * 0.75 * scaleFactor;
         }
       });
 
+      let targetX = 0;
       let targetY = 0;
       if (this._hidden && this.extension.autohide_dash) {
         if (isWithin) {
@@ -1038,14 +1048,20 @@ export let Dock = GObject.registerClass(
 
       // dash hide/show
       if (this._hidden) {
-        targetY =
-          this._background.height + this._edge_distance * 2 * scaleFactor;
+        targetX -= vertical ?
+          (this._background.width - this._edge_distance * 2 * scaleFactor) : 0;
+        targetY += !vertical ?
+          (this._background.height + this._edge_distance * 2 * scaleFactor) : 0;
       }
 
-      targetY -= this._edge_distance;
+      targetX -= vertical ? this._edge_distance : 0;
+      targetY += !vertical ? this._edge_distance : 0;
+
       _pos_coef += 5 - 5 * this.extension.autohide_speed;
       this.dash.translationY =
         (this.dash.translationY * _pos_coef + targetY) / (_pos_coef + 1);
+      this.dash.translationX =
+        (this.dash.translationX * _pos_coef + targetX) / (_pos_coef + 1);
 
       // background
       {
@@ -1057,7 +1073,7 @@ export let Dock = GObject.registerClass(
           iconSize,
           scaleFactor,
           position: this._position,
-          vertical: this.isVertical(),
+          vertical: vertical,
           panel_mode: this.extension.panel_mode,
           dashContainer: this,
         });

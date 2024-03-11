@@ -52,6 +52,13 @@ export const DockBackground = GObject.registerClass(
         let width = dashContainer.dash.width + Math.abs(tx) + tx2 + padding;
         let height = dashContainer.dash.height;
 
+        if (dashContainer.isVertical()) {
+          this.x = first._fixedPosition[0];
+          this.y = first._fixedPosition[1] + ty;
+          width = dashContainer.dash.width;
+          height = dashContainer.dash.height + Math.abs(ty) + ty2 + padding;
+        }
+
         if (!isNaN(width)) {
           this.width = width;
         }
@@ -64,7 +71,8 @@ export const DockBackground = GObject.registerClass(
 
         // adjust padding
         let az =
-          (this.height - iconSize * scaleFactor) *
+          ((dashContainer.isVertical() ? this.width : this.height) -
+            iconSize * scaleFactor) *
           (0.6 - 0.8 * dashContainer.extension.dock_padding);
         this.x += az / 2;
         this.width -= az;

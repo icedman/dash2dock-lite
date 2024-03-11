@@ -37,7 +37,6 @@ export let AutoHide = class {
     this._enabled = true;
     this._shown = true;
     this._dwell = 0;
-
     console.log('autohide enabled');
   }
 

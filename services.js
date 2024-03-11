@@ -46,7 +46,7 @@ export const Services = class {
         1000 * 60, // every minute
         // 1000 * 1, // every second
         () => {
-          if (this.clock) {
+          if (this.clock && this.clock.visible) {
             this.clock.redraw();
           }
         },
@@ -56,7 +56,7 @@ export const Services = class {
         'calendar',
         1000 * 60 * 15,
         () => {
-          if (this.calendar) {
+          if (this.calendar && this.calendar.visible) {
             this.calendar.redraw();
           }
         },
@@ -410,10 +410,8 @@ export const Services = class {
     if (favorites._getIds().includes(app)) {
       // thread safety hack
 
-      this.extension._animators().forEach((animator) => {
-        animator._endAnimation();
-        animator._previousFind = null;
-        animator._throttleDown = 19;
+      this.extension.docks.forEach((docks) => {
+        docks._endAnimation();
       });
 
       this.temporarilyMuteOverview();
@@ -487,6 +485,7 @@ export const Services = class {
           clock.pivot_point = item._icon.pivot_point;
           clock.translationX = item._icon.translationX;
           clock.translationY = item._icon.translationY;
+          clock.show();
         }
       } else {
         this.clock?.hide();
@@ -510,6 +509,7 @@ export const Services = class {
           calender.pivot_point = item._icon.pivot_point;
           calender.translationX = item._icon.translationX;
           calender.translationY = item._icon.translationY;
+          calender.show();
         }
       } else {
         this.calender?.hide();

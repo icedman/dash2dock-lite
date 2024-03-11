@@ -15,6 +15,7 @@ import { MonochromeEffect } from './effects/monochrome_effect.js';
 import { DockBackground } from './dockItems.js';
 import { Bounce, Linear } from './effects/easing.js';
 import { AutoHide } from './autohide.js';
+import { Animator } from './animator.js';
 import { Dot } from './apps/dot.js';
 
 const DOT_CANVAS_SIZE = 96;
@@ -94,6 +95,7 @@ export let D2DaDock = GObject.registerClass(
       );
 
       this.dash.opacity = 0;
+      this._scrollCounter = 0;
 
       this.autohider = new AutoHide();
       this.autohider.dashContainer = this;
@@ -154,6 +156,7 @@ export let D2DaDock = GObject.registerClass(
       return Clutter.EVENT_PROPAGATE;
     }
     _onAppsChanged(evt) {
+      this._icons = null;
       this._beginAnimation();
       this.autohider._debounceCheckHide();
       return Clutter.EVENT_PROPAGATE;
@@ -994,6 +997,17 @@ export let D2DaDock = GObject.registerClass(
         }
       }
 
+      // dash hide/show
+      if (this._hidden) {
+        targetY =
+          this._background.height + this._edge_distance * 2 * scaleFactor;
+      }
+
+      targetY -= this._edge_distance;
+      _pos_coef += 5 - 5 * this.extension.autohide_speed;
+      this.dash.translationY =
+        (this.dash.translationY * _pos_coef + targetY) / (_pos_coef + 1);
+
       // background
       {
         let padding = iconSize * 0.4;
@@ -1029,18 +1043,9 @@ export let D2DaDock = GObject.registerClass(
         this.dwell.y = this.y + this.height - this.dwell.height;
       }
 
-      // dash hide/show
-      if (this._hidden) {
-        targetY =
-          this._background.height + this._edge_distance * 2 * scaleFactor;
+      if (this.extension.debug_visual) {
+        Main.panel.first_child.add_style_class_name('hi');
       }
-
-      // dash edge
-      targetY -= this._edge_distance;
-      this.dash.translationY =
-        (this.dash.translationY * _pos_coef + targetY) / (_pos_coef + 1);
-
-      Main.panel.first_child.add_style_class_name('hi');
       this.dash.opacity = 255;
 
       if (didScale) {
@@ -1107,6 +1112,7 @@ export let D2DaDock = GObject.registerClass(
         Main.panel.first_child.remove_style_class_name('hi');
       }
       this.autohider._debounceCheckHide();
+      this._icons = null;
     }
 
     _debounceEndAnimation() {
@@ -1302,6 +1308,13 @@ export let D2DaDock = GObject.registerClass(
           activeWs.activate_with_focus(window, global.get_current_time());
         }
       }
+    }
+
+    cancelAnimations() {
+      this.extension._hiTimer.cancel(this.animator._animationSeq);
+      this.animator._animationSeq = null;
+      this.extension._hiTimer.cancel(this.autohider._animationSeq);
+      this.autohider._animationSeq = null;
     }
   }
 );

@@ -28,7 +28,7 @@ import { Style } from './style.js';
 import { Dock } from './dock.js';
 import { Services } from './services.js';
 import { runTests } from './diagnostics.js';
-import { D2DaDock } from './dock2.js';
+import { D2DaDock } from './dock.js';
 
 import * as LampAnimation from './effects/lamp_animation.js';
 
@@ -119,13 +119,14 @@ export default class Dash2DockLiteExt extends Extension {
     this._updateLayout();
     this._updateAutohide();
     this._updateTrashIcon();
-    this._updateStyle();
 
     this._addEvents();
 
     this.createDock();
     this.docks.push(this.dock);
     this.listeners = [...this.listeners, ...this.docks];
+
+    this._updateStyle();
 
     this.startUp();
 
@@ -200,6 +201,8 @@ export default class Dash2DockLiteExt extends Extension {
         },
         {
           func: () => {
+            this._disable_borders = false;
+            this._updateBorderStyle();
             this.dock._debounceEndAnimation();
           },
           delay: 250,
@@ -294,10 +297,7 @@ export default class Dash2DockLiteExt extends Extension {
         }
         case 'apps-icon':
         case 'calendar-icon':
-        case 'clock-icon': {
-          this.animate();
-          break;
-        }
+        case 'clock-icon':
         case 'favorites-only': {
           this._updateLayout();
           this.animate();
@@ -306,7 +306,6 @@ export default class Dash2DockLiteExt extends Extension {
         // problematic settings needing animator restart
         case 'dock-location':
         case 'icon-resolution': {
-          this._disable_borders = this.border_radius > 0;
           this._updateIconResolution();
           this._updateStyle();
           this._updateLayout();
@@ -314,21 +313,18 @@ export default class Dash2DockLiteExt extends Extension {
           break;
         }
         case 'icon-effect': {
-          if (this.animate_icons) {
-            this._updateLayout();
-            this.animate();
-          }
+          this.docks.forEach((dock) => {
+            dock._updateIconEffect();
+          });
           break;
         }
         case 'icon-effect-color': {
-          if (this.animate_icons) {
-            // this._animators().forEach((animator) => {
-            //   if (animator.iconEffect) {
-            //     animator.iconEffect.color = this.icon_effect_color;
-            //   }
-            // });
-            this.animate();
-          }
+          this.docks.forEach((dock) => {
+            if (dock.iconEffect) {
+              dock.iconEffect.color = this.icon_effect_color;
+            }
+          });
+          this.animate();
           break;
         }
         case 'icon-size':
@@ -653,19 +649,20 @@ export default class Dash2DockLiteExt extends Extension {
             'border-top: 0px; border-right: 0px; border-bottom: 0px;';
         }
       }
-      // this._animators().forEach((animator) => {
-      //   animator._background.style = `border: ${this.border_thickness}px solid rgba(${rgba}) !important; ${disable_borders}`;
-      // });
+      this.docks.forEach((dock) => {
+        dock._background.style = `border: ${this.border_thickness}px solid rgba(${rgba}) !important; ${disable_borders}`;
+      });
     } else {
-      // this._animators().forEach((animator) => {
-      //   animator._background.style = '';
-      // });
+      this.docks.forEach((dock) => {
+        dock._background.style = '';
+      });
     }
   }
 
   _updateLayout(disable) {
-    this.docks.forEach((container) => {
-      container.layout(disable);
+    this.docks.forEach((dock) => {
+      dock._icons = null;
+      dock.layout();
     });
   }
 

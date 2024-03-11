@@ -81,26 +81,6 @@ export const DockBackground = GObject.registerClass(
 
         // console.log(`${this.height} ${iconSize * scaleFactor} ${first.first_child.height} ${ah}`);
 
-        // vertical
-        // if (vertical) {
-        //   this.x = p1[0] - padding;
-        //   this.y = first._fixedPosition[1] - padding; // p1[1] - padding
-
-        //   if (position == 'right' && p2[0] > p1[0]) {
-        //     this.x = p2[0] - padding;
-        //   }
-        //   if (position == 'left' && p2[0] < p1[0]) {
-        //     this.x = p2[0] - padding;
-        //   }
-
-        //   this.width = iconSize * scaleFactor + padding * 2;
-        //   this.height =
-        //     p2[1] -
-        //     p1[1] +
-        //     iconSize * scaleFactor * last._targetScale +
-        //     padding * 2;
-        // }
-
         // if (panel_mode) {
         //   if (vertical) {
         //     this.y = dashContainer.y;

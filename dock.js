@@ -900,7 +900,7 @@ export let Dock = GObject.registerClass(
           bottom: { x: 0.5, y: 1, lx: 0, ly: 0.5 * newScale },
           top: { x: 0.5, y: 0, lx: 0, ly: -1.75 * newScale },
           left: { x: 0, y: 0.5, lx: -1.25 * newScale, ly: -1.25 },
-          right: { x: 1, y: 0.5, lx: 1.5 * newScale , ly: -1.25 },
+          right: { x: 1, y: 0.5, lx: 1.5 * newScale, ly: -1.25 },
         };
         let pvd = flags[this._position];
 
@@ -932,10 +932,8 @@ export let Dock = GObject.registerClass(
 
         // labels
         if (icon._label) {
-          icon._label.translationX =
-            translationX - iconSize * pvd.lx;
-          icon._label.translationY =
-            translationY - iconSize * pvd.ly;
+          icon._label.translationX = translationX - iconSize * pvd.lx;
+          icon._label.translationY = translationY - iconSize * pvd.ly;
         }
 
         // badges
@@ -997,8 +995,10 @@ export let Dock = GObject.registerClass(
             dots.width = icon._icon.width;
             dots.height = icon._icon.height;
             dots.pivot_point = icon._icon.pivot_point;
-            dots.translationX = vertical * (this._position == 'left' ? -6 : 6); 
-            dots.translationY = icon._icon.translationY + (!vertical * 8); 
+            dots.translationX =
+              icon._icon.translationX +
+              vertical * (this._position == 'left' ? -6 : 6);
+            dots.translationY = icon._icon.translationY + !vertical * 8;
 
             let options = this.extension.running_indicator_style_options;
             let running_indicator_style =
@@ -1048,10 +1048,12 @@ export let Dock = GObject.registerClass(
 
       // dash hide/show
       if (this._hidden) {
-        targetX -= vertical ?
-          (this._background.width - this._edge_distance * 2 * scaleFactor) : 0;
-        targetY += !vertical ?
-          (this._background.height + this._edge_distance * 2 * scaleFactor) : 0;
+        targetX -= vertical
+          ? this._background.width - this._edge_distance * 2 * scaleFactor
+          : 0;
+        targetY += !vertical
+          ? this._background.height - this._edge_distance * 2 * scaleFactor
+          : 0;
       }
 
       targetX -= vertical ? this._edge_distance : 0;

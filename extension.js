@@ -187,6 +187,7 @@ export default class Dash2DockLiteExt extends Extension {
         this._updateLayout();
         if (this.dock) {
           this.dock.layout();
+          this.dock._beginAnimation();
         }
       };
       this._startupSeq = this._hiTimer.runSequence([

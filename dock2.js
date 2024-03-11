@@ -45,6 +45,9 @@ const ANIM_REENABLE_DELAY = 250;
 const ANIM_DEBOUNCE_END_DELAY = 750;
 const ANIM_PREVIEW_DURATION = 1200;
 
+const MIN_SCROLL_RESOLUTION = 4;
+const MAX_SCROLL_RESOLUTION = 10;
+
 export let D2DaDock = GObject.registerClass(
   {},
   class D2DaDock extends St.Widget {
@@ -75,6 +78,8 @@ export let D2DaDock = GObject.registerClass(
       this.dash.reactive = true;
       this.dash.track_hover = true;
       this.dash.connectObject(
+        'scroll-event',
+        this._onScrollEvent.bind(this),
         'button-press-event',
         this._onButtonPressEvent.bind(this),
         'motion-event',
@@ -211,6 +216,7 @@ export let D2DaDock = GObject.registerClass(
     addDash() {
       let dash = new Dash();
       dash._adjustIconSize = () => {};
+
       this.add_child(dash);
       this.dash = dash;
       this.dash._background.visible = false;
@@ -1189,6 +1195,113 @@ export let D2DaDock = GObject.registerClass(
       ]);
 
       // todo bounce the badge along with the icon
+    }
+
+    _onScrollEvent(obj, evt) {
+      this._lastScrollEvent = evt;
+      let pointer = global.get_pointer();
+      if (this._nearestIcon) {
+        if (this._scrollCounter < -2 || this._scrollCounter > 2)
+          this._scrollCounter = 0;
+
+        let icon = this._nearestIcon;
+        // console.log(`scroll - (${icon._pos}) (${pointer})`);
+
+        let SCROLL_RESOLUTION =
+          MIN_SCROLL_RESOLUTION +
+          MAX_SCROLL_RESOLUTION -
+          (MAX_SCROLL_RESOLUTION * this.extension.scroll_sensitivity || 0);
+        if (icon._appwell && icon._appwell.app) {
+          this._lastScrollObject = icon;
+          let direction = evt.get_scroll_direction();
+          switch (direction) {
+            case Clutter.ScrollDirection.UP:
+            case Clutter.ScrollDirection.LEFT:
+              this._scrollCounter += 1 / SCROLL_RESOLUTION;
+              break;
+            case Clutter.ScrollDirection.DOWN:
+            case Clutter.ScrollDirection.RIGHT:
+              this._scrollCounter -= 1 / SCROLL_RESOLUTION;
+              break;
+          }
+          this._cycleWindows(icon._appwell.app, evt);
+        }
+      }
+    }
+
+    _lockCycle() {
+      if (this._lockedCycle) return;
+      this._lockedCycle = true;
+      this.extension._hiTimer.runOnce(() => {
+        this._lockedCycle = false;
+      }, 500);
+    }
+
+    _cycleWindows(app, evt) {
+      if (this._lockedCycle) {
+        this._scrollCounter = 0;
+        return false;
+      }
+
+      let focusId = 0;
+      let workspaceManager = global.workspace_manager;
+      let activeWs = workspaceManager.get_active_workspace();
+
+      let windows = app.get_windows();
+
+      if (evt.modifier_state & Clutter.ModifierType.CONTROL_MASK) {
+        windows = windows.filter((w) => {
+          return activeWs == w.get_workspace();
+        });
+      }
+
+      let nw = windows.length;
+      windows.sort((w1, w2) => {
+        return w1.get_id() > w2.get_id() ? -1 : 1;
+      });
+
+      if (nw > 1) {
+        for (let i = 0; i < nw; i++) {
+          if (windows[i].has_focus()) {
+            focusId = i;
+          }
+          if (windows[i].is_hidden()) {
+            windows[i].unminimize();
+            windows[i].raise();
+          }
+        }
+
+        let current_focus = focusId;
+
+        if (this._scrollCounter < -1 || this._scrollCounter > 1) {
+          focusId += Math.round(this._scrollCounter);
+          if (focusId < 0) {
+            focusId = nw - 1;
+          }
+          if (focusId >= nw) {
+            focusId = 0;
+          }
+          this._scrollCounter = 0;
+        }
+
+        if (current_focus == focusId) return;
+      } else if (nw == 1) {
+        if (windows[0].is_hidden()) {
+          windows[0].unminimize();
+          windows[0].raise();
+        }
+      }
+
+      let window = windows[focusId];
+      if (window) {
+        this._lockCycle();
+        if (activeWs == window.get_workspace()) {
+          window.raise();
+          window.focus(0);
+        } else {
+          activeWs.activate_with_focus(window, global.get_current_time());
+        }
+      }
     }
   }
 );

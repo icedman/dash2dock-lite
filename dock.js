@@ -445,23 +445,23 @@ export let Dock = GObject.registerClass(
           icon.pivot_point = pv;
         }
 
-        if (!c._dotCanvas) {
-          let dot = new Dot(DOT_CANVAS_SIZE);
-          let pdot = new St.Widget();
-          pdot.add_child(dot);
-          dot.set_position(0, 0);
-          c.add_child(pdot);
-          c._dotCanvas = dot;
-        }
+        // if (!c._dotCanvas) {
+        //   let dot = new Dot(DOT_CANVAS_SIZE);
+        //   let pdot = new St.Widget();
+        //   pdot.add_child(dot);
+        //   dot.set_position(0, 0);
+        //   c.add_child(pdot);
+        //   c._dotCanvas = dot;
+        // }
 
-        if (!c._badgeCanvas) {
-          let dot = new Dot(DOT_CANVAS_SIZE);
-          let pdot = new St.Widget();
-          pdot.add_child(dot);
-          dot.set_position(0, 0);
-          c.add_child(pdot);
-          c._badgeCanvas = dot;
-        }
+        // if (!c._badgeCanvas) {
+        //   let dot = new Dot(DOT_CANVAS_SIZE);
+        //   let pdot = new St.Widget();
+        //   pdot.add_child(dot);
+        //   dot.set_position(0, 0);
+        //   c.add_child(pdot);
+        //   c._badgeCanvas = dot;
+        // }
       });
 
       try {
@@ -946,12 +946,13 @@ export let Dock = GObject.registerClass(
             noticesCount = appNotices.count;
           }
           // noticesCount = 1;
-          let badge = icon._badgeCanvas;
+          let target = icon._dot?.get_parent();
+          let badge = target?._badge;
 
-          if (!badge && icon._appwell) {
+          if (!badge && icon._appwell && target) {
             badge = new Dot(DOT_CANVAS_SIZE);
-            icon._badge = badge;
-            icon._appwell.first_child.add_child(badge);
+            target._badge = badge;
+            target.add_child(badge);
           }
           if (badge && noticesCount > 0) {
             badge.width = icon._icon.width;
@@ -985,11 +986,12 @@ export let Dock = GObject.registerClass(
           let appCount = icon._appwell ? icon._appwell.app.get_n_windows() : 0;
           // appCount = 1;
 
-          let dots = icon._dots;
-          if (!dots && icon._appwell) {
+          let target = icon._dot?.get_parent();
+          let dots = target?._dots;
+          if (!dots && icon._appwell && target) {
             dots = new Dot(DOT_CANVAS_SIZE);
-            icon._dots = dots;
-            icon._appwell.first_child.add_child(dots);
+            target._dots = dots;
+            target.add_child(dots);
           }
           if (dots && appCount > 0) {
             dots.width = icon._icon.width;

@@ -198,13 +198,23 @@ export let AutoHide = class {
     }
 
     // inaccurate
+    let pos = this.dashContainer._get_position(this.dashContainer.struts);
+    let rect = {
+      x: pos[0], 
+      y: pos[1],
+      w: this.dashContainer.struts.width, 
+      h: this.dashContainer.struts.height
+    };
+    let arect = [rect.x, rect.y, rect.w, rect.h];
     let dash_position = [this.dashContainer.x, this.dashContainer.y];
 
     if (!this.extension.autohide_dash) {
       return false;
     }
 
-    if (this.dashContainer._isWithinDash(pointer)) {
+    // within the dash
+    if (this.dashContainer._isWithinDash(pointer) ||
+      this.dashContainer._isInRect(arect, pointer)) {
       return false;
     }
 
@@ -212,21 +222,21 @@ export let AutoHide = class {
       return true;
     }
 
-    if (this.dashContainer.isVertical()) {
-      if (this.dashContainer.position == 'right') {
-        // right
-        if (pointer[0] > dash_position[0]) {
-          return false;
-        }
-      } else {
-        //left
-        if (pointer[0] < dash_position[0] + this.dashContainer.width) {
-          return false;
-        }
-      }
-    } else {
-      if (pointer[1] > dash_position[1]) return false;
-    }
+    // if (this.dashContainer.isVertical()) {
+    //   if (this.dashContainer.position == 'right') {
+    //     // right
+    //     if (pointer[0] > dash_position[0]) {
+    //       return false;
+    //     }
+    //   } else {
+    //     //left
+    //     if (pointer[0] < dash_position[0] + this.dashContainer.width) {
+    //       return false;
+    //     }
+    //   }
+    // } else {
+    //   if (pointer[1] > dash_position[1]) return false;
+    // }
 
     let monitor = this.dashContainer._monitor;
     let actors = global.get_window_actors();
@@ -251,19 +261,20 @@ export let AutoHide = class {
     windows.forEach((w) => {
       let frame = w.get_frame_rect();
       // log (`${frame.y} + ${frame.height}`);
+      // todo .. make accurate to work with multi-monitor
       if (this.dashContainer.isVertical()) {
         if (this.extension._position == 'right') {
-          if (frame.x + frame.width >= dash_position[0]) {
+          if (frame.x + frame.width >= rect.x) {
             isOverlapped = true;
           }
         } else {
           // left
-          if (frame.x <= dash_position[0] + this.dashContainer.width) {
+          if (frame.x <= rect.x + rect.w) {
             isOverlapped = true;
           }
         }
       } else {
-        if (frame.y + frame.height >= dash_position[1]) {
+        if (frame.y + frame.height >= rect.y) {
           isOverlapped = true;
         }
       }

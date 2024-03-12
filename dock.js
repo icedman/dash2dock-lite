@@ -798,7 +798,10 @@ export let Dock = GObject.registerClass(
 
       // animate
       animateIcons.forEach((icon) => {
-        let original_pos = this._get_position(icon._bin);
+        let original_pos = this._get_position(icon);
+        original_pos[0] += icon.width/2;
+        original_pos[1] += icon.height/2;
+
         icon._pos = [...original_pos];
         icon._translate = 0;
 
@@ -810,6 +813,9 @@ export let Dock = GObject.registerClass(
           dx = original_pos[1] - py;
         }
         if (dx * dx < threshold * threshold && nearestIcon) {
+          if (icon._label.visible) {
+            scale += 0.125;
+          }
           let adx = Math.abs(dx);
           let p = 1.0 - adx / threshold;
           let fp = p * 0.6 * (1 + magnify);

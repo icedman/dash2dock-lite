@@ -91,11 +91,11 @@ export let AutoHide = class {
       if (this.dashContainer.isVertical()) {
         if (
           // right
-          (this.extension._position == 'right' &&
+          (this.dashContainer._position == 'right' &&
             dy < area &&
             pointer[0] > monitor.x + sw - 4) ||
           // left
-          (this.extension._position == 'left' &&
+          (this.dashContainer._position == 'left' &&
             dy < area &&
             pointer[0] < monitor.x + 4)
         ) {
@@ -224,22 +224,6 @@ export let AutoHide = class {
       return true;
     }
 
-    // if (this.dashContainer.isVertical()) {
-    //   if (this.dashContainer.position == 'right') {
-    //     // right
-    //     if (pointer[0] > dash_position[0]) {
-    //       return false;
-    //     }
-    //   } else {
-    //     //left
-    //     if (pointer[0] < dash_position[0] + this.dashContainer.width) {
-    //       return false;
-    //     }
-    //   }
-    // } else {
-    //   if (pointer[1] > dash_position[1]) return false;
-    // }
-
     let monitor = this.dashContainer._monitor;
     let actors = global.get_window_actors();
     let windows = actors.map((a) => {
@@ -262,22 +246,30 @@ export let AutoHide = class {
     let isOverlapped = false;
     windows.forEach((w) => {
       let frame = w.get_frame_rect();
-      // log (`${frame.y} + ${frame.height}`);
+      console.log(`${frame.x} + ${frame.height}`);
       // todo .. make accurate to work with multi-monitor
       if (this.dashContainer.isVertical()) {
-        if (this.extension._position == 'right') {
+        if (this.dashContainer._position == 'right') {
+          // right
           if (frame.x + frame.width >= rect.x) {
-            isOverlapped = true;
+            if (frame.x < this.dashContainer._monitor.x + this.dashContainer._monitor.width) {
+              isOverlapped = true;
+            }
           }
         } else {
           // left
           if (frame.x <= rect.x + rect.w) {
-            isOverlapped = true;
+            if (frame.x + frame.width > this.dashContainer._monitor.x) {
+              isOverlapped = true;
+            }
           }
         }
       } else {
         if (frame.y + frame.height >= rect.y) {
-          isOverlapped = true;
+          // bottom
+          if (frame.y < this.dashContainer._monitor.y + this.dashContainer._monitor.height) {
+            isOverlapped = true;
+          }
         }
       }
     });

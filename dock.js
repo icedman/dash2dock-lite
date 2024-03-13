@@ -803,7 +803,7 @@ export let Dock = GObject.registerClass(
         i._pos = p;
       });
 
-      let dockPos = this._get_position(this);
+      let dock_position = this._get_position(this);
 
       //------------------------
       // animation behavior
@@ -852,7 +852,7 @@ export let Dock = GObject.registerClass(
 
           // affect rise
           let sz = iconSize * fp;
-          if (this.extension._vertical) {
+          if (vertical) {
             if (dock_position == 'right') {
               icon._pos[0] -= sz * 0.8 * rise;
             } else {
@@ -1260,15 +1260,17 @@ export let Dock = GObject.registerClass(
         scaleFactor;
       appwell.translation_y = 0;
 
+      let icon = appwell.get_parent()._icon;
+      
       let t = 250;
       let _frames = [
         {
           _duration: t,
           _func: (f, s) => {
             let res = Linear.easeNone(f._time, 0, travel, f._duration);
-            if (this.extension._vertical) {
+            if (this.isVertical()) {
               appwell.translation_x =
-                this.extension._position == 'left' ? res : -res;
+                this._position == 'left' ? res : -res;
               if (icon._badge) {
                 icon._badge.translation_x = appwell.translation_x;
               }
@@ -1281,9 +1283,9 @@ export let Dock = GObject.registerClass(
           _duration: t * 3,
           _func: (f, s) => {
             let res = Bounce.easeOut(f._time, travel, -travel, f._duration);
-            if (this.extension._vertical) {
+            if (this.isVertical()) {
               appwell.translation_x = appwell.translation_x =
-                this.extension._position == 'left' ? res : -res;
+                this._position == 'left' ? res : -res;
             } else {
               appwell.translation_y = -res;
             }
@@ -1421,8 +1423,8 @@ export let Dock = GObject.registerClass(
     }
 
     cancelAnimations() {
-      this.extension._hiTimer.cancel(this.animator._animationSeq);
-      this.animator._animationSeq = null;
+      this.extension._hiTimer.cancel(this._animationSeq);
+      this._animationSeq = null;
       this.extension._hiTimer.cancel(this.autohider._animationSeq);
       this.autohider._animationSeq = null;
     }

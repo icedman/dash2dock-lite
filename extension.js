@@ -52,6 +52,7 @@ export default class Dash2DockLiteExt extends Extension {
     d.layout();
     this.dock = d;
     this.docks.push(this.dock);
+    this.listeners = [this.services, ...this.docks];
     return d;
   }
 
@@ -60,7 +61,7 @@ export default class Dash2DockLiteExt extends Extension {
 
     // only one dock
     if (
-      Main.layoutManager.monitors.length == 1 &&
+      Main.layoutManager.monitors.length == 1 ||
       this.multi_monitor_preference == 0
     ) {
       if (this.docks.length > 1) {
@@ -69,6 +70,7 @@ export default class Dash2DockLiteExt extends Extension {
       if (this.docks.length == 0) {
         this.createDock();
       }
+      return;
     }
 
     if (
@@ -82,14 +84,16 @@ export default class Dash2DockLiteExt extends Extension {
 
       for (let i = 0; i < count; i++) {
         let d = this.createDock();
-        d._monitorIndex = i; // << forcibly assign
+        d._monitorIndex = i;
+        d._beginAnimation();
       }
     }
   }
 
   destroyDocks() {
     (this.docks || []).forEach((dock) => {
-      dock.removeFromChrome();
+      dock.cancelAnimations();
+      dock.undock();
       this.dock = null;
     });
     this.docks = [];
@@ -137,7 +141,6 @@ export default class Dash2DockLiteExt extends Extension {
     this.services = new Services();
     this.services.extension = this;
 
-    this._queryDisplay();
 
     // todo follow animator and autohider protocol
     this.services.enable();
@@ -154,8 +157,7 @@ export default class Dash2DockLiteExt extends Extension {
 
     this._addEvents();
 
-    this.createTheDocks();
-    this.listeners = [...this.listeners, ...this.docks];
+    this._queryDisplay();
 
     this._updateStyle();
 
@@ -212,36 +214,40 @@ export default class Dash2DockLiteExt extends Extension {
   }
 
   startUp() {
+    this.createTheDocks();
+    this._updateLayout();
+    this.animate();
+
     // todo... refactor this
-    if (!this._startupSeq) {
-      let func = () => {
-        this._updateLayout();
-        if (this.dock) {
-          this.dock.layout();
-          this.dock._beginAnimation();
-        }
-      };
-      this._startupSeq = this._hiTimer.runSequence([
-        { func, delay: 50 },
-        { func, delay: 500 },
-        {
-          func: () => {
-            this.dock._beginAnimation();
-          },
-          delay: 50,
-        },
-        {
-          func: () => {
-            this._disable_borders = false;
-            this._updateBorderStyle();
-            this.dock._debounceEndAnimation();
-          },
-          delay: 250,
-        },
-      ]);
-    } else {
-      this._hiTimer.runSequence(this._startupSeq);
-    }
+    // if (!this._startupSeq) {
+    //   let func = () => {
+    //     this.createTheDocks();
+    //     this._updateLayout();
+    //     this.animate();
+    //   };
+    //   this._startupSeq = this._hiTimer.runSequence([
+    //     { func, delay: 50 },
+    //     { func, delay: 500 },
+    //     {
+    //       func: () => {
+    //         this.animate();
+    //       },
+    //       delay: 50,
+    //     },
+    //     {
+    //       func: () => {
+    //         this._disable_borders = false;
+    //         this._updateBorderStyle();
+    //         this.docks.forEach((dock) => {
+    //           dock._debounceEndAnimation();
+    //         });
+    //       },
+    //       delay: 250,
+    //     },
+    //   ]);
+    // } else {
+    //   this._hiTimer.runSequence(this._startupSeq);
+    // }
   }
 
   _autohiders() {
@@ -463,6 +469,7 @@ export default class Dash2DockLiteExt extends Extension {
       // this.startUp.bind(this),
       'monitors-changed',
       () => {
+        this.createTheDocks();
         this._updateLayout();
         this.animate();
       },
@@ -552,8 +559,8 @@ export default class Dash2DockLiteExt extends Extension {
   }
 
   _updateAnimationFPS() {
-    this.docks.forEach((container) => {
-      container.cancelAnimations();
+    this.docks.forEach((dock) => {
+      dock.cancelAnimations();
     });
     this.animationInterval =
       ANIM_INTERVAL + (this.animation_fps || 0) * ANIM_INTERVAL_PAD;

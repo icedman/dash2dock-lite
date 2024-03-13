@@ -240,14 +240,6 @@ export default class Dash2DockLiteExt extends Extension {
       this.dashContainer._monitorIsPrimary =
         this.monitor == Main.layoutManager.primaryMonitor;
     }
-
-    if (this._last_monitor_count != Main.layoutManager.monitors.length) {
-      this._settings.set_int(
-        'monitor-count',
-        Main.layoutManager.monitors.length
-      );
-      this._last_monitor_count = Main.layoutManager.monitors.length;
-    }
   }
 
   _enableSettings() {

@@ -261,6 +261,10 @@ app.connect('activate', (me) => {
     app.quit();
   });
 
+
+  // let model = builder.get_object('preferred-monitor-model');
+  // model.append('hello');
+
   w.show();
 
   // m.present();

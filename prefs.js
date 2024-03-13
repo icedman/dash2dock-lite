@@ -3,6 +3,7 @@
 import Gdk from 'gi://Gdk';
 import Gtk from 'gi://Gtk';
 import Gio from 'gi://Gio';
+import GObject from 'gi://GObject';
 
 const GETTEXT_DOMAIN = 'dash2dock-light';
 
@@ -13,6 +14,111 @@ import {
   gettext as _,
 } from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
 
+// from Dock-to-Dock
+const MonitorsConfig = GObject.registerClass({
+    Signals: {
+        'updated': {},
+    },
+}, class MonitorsConfig extends GObject.Object {
+    static get XML_INTERFACE() {
+        return '<node>\
+            <interface name="org.gnome.Mutter.DisplayConfig">\
+                <method name="GetCurrentState">\
+                <arg name="serial" direction="out" type="u" />\
+                <arg name="monitors" direction="out" type="a((ssss)a(siiddada{sv})a{sv})" />\
+                <arg name="logical_monitors" direction="out" type="a(iiduba(ssss)a{sv})" />\
+                <arg name="properties" direction="out" type="a{sv}" />\
+                </method>\
+                <signal name="MonitorsChanged" />\
+            </interface>\
+        </node>';
+    }
+
+    static get ProxyWrapper() {
+        return Gio.DBusProxy.makeProxyWrapper(MonitorsConfig.XML_INTERFACE);
+    }
+
+    constructor() {
+        super();
+
+        this._monitorsConfigProxy = new MonitorsConfig.ProxyWrapper(
+            Gio.DBus.session,
+            'org.gnome.Mutter.DisplayConfig',
+            '/org/gnome/Mutter/DisplayConfig'
+        );
+
+        // Connecting to a D-Bus signal
+        this._monitorsConfigProxy.connectSignal('MonitorsChanged',
+            () => this._updateResources());
+
+        this._primaryMonitor = null;
+        this._monitors = [];
+        this._logicalMonitors = [];
+
+        this._updateResources();
+    }
+
+    _updateResources() {
+        this._monitorsConfigProxy.GetCurrentStateRemote((resources, err) => {
+            if (err) {
+                logError(err);
+                return;
+            }
+
+            const [serial_, monitors, logicalMonitors] = resources;
+            let index = 0;
+            for (const monitor of monitors) {
+                const [monitorSpecs, modes_, props] = monitor;
+                const [connector, vendor, product, serial] = monitorSpecs;
+                this._monitors.push({
+                    index: index++,
+                    active: false,
+                    connector, vendor, product, serial,
+                    displayName: props['display-name'].unpack(),
+                });
+            }
+
+            for (const logicalMonitor of logicalMonitors) {
+                const [x_, y_, scale_, transform_, isPrimary, monitorsSpecs] =
+                    logicalMonitor;
+
+                // We only care about the first one really
+                for (const monitorSpecs of monitorsSpecs) {
+                    const [connector, vendor, product, serial] = monitorSpecs;
+                    const monitor = this._monitors.find(m =>
+                        m.connector === connector && m.vendor === vendor &&
+                        m.product === product && m.serial === serial);
+
+                    if (monitor) {
+                        monitor.active = true;
+                        monitor.isPrimary = isPrimary;
+                        if (monitor.isPrimary)
+                            this._primaryMonitor = monitor;
+                        break;
+                    }
+                }
+            }
+
+            const activeMonitors = this._monitors.filter(m => m.active);
+            if (activeMonitors.length > 1 && logicalMonitors.length === 1) {
+                // We're in cloning mode, so let's just activate the primary monitor
+                this._monitors.forEach(m => (m.active = false));
+                this._primaryMonitor.active = true;
+            }
+
+            this.emit('updated');
+        });
+    }
+
+    get primaryMonitor() {
+        return this._primaryMonitor;
+    }
+
+    get monitors() {
+        return this._monitors;
+    }
+});
+
 export default class Preferences extends ExtensionPreferences {
   constructor(metadata) {
     super(metadata);
@@ -21,13 +127,6 @@ export default class Preferences extends ExtensionPreferences {
     let UIFolderPath = `${this.path}/ui`;
     iconTheme.add_search_path(`${UIFolderPath}/icons`);
     // ExtensionUtils.initTranslations();
-  }
-
-  updateMonitors(window, builder, settings) {
-    // monitors (use dbus?)
-    let count = settings.get_int('monitor-count') || 1;
-    const monitors_model = builder.get_object('preferred-monitor-model');
-    monitors_model.splice(count, 6 - count, []);
   }
 
   find(n, name) {
@@ -119,6 +218,7 @@ export default class Preferences extends ExtensionPreferences {
 
   fillPreferencesWindow(window) {
     let builder = new Gtk.Builder();
+    this._builder = builder;
 
     let UIFolderPath = `${this.path}/ui`;
 
@@ -143,7 +243,6 @@ export default class Preferences extends ExtensionPreferences {
     settingsKeys.connectSettings(settings);
 
     this.addButtonEvents(window, builder, settings);
-    this.updateMonitors(window, builder, settings);
     this.addMenu(window, builder);
 
     builder.get_object('peek-hidden-icons-row').visible = false;
@@ -160,5 +259,31 @@ export default class Preferences extends ExtensionPreferences {
     });
 
     toggle_experimental();
+
+    this._monitorsConfig = new MonitorsConfig();
+    this.updateMonitors();
+    this._monitorsConfig.connect('updated',
+        () => this.updateMonitors());
+    settings.connect('changed::preferred-monitor',
+        () => this.updateMonitors());
+  }
+
+  // updateMonitors(window, builder, settings) {
+  //   // monitors (use dbus?)
+  //   let count = settings.get_int('monitor-count') || 1;
+  //   const monitors_model = builder.get_object('preferred-monitor-model');
+  //   monitors_model.splice(count, 6 - count, []);
+  // }
+
+  updateMonitors() {
+    let model = this._builder.get_object('preferred-monitor-model');
+    let model_count = model.get_n_items();
+    model.splice(0, model_count, []);
+    let monitors = this._monitorsConfig.monitors;
+    let count = monitors.length;
+    for(let i=0; i<count; i++) {
+      let name = monitors[i];
+      model.append(name.displayName);
+    }
   }
 }

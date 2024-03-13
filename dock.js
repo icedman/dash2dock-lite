@@ -529,11 +529,6 @@ export let Dock = GObject.registerClass(
       this._position =
         locations[this.extension.dock_location] || DockPosition.BOTTOM;
 
-      // this._position = DockPosition.LEFT;
-      // this._position = DockPosition.RIGHT;
-      // this._position = DockPosition.BOTTOM;
-      // this._position = DockPosition.TOP;
-
       this._icons = this._findIcons();
 
       let m = this.getMonitor();
@@ -622,7 +617,7 @@ export let Dock = GObject.registerClass(
         (this.extension.edge_distance || 0) * 20 * scaleFactor;
 
       if (this.extension.panel_mode) {
-        this._edge_distance = -10;
+        this._edge_distance = 0;
       }
 
       this._icons.forEach((icon) => {
@@ -674,8 +669,13 @@ export let Dock = GObject.registerClass(
 
       // todo vertical
       if (this.extension.panel_mode) {
-        this.x = m.x;
-        this.width = m.width;
+        if (vertical) {
+          this.y = m.y;
+          this.height = m.height; 
+        } else {
+          this.x = m.x;
+          this.width = m.width;
+        }
       }
 
       // center the dash

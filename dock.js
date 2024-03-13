@@ -698,6 +698,7 @@ export let Dock = GObject.registerClass(
     }
 
     animate() {
+      // this._hidden = true;
       this.layout();
 
       let m = this.getMonitor();
@@ -1080,18 +1081,29 @@ export let Dock = GObject.registerClass(
         }
       }
 
+      let ed = this._position == 'bottom' || this._position == 'right' ? 1 : -1;
+
       // dash hide/show
       if (this._hidden) {
-        targetX -= vertical
-          ? this._background.width - this._edge_distance * 2 * scaleFactor
-          : 0;
-        targetY += !vertical
-          ? this._background.height - this._edge_distance * 2 * scaleFactor
-          : 0;
+        if (vertical) {
+          targetX =
+            (this._background.width - this._edge_distance * -ed * 2) *
+            scaleFactor;
+          if (this._position == 'left') {
+            targetX =
+              -(this._background.width + this._edge_distance * -ed * 2) *
+              scaleFactor;
+          }
+        } else {
+          targetY =
+            (this._background.height - this._edge_distance * -ed * 2) *
+            scaleFactor;
+        }
       }
 
-      targetX -= vertical ? this._edge_distance : 0;
-      targetY += !vertical ? this._edge_distance : 0;
+      // edge
+      targetX += vertical ? this._edge_distance * -ed : 0;
+      targetY += !vertical ? this._edge_distance * -ed : 0;
 
       _pos_coef += 5 - 5 * this.extension.autohide_speed;
       this.dash.translationY =
@@ -1101,11 +1113,9 @@ export let Dock = GObject.registerClass(
 
       // background
       {
-        let padding = iconSize * 0.4;
         this._background.update({
           first: animateIcons[0],
           last: animateIcons[animateIcons.length - 1],
-          padding,
           iconSize,
           scaleFactor,
           position: this._position,
@@ -1126,6 +1136,15 @@ export let Dock = GObject.registerClass(
         this.dwell.height = dwellHeight;
         this.dwell.x = this.x;
         this.dwell.y = this.y + this.height - this.dwell.height;
+        if (vertical) {
+          this.dwell.width = dwellHeight;
+          this.dwell.height = this.height;
+          this.dwell.x = m.x;
+          this.dwell.y = this.y;
+          if (this._position == 'right') {
+            this.dwell.x = m.x + m.width - dwellHeight;
+          }
+        }
       }
 
       if (this.extension.debug_visual) {

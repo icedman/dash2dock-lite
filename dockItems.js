@@ -26,7 +26,6 @@ export const DockBackground = GObject.registerClass(
       let {
         first,
         last,
-        padding,
         iconSize,
         scaleFactor,
         vertical,
@@ -34,8 +33,6 @@ export const DockBackground = GObject.registerClass(
         panel_mode,
         dashContainer,
       } = params;
-
-      padding *= 0.5;
 
       let p1 = first.get_transformed_position();
       let p2 = last.get_transformed_position();
@@ -47,16 +44,16 @@ export const DockBackground = GObject.registerClass(
         let ty2 = last._icon.translationY;
 
         // bottom
-        this.x = p1[0] - padding + tx;
+        this.x = p1[0] + tx;
         this.y = first._fixedPosition[1];
-        let width = dashContainer.dash.width + Math.abs(tx) + tx2 + padding;
+        let width = dashContainer.dash.width + Math.abs(tx) + tx2;
         let height = dashContainer.dash.height;
 
         if (dashContainer.isVertical()) {
           this.x = first._fixedPosition[0];
           this.y = first._fixedPosition[1] + ty;
           width = dashContainer.dash.width;
-          height = dashContainer.dash.height + Math.abs(ty) + ty2 + padding;
+          height = dashContainer.dash.height + Math.abs(ty) + ty2;
         }
 
         if (!isNaN(width)) {
@@ -79,19 +76,15 @@ export const DockBackground = GObject.registerClass(
         this.y += az / 2;
         this.height -= az;
 
-        // console.log(`${this.height} ${iconSize * scaleFactor} ${first.first_child.height} ${ah}`);
-
-        // if (panel_mode) {
-        //   if (vertical) {
-        //     this.y = dashContainer.y;
-        //     this.height = dashContainer.height;
-        //   } else {
-        //     let pad = 0; //dashContainer.cornerPad || 0;
-        //     this.x = dashContainer.x - pad;
-        //     this.width = dashContainer.width + pad * 2;
-        //     this.height++;
-        //   }
-        // }
+        if (panel_mode) {
+          if (vertical) {
+            this.y = dashContainer.y;
+            this.height = dashContainer.height;
+          } else {
+            this.x = dashContainer.x;
+            this.width = dashContainer.width;
+          }
+        }
       }
     }
   }

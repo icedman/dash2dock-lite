@@ -15,13 +15,15 @@ import {
 } from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
 
 // from Dock-to-Dock
-const MonitorsConfig = GObject.registerClass({
+const MonitorsConfig = GObject.registerClass(
+  {
     Signals: {
-        'updated': {},
+      updated: {},
     },
-}, class MonitorsConfig extends GObject.Object {
+  },
+  class MonitorsConfig extends GObject.Object {
     static get XML_INTERFACE() {
-        return '<node>\
+      return '<node>\
             <interface name="org.gnome.Mutter.DisplayConfig">\
                 <method name="GetCurrentState">\
                 <arg name="serial" direction="out" type="u" />\
@@ -35,89 +37,97 @@ const MonitorsConfig = GObject.registerClass({
     }
 
     static get ProxyWrapper() {
-        return Gio.DBusProxy.makeProxyWrapper(MonitorsConfig.XML_INTERFACE);
+      return Gio.DBusProxy.makeProxyWrapper(MonitorsConfig.XML_INTERFACE);
     }
 
     constructor() {
-        super();
+      super();
 
-        this._monitorsConfigProxy = new MonitorsConfig.ProxyWrapper(
-            Gio.DBus.session,
-            'org.gnome.Mutter.DisplayConfig',
-            '/org/gnome/Mutter/DisplayConfig'
-        );
+      this._monitorsConfigProxy = new MonitorsConfig.ProxyWrapper(
+        Gio.DBus.session,
+        'org.gnome.Mutter.DisplayConfig',
+        '/org/gnome/Mutter/DisplayConfig'
+      );
 
-        // Connecting to a D-Bus signal
-        this._monitorsConfigProxy.connectSignal('MonitorsChanged',
-            () => this._updateResources());
+      // Connecting to a D-Bus signal
+      this._monitorsConfigProxy.connectSignal('MonitorsChanged', () =>
+        this._updateResources()
+      );
 
-        this._primaryMonitor = null;
-        this._monitors = [];
-        this._logicalMonitors = [];
+      this._primaryMonitor = null;
+      this._monitors = [];
+      this._logicalMonitors = [];
 
-        this._updateResources();
+      this._updateResources();
     }
 
     _updateResources() {
-        this._monitorsConfigProxy.GetCurrentStateRemote((resources, err) => {
-            if (err) {
-                logError(err);
-                return;
+      this._monitorsConfigProxy.GetCurrentStateRemote((resources, err) => {
+        if (err) {
+          logError(err);
+          return;
+        }
+
+        const [serial_, monitors, logicalMonitors] = resources;
+        let index = 0;
+        for (const monitor of monitors) {
+          const [monitorSpecs, modes_, props] = monitor;
+          const [connector, vendor, product, serial] = monitorSpecs;
+          this._monitors.push({
+            index: index++,
+            active: false,
+            connector,
+            vendor,
+            product,
+            serial,
+            displayName: props['display-name'].unpack(),
+          });
+        }
+
+        for (const logicalMonitor of logicalMonitors) {
+          const [x_, y_, scale_, transform_, isPrimary, monitorsSpecs] =
+            logicalMonitor;
+
+          // We only care about the first one really
+          for (const monitorSpecs of monitorsSpecs) {
+            const [connector, vendor, product, serial] = monitorSpecs;
+            const monitor = this._monitors.find(
+              (m) =>
+                m.connector === connector &&
+                m.vendor === vendor &&
+                m.product === product &&
+                m.serial === serial
+            );
+
+            if (monitor) {
+              monitor.active = true;
+              monitor.isPrimary = isPrimary;
+              if (monitor.isPrimary) this._primaryMonitor = monitor;
+              break;
             }
+          }
+        }
 
-            const [serial_, monitors, logicalMonitors] = resources;
-            let index = 0;
-            for (const monitor of monitors) {
-                const [monitorSpecs, modes_, props] = monitor;
-                const [connector, vendor, product, serial] = monitorSpecs;
-                this._monitors.push({
-                    index: index++,
-                    active: false,
-                    connector, vendor, product, serial,
-                    displayName: props['display-name'].unpack(),
-                });
-            }
+        const activeMonitors = this._monitors.filter((m) => m.active);
+        if (activeMonitors.length > 1 && logicalMonitors.length === 1) {
+          // We're in cloning mode, so let's just activate the primary monitor
+          this._monitors.forEach((m) => (m.active = false));
+          this._primaryMonitor.active = true;
+        }
 
-            for (const logicalMonitor of logicalMonitors) {
-                const [x_, y_, scale_, transform_, isPrimary, monitorsSpecs] =
-                    logicalMonitor;
-
-                // We only care about the first one really
-                for (const monitorSpecs of monitorsSpecs) {
-                    const [connector, vendor, product, serial] = monitorSpecs;
-                    const monitor = this._monitors.find(m =>
-                        m.connector === connector && m.vendor === vendor &&
-                        m.product === product && m.serial === serial);
-
-                    if (monitor) {
-                        monitor.active = true;
-                        monitor.isPrimary = isPrimary;
-                        if (monitor.isPrimary)
-                            this._primaryMonitor = monitor;
-                        break;
-                    }
-                }
-            }
-
-            const activeMonitors = this._monitors.filter(m => m.active);
-            if (activeMonitors.length > 1 && logicalMonitors.length === 1) {
-                // We're in cloning mode, so let's just activate the primary monitor
-                this._monitors.forEach(m => (m.active = false));
-                this._primaryMonitor.active = true;
-            }
-
-            this.emit('updated');
-        });
+        this.emit('updated');
+      });
     }
 
     get primaryMonitor() {
-        return this._primaryMonitor;
+      return this._primaryMonitor;
     }
 
     get monitors() {
-        return this._monitors;
+      return this._monitors;
     }
-});
+  }
+);
 
 export default class Preferences extends ExtensionPreferences {
   constructor(metadata) {
@@ -262,10 +272,8 @@ export default class Preferences extends ExtensionPreferences {
 
     this._monitorsConfig = new MonitorsConfig();
     this.updateMonitors();
-    this._monitorsConfig.connect('updated',
-        () => this.updateMonitors());
-    settings.connect('changed::preferred-monitor',
-        () => this.updateMonitors());
+    this._monitorsConfig.connect('updated', () => this.updateMonitors());
+    settings.connect('changed::preferred-monitor', () => this.updateMonitors());
   }
 
   // updateMonitors(window, builder, settings) {
@@ -281,7 +289,7 @@ export default class Preferences extends ExtensionPreferences {
     model.splice(0, model_count, []);
     let monitors = this._monitorsConfig.monitors;
     let count = monitors.length;
-    for(let i=0; i<count; i++) {
+    for (let i = 0; i < count; i++) {
       let name = monitors[i];
       model.append(name.displayName);
     }

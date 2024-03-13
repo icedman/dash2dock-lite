@@ -518,6 +518,9 @@ export let Dock = GObject.registerClass(
     }
 
     layout() {
+      // this updates the monitor
+      this.extension._queryDisplay();
+
       let locations = [
         DockPosition.BOTTOM,
         DockPosition.LEFT,
@@ -910,6 +913,12 @@ export let Dock = GObject.registerClass(
         _scale_coef *= ANIM_ON_LEAVE_COEF;
         _pos_coef *= ANIM_ON_LEAVE_COEF;
         // _spread_coef *= ANIM_ON_LEAVE_COEF;
+      }
+
+      // low frame rate
+      if (this.extension.animation_fps == 2) {
+        _pos_coef *= 4;
+        _scale_coef *= 4;
       }
 
       animateIcons.forEach((icon) => {

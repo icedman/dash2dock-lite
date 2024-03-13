@@ -196,10 +196,20 @@
         <summary>Apps icon</summary>
         <description>Show the apps icon.</description>
     </key>
+    <key type="b" name="apps-icon-front">
+        <default>false</default>
+        <summary>Apps icon at front</summary>
+        <description>Position the apps icon at the front.</description>
+    </key>
     <key type="i" name="preferred-monitor">
         <default>0</default>
         <summary>Preferred monitor to dock</summary>
         <description>Show dock on selected monitor.</description>
+    </key>
+    <key type="i" name="multi-monitor-preference">
+        <default>0</default>
+        <summary>Multi-monitor dock preference</summary>
+        <description>Multi-monitor dock locations.</description>
     </key>
     <key type="i" name="dock-location">
         <default>0</default>

@@ -89,10 +89,10 @@ function add_test_values(seqs, extension, settings, name, value, values) {
     });
 
     if (k.test) {
-      let x = extension.dashContainer.position.x;
-      let y = extension.dashContainer.position.y;
-      let w = extension.dashContainer.width;
-      let h = extension.dashContainer.height;
+      let x = extension.dock.position.x;
+      let y = extension.dock.position.y;
+      let w = extension.dock.width;
+      let h = extension.dock.height;
       switch (k.test.pointer) {
         case 'slide-through':
           add_slide_pointer(
@@ -170,10 +170,10 @@ function addMotionTests(_seqs, extension, settings) {
   add_move_pointer(_seqs, 0, 0, 0.5, extension);
 
   // animation
-  let x = extension.dashContainer.position.x;
-  let y = extension.dashContainer.position.y;
-  let w = extension.dashContainer.width;
-  let h = extension.dashContainer.height;
+  let x = extension.dock.position.x;
+  let y = extension.dock.position.y;
+  let w = extension.dock.width;
+  let h = extension.dock.height;
   add_slide_pointer(_seqs, x, y + h / 2, x + w, y + h / 2, 40, 1.8, extension);
   add_slide_pointer(_seqs, x + w, y + h / 2, x, y + h / 2, 40, 1.8, extension);
   add_move_pointer(_seqs, 0, 0, 0.5, extension);

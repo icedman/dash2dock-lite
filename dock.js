@@ -207,6 +207,7 @@ export let Dock = GObject.registerClass(
     }
 
     getMonitor() {
+      this._monitorIndex = this.extension._queryDisplay(this._monitorIndex);
       let m =
         Main.layoutManager.monitors[this._monitorIndex] ||
         Main.layoutManager.primaryMonitor;
@@ -518,8 +519,13 @@ export let Dock = GObject.registerClass(
     }
 
     layout() {
-      // this updates the monitor
-      this.extension._queryDisplay();
+      if (this.extension.apps_icon_front) {
+        this.dash.last_child.text_direction = 2; // RTL
+        this.dash._box.text_direction = 1; // LTR
+      } else {
+        this.dash.last_child.text_direction = 1; // LTR
+        this.dash._box.text_direction = 1; // LTR
+      }
 
       let locations = [
         DockPosition.BOTTOM,
@@ -671,7 +677,7 @@ export let Dock = GObject.registerClass(
       if (this.extension.panel_mode) {
         if (vertical) {
           this.y = m.y;
-          this.height = m.height; 
+          this.height = m.height;
         } else {
           this.x = m.x;
           this.width = m.width;

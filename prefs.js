@@ -252,6 +252,8 @@ export default class Preferences extends ExtensionPreferences {
     settingsKeys.connectBuilder(builder);
     settingsKeys.connectSettings(settings);
 
+    this._settings = settings;
+
     this.addButtonEvents(window, builder, settings);
     this.addMenu(window, builder);
 
@@ -271,15 +273,17 @@ export default class Preferences extends ExtensionPreferences {
     toggle_experimental();
 
     this._monitorsConfig = new MonitorsConfig();
-    this.updateMonitors();
     this._monitorsConfig.connect('updated', () => this.updateMonitors());
-    settings.connect('changed::preferred-monitor', () => this.updateMonitors());
+    // settings.connect('changed::preferred-monitor', () => this.updateMonitors());
+
+    this.updateMonitors();
   }
 
-  // updateMonitors(window, builder, settings) {
-  //   // monitors (use dbus?)
-  //   let count = settings.get_int('monitor-count') || 1;
-  //   const monitors_model = builder.get_object('preferred-monitor-model');
+  // updateMonitors() {
+  //   let monitors = this._monitorsConfig.monitors;
+  //   let count = monitors.length;
+  //   // let count = this._settings.get_int('monitor-count') || 1;
+  //   const monitors_model = this._builder.get_object('preferred-monitor-model');
   //   monitors_model.splice(count, 6 - count, []);
   // }
 
@@ -289,6 +293,7 @@ export default class Preferences extends ExtensionPreferences {
     model.splice(0, model_count, []);
     let monitors = this._monitorsConfig.monitors;
     let count = monitors.length;
+    model.append(`Primary Display`);
     for (let i = 0; i < count; i++) {
       let name = monitors[i];
       model.append(name.displayName);

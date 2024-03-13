@@ -51,7 +51,40 @@ export default class Dash2DockLiteExt extends Extension {
     d.addToChrome();
     d.layout();
     this.dock = d;
+    this.docks.push(this.dock);
     return d;
+  }
+
+  createTheDocks() {
+    this.docks = this.docks ?? [];
+
+    // only one dock
+    if (
+      Main.layoutManager.monitors.length == 1 &&
+      this.multi_monitor_preference == 0
+    ) {
+      if (this.docks.length > 1) {
+        this.destroyDocks();
+      }
+      if (this.docks.length == 0) {
+        this.createDock();
+      }
+    }
+
+    if (
+      Main.layoutManager.monitors.length > 0 &&
+      this.multi_monitor_preference == 1
+    ) {
+      let count = Main.layoutManager.monitors.length;
+      if (count != this.docks.length) {
+        this.destroyDocks();
+      }
+
+      for (let i = 0; i < count; i++) {
+        let d = this.createDock();
+        d._monitorIndex = i; // << forcibly assign
+      }
+    }
   }
 
   destroyDocks() {
@@ -59,6 +92,7 @@ export default class Dash2DockLiteExt extends Extension {
       dock.removeFromChrome();
       this.dock = null;
     });
+    this.docks = [];
   }
 
   enable() {
@@ -103,7 +137,6 @@ export default class Dash2DockLiteExt extends Extension {
     this.services = new Services();
     this.services.extension = this;
 
-    this.dashContainer = new Dock(this);
     this._queryDisplay();
 
     // todo follow animator and autohider protocol
@@ -121,8 +154,7 @@ export default class Dash2DockLiteExt extends Extension {
 
     this._addEvents();
 
-    this.createDock();
-    this.docks.push(this.dock);
+    this.createTheDocks();
     this.listeners = [...this.listeners, ...this.docks];
 
     this._updateStyle();
@@ -156,7 +188,6 @@ export default class Dash2DockLiteExt extends Extension {
       container.undock();
     });
     this.docks = [];
-    this.dashContainer = null;
 
     this.destroyDocks();
 
@@ -219,27 +250,28 @@ export default class Dash2DockLiteExt extends Extension {
     });
   }
 
-  _queryDisplay() {
+  // to be called by docks
+  _queryDisplay(currentMonitorIndex) {
+    if (
+      Main.layoutManager.monitors.length > 0 &&
+      this.multi_monitor_preference > 0
+    ) {
+      // if multi-monitor ... left _updateLayout take care of updating the docks
+      return currentMonitorIndex;
+    }
+
     let idx = this.preferred_monitor || 0;
     if (idx == 0) {
       idx = Main.layoutManager.primaryIndex;
     } else if (idx == Main.layoutManager.primaryIndex) {
       idx = 0;
     }
-    this.monitor = Main.layoutManager.monitors[idx];
 
-    if (!this.monitor) {
-      this.monitor = Main.layoutManager.primaryMonitor;
+    if (!Main.layoutManager.monitors[idx]) {
       idx = Main.layoutManager.primaryIndex;
     }
 
-    // todo ... single container
-    if (this.dashContainer) {
-      this.dashContainer._monitorIndex = idx;
-      this.dashContainer._monitor = this.monitor;
-      this.dashContainer._monitorIsPrimary =
-        this.monitor == Main.layoutManager.primaryMonitor;
-    }
+    return idx;
   }
 
   _enableSettings() {
@@ -288,6 +320,7 @@ export default class Dash2DockLiteExt extends Extension {
           break;
         }
         case 'apps-icon':
+        case 'apps-icon-front':
         case 'calendar-icon':
         case 'clock-icon':
         case 'favorites-only': {
@@ -325,6 +358,7 @@ export default class Dash2DockLiteExt extends Extension {
           break;
         }
         case 'icon-size':
+        case 'multi-monitor-preference':
         case 'preferred-monitor': {
           this._updateLayout();
           this.animate();
@@ -658,6 +692,7 @@ export default class Dash2DockLiteExt extends Extension {
   }
 
   _updateLayout(disable) {
+    // console.log(this.multi_monitor_preference);
     this.docks.forEach((dock) => {
       dock._icons = null;
       dock.layout();

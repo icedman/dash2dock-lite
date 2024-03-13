@@ -116,6 +116,10 @@ export const SettingsKeys = () => {
       default_value: true,
       widget_type: 'switch',
     },
+    'apps-icon-front': {
+      default_value: false,
+      widget_type: 'switch',
+    },
     'trash-icon': {
       default_value: false,
       widget_type: 'switch',
@@ -227,6 +231,11 @@ export const SettingsKeys = () => {
       widget_type: 'color',
     },
     'preferred-monitor': {
+      default_value: 0,
+      widget_type: 'dropdown',
+      test: { values: [0, 1, 2] },
+    },
+    'multi-monitor-preference': {
       default_value: 0,
       widget_type: 'dropdown',
       test: { values: [0, 1, 2] },

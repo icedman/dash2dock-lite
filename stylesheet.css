@@ -22,5 +22,7 @@
 }
 
 #d2daDock #dash .dash-item-container {
-/*  border: 2px solid magenta;*/
+/* border: 2px solid magenta;*/
+/* margin-left: 5px !important; */
+/* margin-right: 5px !important; */
 }

@@ -309,6 +309,7 @@ export default class Dash2DockLiteExt extends Extension {
           this._updateIconResolution();
           this._updateStyle();
           this._updateLayout();
+          this._updateIconSpacing();
           this.animate();
           break;
         }
@@ -325,6 +326,10 @@ export default class Dash2DockLiteExt extends Extension {
             }
           });
           this.animate();
+          break;
+        }
+        case 'icon-spacing': {
+          this._updateIconSpacing();
           break;
         }
         case 'icon-size':
@@ -665,6 +670,18 @@ export default class Dash2DockLiteExt extends Extension {
       dock._icons = null;
       dock.layout();
     });
+  }
+
+  _updateIconSpacing(disable) {
+    this._loTimer.runOnce(() => {
+      this.docks.forEach((dock) => {
+        dock._findIcons();
+        dock._icons?.forEach((icon) => {
+          icon.style = '';
+        });
+        dock._beginAnimation();
+      });
+    }, 750);
   }
 
   _updateAutohide(disable) {

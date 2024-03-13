@@ -183,6 +183,10 @@ export const SettingsKeys = () => {
       default_value: 0.5,
       widget_type: 'scale',
     },
+    'icon-spacing': {
+      default_value: 0.5,
+      widget_type: 'scale',
+    },
     'panel-mode': {
       default_value: false,
       widget_type: 'switch',

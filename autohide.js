@@ -200,10 +200,10 @@ export let AutoHide = class {
     // inaccurate
     let pos = this.dashContainer._get_position(this.dashContainer.struts);
     let rect = {
-      x: pos[0], 
+      x: pos[0],
       y: pos[1],
-      w: this.dashContainer.struts.width, 
-      h: this.dashContainer.struts.height
+      w: this.dashContainer.struts.width,
+      h: this.dashContainer.struts.height,
     };
     let arect = [rect.x, rect.y, rect.w, rect.h];
     let dash_position = [this.dashContainer.x, this.dashContainer.y];
@@ -213,8 +213,10 @@ export let AutoHide = class {
     }
 
     // within the dash
-    if (this.dashContainer._isWithinDash(pointer) ||
-      this.dashContainer._isInRect(arect, pointer)) {
+    if (
+      this.dashContainer._isWithinDash(pointer) ||
+      this.dashContainer._isInRect(arect, pointer)
+    ) {
       return false;
     }
 

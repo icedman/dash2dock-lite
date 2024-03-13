@@ -35,7 +35,7 @@ export const DockAlignment = {
   END: 'end',
 };
 
-const ANIM_POS_COEF = 1.5;
+const ANIM_POS_COEF = 0.5;
 const ANIM_SCALE_COEF = 1.5 * 2;
 const ANIM_SPREAD_COEF = 1.25 * 1;
 const ANIM_ON_LEAVE_COEF = 2.0;
@@ -578,15 +578,28 @@ export let Dock = GObject.registerClass(
       let width = 1200;
       let height = 140;
       let dock_size_limit = 1;
-      let animation_spread = 0.75;
-      let animation_magnify = 0.75;
+      let animation_spread = this.extension.animation_spread;
+      let animation_magnify = this.extension.animation_magnify;
+
+      let iconMargins = 0;
+      let iconStyle = '';
+      if (this.extension.icon_spacing > 0) {
+        let margin = 8 * this.extension.icon_spacing;
+        if (vertical) {
+          iconStyle = `margin-top: ${margin}px; margin-bottom: ${margin}px;`;
+        } else {
+          iconStyle = `margin-left: ${margin}px; margin-right: ${margin}px;`;
+        }
+        iconMargins = margin * 2 * this._icons.length;
+      }
 
       let iconSize = this._preferredIconSize();
-      let iconSizeSpaced = iconSize * (1.05 + (2 * animation_spread - 1));
+      let iconSizeSpaced = iconSize + 16 + 8 * animation_spread;
 
       let projectedWidth =
         iconSize +
         iconSizeSpaced * (this._icons.length > 3 ? this._icons.length : 3);
+      projectedWidth += iconMargins;
 
       let scaleDown = 1.0;
       let limit = vertical ? 0.96 : 0.98;
@@ -612,6 +625,10 @@ export let Dock = GObject.registerClass(
       this._icons.forEach((icon) => {
         icon.width = iconSizeSpaced * scaleFactor;
         icon.height = iconSizeSpaced * scaleFactor;
+
+        if (icon.style != iconStyle) {
+          icon.style = iconStyle;
+        }
       });
 
       width = this._projectedWidth * scaleFactor;
@@ -799,8 +816,8 @@ export let Dock = GObject.registerClass(
       // animate
       animateIcons.forEach((icon) => {
         let original_pos = this._get_position(icon);
-        original_pos[0] += icon.width/2;
-        original_pos[1] += icon.height/2;
+        original_pos[0] += icon.width / 2;
+        original_pos[1] += icon.height / 2;
 
         icon._pos = [...original_pos];
         icon._translate = 0;
@@ -813,9 +830,6 @@ export let Dock = GObject.registerClass(
           dx = original_pos[1] - py;
         }
         if (dx * dx < threshold * threshold && nearestIcon) {
-          if (icon._label.visible) {
-            scale += 0.125;
-          }
           let adx = Math.abs(dx);
           let p = 1.0 - adx / threshold;
           let fp = p * 0.6 * (1 + magnify);
@@ -860,20 +874,23 @@ export let Dock = GObject.registerClass(
       for (let i = 0; i < iconTable.length; i++) {
         if (iconTable.length < 2) break;
         let icon = iconTable[i];
-        if (icon._scale != 1) {
+        if (icon._scale > 1.1) {
           // affect spread
           let offset =
-            (icon._scale - 1) * iconSize * scaleFactor * spread * 0.8;
-
+            1.25 * (icon._scale - 1) * iconSize * scaleFactor * spread * 0.8;
+          let o = offset;
           // left
           for (let j = i - 1; j >= 0; j--) {
             let left = iconTable[j];
-            left._translate -= offset;
+            left._translate -= o;
+            o *= 0.98;
           }
           // right
+          o = offset;
           for (let j = i + 1; j < iconTable.length; j++) {
             let right = iconTable[j];
-            right._translate += offset;
+            right._translate += o;
+            o *= 0.98;
           }
         }
       }

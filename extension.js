@@ -48,8 +48,7 @@ export default class Dash2DockLiteExt extends Extension {
   createDock() {
     let d = new Dock({ extension: this });
     d.extension = this;
-    d.addToChrome();
-    d.layout();
+    d.dock();
     this.dock = d;
     this.docks.push(this.dock);
     this.listeners = [this.services, ...this.docks];
@@ -85,7 +84,6 @@ export default class Dash2DockLiteExt extends Extension {
       for (let i = 0; i < count; i++) {
         let d = this.createDock();
         d._monitorIndex = i;
-        d._beginAnimation();
       }
     }
   }

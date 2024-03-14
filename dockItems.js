@@ -34,6 +34,8 @@ export const DockBackground = GObject.registerClass(
         dashContainer,
       } = params;
 
+      if (!first || !last) return;
+
       let p1 = first.get_transformed_position();
       let p2 = last.get_transformed_position();
 

@@ -44,7 +44,6 @@ const ANIM_ICON_SCALE = 1.5;
 const ANIM_ICON_HIT_AREA = 2.5;
 const ANIM_REENABLE_DELAY = 250;
 const ANIM_DEBOUNCE_END_DELAY = 750;
-const ANIM_PREVIEW_DURATION = 1200;
 
 const MIN_SCROLL_RESOLUTION = 4;
 const MAX_SCROLL_RESOLUTION = 10;
@@ -117,6 +116,12 @@ export let Dock = GObject.registerClass(
         this.autohider._onLeaveEvent.bind(this.autohider),
         this
       );
+    }
+
+    dock() {
+      this.addToChrome();
+      this.layout();
+      this._beginAnimation();
     }
 
     undock() {
@@ -654,11 +659,17 @@ export let Dock = GObject.registerClass(
     }
 
     animate() {
+      let simulation = false;
       // this._hidden = true;
       this.layout();
 
       let m = this.getMonitor();
       let pointer = global.get_pointer();
+      if (this.extension.simulated_pointer) {
+        pointer = [...this.extension.simulated_pointer];
+        simulation = true;
+      }
+
       let vertical = this.isVertical();
 
       let [px, py] = pointer;
@@ -735,7 +746,7 @@ export let Dock = GObject.registerClass(
       });
 
       let noAnimation = !this.extension.animate_icons_unmute;
-      if ((!this._preview && !isWithin) || noAnimation) {
+      if ((!simulation && !isWithin) || noAnimation) {
         nearestIcon = null;
       }
 
@@ -1007,13 +1018,17 @@ export let Dock = GObject.registerClass(
             dots.width = icon._icon.width;
             dots.height = icon._icon.height;
             dots.pivot_point = icon._icon.pivot_point;
-            dots.translationX =
-              icon._icon.translationX +
-              vertical * (this._position == 'left' ? -6 : 6);
-            dots.translationY =
-              this._position == 'bottom'
-                ? icon._icon.translationY + !vertical * 8
-                : -(icon._icon.translationY + !vertical * 8);
+
+            if (vertical) {
+              dots.translationX =
+                icon._icon.translationX +
+                (this._position == 'left' ? -6 : 6);
+              dots.translationY = icon._icon.translationY;
+            } else {
+              dots.translationX = icon._icon.translationX;
+              dots.translationY = icon._icon.translationY + 
+                (this._position == 'bottom' ? 8 : -8);
+            }
 
             let options = this.extension.running_indicator_style_options;
             let running_indicator_style =

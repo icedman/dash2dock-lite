@@ -188,14 +188,14 @@ function addMotionTests(_seqs, extension, settings) {
     delay: 1000,
   });
 
-  _seqs.push({
-    func: () => {
-      extension._autohiders().forEach((autohider) => {
-        autohider.preview();
-      });
-    },
-    delay: 500,
-  });
+  // _seqs.push({
+  //   func: () => {
+  //     extension._autohiders().forEach((autohider) => {
+  //       autohider.preview();
+  //     });
+  //   },
+  //   delay: 500,
+  // });
   add_move_pointer(_seqs, 0, 0, 1, extension);
 
   add_slide_pointer(_seqs, x, y + h / 2, x + w, y + h / 2, 40, 1.8, extension);
@@ -206,9 +206,9 @@ function addMotionTests(_seqs, extension, settings) {
 
   _seqs.push({
     func: () => {
-      extension._autohiders().forEach((autohider) => {
-        autohider.preview(false);
-      });
+      // extension._autohiders().forEach((autohider) => {
+      //   autohider.preview(false);
+      // });
       settings.setValue('animate-icons', anim);
       settings.setValue('autohide-dash', hide);
     },

@@ -14,7 +14,6 @@ const HIDE_ANIMATION_INTERVAL = 15;
 const HIDE_ANIMATION_INTERVAL_PAD = 15;
 const DEBOUNCE_HIDE_TIMEOUT = 120;
 const PRESSURE_SENSE_DISTANCE = 20;
-const HIDE_PREVIEW_DURATION = 750;
 
 const DWELL_COUNT = 24;
 
@@ -178,15 +177,6 @@ export let AutoHide = class {
     }
   }
 
-  preview(do_preview) {
-    if (do_preview === false) {
-      this._preview = null;
-    } else {
-      this._preview = HIDE_PREVIEW_DURATION;
-    }
-    this._checkHide();
-  }
-
   _checkOverlap() {
     if (this.extension._inOverview) {
       return false;
@@ -288,10 +278,6 @@ export let AutoHide = class {
     });
 
     this.windows = windows;
-
-    if (this._preview && this._preview > 0) {
-      return true;
-    }
 
     return isOverlapped;
   }

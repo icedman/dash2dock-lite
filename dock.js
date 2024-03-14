@@ -153,6 +153,11 @@ export let Dock = GObject.registerClass(
       this.autohider._debounceCheckHide();
       return Clutter.EVENT_PROPAGATE;
     }
+    _onFullScreen() {
+      this._beginAnimation();
+      this.autohider._debounceCheckHide();
+      return Clutter.EVENT_PROPAGATE;
+    }
     _onAppsChanged(evt) {
       this._icons = null;
       this._beginAnimation();
@@ -292,64 +297,6 @@ export let Dock = GObject.registerClass(
 
       this._iconSize = iconSize;
       return iconSize;
-    }
-
-    _maybeMinimizeOrMaximize(app) {
-      let windows = app.get_windows();
-      if (!windows.length) return;
-
-      let event = Clutter.get_current_event();
-      let modifiers = event ? event.get_state() : 0;
-      let pressed = event.type() == Clutter.EventType.BUTTON_PRESS;
-      let button1 = (modifiers & Clutter.ModifierType.BUTTON1_MASK) != 0;
-      let button2 = (modifiers & Clutter.ModifierType.BUTTON2_MASK) != 0;
-      let button3 = (modifiers & Clutter.ModifierType.BUTTON3_MASK) != 0;
-      let shift = (modifiers & Clutter.ModifierType.SHIFT_MASK) != 0;
-      let isMiddleButton = button3; // middle?
-      let isCtrlPressed = (modifiers & Clutter.ModifierType.CONTROL_MASK) != 0;
-      let openNewWindow =
-        app.can_open_new_window() &&
-        app.state == Shell.AppState.RUNNING &&
-        (isCtrlPressed || isMiddleButton);
-      if (openNewWindow) return;
-
-      let workspaceManager = global.workspace_manager;
-      let activeWs = workspaceManager.get_active_workspace();
-      let focusedWindow = null;
-
-      windows.forEach((w) => {
-        if (w.has_focus()) {
-          focusedWindow = w;
-        }
-      });
-
-      // delay - allow dash to actually call 'activate' first
-      if (focusedWindow) {
-        this.extension._hiTimer.runOnce(() => {
-          if (shift) {
-            if (focusedWindow.get_maximized() == 3) {
-              focusedWindow.unmaximize(3);
-            } else {
-              focusedWindow.maximize(3);
-            }
-          } else {
-            windows.forEach((w) => {
-              w.minimize();
-            });
-          }
-        }, 50);
-      } else {
-        this.extension._hiTimer.runOnce(() => {
-          windows.forEach((w) => {
-            if (w.is_hidden()) {
-              w.unminimize();
-              if (w.has_focus()) {
-                w.raise();
-              }
-            }
-          });
-        }, 50);
-      }
     }
 
     _findIcons() {
@@ -878,13 +825,18 @@ export let Dock = GObject.registerClass(
         }
 
         icon.opacity = icon == this._dragged && this._dragging ? 50 : 255;
+        icon._prevTranslate = icon._translate;
       });
 
       // spread
+      let largestScale = null;
       for (let i = 0; i < iconTable.length; i++) {
         if (iconTable.length < 2) break;
         let icon = iconTable[i];
         if (icon._scale > 1.1) {
+          if (largestScale == null || largestScale._scale < icon._scale) {
+            largestScale = icon;
+          }
           // affect spread
           let offset =
             1.25 * (icon._scale - 1) * iconSize * scaleFactor * spread * 0.8;
@@ -892,17 +844,33 @@ export let Dock = GObject.registerClass(
           // left
           for (let j = i - 1; j >= 0; j--) {
             let left = iconTable[j];
-            left._translate -= o;
+            left._translate -= offset;
             o *= 0.98;
           }
           // right
           o = offset;
           for (let j = i + 1; j < iconTable.length; j++) {
             let right = iconTable[j];
-            right._translate += o;
+            right._translate += offset;
             o *= 0.98;
           }
         }
+      }
+
+      // re-center to hovered icon
+      let TRANSLATE_COEF = 24;
+      if (largestScale) {
+        largestScale._targetScale += 0.1;
+        let adjust = largestScale._translate / 2;
+        // console.log(largestScale._icon.gicon.get_names());
+        animateIcons.forEach((icon) => {
+          if (icon._scale > 1) {
+            let o = -adjust * (2 - icon._scale);
+            let nt = icon._translate - o;
+            icon._translate =
+              (icon._translate * TRANSLATE_COEF + nt) / (TRANSLATE_COEF + 1);
+          }
+        });
       }
 
       //-------------------
@@ -1241,6 +1209,71 @@ export let Dock = GObject.registerClass(
       }
     }
 
+    cancelAnimations() {
+      this.extension._hiTimer.cancel(this._animationSeq);
+      this._animationSeq = null;
+      this.extension._hiTimer.cancel(this.autohider._animationSeq);
+      this.autohider._animationSeq = null;
+    }
+
+    _maybeMinimizeOrMaximize(app) {
+      let windows = app.get_windows();
+      if (!windows.length) return;
+
+      let event = Clutter.get_current_event();
+      let modifiers = event ? event.get_state() : 0;
+      let pressed = event.type() == Clutter.EventType.BUTTON_PRESS;
+      let button1 = (modifiers & Clutter.ModifierType.BUTTON1_MASK) != 0;
+      let button2 = (modifiers & Clutter.ModifierType.BUTTON2_MASK) != 0;
+      let button3 = (modifiers & Clutter.ModifierType.BUTTON3_MASK) != 0;
+      let shift = (modifiers & Clutter.ModifierType.SHIFT_MASK) != 0;
+      let isMiddleButton = button3; // middle?
+      let isCtrlPressed = (modifiers & Clutter.ModifierType.CONTROL_MASK) != 0;
+      let openNewWindow =
+        app.can_open_new_window() &&
+        app.state == Shell.AppState.RUNNING &&
+        (isCtrlPressed || isMiddleButton);
+      if (openNewWindow) return;
+
+      let workspaceManager = global.workspace_manager;
+      let activeWs = workspaceManager.get_active_workspace();
+      let focusedWindow = null;
+
+      windows.forEach((w) => {
+        if (w.has_focus()) {
+          focusedWindow = w;
+        }
+      });
+
+      // delay - allow dash to actually call 'activate' first
+      if (focusedWindow) {
+        this.extension._hiTimer.runOnce(() => {
+          if (shift) {
+            if (focusedWindow.get_maximized() == 3) {
+              focusedWindow.unmaximize(3);
+            } else {
+              focusedWindow.maximize(3);
+            }
+          } else {
+            windows.forEach((w) => {
+              w.minimize();
+            });
+          }
+        }, 50);
+      } else {
+        this.extension._hiTimer.runOnce(() => {
+          windows.forEach((w) => {
+            if (w.is_hidden()) {
+              w.unminimize();
+              if (w.has_focus()) {
+                w.raise();
+              }
+            }
+          });
+        }, 50);
+      }
+    }
+
     _maybeBounce(container) {
       if (!this.extension.open_app_animation) {
         return;
@@ -1261,7 +1294,7 @@ export let Dock = GObject.registerClass(
       appwell.translation_y = 0;
 
       let icon = appwell.get_parent()._icon;
-      
+
       let t = 250;
       let _frames = [
         {
@@ -1269,8 +1302,7 @@ export let Dock = GObject.registerClass(
           _func: (f, s) => {
             let res = Linear.easeNone(f._time, 0, travel, f._duration);
             if (this.isVertical()) {
-              appwell.translation_x =
-                this._position == 'left' ? res : -res;
+              appwell.translation_x = this._position == 'left' ? res : -res;
               if (icon._badge) {
                 icon._badge.translation_x = appwell.translation_x;
               }
@@ -1420,13 +1452,6 @@ export let Dock = GObject.registerClass(
           activeWs.activate_with_focus(window, global.get_current_time());
         }
       }
-    }
-
-    cancelAnimations() {
-      this.extension._hiTimer.cancel(this._animationSeq);
-      this._animationSeq = null;
-      this.extension._hiTimer.cancel(this.autohider._animationSeq);
-      this.autohider._animationSeq = null;
     }
   }
 );

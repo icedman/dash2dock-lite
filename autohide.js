@@ -252,7 +252,10 @@ export let AutoHide = class {
         if (this.dashContainer._position == 'right') {
           // right
           if (frame.x + frame.width >= rect.x) {
-            if (frame.x < this.dashContainer._monitor.x + this.dashContainer._monitor.width) {
+            if (
+              frame.x <
+              this.dashContainer._monitor.x + this.dashContainer._monitor.width
+            ) {
               isOverlapped = true;
             }
           }
@@ -267,7 +270,10 @@ export let AutoHide = class {
       } else {
         if (frame.y + frame.height >= rect.y) {
           // bottom
-          if (frame.y < this.dashContainer._monitor.y + this.dashContainer._monitor.height) {
+          if (
+            frame.y <
+            this.dashContainer._monitor.y + this.dashContainer._monitor.height
+          ) {
             isOverlapped = true;
           }
         }

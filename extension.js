@@ -92,8 +92,8 @@ export default class Dash2DockLiteExt extends Extension {
 
   destroyDocks() {
     (this.docks || []).forEach((dock) => {
-      dock.cancelAnimations();
       dock.undock();
+      dock.cancelAnimations();
       this.dock = null;
     });
     this.docks = [];
@@ -140,7 +140,6 @@ export default class Dash2DockLiteExt extends Extension {
     // service
     this.services = new Services();
     this.services.extension = this;
-
 
     // todo follow animator and autohider protocol
     this.services.enable();
@@ -464,6 +463,12 @@ export default class Dash2DockLiteExt extends Extension {
       this
     );
 
+    Main.sessionMode.connectObject(
+      'updated',
+      this._onSessionUpdated.bind(this),
+      this
+    );
+
     Main.layoutManager.connectObject(
       // 'startup-complete',
       // this.startUp.bind(this),
@@ -556,6 +561,31 @@ export default class Dash2DockLiteExt extends Extension {
     listeners.forEach((l) => {
       if (l._onFullScreen) l._onFullScreen();
     });
+  }
+
+  _onOverviewShowing() {
+    this._inOverview = true;
+    this._autohiders().forEach((autohider) => {
+      autohider._debounceCheckHide();
+    });
+  }
+
+  _onOverviewHidden() {
+    this._inOverview = false;
+    this._autohiders().forEach((autohider) => {
+      autohider._debounceCheckHide();
+    });
+  }
+
+  _onSessionUpdated() {
+    this.animate();
+  }
+
+  _onCheckServices() {
+    if (!this.services) return; // todo why does this happen?
+    // todo convert services time in seconds
+    this.services.update(SERVICES_UPDATE_INTERVAL);
+    this._updateTrashIcon();
   }
 
   _updateAnimationFPS() {
@@ -743,37 +773,6 @@ export default class Dash2DockLiteExt extends Extension {
 
   _updateTrashIcon() {
     this.services.updateTrashIcon(this.trash_icon);
-  }
-
-  _onOverviewShowing() {
-    this._inOverview = true;
-    this._autohiders().forEach((autohider) => {
-      autohider._debounceCheckHide();
-    });
-    // log('_onOverviewShowing');
-  }
-
-  _onOverviewHidden() {
-    this._inOverview = false;
-    this._autohiders().forEach((autohider) => {
-      autohider._debounceCheckHide();
-    });
-    // log('_onOverviewHidden');
-  }
-
-  _onSessionUpdated() {
-    this._animators().forEach((animator) => {
-      if (animator) {
-        animator.relayout();
-      }
-    });
-  }
-
-  _onCheckServices() {
-    if (!this.services) return; // todo why does this happen?
-    // todo convert services time in seconds
-    this.services.update(SERVICES_UPDATE_INTERVAL);
-    this._updateTrashIcon();
   }
 
   runDiagnostics() {

@@ -113,7 +113,6 @@ export let AutoHide = class {
           this.last_pointer = pointer;
         }
       }
-
       if (this._dwell > DWELL_COUNT) {
         this.show();
       }
@@ -246,7 +245,6 @@ export let AutoHide = class {
     let isOverlapped = false;
     windows.forEach((w) => {
       let frame = w.get_frame_rect();
-      console.log(`${frame.x} + ${frame.height}`);
       // todo .. make accurate to work with multi-monitor
       if (this.dashContainer.isVertical()) {
         if (this.dashContainer._position == 'right') {
@@ -268,10 +266,10 @@ export let AutoHide = class {
           }
         }
       } else {
-        if (this.dashContainer._position == 'right') {
+        if (this.dashContainer._position == 'top') {
           // top
           if (
-            frame.y < rect.y + rect.h &&
+            frame.y <= rect.y + rect.h &&
             frame.y + frame.height > this.dashContainer._monitor.y
           ) {
             isOverlapped = true;
@@ -294,6 +292,7 @@ export let AutoHide = class {
     if (this._preview && this._preview > 0) {
       return true;
     }
+
     return isOverlapped;
   }
 

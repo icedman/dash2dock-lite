@@ -982,7 +982,7 @@ export let Dock = GObject.registerClass(
               count: noticesCount,
               color: notification_badge_color || [1, 1, 1, 1],
               style: notification_badge_style || 'default',
-              rotate: 180,
+              rotate: this._position == 'bottom' ? 180 : 0,
               translate: [0.4, 0],
             });
             badge.show();
@@ -1010,7 +1010,10 @@ export let Dock = GObject.registerClass(
             dots.translationX =
               icon._icon.translationX +
               vertical * (this._position == 'left' ? -6 : 6);
-            dots.translationY = icon._icon.translationY + !vertical * 8;
+            dots.translationY =
+              this._position == 'bottom'
+                ? icon._icon.translationY + !vertical * 8
+                : -(icon._icon.translationY + !vertical * 8);
 
             let options = this.extension.running_indicator_style_options;
             let running_indicator_style =
@@ -1022,7 +1025,13 @@ export let Dock = GObject.registerClass(
               count: appCount,
               color: running_indicator_color || [1, 1, 1, 1],
               style: running_indicator_style || 'default',
-              rotate: vertical ? (this._position == 'right' ? -90 : 90) : 0,
+              rotate: vertical
+                ? this._position == 'right'
+                  ? -90
+                  : 90
+                : this._position == 'top'
+                ? 180
+                : 0,
             });
             dots.show();
           } else {
@@ -1073,10 +1082,10 @@ export let Dock = GObject.registerClass(
               scaleFactor;
           }
         } else {
-                    if (this._position == 'bottom') {
-          targetY =
-            (this._background.height - this._edge_distance * -ed * 2) *
-            scaleFactor;
+          if (this._position == 'bottom') {
+            targetY =
+              (this._background.height - this._edge_distance * -ed * 2) *
+              scaleFactor;
           } else {
             targetY =
               -(this._background.height + this._edge_distance * -ed * 2) *
@@ -1321,7 +1330,8 @@ export let Dock = GObject.registerClass(
                 icon._badge.translation_x = appwell.translation_x;
               }
             } else {
-              appwell.translation_y = -res;
+              // appwell.translation_y = -res;
+              appwell.translation_y = this._position == 'bottom' ? -res : res;
             }
           },
         },
@@ -1333,7 +1343,8 @@ export let Dock = GObject.registerClass(
               appwell.translation_x = appwell.translation_x =
                 this._position == 'left' ? res : -res;
             } else {
-              appwell.translation_y = -res;
+              // appwell.translation_y = -res;
+              appwell.translation_y = this._position == 'bottom' ? -res : res;
             }
           },
         },

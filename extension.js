@@ -18,7 +18,10 @@
  */
 
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
+import * as Fav from 'resource:///org/gnome/shell/ui/appFavorites.js';
+
 import St from 'gi://St';
+import Shell from 'gi://Shell';
 
 import { Timer } from './timer.js';
 import { Style } from './style.js';
@@ -42,9 +45,61 @@ const ANIM_INTERVAL = 15;
 const ANIM_INTERVAL_PAD = 15;
 
 export default class Dash2DockLiteExt extends Extension {
+  createDock() {
+    let d = new Dock({ extension: this });
+    d.extension = this;
+    d.addToChrome();
+    d.layout();
+    this.dock = d;
+    this.docks.push(this.dock);
+    this.listeners = [this.services, ...this.docks];
+    return d;
+  }
+
+  createTheDocks() {
+    this.docks = this.docks ?? [];
+
+    // only one dock
+    if (
+      Main.layoutManager.monitors.length == 1 ||
+      this.multi_monitor_preference == 0
+    ) {
+      if (this.docks.length > 1) {
+        this.destroyDocks();
+      }
+      if (this.docks.length == 0) {
+        this.createDock();
+      }
+      return;
+    }
+
+    if (
+      Main.layoutManager.monitors.length > 0 &&
+      this.multi_monitor_preference == 1
+    ) {
+      let count = Main.layoutManager.monitors.length;
+      if (count != this.docks.length) {
+        this.destroyDocks();
+      }
+
+      for (let i = 0; i < count; i++) {
+        let d = this.createDock();
+        d._monitorIndex = i;
+        d._beginAnimation();
+      }
+    }
+  }
+
+  destroyDocks() {
+    (this.docks || []).forEach((dock) => {
+      dock.undock();
+      dock.cancelAnimations();
+      this.dock = null;
+    });
+    this.docks = [];
+  }
+
   enable() {
-    this.containers = [];
-    
     // for debugging - set to 255
     this._dash_opacity = 0;
 
@@ -77,22 +132,17 @@ export default class Dash2DockLiteExt extends Extension {
       this._settingsKeys.setValue('animate-icons', true);
     }
 
-    Main.overview.dash.last_child.visible = false;
+    Main.overview.dash.last_child.reactive = false;
     Main.overview.dash.opacity = 0;
+
+    this.docks = [];
 
     // service
     this.services = new Services();
     this.services.extension = this;
 
-    this.dashContainer = new Dock(this);
-    this._queryDisplay();
-    this.dashContainer.dock();
-
     // todo follow animator and autohider protocol
     this.services.enable();
-
-    this.listeners = [this.services];
-    this.containers = [this.dashContainer];
 
     this._onCheckServices();
 
@@ -103,9 +153,12 @@ export default class Dash2DockLiteExt extends Extension {
     this._updateLayout();
     this._updateAutohide();
     this._updateTrashIcon();
-    this._updateStyle();
 
     this._addEvents();
+
+    this._queryDisplay();
+
+    this._updateStyle();
 
     this.startUp();
 
@@ -132,15 +185,14 @@ export default class Dash2DockLiteExt extends Extension {
     Main.overview.dash.last_child.visible = true;
     Main.overview.dash.opacity = 255;
 
-    this.containers.forEach((container) => {
+    this.docks.forEach((container) => {
       container.undock();
-      Main.layoutManager.removeChrome(container);
     });
-    this.containers = [];
-    this.dashContainer = null;
+    this.docks = [];
+
+    this.destroyDocks();
 
     this.services.disable();
-    delete this.services;
     this.services = null;
 
     this._timer = null;
@@ -155,81 +207,48 @@ export default class Dash2DockLiteExt extends Extension {
   }
 
   animate() {
-    this.containers.forEach((container) => {
-      container._onEnterEvent();
+    this.docks.forEach((dock) => {
+      dock._beginAnimation();
     });
   }
 
   startUp() {
-    this._animators().forEach((animator) => {
-      animator._invisible(true, true);
+    this.createTheDocks();
+    this._updateLayout();
+    this.animate();
+    this.docks.forEach((dock) => {
+      dock._debounceEndAnimation();
     });
-
-    // todo... refactor this
-    if (!this._startupSeq) {
-      let func = () => {
-        this._updateLayout();
-        this.animate();
-        if (!this._vertical) {
-          this._animators().forEach((animator) => {
-            animator._invisible(false, false);
-          });
-        }
-      };
-      this._startupSeq = this._hiTimer.runSequence([
-        { func, delay: 50 },
-        { func, delay: 500 },
-        {
-          func: () => {
-            this._animators().forEach((animator) => {
-              animator._invisible(false, false);
-            });
-          },
-          delay: 50,
-        },
-        {
-          func: () => {
-            this._animators().forEach((animator) => {
-              animator._invisible(false, false);
-            });
-          },
-          delay: 250,
-        },
-      ]);
-    } else {
-      this._hiTimer.runSequence(this._startupSeq);
-    }
   }
 
-  _queryDisplay() {
+  _autohiders() {
+    return this.docks.map((d) => {
+      return d.autohider;
+    });
+  }
+
+  // to be called by docks
+  _queryDisplay(currentMonitorIndex) {
+    if (
+      Main.layoutManager.monitors.length > 0 &&
+      this.multi_monitor_preference > 0
+    ) {
+      // if multi-monitor ... left _updateLayout take care of updating the docks
+      return currentMonitorIndex;
+    }
+
     let idx = this.preferred_monitor || 0;
     if (idx == 0) {
       idx = Main.layoutManager.primaryIndex;
     } else if (idx == Main.layoutManager.primaryIndex) {
       idx = 0;
     }
-    this.monitor = Main.layoutManager.monitors[idx];
 
-    if (!this.monitor) {
-      this.monitor = Main.layoutManager.primaryMonitor;
+    if (!Main.layoutManager.monitors[idx]) {
       idx = Main.layoutManager.primaryIndex;
     }
 
-    // todo ... single container
-    if (this.dashContainer) {
-      this.dashContainer._monitorIndex = idx;
-      this.dashContainer._monitor = this.monitor;
-      this.dashContainer._monitorIsPrimary =
-        this.monitor == Main.layoutManager.primaryMonitor;
-    }
-
-    if (this._last_monitor_count != Main.layoutManager.monitors.length) {
-      this._settings.set_int(
-        'monitor-count',
-        Main.layoutManager.monitors.length
-      );
-      this._last_monitor_count = Main.layoutManager.monitors.length;
-    }
+    return idx;
   }
 
   _enableSettings() {
@@ -267,10 +286,6 @@ export default class Dash2DockLiteExt extends Extension {
         case 'animation-rise':
         case 'animation-bounce': {
           if (this.animate_icons) {
-            this._animators().forEach((animator) => {
-              animator.preview();
-            });
-            this.animate();
           }
           break;
         }
@@ -282,15 +297,10 @@ export default class Dash2DockLiteExt extends Extension {
           break;
         }
         case 'apps-icon':
+        case 'apps-icon-front':
         case 'calendar-icon':
-        case 'clock-icon': {
-          this.animate();
-          break;
-        }
+        case 'clock-icon':
         case 'favorites-only': {
-          this._animators().forEach((animator) => {
-            animator.relayout();
-          });
           this._updateLayout();
           this.animate();
           break;
@@ -298,49 +308,34 @@ export default class Dash2DockLiteExt extends Extension {
         // problematic settings needing animator restart
         case 'dock-location':
         case 'icon-resolution': {
-          this._disable_borders = this.border_radius > 0;
           this._updateIconResolution();
-          this._animators().forEach((animator) => {
-            animator._previousFind = null;
-            animator._iconsContainer.clear();
-          });
-          if (this.autohide_dash) {
-            this._autohiders().forEach((autohider) => {
-              autohider.disable();
-              autohider.enable();
-            });
-          }
-
-          this._animators().forEach((animator) => {
-            animator._background.visible = false;
-          });
           this._updateStyle();
           this._updateLayout();
+          this._updateIconSpacing();
           this.animate();
           break;
         }
         case 'icon-effect': {
-          if (this.animate_icons) {
-            this._animators().forEach((animator) => {
-              animator._updateIconEffect();
-            });
-            this._updateLayout();
-            this.animate();
-          }
+          this.docks.forEach((dock) => {
+            dock._updateIconEffect();
+          });
           break;
         }
         case 'icon-effect-color': {
-          if (this.animate_icons) {
-            this._animators().forEach((animator) => {
-              if (animator.iconEffect) {
-                animator.iconEffect.color = this.icon_effect_color;
-              }
-            });
-            this.animate();
-          }
+          this.docks.forEach((dock) => {
+            if (dock.iconEffect) {
+              dock.iconEffect.color = this.icon_effect_color;
+            }
+          });
+          this.animate();
+          break;
+        }
+        case 'icon-spacing': {
+          this._updateIconSpacing();
           break;
         }
         case 'icon-size':
+        case 'multi-monitor-preference':
         case 'preferred-monitor': {
           this._updateLayout();
           this.animate();
@@ -351,6 +346,7 @@ export default class Dash2DockLiteExt extends Extension {
           this._updateAutohide();
           break;
         }
+        case 'dock-padding':
         case 'edge-distance': {
           this.animate();
           break;
@@ -416,17 +412,41 @@ export default class Dash2DockLiteExt extends Extension {
   }
 
   _addEvents() {
-    // Main.sessionMode.connectObject(
-    //   'updated',
-    //   () => this._onSessionUpdated(),
-    //   this
-    // );
+    this._appSystem = Shell.AppSystem.get_default();
+
+    this._appSystem.connectObject(
+      'installed-changed',
+      () => {
+        this._onAppsChanged();
+      },
+      'app-state-changed',
+      () => {
+        this._onAppsChanged();
+      },
+      this
+    );
+
+    this._appFavorites = Fav.getAppFavorites();
+    this._appFavorites.connectObject(
+      'changed',
+      () => {
+        this._onAppsChanged();
+      },
+      this
+    );
+
+    Main.sessionMode.connectObject(
+      'updated',
+      this._onSessionUpdated.bind(this),
+      this
+    );
 
     Main.layoutManager.connectObject(
       // 'startup-complete',
       // this.startUp.bind(this),
       'monitors-changed',
       () => {
+        this.createTheDocks();
         this._updateLayout();
         this.animate();
       },
@@ -443,10 +463,6 @@ export default class Dash2DockLiteExt extends Extension {
     );
 
     global.display.connectObject(
-      // 'window-demands-attention',
-      // () => { log('window-demands-attention') },
-      // 'window-marked-urgent',
-      // () => { log('window-marked-urgent') },
       'notify::focus-window',
       this._onFocusWindow.bind(this),
       'in-fullscreen-changed',
@@ -479,7 +495,8 @@ export default class Dash2DockLiteExt extends Extension {
   }
 
   _removeEvents() {
-    // Main.sessionMode.disconnectObject(this);
+    this._appSystem.disconnectObject(this);
+    this._appFavorites.disconnectObject(this);
     Main.messageTray.disconnectObject(this);
     Main.overview.disconnectObject(this);
     Main.layoutManager.disconnectObject(this);
@@ -493,59 +510,59 @@ export default class Dash2DockLiteExt extends Extension {
       this.services.disable();
       this.services.enable();
     }
-    this._animators().forEach((animator) => {
-      animator._previousFind = null;
-      animator._iconsContainer.clear();
-    });
     this._updateStyle();
     this.animate();
   }
 
-  _animators() {
-    return this.containers.map((c) => {
-      return c.animator;
-    });
-  }
-
-  _autohiders() {
-    return this.containers.map((c) => {
-      return c.autohider;
-    });
-  }
-
   _onFocusWindow() {
-    let listeners = [
-      ...this.listeners,
-      ...this._animators(),
-      ...this._autohiders(),
-    ];
-    listeners
-      .filter((l) => {
-        return l._enabled;
-      })
-      .forEach((l) => {
-        if (l._onFocusWindow) l._onFocusWindow();
-      });
+    let listeners = [...this.listeners];
+    listeners.forEach((l) => {
+      if (l._onFocusWindow) l._onFocusWindow();
+    });
+  }
+
+  _onAppsChanged() {
+    let listeners = [...this.listeners];
+    listeners.forEach((l) => {
+      if (l._onAppsChanged) l._onAppsChanged();
+    });
   }
 
   _onFullScreen() {
-    let listeners = [
-      ...this.listeners,
-      ...this._animators(),
-      ...this._autohiders(),
-    ];
-    listeners
-      .filter((l) => {
-        return l._enabled;
-      })
-      .forEach((l) => {
-        if (l._onFullScreen) l._onFullScreen();
-      });
+    let listeners = [...this.listeners];
+    listeners.forEach((l) => {
+      if (l._onFullScreen) l._onFullScreen();
+    });
+  }
+
+  _onOverviewShowing() {
+    this._inOverview = true;
+    this._autohiders().forEach((autohider) => {
+      autohider._debounceCheckHide();
+    });
+  }
+
+  _onOverviewHidden() {
+    this._inOverview = false;
+    this._autohiders().forEach((autohider) => {
+      autohider._debounceCheckHide();
+    });
+  }
+
+  _onSessionUpdated() {
+    this.animate();
+  }
+
+  _onCheckServices() {
+    if (!this.services) return; // todo why does this happen?
+    // todo convert services time in seconds
+    this.services.update(SERVICES_UPDATE_INTERVAL);
+    this._updateTrashIcon();
   }
 
   _updateAnimationFPS() {
-    this.containers.forEach((container) => {
-      container.cancelAnimations();
+    this.docks.forEach((dock) => {
+      dock.cancelAnimations();
     });
     this.animationInterval =
       ANIM_INTERVAL + (this.animation_fps || 0) * ANIM_INTERVAL_PAD;
@@ -570,9 +587,9 @@ export default class Dash2DockLiteExt extends Extension {
     }
 
     if (this.animate_icons) {
-      this._animators().forEach((animator) => {
-        animator.relayout();
-      });
+      // this._animators().forEach((animator) => {
+      //   animator.relayout();
+      // });
     }
   }
 
@@ -673,20 +690,34 @@ export default class Dash2DockLiteExt extends Extension {
             'border-top: 0px; border-right: 0px; border-bottom: 0px;';
         }
       }
-      this._animators().forEach((animator) => {
-        animator._background.style = `border: ${this.border_thickness}px solid rgba(${rgba}) !important; ${disable_borders}`;
+      this.docks.forEach((dock) => {
+        dock._background.style = `border: ${this.border_thickness}px solid rgba(${rgba}) !important; ${disable_borders}`;
       });
     } else {
-      this._animators().forEach((animator) => {
-        animator._background.style = '';
+      this.docks.forEach((dock) => {
+        dock._background.style = '';
       });
     }
   }
 
   _updateLayout(disable) {
-    this.containers.forEach((container) => {
-      container.layout(disable);
+    // console.log(this.multi_monitor_preference);
+    this.docks.forEach((dock) => {
+      dock._icons = null;
+      dock.layout();
     });
+  }
+
+  _updateIconSpacing(disable) {
+    this._loTimer.runOnce(() => {
+      this.docks.forEach((dock) => {
+        dock._findIcons();
+        dock._icons?.forEach((icon) => {
+          icon.style = '';
+        });
+        dock._beginAnimation();
+      });
+    }, 750);
   }
 
   _updateAutohide(disable) {
@@ -701,9 +732,9 @@ export default class Dash2DockLiteExt extends Extension {
     }
 
     if (!disable) {
-      this.containers.forEach((container) => {
-        container.removeFromChrome();
-        container.addToChrome();
+      this.docks.forEach((dock) => {
+        dock.removeFromChrome();
+        dock.addToChrome();
       });
     }
 
@@ -714,41 +745,6 @@ export default class Dash2DockLiteExt extends Extension {
 
   _updateTrashIcon() {
     this.services.updateTrashIcon(this.trash_icon);
-  }
-
-  _onOverviewShowing() {
-    this._inOverview = true;
-    this._autohiders().forEach((autohider) => {
-      if (autohider._enabled) {
-        autohider._debounceCheckHide();
-      }
-    });
-    // log('_onOverviewShowing');
-  }
-
-  _onOverviewHidden() {
-    this._inOverview = false;
-    this._autohiders().forEach((autohider) => {
-      if (autohider._enabled) {
-        autohider._debounceCheckHide();
-      }
-    });
-    // log('_onOverviewHidden');
-  }
-
-  _onSessionUpdated() {
-    this._animators().forEach((animator) => {
-      if (animator) {
-        animator.relayout();
-      }
-    });
-  }
-
-  _onCheckServices() {
-    if (!this.services) return; // todo why does this happen?
-    // todo convert services time in seconds
-    this.services.update(SERVICES_UPDATE_INTERVAL);
-    this._updateTrashIcon();
   }
 
   runDiagnostics() {

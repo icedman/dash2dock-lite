@@ -34,6 +34,18 @@
         </child>
         <child>
           <object class="AdwActionRow">
+            <property name="title" translatable="yes">Apps Icon at Front</property>
+            <property name="subtitle" translatable="yes">Position the Overview Apps icon at the front.</property>
+            <property name="activatable-widget">apps-icon-front</property>
+            <child>
+              <object class="GtkSwitch" id="apps-icon-front">
+                <property name="valign">center</property>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="AdwActionRow">
             <property name="title" translatable="yes">Trash</property>
             <property name="subtitle" translatable="yes">Add a dynamic Trash icon which changes with its state and which has access to Empty Trash action.</property>
             <property name="activatable-widget">trash-icon</property>

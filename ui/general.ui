@@ -24,13 +24,27 @@
         <child>
           <object class="AdwActionRow" id="dock-location-row">
             <property name="visible">true</property>
-            <property name="title" translatable="yes">Dock Location</property>
+            <property name="title" translatable="yes">Preferred Dock Location</property>
             <property name="subtitle" translatable="yes">Set dock position on the screen.</property>
             <property name="activatable-widget">dock-location</property>
             <child>
               <object class="GtkDropDown" id="dock-location">
                 <property name="valign">center</property>
                 <property name="model">dock-location-model</property>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="AdwActionRow">
+            <property name="visible">true</property>
+            <property name="title" translatable="yes">Multi-Monitor Strategy</property>
+            <property name="subtitle" translatable="yes">Set dock positions on multi-monitor mode.</property>
+            <property name="activatable-widget">multi-monitor-preference</property>
+            <child>
+              <object class="GtkDropDown" id="multi-monitor-preference">
+                <property name="valign">center</property>
+                <property name="model">multi-monitor-preference-model</property>
               </object>
             </child>
           </object>
@@ -130,7 +144,8 @@
           </object>
         </child>
         <child>
-          <object class="AdwActionRow">
+          <object class="AdwActionRow" id="peek-hidden-icons-row">
+            <property name="visible">true</property>
             <property name="title" translatable="yes">Peek Icons</property>
             <property name="subtitle" translatable="yes">Partially show animated icons when the dash is auto hidden.This works only when pressure sense is enabled.</property>
             <property name="activatable-widget">peek-hidden-icons</property>
@@ -236,6 +251,18 @@
       <item translatable="yes">Monitor 4</item>
       <item translatable="yes">Monitor 5</item>
       <item translatable="yes">Monitor 6</item>
+    </items>
+  </object>
+  <object class="GtkStringList" id="multi-monitor-preference-model">
+    <items>
+      <item translatable="yes">Show only one dock</item>
+      <item translatable="yes">Show on all monitors</item>
+      <!--
+      <item translatable="yes">Show on left most and right most</item>
+      <item translatable="yes">Show on left most and bottom </item>
+      <item translatable="yes">Show on bottom and right most</item>
+      <item translatable="yes">Show on left most, bottom and right most</item>
+      -->
     </items>
   </object>
   <object class="GtkStringList" id="dock-location-model">

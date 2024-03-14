@@ -12,7 +12,9 @@ export const Dot = GObject.registerClass(
   {},
   class Dot extends Clutter.Actor {
     _init(x) {
-      super._init();
+      super._init({
+        name: 'dotCanvas',
+      });
 
       if (x) size = x;
 

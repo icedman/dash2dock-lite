@@ -41,6 +41,25 @@
         </child>
         <child>
           <object class="AdwActionRow">
+            <property name="title" translatable="yes">Icons Spacing</property>
+            <property name="subtitle" translatable="yes">Adjust icons spacing.</property>
+            <property name="activatable-widget">icon-spacing</property>
+            <child>
+              <object class="GtkScale" id="icon-spacing">
+                <property name="valign">center</property>
+                <property name="hexpand">true</property>
+                <property name="width-request">140px</property>
+                <property name="draw-value">false</property>
+                <property name="value-pos">right</property>
+                <property name="orientation">horizontal</property>
+                <property name="digits">2</property>
+                <property name="adjustment">icon-spacing-adjust</property>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="AdwActionRow">
             <property name="title" translatable="yes">Icon Effect</property>
             <property name="subtitle" translatable="yes">Set icon rendering effect.</property>
             <property name="activatable-widget">icon-effect</property>
@@ -102,6 +121,25 @@
                 <property name="orientation">horizontal</property>
                 <property name="digits">2</property>
                 <property name="adjustment">edge-distance-adjust</property>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="AdwActionRow">
+            <property name="title" translatable="yes">Dock padding</property>
+            <property name="subtitle" translatable="yes">Set dash padding size.</property>
+            <property name="activatable-widget">dock-padding</property>
+            <child>
+              <object class="GtkScale" id="dock-padding">
+                <property name="valign">center</property>
+                <property name="hexpand">true</property>
+                <property name="width-request">140px</property>
+                <property name="draw-value">false</property>
+                <property name="value-pos">right</property>
+                <property name="orientation">horizontal</property>
+                <property name="digits">0</property>
+                <property name="adjustment">dock-padding-adjust</property>
               </object>
             </child>
           </object>
@@ -323,7 +361,17 @@
       </object>
     </child>
   </object>
+  <object class="GtkAdjustment" id="dock-padding-adjust">
+    <property name="lower">0.0</property>
+    <property name="upper">1.0</property>
+    <property name="step-increment">0.01</property>
+  </object>
   <object class="GtkAdjustment" id="icon-size-adjust">
+    <property name="lower">0.0</property>
+    <property name="upper">1.0</property>
+    <property name="step-increment">0.01</property>
+  </object>
+  <object class="GtkAdjustment" id="icon-spacing-adjust">
     <property name="lower">0.0</property>
     <property name="upper">1.0</property>
     <property name="step-increment">0.01</property>

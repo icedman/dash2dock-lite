@@ -4,27 +4,23 @@
      border: 2px solid magenta !important;
 }
 
-#d2dlContainer {
+#d2daDock {
 /*  border: 2px solid red; */
 }
 
-#d2dlReactExtension,
-#d2dlContainerReactive {
-/*  border: 2px solid red; */
+#d2daDockStruts {
+/*  border: 2px solid yellow; */
 }
 
-#d2dlContainer #dash * {
-/*  margin: 0px !important;*/
-/*  padding: 0px !important;*/
+#d2daDockDwell {
+/*  border: 2px solid yellow; */
 }
 
-#d2dlContainer #dash .dash-item-container {
- /* border: 2px solid red; */
-  padding-left: 0px !important;
-  padding-right: 0px !important;
+#d2daDock * {
+ margin: 0px !important;
+ padding: 0px !important;
 }
 
-#d2dlContainer #dash.dash-spread .dash-item-container  {
-  padding-left: 1px !important;
-  padding-right: 1px !important;
+#d2daDock #dash .dash-item-container {
+/* border: 2px solid magenta;*/
 }

@@ -478,9 +478,12 @@ export let Dock = GObject.registerClass(
         DockPosition.BOTTOM,
         DockPosition.LEFT,
         DockPosition.RIGHT,
+        DockPosition.TOP,
       ];
       this._position =
         locations[this.extension.dock_location] || DockPosition.BOTTOM;
+
+      // this._position = 'top';
 
       this._icons = this._findIcons();
 
@@ -1060,18 +1063,25 @@ export let Dock = GObject.registerClass(
       // dash hide/show
       if (this._hidden) {
         if (vertical) {
-          targetX =
-            (this._background.width - this._edge_distance * -ed * 2) *
-            scaleFactor;
           if (this._position == 'left') {
             targetX =
               -(this._background.width + this._edge_distance * -ed * 2) *
               scaleFactor;
+          } else {
+            targetX =
+              (this._background.width - this._edge_distance * -ed * 2) *
+              scaleFactor;
           }
         } else {
+                    if (this._position == 'bottom') {
           targetY =
             (this._background.height - this._edge_distance * -ed * 2) *
             scaleFactor;
+          } else {
+            targetY =
+              -(this._background.height + this._edge_distance * -ed * 2) *
+              scaleFactor;
+          }
         }
       }
 
@@ -1106,10 +1116,6 @@ export let Dock = GObject.registerClass(
         this.struts.y = this.y + this.height - this.struts.height;
 
         let dwellHeight = 4;
-        this.dwell.width = this.width;
-        this.dwell.height = dwellHeight;
-        this.dwell.x = this.x;
-        this.dwell.y = this.y + this.height - this.dwell.height;
         if (vertical) {
           this.dwell.width = dwellHeight;
           this.dwell.height = this.height;
@@ -1117,6 +1123,14 @@ export let Dock = GObject.registerClass(
           this.dwell.y = this.y;
           if (this._position == 'right') {
             this.dwell.x = m.x + m.width - dwellHeight;
+          }
+        } else {
+          this.dwell.width = this.width;
+          this.dwell.height = dwellHeight;
+          this.dwell.x = this.x;
+          this.dwell.y = this.y + this.height - this.dwell.height;
+          if (this._position == 'top') {
+            this.dwell.y = this.y;
           }
         }
       }

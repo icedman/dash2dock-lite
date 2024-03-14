@@ -268,8 +268,9 @@
   <object class="GtkStringList" id="dock-location-model">
     <items>
       <item translatable="yes">Bottom</item>
-      <item translatable="yes">Left (experimental)</item>
-      <item translatable="yes">Right (experimental)</item>
+      <item translatable="yes">Left</item>
+      <item translatable="yes">Right</item>
+      <item translatable="yes">Top</item>
     </items>
   </object>
   <object class="GtkStringList" id="open-app-animation-model">

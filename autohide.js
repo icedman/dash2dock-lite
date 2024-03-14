@@ -251,28 +251,37 @@ export let AutoHide = class {
       if (this.dashContainer.isVertical()) {
         if (this.dashContainer._position == 'right') {
           // right
-          if (frame.x + frame.width >= rect.x) {
-            if (
-              frame.x <
+          if (
+            frame.x + frame.width >= rect.x &&
+            frame.x <
               this.dashContainer._monitor.x + this.dashContainer._monitor.width
-            ) {
-              isOverlapped = true;
-            }
+          ) {
+            isOverlapped = true;
           }
         } else {
           // left
-          if (frame.x <= rect.x + rect.w) {
-            if (frame.x + frame.width > this.dashContainer._monitor.x) {
-              isOverlapped = true;
-            }
+          if (
+            frame.x <= rect.x + rect.w &&
+            frame.x + frame.width > this.dashContainer._monitor.x
+          ) {
+            isOverlapped = true;
           }
         }
       } else {
-        if (frame.y + frame.height >= rect.y) {
+        if (this.dashContainer._position == 'right') {
+          // top
+          if (
+            frame.y < rect.y + rect.h &&
+            frame.y + frame.height > this.dashContainer._monitor.y
+          ) {
+            isOverlapped = true;
+          }
+        } else {
           // bottom
           if (
+            frame.y + frame.height >= rect.y &&
             frame.y <
-            this.dashContainer._monitor.y + this.dashContainer._monitor.height
+              this.dashContainer._monitor.y + this.dashContainer._monitor.height
           ) {
             isOverlapped = true;
           }

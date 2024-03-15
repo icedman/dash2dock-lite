@@ -7,12 +7,15 @@ import GObject from 'gi://GObject';
 import Clutter from 'gi://Clutter';
 import Graphene from 'gi://Graphene';
 import St from 'gi://St';
-import { Dash } from 'resource:///org/gnome/shell/ui/dash.js';
+import {
+  Dash,
+  DashItemContainer,
+} from 'resource:///org/gnome/shell/ui/dash.js';
 
 import { TintEffect } from './effects/tint_effect.js';
 import { MonochromeEffect } from './effects/monochrome_effect.js';
 
-import { DockBackground } from './dockItems.js';
+import { DockItemContainer, DockBackground } from './dockItems.js';
 import { Bounce, Linear } from './effects/easing.js';
 import { AutoHide } from './autohide.js';
 import { Animator } from './animator.js';
@@ -116,6 +119,19 @@ export let Dock = GObject.registerClass(
         this.autohider._onLeaveEvent.bind(this.autohider),
         this
       );
+
+      // this.createExtraIcons();
+    }
+
+    createItem() {
+      return new DockItemContainer();
+    }
+
+    createExtraIcons() {
+      let i = this.createItem();
+      let w = new St.BoxLayout();
+      w.add_child(i);
+      this._extraIcons = w;
     }
 
     dock() {
@@ -315,6 +331,14 @@ export let Dock = GObject.registerClass(
         return this._icons;
       }
 
+      if (this._extraIcons) {
+        let p = this._extraIcons.get_parent();
+        if (p != this.dash._box) {
+          p?.remove_child(this._extraIcons);
+          this.dash._box.add_child(this._extraIcons);
+        }
+      }
+
       if (this.dash._showAppsIcon) {
         this.dash._showAppsIcon.visible = this.extension.apps_icon;
       }
@@ -369,6 +393,10 @@ export let Dock = GObject.registerClass(
       }
 
       let noAnimation = !this.extension.animate_icons_unmute;
+
+      if (this._extraIcons) {
+        icons = [...icons, ...this._extraIcons.get_children()];
+      }
 
       icons.forEach((c) => {
         // W: breakable
@@ -1021,13 +1049,12 @@ export let Dock = GObject.registerClass(
 
             if (vertical) {
               dots.translationX =
-                icon._icon.translationX +
-                (this._position == 'left' ? -6 : 6);
+                icon._icon.translationX + (this._position == 'left' ? -6 : 6);
               dots.translationY = icon._icon.translationY;
             } else {
               dots.translationX = icon._icon.translationX;
-              dots.translationY = icon._icon.translationY + 
-                (this._position == 'bottom' ? 8 : -8);
+              dots.translationY =
+                icon._icon.translationY + (this._position == 'bottom' ? 8 : -8);
             }
 
             let options = this.extension.running_indicator_style_options;

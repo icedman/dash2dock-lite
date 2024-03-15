@@ -12,6 +12,50 @@ const Point = Graphene.Point;
 
 const DOT_CANVAS_SIZE = 96;
 
+export const DockItemContainer = GObject.registerClass(
+  {},
+  class DockItemContainer extends St.Widget {
+    // appwell -> widget -> icongrid -> boxlayout -> bin -> icon
+    _init(params) {
+      super._init({
+        name: 'DockItemContainer',
+        ...(params || {}),
+      });
+
+      let appwell = new St.Widget({name:'app-well-app'});
+      let widget = new St.Widget({name:'_widget'});
+      let icongrid = new St.Widget({name:'_icongrid'});
+      let box = new St.BoxLayout({name:'_boxlayout'});
+      let bin = new St.Bin({name:'_bin'});
+
+      let gicon = new Gio.ThemedIcon({ name: 'user-trash' });
+      let icon = new St.Icon({
+        gicon,
+      });
+
+      this.add_child(appwell);
+      appwell.add_child(widget);
+      widget.add_child(icongrid);
+      icongrid.add_child(box);
+      box.add_child(bin);
+      bin.add_child(icon);
+
+      this._icon = icon;
+      this._bin = bin;
+      this._appwell = appwell;
+      appwell._dot = {
+        get_parent: () => { return this; },
+      };
+      appwell.app = {
+        get_windows: () => { return []; },
+        can_open_new_window: () => { return false; },
+        get_n_windows: () => { return 0; },
+        get_id: () => { return null },
+      }
+    }
+  }
+);
+
 export const DockBackground = GObject.registerClass(
   {},
   class DockBackground extends St.Widget {

@@ -448,9 +448,7 @@ export default class Dash2DockLiteExt extends Extension {
       // this.startUp.bind(this),
       'monitors-changed',
       () => {
-        this.createTheDocks();
-        this._updateLayout();
-        this.animate();
+        this._updateMultiMonitorPreference();
       },
       this
     );
@@ -597,6 +595,8 @@ export default class Dash2DockLiteExt extends Extension {
 
   _updateMultiMonitorPreference() {
     this.createTheDocks();
+    this._updateLayout();
+    this.animate();
   }
 
   _updateIconResolution(disable) {

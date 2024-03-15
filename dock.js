@@ -132,6 +132,7 @@ export let Dock = GObject.registerClass(
       let w = new St.BoxLayout();
       w.add_child(i);
       this._extraIcons = w;
+      return w;
     }
 
     dock() {
@@ -1160,11 +1161,27 @@ export let Dock = GObject.registerClass(
         });
 
         // allied areas
-        this.struts.width = this.width;
-        this.struts.height =
-          this._background.height + iconSize * 0.25 * scaleFactor;
-        this.struts.x = this.x;
-        this.struts.y = this.y + this.height - this.struts.height;
+        if (vertical) {
+          this.struts.width =
+            this._background.width + iconSize * 0.25 * scaleFactor;
+          this.struts.height = this.height;
+          this.struts.y = this.y;
+          if (this._position == 'right') {
+            this.struts.x = this.x + this.width - this.struts.width;
+          } else {
+            this.struts.x = this.x;
+          }
+        } else {
+          this.struts.width = this.width;
+          this.struts.height =
+            this._background.height + iconSize * 0.25 * scaleFactor;
+          this.struts.x = this.x;
+          if (this._position == 'bottom') {
+            this.struts.y = this.y + this.height - this.struts.height;
+          } else {
+            this.struts.y = this.y;
+          }
+        }
 
         let dwellHeight = 4;
         if (vertical) {

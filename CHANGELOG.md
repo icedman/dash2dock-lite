@@ -4,7 +4,12 @@
 
 # Current Issues
 
-* Autohide disabled at certain monitor layouts
+* Struts resizes at hover
+
+# Release 45
+
+* Multi-Monitor support
+* Major overhaul
 
 # Release 43
 

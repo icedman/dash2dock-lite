@@ -52,6 +52,7 @@ export default class Dash2DockLiteExt extends Extension {
     this.dock = d;
     this.docks.push(this.dock);
     this.listeners = [this.services, ...this.docks];
+    this._monitorIndex = 0;
     return d;
   }
 
@@ -84,6 +85,7 @@ export default class Dash2DockLiteExt extends Extension {
       for (let i = 0; i < count; i++) {
         let d = this.createDock();
         d._monitorIndex = i;
+        console.log(`>> ${i} ${d._monitorIndex}`);
       }
     }
   }
@@ -332,8 +334,10 @@ export default class Dash2DockLiteExt extends Extension {
           this._updateIconSpacing();
           break;
         }
-        case 'icon-size':
         case 'multi-monitor-preference':
+          this._updateMultiMonitorPreference();
+          break;
+        case 'icon-size':
         case 'preferred-monitor': {
           this._updateLayout();
           this.animate();
@@ -589,6 +593,10 @@ export default class Dash2DockLiteExt extends Extension {
       //   animator.relayout();
       // });
     }
+  }
+
+  _updateMultiMonitorPreference() {
+    this.createTheDocks();
   }
 
   _updateIconResolution(disable) {

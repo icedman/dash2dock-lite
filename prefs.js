@@ -295,6 +295,7 @@ export default class Preferences extends ExtensionPreferences {
     let count = monitors.length;
     model.append(`Primary Display`);
     for (let i = 0; i < count; i++) {
+      if (model.get_n_items() >= count) break;
       let name = monitors[i];
       model.append(name.displayName);
     }

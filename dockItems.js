@@ -1,5 +1,7 @@
 'use strict';
 
+import { BaseIcon } from 'resource:///org/gnome/shell/ui/iconGrid.js';
+
 import Gio from 'gi://Gio';
 import GObject from 'gi://GObject';
 import Clutter from 'gi://Clutter';
@@ -12,6 +14,94 @@ const Point = Graphene.Point;
 
 const DOT_CANVAS_SIZE = 96;
 
+const DockItemOverlay = GObject.registerClass(
+  {},
+  class DockItemOverlay extends St.Widget {
+    _init(renderer, params) {
+      super._init({
+        name: 'DockItemContainer',
+        ...params,
+      });
+
+      this.renderer = renderer;
+      if (renderer) {
+        this.add_child(renderer);
+      }
+    }
+  }
+);
+
+export const DockItemDotsOverlay = GObject.registerClass(
+  {},
+  class DockItemDotsOverlay extends DockItemOverlay {
+    update(icon, data) {
+      let renderer = this.renderer;
+      let { appCount, position, vertical, extension } = data;
+
+      renderer.width = icon._icon.width;
+      renderer.height = icon._icon.height;
+      renderer.pivot_point = icon._icon.pivot_point;
+
+      if (vertical) {
+        renderer.translationX =
+          icon._icon.translationX + (position == 'left' ? -6 : 6);
+        renderer.translationY = icon._icon.translationY;
+      } else {
+        renderer.translationX = icon._icon.translationX;
+        renderer.translationY =
+          icon._icon.translationY + (position == 'bottom' ? 8 : -8);
+      }
+
+      let options = extension.running_indicator_style_options;
+      let running_indicator_style = options[extension.running_indicator_style];
+      let running_indicator_color = extension.running_indicator_color;
+
+      renderer.set_state({
+        count: appCount,
+        color: running_indicator_color || [1, 1, 1, 1],
+        style: running_indicator_style || 'default',
+        rotate: vertical
+          ? position == 'right'
+            ? -90
+            : 90
+          : position == 'top'
+          ? 180
+          : 0,
+      });
+    }
+  }
+);
+
+export const DockItemBadgeOverlay = GObject.registerClass(
+  {},
+  class DockItemBadgeOverlay extends DockItemOverlay {
+    update(icon, data) {
+      let renderer = this.renderer;
+      let { noticesCount, position, vertical, extension } = data;
+
+      renderer.width = icon._icon.width;
+      renderer.height = icon._icon.height;
+      renderer.set_scale(icon._icon.scaleX, icon._icon.scaleY);
+      renderer.pivot_point = icon._icon.pivot_point;
+      renderer.translationX = icon._icon.translationX + 4;
+      renderer.translationY = icon._icon.translationY - 4;
+
+      let options = extension.notification_badge_style_options;
+      let notification_badge_style =
+        options[extension.notification_badge_style];
+      let notification_badge_color = extension.notification_badge_color;
+
+      renderer.set_state({
+        count: noticesCount,
+        color: notification_badge_color || [1, 1, 1, 1],
+        style: notification_badge_style || 'default',
+        rotate: position == 'bottom' ? 180 : 0,
+        translate: [0.4, 0],
+      });
+    }
+  }
+);
+
 export const DockItemContainer = GObject.registerClass(
   {},
   class DockItemContainer extends St.Widget {
@@ -19,12 +109,14 @@ export const DockItemContainer = GObject.registerClass(
     _init(params) {
       super._init({
         name: 'DockItemContainer',
+        style_class: 'dash-item-container',
         ...(params || {}),
       });
 
-      let appwell = new St.Widget({ name: 'app-well-app' });
+      let appwell = new St.Widget({ style_class: 'app-well-app' });
       let widget = new St.Widget({ name: '_widget' });
-      let icongrid = new St.Widget({ name: '_icongrid' });
+      // let baseIcon = new BaseIcon('');
+      let icongrid = new St.Widget({ style_class: 'overview-icon' });
       let box = new St.BoxLayout({ name: '_boxlayout' });
       let bin = new St.Widget({ name: '_bin' });
 
@@ -35,14 +127,17 @@ export const DockItemContainer = GObject.registerClass(
 
       this.add_child(appwell);
       appwell.add_child(widget);
+
       widget.add_child(icongrid);
       icongrid.add_child(box);
       box.add_child(bin);
       bin.add_child(icon);
-      // box.add_child(icon);
+      box.add_child(icon);
+
+      // widget.add_child(baseIcon);
+      // baseIcon._iconBin.child = icon;
 
       this._icon = icon;
-      // this._bin = bin;
       this._appwell = appwell;
       appwell._dot = {
         get_parent: () => {

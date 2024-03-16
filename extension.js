@@ -279,7 +279,15 @@ export default class Dash2DockLiteExt extends Extension {
           this._updateAnimationFPS();
           break;
         }
-        case 'mounted-icon':
+        case 'mounted-icon': {
+          this.services.checkMounts();
+          this.services._commitMounts();
+          this.docks.forEach((dock) => {
+            dock._icons = null;
+            dock._beginAnimation();
+          });
+          break;
+        }
         case 'peek-hidden-icons': {
           break;
         }

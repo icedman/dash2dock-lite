@@ -503,7 +503,7 @@ export let Dock = GObject.registerClass(
         //---------------
         // the mount icons
         //---------------
-        if (this.extension.mounted_icon) {
+        {
           let extras = [...this._extraIcons.get_children()];
           let extraNames = extras.map((e) => e.name);
           let mounted = Object.keys(this.extension.services._mounts);

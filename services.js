@@ -68,13 +68,7 @@ export const Services = class {
         () => {
           // deferred stuff is required when .desktop entry if first created
           // check for deferred mounts
-          if (this._deferredMounts && this._deferredMounts.length) {
-            let mounts = [...this._deferredMounts];
-            this._deferredMounts = [];
-            mounts.forEach((m) => {
-              this._onMountAdded(null, m);
-            });
-          }
+          this._commitMounts();
 
           // notifications
           this.checkNotifications();
@@ -117,6 +111,8 @@ export const Services = class {
     this.checkMounts();
     this.checkTrash();
     this.checkNotifications();
+
+    this._commitMounts();
   }
 
   disable() {
@@ -128,15 +124,14 @@ export const Services = class {
     this._trashDir = null;
   }
 
-  temporarilyMuteOverview() {
-    if (!Main.overview._setMessage) {
-      Main.overview._setMessage = Main.overview.setMessage;
+  _commitMounts() {
+    if (this._deferredMounts && this._deferredMounts.length) {
+      let mounts = [...this._deferredMounts];
+      this._deferredMounts = [];
+      mounts.forEach((m) => {
+        this._onMountAdded(null, m);
+      });
     }
-    Main.overview.setMessage = (msg, obj) => {};
-
-    this.extension._loTimer.runOnce(() => {
-      Main.overview.setMessage = Main.overview._setMessage;
-    }, 750);
   }
 
   _onMountAdded(monitor, mount) {
@@ -316,6 +311,7 @@ export const Services = class {
 
   checkMounts() {
     if (!this.extension.mounted_icon) {
+      this._mounts = {};
       return;
     }
 

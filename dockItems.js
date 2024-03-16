@@ -161,26 +161,14 @@ export const DockItemContainer = GObject.registerClass(
         params.appinfo_filename
       );
 
+      this._label = this.label;
+      this._labelText = desktopApp.get_name();
+
       try {
         this._default_icon_name = desktopApp.get_icon().get_names()[0];
       } catch (err) {
         //
       }
-
-      // button
-      let button = this.first_child;
-      button.button_mask = St.ButtonMask.ONE | St.ButtonMask.TWO;
-      button.connect('button-press-event', (actor, evt) => {
-        if (evt.get_button() != 1) {
-          if (this._menu) {
-            this._menu.popup();
-          }
-        } else {
-          if (this._menu && this._menu._newWindowItem) {
-            this._menu._newWindowItem.emit('activate', null);
-          }
-        }
-      });
 
       // menu
       this._menu = new DockItemMenu(this, St.Side.TOP, {
@@ -200,6 +188,43 @@ export const DockItemContainer = GObject.registerClass(
         style_class: 'show-apps-icon',
         track_hover: true,
       });
+
+      // attach event
+      let button = this.first_child;
+      let icon = this._iconActor;
+
+      // cleanup button connection
+      button.disconnectObject(this);
+
+      icon.reactive = true;
+      icon.track_hover = true;
+      [button, icon].forEach((btn) => {
+        btn.button_mask = St.ButtonMask.ONE | St.ButtonMask.TWO;
+        btn.connectObject(
+          'enter-event',
+          () => {
+            this.showLabel();
+          },
+          'leave-event',
+          () => {
+            this.hideLabel();
+          },
+          'button-press-event',
+          (actor, evt) => {
+            if (evt.get_button() != 1) {
+              if (this._menu) {
+                this._menu.popup();
+              }
+            } else {
+              if (this._menu && this._menu._newWindowItem) {
+                this._menu._newWindowItem.emit('activate', null);
+              }
+            }
+          },
+          this
+        );
+      });
+
       return this._iconActor;
     }
   }

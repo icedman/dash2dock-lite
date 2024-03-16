@@ -35,7 +35,6 @@ export const DockAlignment = {
   END: 'end',
 };
 
-// const ANIM_REENABLE_DELAY = 250;
 const ANIM_DEBOUNCE_END_DELAY = 750;
 
 const MIN_SCROLL_RESOLUTION = 4;
@@ -139,11 +138,6 @@ export let Dock = GObject.registerClass(
     }
 
     _onButtonPressEvent(evt) {
-      if (this._nearestIcon && this._nearestIcon._showApps) {
-        Main.uiGroup.find_child_by_name('overview')._controls._toggleAppsPage();
-        return Clutter.EVENT_PROPAGATE;
-      }
-
       return Clutter.EVENT_PROPAGATE;
     }
     _onMotionEvent(evt) {
@@ -235,15 +229,16 @@ export let Dock = GObject.registerClass(
     addDash() {
       let dash = new Dash();
       dash._adjustIconSize = () => {};
-      this.add_child(dash);
       this.dash = dash;
       this.dash._background.visible = false;
       this.dash._box.clip_to_allocation = false;
 
-      this.extension._loTimer.runOnce(() => {
-        this._extraIcons = new St.BoxLayout();
-        this.dash._box.add_child(this._extraIcons);
-      }, 0);
+      // this.extension._loTimer.runOnce(() => {
+      this._extraIcons = new St.BoxLayout();
+      this.dash._box.add_child(this._extraIcons);
+      // }, 0);
+
+      this.add_child(dash);
       return dash;
     }
 
@@ -408,6 +403,8 @@ export let Dock = GObject.registerClass(
         let bin = boxlayout.first_child;
         let icon = bin.first_child;
 
+        c.child.visible = true;
+
         icongrid.style = noAnimation ? '' : 'background: none !important;';
 
         c._bin = bin;
@@ -429,7 +426,10 @@ export let Dock = GObject.registerClass(
       });
 
       if (this._extraIcons) {
-        icons = [...icons, ...this._extraIcons.get_children()];
+        icons = [
+          ...icons,
+          ...this._extraIcons.get_children().filter((e) => e._icon),
+        ];
       }
 
       try {
@@ -452,6 +452,29 @@ export let Dock = GObject.registerClass(
             appsButton.reactive = false;
             appsButton.track_hover = false;
             icons.push(c);
+            if (!c._connected) {
+              c._connected = true;
+              icon.reactive = true;
+              icon.track_hover = true;
+              icon.connectObject(
+                'button-press-event',
+                () => {
+                  Main.uiGroup
+                    .find_child_by_name('overview')
+                    ._controls._toggleAppsPage();
+                  return Clutter.EVENT_PROPAGATE;
+                },
+                'enter-event',
+                () => {
+                  c.showLabel();
+                },
+                'leave-event',
+                () => {
+                  c.hideLabel();
+                },
+                this
+              );
+            }
           }
         }
       } catch (err) {

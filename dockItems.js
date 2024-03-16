@@ -1,5 +1,8 @@
 'use strict';
 
+import * as Main from 'resource:///org/gnome/shell/ui/main.js';
+import * as BoxPointer from 'resource:///org/gnome/shell/ui/boxpointer.js';
+import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 import { BaseIcon } from 'resource:///org/gnome/shell/ui/iconGrid.js';
 
 import Gio from 'gi://Gio';
@@ -104,10 +107,46 @@ export const DockItemBadgeOverlay = GObject.registerClass(
   }
 );
 
+export class DockItemMenu extends PopupMenu.PopupMenu {
+  constructor(sourceActor, side = St.Side.TOP, params = {}) {
+    if (Clutter.get_default_text_direction() === Clutter.TextDirection.RTL) {
+      if (side === St.Side.LEFT) side = St.Side.RIGHT;
+      else if (side === St.Side.RIGHT) side = St.Side.LEFT;
+    }
+
+    super(sourceActor, 0.5, side);
+
+    let { desktopApp } = params;
+    this._newWindowItem = this.addAction('New Window', () => {
+      let workspaceManager = global.workspace_manager;
+      let workspace = workspaceManager.get_active_workspace();
+      let ctx = global.create_app_launch_context(0, workspace);
+      desktopApp.launch([], ctx);
+      this._onActivate();
+    });
+
+    desktopApp.list_actions().forEach((action) => {
+      let name = desktopApp.get_action_name(action);
+      this.addAction(name, () => {
+        let workspaceManager = global.workspace_manager;
+        let workspace = workspaceManager.get_active_workspace();
+        let ctx = global.create_app_launch_context(0, workspace);
+        desktopApp.launch_action(action, ctx);
+      });
+    });
+  }
+
+  _onActivate() {}
+
+  popup() {
+    this.open(BoxPointer.PopupAnimation.FULL);
+    this._menuManager.ignoreRelease();
+  }
+}
+
 export const DockItemContainer = GObject.registerClass(
   {},
   class DockItemContainer extends ShowAppsIcon {
-    // appwell -> widget -> icongrid -> boxlayout -> bin -> icon
     _init(params) {
       super._init({
         name: 'DockItemContainer',
@@ -115,8 +154,53 @@ export const DockItemContainer = GObject.registerClass(
         ...(params || {}),
       });
 
+      this.name = params.appinfo_filename;
       this.show(false);
-      this.layoutManager = new Clutter.BinLayout();
+
+      let desktopApp = Gio.DesktopAppInfo.new_from_filename(
+        params.appinfo_filename
+      );
+
+      try {
+        this._default_icon_name = desktopApp.get_icon().get_names()[0];
+      } catch (err) {
+        //
+      }
+
+      // button
+      let button = this.first_child;
+      button.button_mask = St.ButtonMask.ONE | St.ButtonMask.TWO;
+      button.connect('button-press-event', (actor, evt) => {
+        if (evt.get_button() != 1) {
+          if (this._menu) {
+            this._menu.popup();
+          }
+        } else {
+          if (this._menu && this._menu._newWindowItem) {
+            this._menu._newWindowItem.emit('activate', null);
+          }
+        }
+      });
+
+      // menu
+      this._menu = new DockItemMenu(this, St.Side.TOP, {
+        desktopApp,
+      });
+      this._menuManager = new PopupMenu.PopupMenuManager(this);
+      this._menu._menuManager = this._menuManager;
+      Main.uiGroup.add_actor(this._menu.actor);
+      this._menuManager.addMenu(this._menu);
+      this._menu.close();
+    }
+
+    _createIcon(size) {
+      this._iconActor = new St.Icon({
+        icon_name: this._default_icon_name,
+        icon_size: size,
+        style_class: 'show-apps-icon',
+        track_hover: true,
+      });
+      return this._iconActor;
     }
   }
 );

@@ -1,6 +1,7 @@
+'use strict';
+
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as Fav from 'resource:///org/gnome/shell/ui/appFavorites.js';
-import { BaseIcon } from 'resource:///org/gnome/shell/ui/iconGrid.js';
 
 import Meta from 'gi://Meta';
 import Shell from 'gi://Shell';
@@ -113,20 +114,15 @@ export let Dock = GObject.registerClass(
         this.autohider._onLeaveEvent.bind(this.autohider),
         this
       );
-
-      // this.createExtraIcons();
     }
 
-    createItem() {
-      return new DockItemContainer();
-    }
-
-    createExtraIcons() {
-      let i = this.createItem();
-      let w = new St.BoxLayout();
-      w.add_child(i);
-      this._extraIcons = w;
-      return w;
+    createItem(appinfo_filename) {
+      let item = new DockItemContainer({
+        appinfo_filename,
+      });
+      item.dock = this;
+      this._extraIcons.add_child(item);
+      return item;
     }
 
     dock() {
@@ -239,11 +235,15 @@ export let Dock = GObject.registerClass(
     addDash() {
       let dash = new Dash();
       dash._adjustIconSize = () => {};
-
       this.add_child(dash);
       this.dash = dash;
       this.dash._background.visible = false;
       this.dash._box.clip_to_allocation = false;
+
+      this.extension._loTimer.runOnce(() => {
+        this._extraIcons = new St.BoxLayout();
+        this.dash._box.add_child(this._extraIcons);
+      }, 0);
       return dash;
     }
 
@@ -318,22 +318,9 @@ export let Dock = GObject.registerClass(
     _findIcons() {
       if (!this.dash) return [];
 
-      if (
-        this._icons &&
-        this._icons.length >= this.dash._box.get_children().length
-      ) {
-        // return cached
-        return this._icons;
-      }
-
       let noAnimation = !this.extension.animate_icons_unmute;
 
       if (this._extraIcons) {
-        let p = this._extraIcons.get_parent();
-        if (p != this.dash._box) {
-          p?.remove_child(this._extraIcons);
-          this.dash._box.add_child(this._extraIcons);
-        }
         this._extraIcons.get_children().forEach((appsIcon) => {
           let button = appsIcon.first_child;
           let icongrid = button.first_child;
@@ -345,6 +332,15 @@ export let Dock = GObject.registerClass(
           button.track_hover = noAnimation;
           button.toggle_mode = false;
         });
+      }
+
+      let iconsLength = this.dash._box.get_children().length;
+      if (this._extraIcons) {
+        iconsLength += this._extraIcons.get_children().length;
+      }
+      if (this._icons && this._icons.length >= iconsLength) {
+        // return cached
+        return this._icons;
       }
 
       if (this.dash._showAppsIcon) {
@@ -461,7 +457,6 @@ export let Dock = GObject.registerClass(
         // could happen if ShowApps is hidden or not yet created?
       }
 
-      this._icons = icons;
       icons.forEach((icon) => {
         if (!icon._destroyConnectId) {
           icon._destroyConnectId = icon.connect('destroy', () => {
@@ -503,7 +498,59 @@ export let Dock = GObject.registerClass(
       this._position =
         locations[this.extension.dock_location] || DockPosition.BOTTOM;
 
-      // this._position = 'top';
+      // check these intermittently!
+      if (this._extraIcons) {
+        //---------------
+        // the mount icons
+        //---------------
+        if (this.extension.mounted_icon) {
+          let extras = [...this._extraIcons.get_children()];
+          let extraNames = extras.map((e) => e.name);
+          let mounted = Object.keys(this.extension.services._mounts);
+
+          extras.forEach((extra) => {
+            if (extra.name.includes('trash')) return;
+            if (!mounted.includes(extra.name)) {
+              this._extraIcons.remove_child(extra);
+              this._icons = null;
+            }
+          });
+
+          mounted.forEach((mount) => {
+            if (!extraNames.includes(mount)) {
+              let mountedIcon = this.createItem(mount);
+              mountedIcon._menu._onActivate = () => {
+                this._maybeBounce(mountedIcon);
+              };
+              this._icons = null;
+            }
+          });
+        }
+        //---------------
+        // the trash icon
+        //---------------
+        if (!this._trashIcon && this.extension.trash_icon) {
+          // pin trash icon
+          this._trashIcon = this.createItem(
+            `${this.extension.path}/apps/trash-dash2dock-lite.desktop`
+          );
+          this._trashIcon._menu._onActivate = () => {
+            this._maybeBounce(this._trashIcon);
+          };
+          this._icons = null;
+        } else if (this._trashIcon && !this.extension.trash_icon) {
+          // unpin trash icon
+          this._extraIcons.remove_child(this._trashIcon);
+          this._trashIcon = null;
+          this._icons = null;
+        } else if (this._trashIcon && this.extension.trash_icon) {
+          // move trash icon to the end
+          if (this._extraIcons.last_child != this._trashIcon) {
+            this._extraIcons.remove_child(this._trashIcon);
+            this._extraIcons.add_child(this._trashIcon);
+          }
+        }
+      }
 
       this._icons = this._findIcons();
 
@@ -827,9 +874,12 @@ export let Dock = GObject.registerClass(
       if (!this.extension.open_app_animation) {
         return;
       }
-      if (container.child.app && !container.child.app.get_n_windows()) {
-        if (container._appwell) {
-          this.animator.bounceIcon(container._appwell);
+      if (
+        !container.child.app ||
+        (container.child.app && !container.child.app.get_n_windows())
+      ) {
+        if (container.child) {
+          this.animator.bounceIcon(container.child);
         }
       }
     }

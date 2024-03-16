@@ -1,5 +1,6 @@
 'use strict';
 
+import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import Graphene from 'gi://Graphene';
 const Point = Graphene.Point;
 
@@ -376,7 +377,11 @@ export let Animator = class {
 
       // custom icons
       if (dock.extension.services) {
-        dock.extension.services.updateIcon(icon, { scaleFactor, iconSize });
+        dock.extension.services.updateIcon(icon, {
+          scaleFactor,
+          iconSize,
+          dock,
+        });
       }
     });
 

@@ -152,7 +152,6 @@ export default class Dash2DockLiteExt extends Extension {
     this._updateIconResolution();
     this._updateLayout();
     this._updateAutohide();
-    this._updateTrashIcon();
 
     this._addEvents();
 
@@ -215,7 +214,10 @@ export default class Dash2DockLiteExt extends Extension {
   startUp() {
     this.createTheDocks();
     this._updateLayout();
-    this.animate();
+    this.docks.forEach((dock) => {
+      dock._icons = null;
+      dock._beginAnimation();
+    });
     this.docks.forEach((dock) => {
       dock._debounceEndAnimation();
     });
@@ -384,7 +386,6 @@ export default class Dash2DockLiteExt extends Extension {
           break;
         }
         case 'trash-icon': {
-          this._updateTrashIcon();
           this._updateLayout();
           this.animate();
 
@@ -557,7 +558,6 @@ export default class Dash2DockLiteExt extends Extension {
     if (!this.services) return; // todo why does this happen?
     // todo convert services time in seconds
     this.services.update(SERVICES_UPDATE_INTERVAL);
-    this._updateTrashIcon();
   }
 
   _updateAnimationFPS() {
@@ -747,10 +747,6 @@ export default class Dash2DockLiteExt extends Extension {
     if (this.animate_icons && !disable) {
       this.animate();
     }
-  }
-
-  _updateTrashIcon() {
-    this.services.updateTrashIcon(this.trash_icon);
   }
 
   runDiagnostics() {

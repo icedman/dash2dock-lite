@@ -329,6 +329,7 @@ export let Dock = GObject.registerClass(
           let icon = bin.first_child;
           appsIcon._bin = bin;
           appsIcon._icon = icon;
+          button.reactive = noAnimation;
           button.track_hover = noAnimation;
           button.toggle_mode = false;
         });

@@ -191,14 +191,14 @@ export const DockItemContainer = GObject.registerClass(
 
       // attach event
       let button = this.first_child;
+      button.reactive = false;
       let icon = this._iconActor;
-
-      // cleanup button connection
-      button.disconnectObject(this);
 
       icon.reactive = true;
       icon.track_hover = true;
-      [button, icon].forEach((btn) => {
+      [icon].forEach((btn) => {
+        if (btn._connected) return;
+        btn._connected = true;
         btn.button_mask = St.ButtonMask.ONE | St.ButtonMask.TWO;
         btn.connectObject(
           'enter-event',

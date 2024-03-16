@@ -1,3 +1,5 @@
+'use strict';
+
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as Fav from 'resource:///org/gnome/shell/ui/appFavorites.js';
 
@@ -7,21 +9,16 @@ import GObject from 'gi://GObject';
 import Clutter from 'gi://Clutter';
 import Graphene from 'gi://Graphene';
 import St from 'gi://St';
-import {
-  Dash,
-  DashItemContainer,
-} from 'resource:///org/gnome/shell/ui/dash.js';
+import Gio from 'gi://Gio';
+
+import { Dash } from 'resource:///org/gnome/shell/ui/dash.js';
 
 import { TintEffect } from './effects/tint_effect.js';
 import { MonochromeEffect } from './effects/monochrome_effect.js';
 
 import { DockItemContainer, DockBackground } from './dockItems.js';
-import { Bounce, Linear } from './effects/easing.js';
 import { AutoHide } from './autohide.js';
 import { Animator } from './animator.js';
-import { Dot } from './apps/dot.js';
-
-const DOT_CANVAS_SIZE = 96;
 
 const Point = Graphene.Point;
 
@@ -38,14 +35,7 @@ export const DockAlignment = {
   END: 'end',
 };
 
-const ANIM_POS_COEF = 0.5;
-const ANIM_SCALE_COEF = 1.5 * 2;
-const ANIM_SPREAD_COEF = 1.25 * 1;
-const ANIM_ON_LEAVE_COEF = 2.0;
-const ANIM_ICON_RAISE = 0.6;
-const ANIM_ICON_SCALE = 1.5;
-const ANIM_ICON_HIT_AREA = 2.5;
-const ANIM_REENABLE_DELAY = 250;
+// const ANIM_REENABLE_DELAY = 250;
 const ANIM_DEBOUNCE_END_DELAY = 750;
 
 const MIN_SCROLL_RESOLUTION = 4;
@@ -97,6 +87,11 @@ export let Dock = GObject.registerClass(
       this.dash.opacity = 0;
       this._scrollCounter = 0;
 
+      this.animator = new Animator();
+      this.animator.dashContainer = this;
+      this.animator.extension = this.extension;
+      this.animator.enable();
+
       this.autohider = new AutoHide();
       this.autohider.dashContainer = this;
       this.autohider.extension = this.extension;
@@ -119,20 +114,15 @@ export let Dock = GObject.registerClass(
         this.autohider._onLeaveEvent.bind(this.autohider),
         this
       );
-
-      // this.createExtraIcons();
     }
 
-    createItem() {
-      return new DockItemContainer();
-    }
-
-    createExtraIcons() {
-      let i = this.createItem();
-      let w = new St.BoxLayout();
-      w.add_child(i);
-      this._extraIcons = w;
-      return w;
+    createItem(appinfo_filename) {
+      let item = new DockItemContainer({
+        appinfo_filename,
+      });
+      item.dock = this;
+      this._extraIcons.add_child(item);
+      return item;
     }
 
     dock() {
@@ -245,11 +235,15 @@ export let Dock = GObject.registerClass(
     addDash() {
       let dash = new Dash();
       dash._adjustIconSize = () => {};
-
       this.add_child(dash);
       this.dash = dash;
       this.dash._background.visible = false;
       this.dash._box.clip_to_allocation = false;
+
+      this.extension._loTimer.runOnce(() => {
+        this._extraIcons = new St.BoxLayout();
+        this.dash._box.add_child(this._extraIcons);
+      }, 0);
       return dash;
     }
 
@@ -324,20 +318,30 @@ export let Dock = GObject.registerClass(
     _findIcons() {
       if (!this.dash) return [];
 
-      if (
-        this._icons &&
-        this._icons.length >= this.dash._box.get_children().length
-      ) {
-        // return cached
-        return this._icons;
-      }
+      let noAnimation = !this.extension.animate_icons_unmute;
 
       if (this._extraIcons) {
-        let p = this._extraIcons.get_parent();
-        if (p != this.dash._box) {
-          p?.remove_child(this._extraIcons);
-          this.dash._box.add_child(this._extraIcons);
-        }
+        this._extraIcons.get_children().forEach((appsIcon) => {
+          let button = appsIcon.first_child;
+          let icongrid = button.first_child;
+          let boxlayout = icongrid.first_child;
+          let bin = boxlayout.first_child;
+          let icon = bin.first_child;
+          appsIcon._bin = bin;
+          appsIcon._icon = icon;
+          button.reactive = noAnimation;
+          button.track_hover = noAnimation;
+          button.toggle_mode = false;
+        });
+      }
+
+      let iconsLength = this.dash._box.get_children().length;
+      if (this._extraIcons) {
+        iconsLength += this._extraIcons.get_children().length;
+      }
+      if (this._icons && this._icons.length >= iconsLength) {
+        // return cached
+        return this._icons;
       }
 
       if (this.dash._showAppsIcon) {
@@ -393,12 +397,6 @@ export let Dock = GObject.registerClass(
         });
       }
 
-      let noAnimation = !this.extension.animate_icons_unmute;
-
-      if (this._extraIcons) {
-        icons = [...icons, ...this._extraIcons.get_children()];
-      }
-
       icons.forEach((c) => {
         // W: breakable
         let label = c.label;
@@ -417,7 +415,9 @@ export let Dock = GObject.registerClass(
         c._draggable = draggable;
         c._appwell = appwell;
         c._dot = appwell._dot;
-        c._dot.opacity = 0;
+        if (c._dot) {
+          c._dot.opacity = 0;
+        }
         if (icon) {
           c._icon = icon;
           c._icon.reactive = true;
@@ -426,25 +426,11 @@ export let Dock = GObject.registerClass(
           pv.y = 0.5;
           icon.pivot_point = pv;
         }
-
-        // if (!c._dotCanvas) {
-        //   let dot = new Dot(DOT_CANVAS_SIZE);
-        //   let pdot = new St.Widget();
-        //   pdot.add_child(dot);
-        //   dot.set_position(0, 0);
-        //   c.add_child(pdot);
-        //   c._dotCanvas = dot;
-        // }
-
-        // if (!c._badgeCanvas) {
-        //   let dot = new Dot(DOT_CANVAS_SIZE);
-        //   let pdot = new St.Widget();
-        //   pdot.add_child(dot);
-        //   dot.set_position(0, 0);
-        //   c.add_child(pdot);
-        //   c._badgeCanvas = dot;
-        // }
       });
+
+      if (this._extraIcons) {
+        icons = [...icons, ...this._extraIcons.get_children()];
+      }
 
       try {
         // W: breakable
@@ -463,10 +449,7 @@ export let Dock = GObject.registerClass(
             c._icon = icon;
             c._label = widget._delegate.label;
             c._showApps = appsButton;
-            // make virtually unclickable
             appsButton.reactive = false;
-            // appsButton.width = 1;
-            // appsButton.height = 1;
             appsButton.track_hover = false;
             icons.push(c);
           }
@@ -475,7 +458,6 @@ export let Dock = GObject.registerClass(
         // could happen if ShowApps is hidden or not yet created?
       }
 
-      this._icons = icons;
       icons.forEach((icon) => {
         if (!icon._destroyConnectId) {
           icon._destroyConnectId = icon.connect('destroy', () => {
@@ -517,7 +499,59 @@ export let Dock = GObject.registerClass(
       this._position =
         locations[this.extension.dock_location] || DockPosition.BOTTOM;
 
-      // this._position = 'top';
+      // check these intermittently!
+      if (this._extraIcons) {
+        //---------------
+        // the mount icons
+        //---------------
+        {
+          let extras = [...this._extraIcons.get_children()];
+          let extraNames = extras.map((e) => e.name);
+          let mounted = Object.keys(this.extension.services._mounts);
+
+          extras.forEach((extra) => {
+            if (extra.name.includes('trash')) return;
+            if (!mounted.includes(extra.name)) {
+              this._extraIcons.remove_child(extra);
+              this._icons = null;
+            }
+          });
+
+          mounted.forEach((mount) => {
+            if (!extraNames.includes(mount)) {
+              let mountedIcon = this.createItem(mount);
+              mountedIcon._menu._onActivate = () => {
+                this._maybeBounce(mountedIcon);
+              };
+              this._icons = null;
+            }
+          });
+        }
+        //---------------
+        // the trash icon
+        //---------------
+        if (!this._trashIcon && this.extension.trash_icon) {
+          // pin trash icon
+          this._trashIcon = this.createItem(
+            `${this.extension.path}/apps/trash-dash2dock-lite.desktop`
+          );
+          this._trashIcon._menu._onActivate = () => {
+            this._maybeBounce(this._trashIcon);
+          };
+          this._icons = null;
+        } else if (this._trashIcon && !this.extension.trash_icon) {
+          // unpin trash icon
+          this._extraIcons.remove_child(this._trashIcon);
+          this._trashIcon = null;
+          this._icons = null;
+        } else if (this._trashIcon && this.extension.trash_icon) {
+          // move trash icon to the end
+          if (this._extraIcons.last_child != this._trashIcon) {
+            this._extraIcons.remove_child(this._trashIcon);
+            this._extraIcons.add_child(this._trashIcon);
+          }
+        }
+      }
 
       this._icons = this._findIcons();
 
@@ -644,6 +678,9 @@ export let Dock = GObject.registerClass(
       // reposition the dash
       this.dash.last_child.layout_manager.orientation = vertical;
       this.dash._box.layout_manager.orientation = vertical;
+      if (this._extraIcons) {
+        this._extraIcons.layout_manager.orientation = vertical;
+      }
 
       this.x =
         m.x +
@@ -688,529 +725,7 @@ export let Dock = GObject.registerClass(
     }
 
     animate() {
-      let simulation = false;
-      // this._hidden = true;
-      this.layout();
-
-      let m = this.getMonitor();
-      let pointer = global.get_pointer();
-      if (this.extension.simulated_pointer) {
-        pointer = [...this.extension.simulated_pointer];
-        simulation = true;
-      }
-
-      let vertical = this.isVertical();
-
-      let [px, py] = pointer;
-
-      let p = new Point();
-      p.x = 0.5;
-      p.y = 0.5;
-
-      let isWithin = this._isWithinDash([px, py]);
-      let animated = isWithin;
-      this.animated = animated;
-
-      let animateIcons = this._icons;
-      let iconSize = this._iconSizeScaledDown;
-      let scaleFactor = this._scaleFactor;
-
-      let nearestIdx = -1;
-      let nearestIcon = null;
-      let nearestDistance = -1;
-
-      animateIcons.forEach((c) => {
-        c._container = c;
-        c._pos = this._get_position(c);
-        c._fixedPosition = this._get_position(c);
-      });
-
-      // sort
-      let cornerPos = this._get_position(this);
-      animateIcons.sort((a, b) => {
-        let dstA = this._get_distance(cornerPos, a._pos);
-        let dstB = this._get_distance(cornerPos, b._pos);
-        return dstA > dstB ? 1 : -1;
-      });
-
-      let idx = 0;
-      animateIcons.forEach((icon) => {
-        let bin = icon._bin;
-        let pos = [...icon._pos];
-
-        // icon._fixedPosition = [...pos];
-        if (!this._dragging && bin.first_child) {
-          // bin.first_child.opacity = this.extension._dash_opacity;
-          // todo make this small - so as not to mess up the layout
-          // however, the icons appear when released from drag
-          bin.first_child.width = iconSize * 0.8 * scaleFactor;
-          bin.first_child.height = iconSize * 0.8 * scaleFactor;
-        }
-
-        icon._icon.set_icon_size(iconSize * this.extension.icon_quality);
-
-        // get nearest
-        let bposcenter = [...pos];
-        bposcenter[0] += (iconSize * scaleFactor) / 2;
-        bposcenter[1] += (iconSize * scaleFactor) / 2;
-        let dst = this._get_distance(pointer, bposcenter);
-
-        if (
-          isWithin &&
-          (nearestDistance == -1 || nearestDistance > dst) &&
-          dst < iconSize * ANIM_ICON_HIT_AREA * scaleFactor
-        ) {
-          nearestDistance = dst;
-          nearestIcon = icon;
-          nearestIdx = idx;
-          icon._distance = dst;
-          icon._dx = bposcenter[0] - pointer[0];
-          icon._dy = bposcenter[1] - pointer[1];
-        }
-
-        icon._target = pos;
-        icon._targetScale = 1;
-
-        idx++;
-      });
-
-      let noAnimation = !this.extension.animate_icons_unmute;
-      if ((!simulation && !isWithin) || noAnimation) {
-        nearestIcon = null;
-      }
-
-      this._nearestIcon = nearestIcon;
-
-      let didScale = false;
-
-      let off = (iconSize * scaleFactor) / 2;
-      animateIcons.forEach((i) => {
-        if (!i._pos) return;
-        let p = [...i._pos];
-        if (!p) return;
-        p[0] += off;
-        p[1] += off;
-        i._pos = p;
-      });
-
-      let dock_position = this._get_position(this);
-
-      //------------------------
-      // animation behavior
-      //------------------------
-      let rise = this.extension.animation_rise * ANIM_ICON_RAISE;
-      let magnify = this.extension.animation_magnify * ANIM_ICON_SCALE;
-      let spread = this.extension.animation_spread;
-      if (spread < 0.2) {
-        magnify *= 0.8;
-      }
-      if (magnify > 0.5 && spread < 0.55) {
-        spread = 0.55 + spread * 0.2;
-      }
-
-      let padding = 10;
-      let threshold = (iconSize + padding) * 2.5 * scaleFactor;
-
-      let iconTable = [];
-
-      // animate
-      animateIcons.forEach((icon) => {
-        let original_pos = this._get_position(icon);
-        original_pos[0] += icon.width / 2;
-        original_pos[1] += icon.height / 2;
-
-        icon._pos = [...original_pos];
-        icon._translate = 0;
-
-        iconTable.push(icon);
-
-        let scale = 1;
-        let dx = original_pos[0] - px;
-        if (vertical) {
-          dx = original_pos[1] - py;
-        }
-        if (dx * dx < threshold * threshold && nearestIcon) {
-          let adx = Math.abs(dx);
-          let p = 1.0 - adx / threshold;
-          let fp = p * 0.6 * (1 + magnify);
-          icon._p = p;
-
-          // affect scale;
-          if (magnify != 0) {
-            scale += fp;
-          }
-
-          // affect rise
-          let sz = iconSize * fp;
-          if (vertical) {
-            if (dock_position == 'right') {
-              icon._pos[0] -= sz * 0.8 * rise;
-            } else {
-              icon._pos[0] += sz * 0.8 * rise;
-            }
-          } else {
-            icon._pos[1] -= sz * 0.8 * rise;
-          }
-
-          didScale = true;
-        }
-
-        icon._scale = scale;
-        icon._targetScale = scale * scaleFactor;
-
-        icon._icon.set_size(iconSize, iconSize);
-        if (icon._icon._img) {
-          icon._icon._img.set_icon_size(iconSize * this.extension.icon_quality);
-        }
-
-        if (!icon._pos) {
-          return;
-        }
-
-        icon.opacity = icon == this._dragged && this._dragging ? 50 : 255;
-        icon._prevTranslate = icon._translate;
-      });
-
-      // spread
-      let largestScale = null;
-      for (let i = 0; i < iconTable.length; i++) {
-        if (iconTable.length < 2) break;
-        let icon = iconTable[i];
-        if (icon._scale > 1.1) {
-          if (largestScale == null || largestScale._scale < icon._scale) {
-            largestScale = icon;
-          }
-          // affect spread
-          let offset =
-            1.25 * (icon._scale - 1) * iconSize * scaleFactor * spread * 0.8;
-          let o = offset;
-          // left
-          for (let j = i - 1; j >= 0; j--) {
-            let left = iconTable[j];
-            left._translate -= offset;
-            o *= 0.98;
-          }
-          // right
-          o = offset;
-          for (let j = i + 1; j < iconTable.length; j++) {
-            let right = iconTable[j];
-            right._translate += offset;
-            o *= 0.98;
-          }
-        }
-      }
-
-      // re-center to hovered icon
-      let TRANSLATE_COEF = 24;
-      if (largestScale) {
-        largestScale._targetScale += 0.1;
-        let adjust = largestScale._translate / 2;
-        // console.log(largestScale._icon.gicon.get_names());
-        animateIcons.forEach((icon) => {
-          if (icon._scale > 1) {
-            let o = -adjust * (2 - icon._scale);
-            let nt = icon._translate - o;
-            icon._translate =
-              (icon._translate * TRANSLATE_COEF + nt) / (TRANSLATE_COEF + 1);
-          }
-        });
-      }
-
-      //-------------------
-      // interpolation / animation
-      //-------------------
-      let _scale_coef = ANIM_SCALE_COEF;
-      // let _spread_coef = ANIM_SPREAD_COEF;
-      let _pos_coef = ANIM_POS_COEF;
-      if (this.extension.animation_fps > 0) {
-        _pos_coef /= 1 + this.extension.animation_fps / 2;
-        _scale_coef /= 1 + this.extension.animation_fps / 2;
-        // _spread_coef /= 1 + this.extension.animation_fps / 2;
-      }
-      if (!nearestIcon) {
-        _scale_coef *= ANIM_ON_LEAVE_COEF;
-        _pos_coef *= ANIM_ON_LEAVE_COEF;
-        // _spread_coef *= ANIM_ON_LEAVE_COEF;
-      }
-
-      // low frame rate
-      if (this.extension.animation_fps == 2) {
-        _pos_coef *= 4;
-        _scale_coef *= 4;
-      }
-
-      animateIcons.forEach((icon) => {
-        let scale = icon._icon.get_scale();
-
-        let newScale =
-          (icon._targetScale + scale[0] * _scale_coef) / (_scale_coef + 1);
-        icon._scale = newScale;
-
-        let flags = {
-          bottom: { x: 0.5, y: 1, lx: 0, ly: 0.5 * newScale },
-          top: { x: 0.5, y: 0, lx: 0, ly: -1.75 * newScale },
-          left: { x: 0, y: 0.5, lx: -1.25 * newScale, ly: -1.25 },
-          right: { x: 1, y: 0.5, lx: 1.5 * newScale, ly: -1.25 },
-        };
-        let pvd = flags[this._position];
-
-        let pv = new Point();
-        pv.x = pvd.x;
-        pv.y = pvd.y;
-        icon._icon.pivot_point = pv;
-        icon._icon.set_scale(newScale, newScale);
-
-        let oldX = icon._icon.translationX;
-        let oldY = icon._icon.translationY;
-        let translationX =
-          (oldX + icon._translate * !vertical * _pos_coef) / (_pos_coef + 1);
-        let translationY =
-          (oldY + icon._translate * vertical * _pos_coef) / (_pos_coef + 1);
-
-        icon._icon.translationX = translationX;
-        icon._icon.translationY = translationY;
-
-        // todo center the appwell (scaling correction)
-        let child = icon._appwell || icon.first_child;
-        if (child && scaleFactor > 1) {
-          let correction = icon._icon.height * scaleFactor - icon._icon.height;
-          if (!icon._appwell) {
-            child.x = correction;
-          }
-          child.y = correction;
-        }
-
-        // labels
-        if (icon._label) {
-          icon._label.translationX = translationX - iconSize * pvd.lx;
-          icon._label.translationY = translationY - iconSize * pvd.ly;
-        }
-
-        // badges
-        {
-          let appNotices = icon._appwell
-            ? this.extension.services._appNotices[icon._appwell.app.get_id()]
-            : null;
-          let noticesCount = 0;
-          if (appNotices) {
-            noticesCount = appNotices.count;
-          }
-          // noticesCount = 1;
-          let target = icon._dot?.get_parent();
-          let badge = target?._badge;
-
-          if (!badge && icon._appwell && target) {
-            badge = new Dot(DOT_CANVAS_SIZE);
-            target._badge = badge;
-            target.add_child(badge);
-          }
-          if (badge && noticesCount > 0) {
-            badge.width = icon._icon.width;
-            badge.height = icon._icon.height;
-            badge.set_scale(icon._icon.scaleX, icon._icon.scaleY);
-            badge.pivot_point = icon._icon.pivot_point;
-            badge.translationX = icon._icon.translationX + 4;
-            badge.translationY = icon._icon.translationY - 4;
-
-            let options = this.extension.notification_badge_style_options;
-            let notification_badge_style =
-              options[this.extension.notification_badge_style];
-            let notification_badge_color =
-              this.extension.notification_badge_color;
-
-            badge.set_state({
-              count: noticesCount,
-              color: notification_badge_color || [1, 1, 1, 1],
-              style: notification_badge_style || 'default',
-              rotate: this._position == 'bottom' ? 180 : 0,
-              translate: [0.4, 0],
-            });
-            badge.show();
-          } else {
-            badge?.hide();
-          }
-        }
-
-        // dots
-        {
-          let appCount = icon._appwell ? icon._appwell.app.get_n_windows() : 0;
-          // appCount = 1;
-
-          let target = icon._dot?.get_parent();
-          let dots = target?._dots;
-          if (!dots && icon._appwell && target) {
-            dots = new Dot(DOT_CANVAS_SIZE);
-            target._dots = dots;
-            target.add_child(dots);
-          }
-          if (dots && appCount > 0) {
-            dots.width = icon._icon.width;
-            dots.height = icon._icon.height;
-            dots.pivot_point = icon._icon.pivot_point;
-
-            if (vertical) {
-              dots.translationX =
-                icon._icon.translationX + (this._position == 'left' ? -6 : 6);
-              dots.translationY = icon._icon.translationY;
-            } else {
-              dots.translationX = icon._icon.translationX;
-              dots.translationY =
-                icon._icon.translationY + (this._position == 'bottom' ? 8 : -8);
-            }
-
-            let options = this.extension.running_indicator_style_options;
-            let running_indicator_style =
-              options[this.extension.running_indicator_style];
-            let running_indicator_color =
-              this.extension.running_indicator_color;
-
-            dots.set_state({
-              count: appCount,
-              color: running_indicator_color || [1, 1, 1, 1],
-              style: running_indicator_style || 'default',
-              rotate: vertical
-                ? this._position == 'right'
-                  ? -90
-                  : 90
-                : this._position == 'top'
-                ? 180
-                : 0,
-            });
-            dots.show();
-          } else {
-            dots?.hide();
-          }
-        }
-
-        // custom icons
-        if (this.extension.services) {
-          this.extension.services.updateIcon(icon, { scaleFactor, iconSize });
-        }
-      });
-
-      // separators
-      this._separators.forEach((actor) => {
-        let prev = actor.get_previous_sibling();
-        let next = actor.get_next_sibling();
-        if (prev && next && prev._icon && next._icon) {
-          actor.translationX =
-            (prev._icon.translationX + next._icon.translationX) / 2;
-          actor.translationY =
-            (prev._icon.translationY + next._icon.translationY) / 2;
-          actor.width = !vertical ? 2 : iconSize * 0.75 * scaleFactor;
-          actor.height = vertical ? 2 : iconSize * 0.75 * scaleFactor;
-        }
-      });
-
-      let targetX = 0;
-      let targetY = 0;
-      if (this._hidden && this.extension.autohide_dash) {
-        if (isWithin) {
-          this.slideIn();
-        }
-      }
-
-      let ed = this._position == 'bottom' || this._position == 'right' ? 1 : -1;
-
-      // dash hide/show
-      if (this._hidden) {
-        if (vertical) {
-          if (this._position == 'left') {
-            targetX =
-              -(this._background.width + this._edge_distance * -ed * 2) *
-              scaleFactor;
-          } else {
-            targetX =
-              (this._background.width - this._edge_distance * -ed * 2) *
-              scaleFactor;
-          }
-        } else {
-          if (this._position == 'bottom') {
-            targetY =
-              (this._background.height - this._edge_distance * -ed * 2) *
-              scaleFactor;
-          } else {
-            targetY =
-              -(this._background.height + this._edge_distance * -ed * 2) *
-              scaleFactor;
-          }
-        }
-      }
-
-      // edge
-      targetX += vertical ? this._edge_distance * -ed : 0;
-      targetY += !vertical ? this._edge_distance * -ed : 0;
-
-      _pos_coef += 5 - 5 * this.extension.autohide_speed;
-      this.dash.translationY =
-        (this.dash.translationY * _pos_coef + targetY) / (_pos_coef + 1);
-      this.dash.translationX =
-        (this.dash.translationX * _pos_coef + targetX) / (_pos_coef + 1);
-
-      // background
-      {
-        this._background.update({
-          first: animateIcons[0],
-          last: animateIcons[animateIcons.length - 1],
-          iconSize,
-          scaleFactor,
-          position: this._position,
-          vertical: vertical,
-          panel_mode: this.extension.panel_mode,
-          dashContainer: this,
-        });
-
-        // allied areas
-        if (vertical) {
-          this.struts.width =
-            this._background.width + iconSize * 0.25 * scaleFactor;
-          this.struts.height = this.height;
-          this.struts.y = this.y;
-          if (this._position == 'right') {
-            this.struts.x = this.x + this.width - this.struts.width;
-          } else {
-            this.struts.x = this.x;
-          }
-        } else {
-          this.struts.width = this.width;
-          this.struts.height =
-            this._background.height + iconSize * 0.25 * scaleFactor;
-          this.struts.x = this.x;
-          if (this._position == 'bottom') {
-            this.struts.y = this.y + this.height - this.struts.height;
-          } else {
-            this.struts.y = this.y;
-          }
-        }
-
-        let dwellHeight = 4;
-        if (vertical) {
-          this.dwell.width = dwellHeight;
-          this.dwell.height = this.height;
-          this.dwell.x = m.x;
-          this.dwell.y = this.y;
-          if (this._position == 'right') {
-            this.dwell.x = m.x + m.width - dwellHeight;
-          }
-        } else {
-          this.dwell.width = this.width;
-          this.dwell.height = dwellHeight;
-          this.dwell.x = this.x;
-          this.dwell.y = this.y + this.height - this.dwell.height;
-          if (this._position == 'top') {
-            this.dwell.y = this.y;
-          }
-        }
-      }
-
-      if (this.extension.debug_visual) {
-        Main.panel.first_child.add_style_class_name('hi');
-      }
-      this.dash.opacity = 255;
-
-      if (didScale) {
-        this._debounceEndAnimation();
-      }
+      this.animator.animate();
     }
 
     _get_position(obj) {
@@ -1360,75 +875,14 @@ export let Dock = GObject.registerClass(
       if (!this.extension.open_app_animation) {
         return;
       }
-      if (container.child.app && !container.child.app.get_n_windows()) {
-        if (container._appwell) {
-          this._bounceIcon(container._appwell);
+      if (
+        !container.child.app ||
+        (container.child.app && !container.child.app.get_n_windows())
+      ) {
+        if (container.child) {
+          this.animator.bounceIcon(container.child);
         }
       }
-    }
-
-    _bounceIcon(appwell) {
-      let scaleFactor = this.getMonitor().geometry_scale;
-      let travel =
-        (this._iconSize / 3) *
-        ((0.25 + this.extension.animation_bounce) * 1.5) *
-        scaleFactor;
-      appwell.translation_y = 0;
-
-      let icon = appwell.get_parent()._icon;
-
-      let t = 250;
-      let _frames = [
-        {
-          _duration: t,
-          _func: (f, s) => {
-            let res = Linear.easeNone(f._time, 0, travel, f._duration);
-            if (this.isVertical()) {
-              appwell.translation_x = this._position == 'left' ? res : -res;
-              if (icon._badge) {
-                icon._badge.translation_x = appwell.translation_x;
-              }
-            } else {
-              // appwell.translation_y = -res;
-              appwell.translation_y = this._position == 'bottom' ? -res : res;
-            }
-          },
-        },
-        {
-          _duration: t * 3,
-          _func: (f, s) => {
-            let res = Bounce.easeOut(f._time, travel, -travel, f._duration);
-            if (this.isVertical()) {
-              appwell.translation_x = appwell.translation_x =
-                this._position == 'left' ? res : -res;
-            } else {
-              // appwell.translation_y = -res;
-              appwell.translation_y = this._position == 'bottom' ? -res : res;
-            }
-          },
-        },
-      ];
-
-      let frames = [];
-      for (let i = 0; i < 3; i++) {
-        _frames.forEach((b) => {
-          frames.push({
-            ...b,
-          });
-        });
-      }
-
-      this.extension._hiTimer.runAnimation([
-        ...frames,
-        {
-          _duration: 10,
-          _func: (f, s) => {
-            appwell.translation_y = 0;
-          },
-        },
-      ]);
-
-      // todo bounce the badge along with the icon
     }
 
     _onScrollEvent(obj, evt) {

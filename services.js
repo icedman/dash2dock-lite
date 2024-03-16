@@ -1,7 +1,6 @@
 'use strict';
 
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
-import * as Fav from 'resource:///org/gnome/shell/ui/appFavorites.js';
 
 import Gio from 'gi://Gio';
 import St from 'gi://St';
@@ -39,6 +38,7 @@ class ServiceCounter {
 
 export const Services = class {
   enable() {
+    this._mounts = {};
     this._services = [
       new ServiceCounter('trash', 1000 * 15, this.checkTrash.bind(this)),
       new ServiceCounter(
@@ -68,22 +68,7 @@ export const Services = class {
         () => {
           // deferred stuff is required when .desktop entry if first created
           // check for deferred mounts
-          if (this._deferredMounts && this._deferredMounts.length) {
-            let mounts = [...this._deferredMounts];
-            this._deferredMounts = [];
-            mounts.forEach((m) => {
-              this._onMountAdded(null, m);
-            });
-          }
-
-          // check for deferred trash
-          if (!this._trashIconSetup) {
-            this.setupTrashIcon();
-          }
-          if (this._deferredTrash) {
-            this.updateTrashIcon(true);
-            this._deferredTrash = false;
-          }
+          this._commitMounts();
 
           // notifications
           this.checkNotifications();
@@ -95,7 +80,6 @@ export const Services = class {
     this._disableNotifications = 0;
 
     this._deferredMounts = [];
-    this._deferredTrash = false;
     this._volumeMonitor = Gio.VolumeMonitor.get();
     this._volumeMonitor.connectObject(
       'mount-added',
@@ -127,11 +111,12 @@ export const Services = class {
     this.checkMounts();
     this.checkTrash();
     this.checkNotifications();
+
+    this._commitMounts();
   }
 
   disable() {
     this._services = [];
-
     this._volumeMonitor.disconnectObject(this);
     this._volumeMonitor = null;
     this._trashMonitor.disconnectObject(this);
@@ -139,15 +124,14 @@ export const Services = class {
     this._trashDir = null;
   }
 
-  temporarilyMuteOverview() {
-    if (!Main.overview._setMessage) {
-      Main.overview._setMessage = Main.overview.setMessage;
+  _commitMounts() {
+    if (this._deferredMounts && this._deferredMounts.length) {
+      let mounts = [...this._deferredMounts];
+      this._deferredMounts = [];
+      mounts.forEach((m) => {
+        this._onMountAdded(null, m);
+      });
     }
-    Main.overview.setMessage = (msg, obj) => {};
-
-    this.extension._loTimer.runOnce(() => {
-      Main.overview.setMessage = Main.overview._setMessage;
-    }, 750);
   }
 
   _onMountAdded(monitor, mount) {
@@ -159,27 +143,16 @@ export const Services = class {
     let basename = mount.get_default_location().get_basename();
     let appname = `mount-${basename}-dash2dock-lite.desktop`;
     this.setupMountIcon(mount);
-    let favorites = Fav.getAppFavorites();
-    let favorite_ids = favorites._getIds();
-
-    this.temporarilyMuteOverview();
-    favorites.addFavoriteAtPos(
-      appname,
-      this.extension.trash_icon ? favorite_ids.length - 1 : -1
-    );
     this.extension.animate();
-
-    // re-try later
-    if (!favorite_ids.includes(appname)) {
-      this._deferredMounts.push(mount);
-    }
     return true;
   }
 
   _onMountRemoved(monitor, mount) {
     let basename = mount.get_default_location().get_basename();
     let appname = `mount-${basename}-dash2dock-lite.desktop`;
-    this._unpin(appname);
+    let mount_id = `/tmp/${appname}`;
+    delete this._mounts[mount_id];
+    this.extension.animate();
   }
 
   update(elapsed) {
@@ -196,7 +169,8 @@ export const Services = class {
     let icon = mount.get_icon().names[0] || 'drive-harddisk-solidstate';
     let mount_exec = 'echo "not implemented"';
     let unmount_exec = `umount ${fullpath}`;
-    let fn = Gio.File.new_for_path(`.local/share/applications/${appname}`);
+    let mount_id = `/tmp/${appname}`;
+    let fn = Gio.File.new_for_path(mount_id);
 
     if (!fn.query_exists(null)) {
       let content = `[Desktop Entry]\nVersion=1.0\nTerminal=false\nType=Application\nName=${label}\nExec=xdg-open ${fullpath}\nIcon=${icon}\nStartupWMClass=mount-${basename}-dash2dock-lite\nActions=unmount;\n\n[Desktop Action mount]\nName=Mount\nExec=${mount_exec}\n\n[Desktop Action unmount]\nName=Unmount\nExec=${unmount_exec}\n`;
@@ -207,9 +181,9 @@ export const Services = class {
         Gio.FileCreateFlags.REPLACE_DESTINATION,
         null
       );
-      Main.notify('Preparing the mounted device icon...');
-      this._deferredMounts.push(mount);
     }
+
+    this._mounts[mount_id] = mount;
   }
 
   checkNotifications() {
@@ -337,6 +311,7 @@ export const Services = class {
 
   checkMounts() {
     if (!this.extension.mounted_icon) {
+      this._mounts = {};
       return;
     }
 
@@ -352,81 +327,13 @@ export const Services = class {
     }
 
     this.mounts = mounts;
-    let favs = Fav.getAppFavorites()._getIds();
-    favs.forEach((fav) => {
-      if (fav.startsWith('mount-') && fav.endsWith('dash2dock-lite.desktop')) {
-        if (!mount_ids.includes(fav)) {
-          this._unpin(fav);
-        }
-      }
-    });
-
     mounts.forEach((mount) => {
       let basename = mount.get_default_location().get_basename();
       let appname = `mount-${basename}-dash2dock-lite.desktop`;
-      if (!favs.includes(appname)) {
-        this._deferredMounts.push(mount);
-      }
+      this._deferredMounts.push(mount);
     });
 
     // added devices will subsequently be on mounted events
-  }
-
-  setupTrashIcon() {
-    if (!this.extension.trash_icon) {
-      return;
-    }
-    let fn = Gio.File.new_for_path(
-      '.local/share/applications/trash-dash2dock-lite.desktop'
-    );
-
-    if (!fn.query_exists(null)) {
-      let content = `[Desktop Entry]\nVersion=1.0\nTerminal=false\nType=Application\nName=Trash\nExec=xdg-open trash:///\nIcon=user-trash\nStartupWMClass=trash-dash2dock-lite\nActions=trash\n\n[Desktop Action trash]\nName=Empty Trash\nExec=${AppsFolderPath}/empty-trash.sh\nTerminal=true\n`;
-      const [, etag] = fn.replace_contents(
-        content,
-        null,
-        false,
-        Gio.FileCreateFlags.REPLACE_DESTINATION,
-        null
-      );
-      Main.notify('Preparing the trash icon...');
-      this._deferredTrash = true;
-      this._trashIconSetup = true;
-    }
-    fn = null;
-  }
-
-  _pin(app) {
-    let favorites = Fav.getAppFavorites();
-    if (!favorites._getIds().includes(app)) {
-      this.temporarilyMuteOverview();
-      favorites.addFavorite(app);
-      this.extension.animate();
-    }
-  }
-
-  _unpin(app) {
-    let favorites = Fav.getAppFavorites();
-    if (favorites._getIds().includes(app)) {
-      // thread safety hack
-
-      this.extension.docks.forEach((docks) => {
-        docks._endAnimation();
-      });
-
-      this.temporarilyMuteOverview();
-      favorites.removeFavorite(app);
-
-      this.extension.animate();
-    }
-  }
-
-  updateTrashIcon(show) {
-    if (show) {
-      this._pin('trash-dash2dock-lite.desktop');
-    } else {
-      this._unpin('trash-dash2dock-lite.desktop');
-    }
   }
 
   redraw() {
@@ -456,7 +363,7 @@ export const Services = class {
       return;
     }
 
-    let { scaleFactor, iconSize } = settings;
+    let { scaleFactor, iconSize, dock } = settings;
 
     // the trash
     if (this.extension.trash_icon && icon.icon_name.startsWith('user-trash')) {

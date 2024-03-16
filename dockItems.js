@@ -8,6 +8,8 @@ import Clutter from 'gi://Clutter';
 import Graphene from 'gi://Graphene';
 import St from 'gi://St';
 
+import { ShowAppsIcon } from 'resource:///org/gnome/shell/ui/dash.js';
+
 import { Dot } from './apps/dot.js';
 
 const Point = Graphene.Point;
@@ -104,7 +106,7 @@ export const DockItemBadgeOverlay = GObject.registerClass(
 
 export const DockItemContainer = GObject.registerClass(
   {},
-  class DockItemContainer extends St.Widget {
+  class DockItemContainer extends ShowAppsIcon {
     // appwell -> widget -> icongrid -> boxlayout -> bin -> icon
     _init(params) {
       super._init({
@@ -113,51 +115,8 @@ export const DockItemContainer = GObject.registerClass(
         ...(params || {}),
       });
 
-      let appwell = new St.Widget({ style_class: 'app-well-app' });
-      let widget = new St.Widget({ name: '_widget' });
-      // let baseIcon = new BaseIcon('');
-      let icongrid = new St.Widget({ style_class: 'overview-icon' });
-      let box = new St.BoxLayout({ name: '_boxlayout' });
-      let bin = new St.Widget({ name: '_bin' });
-
-      let gicon = new Gio.ThemedIcon({ name: 'user-trash' });
-      let icon = new St.Icon({
-        gicon,
-      });
-
-      this.add_child(appwell);
-      appwell.add_child(widget);
-
-      widget.add_child(icongrid);
-      icongrid.add_child(box);
-      box.add_child(bin);
-      bin.add_child(icon);
-      box.add_child(icon);
-
-      // widget.add_child(baseIcon);
-      // baseIcon._iconBin.child = icon;
-
-      this._icon = icon;
-      this._appwell = appwell;
-      appwell._dot = {
-        get_parent: () => {
-          return this;
-        },
-      };
-      appwell.app = {
-        get_windows: () => {
-          return [];
-        },
-        can_open_new_window: () => {
-          return false;
-        },
-        get_n_windows: () => {
-          return 0;
-        },
-        get_id: () => {
-          return null;
-        },
-      };
+      this.show(false);
+      this.layoutManager = new Clutter.BinLayout();
     }
   }
 );

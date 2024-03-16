@@ -1,5 +1,6 @@
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as Fav from 'resource:///org/gnome/shell/ui/appFavorites.js';
+import { BaseIcon } from 'resource:///org/gnome/shell/ui/iconGrid.js';
 
 import Meta from 'gi://Meta';
 import Shell from 'gi://Shell';
@@ -7,10 +8,9 @@ import GObject from 'gi://GObject';
 import Clutter from 'gi://Clutter';
 import Graphene from 'gi://Graphene';
 import St from 'gi://St';
-import {
-  Dash,
-  DashItemContainer,
-} from 'resource:///org/gnome/shell/ui/dash.js';
+import Gio from 'gi://Gio';
+
+import { Dash } from 'resource:///org/gnome/shell/ui/dash.js';
 
 import { TintEffect } from './effects/tint_effect.js';
 import { MonochromeEffect } from './effects/monochrome_effect.js';
@@ -326,12 +326,25 @@ export let Dock = GObject.registerClass(
         return this._icons;
       }
 
+      let noAnimation = !this.extension.animate_icons_unmute;
+
       if (this._extraIcons) {
         let p = this._extraIcons.get_parent();
         if (p != this.dash._box) {
           p?.remove_child(this._extraIcons);
           this.dash._box.add_child(this._extraIcons);
         }
+        this._extraIcons.get_children().forEach((appsIcon) => {
+          let button = appsIcon.first_child;
+          let icongrid = button.first_child;
+          let boxlayout = icongrid.first_child;
+          let bin = boxlayout.first_child;
+          let icon = bin.first_child;
+          appsIcon._bin = bin;
+          appsIcon._icon = icon;
+          button.track_hover = noAnimation;
+          button.toggle_mode = false;
+        });
       }
 
       if (this.dash._showAppsIcon) {
@@ -387,12 +400,6 @@ export let Dock = GObject.registerClass(
         });
       }
 
-      let noAnimation = !this.extension.animate_icons_unmute;
-
-      if (this._extraIcons) {
-        icons = [...icons, ...this._extraIcons.get_children()];
-      }
-
       icons.forEach((c) => {
         // W: breakable
         let label = c.label;
@@ -411,7 +418,9 @@ export let Dock = GObject.registerClass(
         c._draggable = draggable;
         c._appwell = appwell;
         c._dot = appwell._dot;
-        c._dot.opacity = 0;
+        if (c._dot) {
+          c._dot.opacity = 0;
+        }
         if (icon) {
           c._icon = icon;
           c._icon.reactive = true;
@@ -421,6 +430,10 @@ export let Dock = GObject.registerClass(
           icon.pivot_point = pv;
         }
       });
+
+      if (this._extraIcons) {
+        icons = [...icons, ...this._extraIcons.get_children()];
+      }
 
       try {
         // W: breakable
@@ -439,10 +452,7 @@ export let Dock = GObject.registerClass(
             c._icon = icon;
             c._label = widget._delegate.label;
             c._showApps = appsButton;
-            // make virtually unclickable
             appsButton.reactive = false;
-            // appsButton.width = 1;
-            // appsButton.height = 1;
             appsButton.track_hover = false;
             icons.push(c);
           }
@@ -620,6 +630,9 @@ export let Dock = GObject.registerClass(
       // reposition the dash
       this.dash.last_child.layout_manager.orientation = vertical;
       this.dash._box.layout_manager.orientation = vertical;
+      if (this._extraIcons) {
+        this._extraIcons.layout_manager.orientation = vertical;
+      }
 
       this.x =
         m.x +

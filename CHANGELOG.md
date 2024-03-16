@@ -4,12 +4,11 @@
 
 # Current Issues
 
-* Struts resizes at hover
-
 # Release 45
 
 * Multi-Monitor support
 * Major overhaul
+* Dynamic icons improvement
 
 # Release 43
 

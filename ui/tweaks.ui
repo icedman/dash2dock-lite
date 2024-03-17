@@ -176,6 +176,14 @@
             </child>
           </object>
         </child>
+        <child>
+          <object class="AdwActionRow">
+            <property name="title" translatable="yes">Launch new instance</property>
+            <property name="subtitle" translatable="yes">Press CTRL and click on icon to launch a new app instance.</property>
+            <child>
+            </child>
+          </object>
+        </child>
       </object>
     </child>
   </object>

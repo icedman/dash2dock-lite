@@ -215,7 +215,7 @@ export const Services = class {
       }
     } catch (err) {
       // fail silently - don't crash
-      log(err);
+      console.log(err);
       this._disableNotifications++;
     }
 
@@ -347,6 +347,8 @@ export const Services = class {
 
     let { scaleFactor, iconSize, dock } = settings;
 
+    // todo move dots and badges here?
+
     // the trash
     if (this.extension.trash_icon && icon.icon_name.startsWith('user-trash')) {
       let new_icon = this.trashFull ? 'user-trash-full' : 'user-trash';
@@ -389,7 +391,7 @@ export const Services = class {
         let calender = item._calender;
         if (!calender) {
           calender = new Calendar(CANVAS_SIZE, dock.extension._widgetStyle);
-          dock.calender = calender;
+          dock._calender = calender;
           item._calender = calender;
           item._appwell.first_child.add_child(calender);
         }

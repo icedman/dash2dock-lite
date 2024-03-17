@@ -156,6 +156,11 @@
         <summary>Dynamic calendar</summary>
         <description>Show a dynamic calendar icon.</description>
     </key>
+    <key type="i" name="calendar-style">
+        <default>0</default>
+        <summary>Calendar style</summary>
+        <description>Set calendar icon style.</description>
+    </key>
     <key type="b" name="peek-hidden-icons">
         <default>false</default>
         <summary>Peek hidden icons</summary>

@@ -140,6 +140,10 @@ export const SettingsKeys = () => {
       default_value: false,
       widget_type: 'switch',
     },
+    'calendar-style': {
+      default_value: 0,
+      widget_type: 'dropdown',
+    },
     'peek-hidden-icons': {
       default_value: false,
       widget_type: 'switch',

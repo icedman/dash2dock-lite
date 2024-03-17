@@ -331,8 +331,11 @@ export let Dock = GObject.registerClass(
 
       if (this._extraIcons) {
         this._extraIcons.get_children().forEach((appsIcon) => {
-          appsIcon._cls = appsIcon.get_style_class_name();
+          appsIcon._cls = appsIcon._cls || appsIcon.get_style_class_name();
           if (appsIcon._cls === 'dash-separator') {
+            appsIcon.visible =
+              this.extension.separator_thickness > 0 &&
+              this._extraIcons.get_children().length > 1;
             extraSeparator = appsIcon;
             separators.push(appsIcon);
             return;
@@ -365,7 +368,7 @@ export let Dock = GObject.registerClass(
 
       // W: breakable
       let icons = this.dash._box.get_children().filter((actor) => {
-        actor._cls = actor.get_style_class_name();
+        actor._cls = actor._cls || actor.get_style_class_name();
         if (actor._cls === 'dash-separator') {
           separators.push(actor);
           return false;
@@ -707,8 +710,8 @@ export let Dock = GObject.registerClass(
       this.height = vertical ? width : height;
 
       if (this.animated) {
-        this.width *= vertical ? 1.25 : 1;
-        this.height *= !vertical ? 1.25 : 1;
+        this.width *= vertical ? 1.35 : 1;
+        this.height *= !vertical ? 1.35 : 1;
         this.width += !vertical * iconSizeSpaced * 2.5 * scaleFactor;
         this.height += vertical * iconSizeSpaced * 2.5 * scaleFactor;
 

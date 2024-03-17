@@ -11,10 +11,17 @@ export const Calendar = GObject.registerClass(
 
   // todo St.DrawingArea
   class Calendar extends Clutter.Actor {
-    _init(x) {
+    _init(x, settings = {}) {
       super._init();
 
       if (x) size = x;
+
+      this.settings = {
+        dark_color: [0.2, 0.2, 0.2, 1.0],
+        light_color: [1.0, 1.0, 1.0, 1.0],
+        accent_color: [1.0, 0.0, 0.0, 1.0],
+        ...settings,
+      };
 
       this._canvas = new Clutter.Canvas();
       this._canvas.connect('draw', this.on_draw.bind(this));

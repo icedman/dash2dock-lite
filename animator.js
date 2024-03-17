@@ -387,7 +387,6 @@ export let Animator = class {
 
     // separators
     dock._separators.forEach((actor) => {
-      actor.style = this.extension._separatorStyle;
       let prev = actor.get_previous_sibling() || actor._prev;
       let next = actor.get_next_sibling();
       if (prev && next && prev._icon && next._icon) {

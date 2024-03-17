@@ -1,3 +1,5 @@
+'use strict';
+
 import GLib from 'gi://GLib';
 
 // todo.. recompute ... seems to length the debounce hold out period

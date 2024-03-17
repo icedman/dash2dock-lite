@@ -101,6 +101,16 @@
         <summary>Border thickness</summary>
         <description>Border thickness.</description>
     </key>
+    <key type="(dddd)" name="separator-color">
+        <default>(1.,1.,1.,1.)</default>
+        <summary>Separator color</summary>
+        <description>Set dock separator color.</description>
+    </key>
+    <key type="i" name="separator-thickness">
+        <default>0</default>
+        <summary>Separator thickness</summary>
+        <description>separator thickness.</description>
+    </key>
     <key type="d" name="dock-padding">
         <default>0.5</default>
         <summary>Dock padding</summary>
@@ -136,10 +146,20 @@
         <summary>Dynamic clock</summary>
         <description>Show a dynamic clock icon.</description>
     </key>
+    <key type="i" name="clock-style">
+        <default>0</default>
+        <summary>Clock style</summary>
+        <description>Set clock icon style.</description>
+    </key>
     <key type="b" name="calendar-icon">
         <default>false</default>
         <summary>Dynamic calendar</summary>
         <description>Show a dynamic calendar icon.</description>
+    </key>
+    <key type="i" name="calendar-style">
+        <default>0</default>
+        <summary>Calendar style</summary>
+        <description>Set calendar icon style.</description>
     </key>
     <key type="b" name="peek-hidden-icons">
         <default>false</default>
@@ -275,6 +295,36 @@
         <default>""</default>
         <summary>MsgBus</summary>
         <description>Preferences-Extension message bus</description>
+    </key>
+    <key type="(dddd)" name="drawing-accent-color">
+        <default>(1.,0.,0.,1.)</default>
+        <summary>Primary color</summary>
+        <description>Set primary color.</description>
+    </key>
+    <key type="(dddd)" name="drawing-secondary-color">
+        <default>(1.,0.6,0.,1.)</default>
+        <summary>Secondary color</summary>
+        <description>Set secondary color.</description>
+    </key>
+    <key type="(dddd)" name="drawing-dark-color">
+        <default>(0.2, 0.2, 0.2, 1.)</default>
+        <summary>Dark color</summary>
+        <description>Set dark color.</description>
+    </key>
+    <key type="(dddd)" name="drawing-light-color">
+        <default>(1.,1.,1.,1.)</default>
+        <summary>Light color</summary>
+        <description>Set light color.</description>
+    </key>
+    <key type="(dddd)" name="drawing-dark-foreground">
+        <default>(0.8, 0.8, 0.8, 1.)</default>
+        <summary>Dark foreground color</summary>
+        <description>Set dark foreground color.</description>
+    </key>
+    <key type="(dddd)" name="drawing-light-foreground">
+        <default>(0.3,0.3,0.3,1.)</default>
+        <summary>Light color</summary>
+        <description>Set light foreground color.</description>
     </key>
   </schema>
 </schemalist>

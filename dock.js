@@ -35,7 +35,6 @@ export const DockAlignment = {
   END: 'end',
 };
 
-// const ANIM_REENABLE_DELAY = 250;
 const ANIM_DEBOUNCE_END_DELAY = 750;
 
 const MIN_SCROLL_RESOLUTION = 4;
@@ -139,11 +138,6 @@ export let Dock = GObject.registerClass(
     }
 
     _onButtonPressEvent(evt) {
-      if (this._nearestIcon && this._nearestIcon._showApps) {
-        Main.uiGroup.find_child_by_name('overview')._controls._toggleAppsPage();
-        return Clutter.EVENT_PROPAGATE;
-      }
-
       return Clutter.EVENT_PROPAGATE;
     }
     _onMotionEvent(evt) {
@@ -175,6 +169,12 @@ export let Dock = GObject.registerClass(
       this._beginAnimation();
       this.autohider._debounceCheckHide();
       return Clutter.EVENT_PROPAGATE;
+    }
+    _onClock() {
+      this._clock?.redraw();
+    }
+    _onCalendar() {
+      this._calendar?.redraw();
     }
 
     _createEffect(idx) {
@@ -235,15 +235,22 @@ export let Dock = GObject.registerClass(
     addDash() {
       let dash = new Dash();
       dash._adjustIconSize = () => {};
-      this.add_child(dash);
       this.dash = dash;
       this.dash._background.visible = false;
       this.dash._box.clip_to_allocation = false;
 
-      this.extension._loTimer.runOnce(() => {
-        this._extraIcons = new St.BoxLayout();
-        this.dash._box.add_child(this._extraIcons);
-      }, 0);
+      this._extraIcons = new St.BoxLayout();
+      this.dash._box.add_child(this._extraIcons);
+
+      this._separator = new St.Widget({
+        style_class: 'dash-separator',
+        y_align: Clutter.ActorAlign.CENTER,
+        height: 48,
+      });
+      this._separator.name = 'separator';
+      this._extraIcons.add_child(this._separator);
+
+      this.add_child(dash);
       return dash;
     }
 
@@ -318,10 +325,21 @@ export let Dock = GObject.registerClass(
     _findIcons() {
       if (!this.dash) return [];
 
+      let separators = [];
       let noAnimation = !this.extension.animate_icons_unmute;
+      let extraSeparator = null;
 
       if (this._extraIcons) {
         this._extraIcons.get_children().forEach((appsIcon) => {
+          appsIcon._cls = appsIcon._cls || appsIcon.get_style_class_name();
+          if (appsIcon._cls === 'dash-separator') {
+            appsIcon.visible =
+              this.extension.separator_thickness > 0 &&
+              this._extraIcons.get_children().length > 1;
+            extraSeparator = appsIcon;
+            separators.push(appsIcon);
+            return;
+          }
           let button = appsIcon.first_child;
           let icongrid = button.first_child;
           let boxlayout = icongrid.first_child;
@@ -348,20 +366,16 @@ export let Dock = GObject.registerClass(
         this.dash._showAppsIcon.visible = this.extension.apps_icon;
       }
 
-      let separators = [];
-
       // W: breakable
       let icons = this.dash._box.get_children().filter((actor) => {
-        actor._cls = actor.get_style_class_name();
+        actor._cls = actor._cls || actor.get_style_class_name();
         if (actor._cls === 'dash-separator') {
           separators.push(actor);
           return false;
         }
-
         if (!actor.child) {
           return false;
         }
-
         if (actor.child._delegate && actor.child._delegate.icon) {
           // hook activate function
           if (actor.child.activate && !actor.child._activate) {
@@ -377,6 +391,10 @@ export let Dock = GObject.registerClass(
         }
         return false;
       });
+
+      if (extraSeparator && icons.length) {
+        extraSeparator._prev = icons[icons.length - 1];
+      }
 
       this._separators = separators;
 
@@ -408,6 +426,8 @@ export let Dock = GObject.registerClass(
         let bin = boxlayout.first_child;
         let icon = bin.first_child;
 
+        c.child.visible = true;
+
         icongrid.style = noAnimation ? '' : 'background: none !important;';
 
         c._bin = bin;
@@ -429,7 +449,10 @@ export let Dock = GObject.registerClass(
       });
 
       if (this._extraIcons) {
-        icons = [...icons, ...this._extraIcons.get_children()];
+        icons = [
+          ...icons,
+          ...this._extraIcons.get_children().filter((e) => e._icon),
+        ];
       }
 
       try {
@@ -452,6 +475,29 @@ export let Dock = GObject.registerClass(
             appsButton.reactive = false;
             appsButton.track_hover = false;
             icons.push(c);
+            if (!c._connected) {
+              c._connected = true;
+              icon.reactive = true;
+              icon.track_hover = true;
+              icon.connectObject(
+                'button-press-event',
+                () => {
+                  Main.uiGroup
+                    .find_child_by_name('overview')
+                    ._controls._toggleAppsPage();
+                  return Clutter.EVENT_PROPAGATE;
+                },
+                'enter-event',
+                () => {
+                  c.showLabel();
+                },
+                'leave-event',
+                () => {
+                  c.hideLabel();
+                },
+                this
+              );
+            }
           }
         }
       } catch (err) {
@@ -510,7 +556,11 @@ export let Dock = GObject.registerClass(
           let mounted = Object.keys(this.extension.services._mounts);
 
           extras.forEach((extra) => {
-            if (extra.name.includes('trash')) return;
+            if (
+              extra.name.includes('trash') ||
+              extra.name.includes('separator')
+            )
+              return;
             if (!mounted.includes(extra.name)) {
               this._extraIcons.remove_child(extra);
               this._icons = null;
@@ -660,8 +710,8 @@ export let Dock = GObject.registerClass(
       this.height = vertical ? width : height;
 
       if (this.animated) {
-        this.width *= vertical ? 1.25 : 1;
-        this.height *= !vertical ? 1.25 : 1;
+        this.width *= vertical ? 1.35 : 1;
+        this.height *= !vertical ? 1.35 : 1;
         this.width += !vertical * iconSizeSpaced * 2.5 * scaleFactor;
         this.height += vertical * iconSizeSpaced * 2.5 * scaleFactor;
 

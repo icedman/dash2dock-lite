@@ -387,15 +387,17 @@ export let Animator = class {
 
     // separators
     dock._separators.forEach((actor) => {
-      let prev = actor.get_previous_sibling();
+      let prev = actor.get_previous_sibling() || actor._prev;
       let next = actor.get_next_sibling();
       if (prev && next && prev._icon && next._icon) {
         actor.translationX =
           (prev._icon.translationX + next._icon.translationX) / 2;
         actor.translationY =
           (prev._icon.translationY + next._icon.translationY) / 2;
-        actor.width = !vertical ? 2 : iconSize * 0.75 * scaleFactor;
-        actor.height = vertical ? 2 : iconSize * 0.75 * scaleFactor;
+        let thickness = dock.extension.separator_thickness || 0;
+        actor.width = !vertical ? thickness : iconSize * 0.5 * scaleFactor;
+        actor.height = vertical ? thickness : iconSize * 0.75 * scaleFactor;
+        actor.visible = thickness > 0;
       }
     });
 
@@ -446,6 +448,7 @@ export let Animator = class {
 
     // background
     {
+      dock._background.style = dock.extension._backgroundStyle;
       dock._background.update({
         first: animateIcons[0],
         last: animateIcons[animateIcons.length - 1],

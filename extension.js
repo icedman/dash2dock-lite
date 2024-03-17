@@ -17,6 +17,8 @@
  *
  */
 
+'use strict';
+
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as Fav from 'resource:///org/gnome/shell/ui/appFavorites.js';
 
@@ -85,7 +87,6 @@ export default class Dash2DockLiteExt extends Extension {
       for (let i = 0; i < count; i++) {
         let d = this.createDock();
         d._monitorIndex = i;
-        console.log(`>> ${i} ${d._monitorIndex}`);
       }
     }
   }
@@ -126,7 +127,9 @@ export default class Dash2DockLiteExt extends Extension {
 
     this._enableSettings();
 
-    this._disable_borders = this.border_radius > 0;
+    // no longer needed
+    // this._disable_borders = this.border_radius > 0;
+
     // animations are always on - but may be muted
     if (!this._settingsKeys.getValue('animate-icons')) {
       this._settingsKeys.setValue('animate-icons', true);
@@ -143,7 +146,6 @@ export default class Dash2DockLiteExt extends Extension {
 
     // todo follow animator and autohider protocol
     this.services.enable();
-
     this._onCheckServices();
 
     this._updateLampAnimation();
@@ -152,6 +154,7 @@ export default class Dash2DockLiteExt extends Extension {
     this._updateIconResolution();
     this._updateLayout();
     this._updateAutohide();
+    this._updateWidgetStyle();
 
     this._addEvents();
 
@@ -306,6 +309,10 @@ export default class Dash2DockLiteExt extends Extension {
           this.animate();
           break;
         }
+        case 'clock-style':
+        case 'calendar-style':
+          this._updateWidgetStyle();
+          break;
         case 'apps-icon':
         case 'apps-icon-front':
         case 'calendar-icon':
@@ -376,6 +383,8 @@ export default class Dash2DockLiteExt extends Extension {
         case 'border-radius':
           this._debouncedUpdateStyle();
           break;
+        case 'separator-color':
+        case 'separator-thickness':
         case 'border-color':
         case 'border-thickness':
         case 'customize-topbar':
@@ -396,12 +405,6 @@ export default class Dash2DockLiteExt extends Extension {
         case 'trash-icon': {
           this._updateLayout();
           this.animate();
-
-          this._loTimer.runOnce(() => {
-            this._updateLayout();
-            this.animate();
-          }, 250);
-
           break;
         }
       }
@@ -568,6 +571,28 @@ export default class Dash2DockLiteExt extends Extension {
     this.services.update(SERVICES_UPDATE_INTERVAL);
   }
 
+  _updateWidgetStyle() {
+    this._widgetStyle = {
+      dark_color: this.drawing_dark_color,
+      light_color: this.drawing_light_color,
+      accent_color: this.drawing_accent_color,
+      dark_foreground: this.drawing_dark_foreground,
+      light_foreground: this.drawing_light_foreground,
+      secondary_color: this.drawing_secondary_color,
+      clock_style: this.clock_style,
+    };
+    this.docks.forEach((dock) => {
+      let widgets = [dock._clock, dock._calendar];
+      widgets.forEach((w) => {
+        if (w) {
+          w.settings = this._widgetStyle;
+          w.redraw();
+        }
+      });
+    });
+    this.animate();
+  }
+
   _updateAnimationFPS() {
     this.docks.forEach((dock) => {
       dock.cancelAnimations();
@@ -681,37 +706,47 @@ export default class Dash2DockLiteExt extends Extension {
       }
     }
 
+    if (this.separator_thickness) {
+      let rgba = this._style.rgba(this.separator_color);
+      styles.push(
+        `.dash-separator { margin-left: 6px; margin-right: 6px; background-color: rgba(${rgba}); }`
+      );
+    }
+
     this._style.build('custom', styles);
+
     this._updateBorderStyle();
   }
 
   _updateBorderStyle() {
+    this._backgroundStyle = '';
+
     // apply border as inline style... otherwise buggy and won't show at startup
     // also add deferred bordering... otherwise rounder borders show with artifacts
-    if (this.border_thickness && !this._disable_borders) {
+    // no longer necessary<<<?
+
+    let border_style = '';
+    if (this.border_thickness /* && !this._disable_borders */) {
       let rgba = this._style.rgba(this.border_color);
-      let disable_borders = '';
-      if (this.panel_mode) {
-        disable_borders =
-          'border-left: 0px; border-right: 0px; border-bottom: 0px;';
-        // vertical border-left/right doesn;t seem to work
-        if (this._position == 'left') {
-          disable_borders =
-            'border-left: 0px; border-top: 0px; border-bottom: 0px;';
-        }
-        if (this._position == 'right') {
-          disable_borders =
-            'border-top: 0px; border-right: 0px; border-bottom: 0px;';
-        }
-      }
-      this.docks.forEach((dock) => {
-        dock._background.style = `border: ${this.border_thickness}px solid rgba(${rgba}) !important; ${disable_borders}`;
-      });
-    } else {
-      this.docks.forEach((dock) => {
-        dock._background.style = '';
-      });
+      border_style = `border: ${this.border_thickness}px solid rgba(${rgba}) !important;`;
     }
+
+    let panel_borders = '';
+    if (this.panel_mode) {
+      panel_borders =
+        'border-left: 0px; border-right: 0px; border-bottom: 0px;';
+      // vertical border-left/right doesn;t seem to work
+      if (this._position == 'left') {
+        panel_borders =
+          'border-left: 0px; border-top: 0px; border-bottom: 0px;';
+      }
+      if (this._position == 'right') {
+        panel_borders =
+          'border-top: 0px; border-right: 0px; border-bottom: 0px;';
+      }
+    }
+
+    this._backgroundStyle = `${border_style} ${panel_borders}`;
   }
 
   _updateLayout(disable) {
@@ -723,15 +758,19 @@ export default class Dash2DockLiteExt extends Extension {
   }
 
   _updateIconSpacing(disable) {
-    this._loTimer.runOnce(() => {
-      this.docks.forEach((dock) => {
-        dock._findIcons();
-        dock._icons?.forEach((icon) => {
-          icon.style = '';
+    if (!this._iconSpacingDebounceSeq) {
+      this._iconSpacingDebounceSeq = this._loTimer.runDebounced(() => {
+        this.docks.forEach((dock) => {
+          dock._findIcons();
+          dock._icons?.forEach((icon) => {
+            icon.style = '';
+          });
+          dock._beginAnimation();
         });
-        dock._beginAnimation();
-      });
-    }, 750);
+      }, 750);
+    } else {
+      this._loTimer.runDebounced(this._iconSpacingDebounceSeq);
+    }
   }
 
   _updateAutohide(disable) {

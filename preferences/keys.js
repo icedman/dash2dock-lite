@@ -132,9 +132,17 @@ export const SettingsKeys = () => {
       default_value: false,
       widget_type: 'switch',
     },
+    'clock-style': {
+      default_value: 0,
+      widget_type: 'dropdown',
+    },
     'calendar-icon': {
       default_value: false,
       widget_type: 'switch',
+    },
+    'calendar-style': {
+      default_value: 0,
+      widget_type: 'dropdown',
     },
     'peek-hidden-icons': {
       default_value: false,
@@ -180,6 +188,15 @@ export const SettingsKeys = () => {
       test: { values: [0, 1, 2, 3] },
     },
     'border-color': {
+      default_value: [1, 1, 1, 1],
+      widget_type: 'color',
+    },
+    'separator-thickness': {
+      default_value: 0,
+      widget_type: 'dropdown',
+      test: { values: [0, 1, 2, 3] },
+    },
+    'separator-color': {
       default_value: [1, 1, 1, 1],
       widget_type: 'color',
     },
@@ -272,6 +289,30 @@ export const SettingsKeys = () => {
     'scroll-sensitivity': {
       default_value: 0.4,
       widget_type: 'scale',
+    },
+    'drawing-accent-color': {
+      default_value: [1.0, 0, 0, 1.0],
+      widget_type: 'color',
+    },
+    'drawing-secondary-color': {
+      default_value: [1.0, 0.6, 0, 1.0],
+      widget_type: 'color',
+    },
+    'drawing-dark-color': {
+      default_value: [0.2, 0.2, 0.2, 1.0],
+      widget_type: 'color',
+    },
+    'drawing-light-color': {
+      default_value: [1.0, 1.0, 1.0, 1.0],
+      widget_type: 'color',
+    },
+    'drawing-dark-foreground': {
+      default_value: [0.8, 0.8, 0.8, 1.0],
+      widget_type: 'color',
+    },
+    'drawing-light-foreground': {
+      default_value: [0.3, 0.3, 0.3, 1.0],
+      widget_type: 'color',
     },
   });
 

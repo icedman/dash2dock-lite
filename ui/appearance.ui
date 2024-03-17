@@ -88,6 +88,36 @@
             </child>
           </object>
         </child>
+        <child>
+          <object class="AdwActionRow">
+            <property name="title" translatable="yes">Separator Thickness</property>
+            <property name="subtitle" translatable="yes">Set separator thickness.</property>
+            <property name="activatable-widget">separator-thickness</property>
+            <child>
+              <object class="GtkDropDown" id="separator-thickness">
+                <property name="valign">center</property>
+                <property name="model">separator-thickness-model</property>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="AdwActionRow">
+            <property name="title" translatable="yes">Separator Color</property>
+            <property name="subtitle" translatable="yes">Select separator color.</property>
+            <property name="activatable-widget">separator-color</property>
+            <child>
+              <object class="GtkColorButton" id="separator-color">
+                <property name="valign">center</property>
+                <property name="hexpand">false</property>
+                <property name="width-request">70px</property>
+                <property name="height-request">45px</property>
+                <property name="show-editor">true</property>
+                <property name="use-alpha">true</property>
+              </object>
+            </child>
+          </object>
+        </child>
       </object>
     </child>
     <child>
@@ -428,6 +458,14 @@
     </items>
   </object>
   <object class="GtkStringList" id="border-thickness-model">
+    <items>
+      <item translatable="yes">None</item>
+      <item>1px</item>
+      <item>2px</item>
+      <item>3px</item>
+    </items>
+  </object>
+  <object class="GtkStringList" id="separator-thickness-model">
     <items>
       <item translatable="yes">None</item>
       <item>1px</item>

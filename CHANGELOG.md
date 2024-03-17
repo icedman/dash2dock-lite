@@ -1,8 +1,19 @@
 # Roadmap
 
-* Features frozen - unless you have a very nice suggestion :)
+* Panel mode
 
 # Current Issues
+
+* ?
+
+# Release 47
+
+* Add separator with styles
+* Clock styles
+
+# Release 46
+
+* Minor bug fixes
 
 # Release 45
 

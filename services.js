@@ -374,8 +374,11 @@ export const Services = class {
           clock.translationX = item._icon.translationX;
           clock.translationY = item._icon.translationY;
           clock.show();
+          item._icon.visible = !clock._hideIcon;
         }
       } else {
+        let clock = item._clock;
+        item._icon.visible = true;
         clock?.hide();
       }
     }
@@ -398,8 +401,11 @@ export const Services = class {
           calender.translationX = item._icon.translationX;
           calender.translationY = item._icon.translationY;
           calender.show();
+          item._icon.visible = !calender._hideIcon;
         }
       } else {
+        let calender = item._calender;
+        item._icon.visible = true;
         calender?.hide();
       }
     }

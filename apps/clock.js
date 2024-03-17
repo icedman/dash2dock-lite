@@ -254,7 +254,7 @@ export const Clock = GObject.registerClass(
             ...style,
             frame: null,
           };
-          let hideIcon = true;
+          hideIcon = true;
           break;
         }
         case 4: {
@@ -268,7 +268,7 @@ export const Clock = GObject.registerClass(
             ...style,
             frame: null,
           };
-          let hideIcon = true;
+          hideIcon = true;
           break;
         }
 
@@ -283,7 +283,7 @@ export const Clock = GObject.registerClass(
             marks: null,
             frame: null,
           };
-          let hideIcon = true;
+          hideIcon = true;
           break;
         }
         case 2: {
@@ -296,6 +296,7 @@ export const Clock = GObject.registerClass(
             marks: null,
             frame: null,
           };
+          hideIcon = true;
           break;
         }
 
@@ -322,9 +323,7 @@ export const Clock = GObject.registerClass(
 
       _drawClock(ctx, new Date(), 0, 0, size, style);
 
-      if (this._icon) {
-        this._icon.visible = hideIcon;
-      }
+      this._hideIcon = hideIcon;
       ctx.$dispose();
     }
 

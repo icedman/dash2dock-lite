@@ -381,6 +381,8 @@ export default class Dash2DockLiteExt extends Extension {
         case 'border-radius':
           this._debouncedUpdateStyle();
           break;
+        case 'separator-color':
+        case 'separator-thickness':
         case 'border-color':
         case 'border-thickness':
         case 'customize-topbar':
@@ -592,6 +594,7 @@ export default class Dash2DockLiteExt extends Extension {
         }
       });
     });
+    this.animate();
   }
 
   _updateAnimationFPS() {
@@ -712,6 +715,7 @@ export default class Dash2DockLiteExt extends Extension {
   }
 
   _updateBorderStyle() {
+    this._backgroundStyle = '';
     // apply border as inline style... otherwise buggy and won't show at startup
     // also add deferred bordering... otherwise rounder borders show with artifacts
     if (this.border_thickness && !this._disable_borders) {
@@ -730,14 +734,15 @@ export default class Dash2DockLiteExt extends Extension {
             'border-top: 0px; border-right: 0px; border-bottom: 0px;';
         }
       }
-      this.docks.forEach((dock) => {
-        dock._background.style = `border: ${this.border_thickness}px solid rgba(${rgba}) !important; ${disable_borders}`;
-      });
-    } else {
-      this.docks.forEach((dock) => {
-        dock._background.style = '';
-      });
+      this._backgroundStyle = `border: ${this.border_thickness}px solid rgba(${rgba}) !important; ${disable_borders}`;
     }
+
+    this._separatorStyle = '';
+    if (this.separator_thickness) {
+      let rgba = this._style.rgba(this.separator_color);
+      this._separatorStyle = `margin-left: 6px; margin-right: 6px; background-color: rgba(${rgba});`;
+    }
+    this.animate();
   }
 
   _updateLayout(disable) {

@@ -1,4 +1,5 @@
 // loosely based on JustPerfection & Blur-My-Shell
+'use strict';
 
 import Gdk from 'gi://Gdk';
 import Gtk from 'gi://Gtk';

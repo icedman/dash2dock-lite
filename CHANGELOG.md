@@ -1,10 +1,13 @@
 # Roadmap
 
-* Features frozen - unless you have a very nice suggestion :)
+* Panel mode
 
 # Current Issues
 
-* Struts resizes at hover
+
+# Release 46
+
+* Minor bug fixes
 
 # Release 45
 

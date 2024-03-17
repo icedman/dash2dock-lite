@@ -1,3 +1,5 @@
+'use strict';
+
 import PangoCairo from 'gi://PangoCairo';
 import Pango from 'gi://Pango';
 import Clutter from 'gi://Clutter';

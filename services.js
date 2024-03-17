@@ -46,9 +46,9 @@ export const Services = class {
         1000 * 60, // every minute
         // 1000 * 1, // every second
         () => {
-          if (this.clock && this.clock.visible) {
-            this.clock.redraw();
-          }
+          this.extension.docks.forEach((d) => {
+            d._onClock();
+          })
         },
         -1
       ),
@@ -56,9 +56,9 @@ export const Services = class {
         'calendar',
         1000 * 60 * 15,
         () => {
-          if (this.calendar && this.calendar.visible) {
-            this.calendar.redraw();
-          }
+          this.extension.docks.forEach((d) => {
+            d._onCalendar();
+          })
         },
         -1
       ),
@@ -336,24 +336,6 @@ export const Services = class {
     // added devices will subsequently be on mounted events
   }
 
-  redraw() {
-    let widgets = [this.clockCanvas, this.calendar];
-    widgets.forEach((w) => {
-      if (w) {
-        w.settings = {
-          dark_color: this.extension.drawing_dark_color,
-          light_color: this.extension.drawing_light_color,
-          accent_color: this.extension.drawing_accent_color,
-          dark_foreground: this.extension.drawing_dark_foreground,
-          light_foreground: this.extension.drawing_light_foreground,
-          secondary_color: this.extension.drawing_secondary_color,
-          clock_style: this.extension.clock_style,
-        };
-        w.redraw();
-      }
-    });
-  }
-
   updateIcon(item, settings) {
     if (!item) {
       return;
@@ -372,20 +354,19 @@ export const Services = class {
         icon.icon_name = new_icon;
       }
     }
-
-    let didCreate = false;
-
+    
     // clock
     if (icon.icon_name == 'org.gnome.clocks') {
       if (this.extension.clock_icon) {
         let clock = item._clock;
         if (!clock) {
           clock = new Clock(CANVAS_SIZE);
-          this.clock = clock;
+          dock._clock = clock;
           item._clock = clock;
           item._appwell.first_child.add_child(clock);
         }
         if (clock) {
+          clock._icon = icon;
           clock.width = item._icon.width;
           clock.height = item._icon.height;
           clock.set_scale(item._icon.scaleX, item._icon.scaleY);
@@ -395,7 +376,7 @@ export const Services = class {
           clock.show();
         }
       } else {
-        this.clock?.hide();
+        clock?.hide();
       }
     }
 
@@ -405,7 +386,7 @@ export const Services = class {
         let calender = item._calender;
         if (!calender) {
           calender = new Calendar(CANVAS_SIZE);
-          this.calender = calender;
+          dock.calender = calender;
           item._calender = calender;
           item._appwell.first_child.add_child(calender);
         }
@@ -419,12 +400,8 @@ export const Services = class {
           calender.show();
         }
       } else {
-        this.calender?.hide();
+        calender?.hide();
       }
-    }
-
-    if (didCreate) {
-      this.redraw();
     }
   }
 };

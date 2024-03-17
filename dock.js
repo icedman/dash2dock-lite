@@ -170,6 +170,12 @@ export let Dock = GObject.registerClass(
       this.autohider._debounceCheckHide();
       return Clutter.EVENT_PROPAGATE;
     }
+    _onClock() {
+      this._clock?.redraw();
+    }
+    _onCalendar() {
+      this._calendar?.redraw();
+    }
 
     _createEffect(idx) {
       let effect = null;
@@ -233,10 +239,16 @@ export let Dock = GObject.registerClass(
       this.dash._background.visible = false;
       this.dash._box.clip_to_allocation = false;
 
-      // this.extension._loTimer.runOnce(() => {
       this._extraIcons = new St.BoxLayout();
       this.dash._box.add_child(this._extraIcons);
-      // }, 0);
+
+      this._separator = new St.Widget({
+          style_class: 'dash-separator',
+          y_align: Clutter.ActorAlign.CENTER,
+          height: 48,
+      });
+      this._separator.name = 'separator';
+      this._extraIcons.add_child(this._separator);
 
       this.add_child(dash);
       return dash;
@@ -313,10 +325,16 @@ export let Dock = GObject.registerClass(
     _findIcons() {
       if (!this.dash) return [];
 
+      let separators = [];
       let noAnimation = !this.extension.animate_icons_unmute;
 
       if (this._extraIcons) {
         this._extraIcons.get_children().forEach((appsIcon) => {
+          appsIcon._cls = appsIcon.get_style_class_name();
+          if (appsIcon._cls === 'dash-separator') {
+            separators.push(appsIcon);
+            return;
+          }
           let button = appsIcon.first_child;
           let icongrid = button.first_child;
           let boxlayout = icongrid.first_child;
@@ -342,8 +360,6 @@ export let Dock = GObject.registerClass(
       if (this.dash._showAppsIcon) {
         this.dash._showAppsIcon.visible = this.extension.apps_icon;
       }
-
-      let separators = [];
 
       // W: breakable
       let icons = this.dash._box.get_children().filter((actor) => {
@@ -533,7 +549,7 @@ export let Dock = GObject.registerClass(
           let mounted = Object.keys(this.extension.services._mounts);
 
           extras.forEach((extra) => {
-            if (extra.name.includes('trash')) return;
+            if (extra.name.includes('trash') || extra.name.includes('separator')) return;
             if (!mounted.includes(extra.name)) {
               this._extraIcons.remove_child(extra);
               this._icons = null;

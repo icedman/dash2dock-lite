@@ -145,7 +145,6 @@ export default class Dash2DockLiteExt extends Extension {
 
     // todo follow animator and autohider protocol
     this.services.enable();
-
     this._onCheckServices();
 
     this._updateLampAnimation();
@@ -154,6 +153,7 @@ export default class Dash2DockLiteExt extends Extension {
     this._updateIconResolution();
     this._updateLayout();
     this._updateAutohide();
+    this._updateWidgetStyle();
 
     this._addEvents();
 
@@ -308,6 +308,9 @@ export default class Dash2DockLiteExt extends Extension {
           this.animate();
           break;
         }
+        case 'clock-style':
+          this._updateWidgetStyle();
+          break;
         case 'apps-icon':
         case 'apps-icon-front':
         case 'calendar-icon':
@@ -568,6 +571,27 @@ export default class Dash2DockLiteExt extends Extension {
     if (!this.services) return; // todo why does this happen?
     // todo convert services time in seconds
     this.services.update(SERVICES_UPDATE_INTERVAL);
+  }
+
+  _updateWidgetStyle() {
+    this._widgetStyle = {
+      dark_color: this.drawing_dark_color,
+      light_color: this.drawing_light_color,
+      accent_color: this.drawing_accent_color,
+      dark_foreground: this.drawing_dark_foreground,
+      light_foreground: this.drawing_light_foreground,
+      secondary_color: this.drawing_secondary_color,
+      clock_style: this.clock_style,
+    };
+    this.docks.forEach((dock) => {
+      let widgets = [dock._clock, dock._calendar];
+      widgets.forEach((w) => {
+        if (w) {
+          w.settings = this._widgetStyle;
+          w.redraw();
+        }
+      });
+    });
   }
 
   _updateAnimationFPS() {

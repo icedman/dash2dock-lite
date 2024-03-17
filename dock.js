@@ -243,9 +243,9 @@ export let Dock = GObject.registerClass(
       this.dash._box.add_child(this._extraIcons);
 
       this._separator = new St.Widget({
-          style_class: 'dash-separator',
-          y_align: Clutter.ActorAlign.CENTER,
-          height: 48,
+        style_class: 'dash-separator',
+        y_align: Clutter.ActorAlign.CENTER,
+        height: 48,
       });
       this._separator.name = 'separator';
       this._extraIcons.add_child(this._separator);
@@ -327,11 +327,13 @@ export let Dock = GObject.registerClass(
 
       let separators = [];
       let noAnimation = !this.extension.animate_icons_unmute;
+      let extraSeparator = null;
 
       if (this._extraIcons) {
         this._extraIcons.get_children().forEach((appsIcon) => {
           appsIcon._cls = appsIcon.get_style_class_name();
           if (appsIcon._cls === 'dash-separator') {
+            extraSeparator = appsIcon;
             separators.push(appsIcon);
             return;
           }
@@ -368,11 +370,9 @@ export let Dock = GObject.registerClass(
           separators.push(actor);
           return false;
         }
-
         if (!actor.child) {
           return false;
         }
-
         if (actor.child._delegate && actor.child._delegate.icon) {
           // hook activate function
           if (actor.child.activate && !actor.child._activate) {
@@ -388,6 +388,10 @@ export let Dock = GObject.registerClass(
         }
         return false;
       });
+
+      if (extraSeparator && icons.length) {
+        extraSeparator._prev = icons[icons.length - 1];
+      }
 
       this._separators = separators;
 
@@ -549,7 +553,11 @@ export let Dock = GObject.registerClass(
           let mounted = Object.keys(this.extension.services._mounts);
 
           extras.forEach((extra) => {
-            if (extra.name.includes('trash') || extra.name.includes('separator')) return;
+            if (
+              extra.name.includes('trash') ||
+              extra.name.includes('separator')
+            )
+              return;
             if (!mounted.includes(extra.name)) {
               this._extraIcons.remove_child(extra);
               this._icons = null;

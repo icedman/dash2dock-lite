@@ -48,7 +48,7 @@ export const Services = class {
         () => {
           this.extension.docks.forEach((d) => {
             d._onClock();
-          })
+          });
         },
         -1
       ),
@@ -58,7 +58,7 @@ export const Services = class {
         () => {
           this.extension.docks.forEach((d) => {
             d._onCalendar();
-          })
+          });
         },
         -1
       ),
@@ -354,13 +354,13 @@ export const Services = class {
         icon.icon_name = new_icon;
       }
     }
-    
+
     // clock
     if (icon.icon_name == 'org.gnome.clocks') {
       if (this.extension.clock_icon) {
         let clock = item._clock;
         if (!clock) {
-          clock = new Clock(CANVAS_SIZE);
+          clock = new Clock(CANVAS_SIZE, dock.extension._widgetStyle);
           dock._clock = clock;
           item._clock = clock;
           item._appwell.first_child.add_child(clock);
@@ -385,7 +385,7 @@ export const Services = class {
       if (this.extension.calendar_icon) {
         let calender = item._calender;
         if (!calender) {
-          calender = new Calendar(CANVAS_SIZE);
+          calender = new Calendar(CANVAS_SIZE, dock.extension._widgetStyle);
           dock.calender = calender;
           item._calender = calender;
           item._appwell.first_child.add_child(calender);

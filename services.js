@@ -12,7 +12,7 @@ const Point = Graphene.Point;
 import { Clock } from './apps/clock.js';
 import { Calendar } from './apps/calendar.js';
 
-const MAX_RECENT_FILES = 12;
+const MAX_RECENT_FILES = 8;
 
 // sync with animator
 const CANVAS_SIZE = 120;
@@ -429,6 +429,8 @@ export const Services = class {
       null
     );
 
+    this._downloadFilesLength = Object.keys(fileStat).length;
+
     this._downloadFiles = [];
     let f = iter.next_file(null);
     while (f) {
@@ -439,7 +441,7 @@ export const Services = class {
             index: fileStat[name]?.index,
             name,
             display: f.get_display_name(),
-            icon: f.get_icon(),
+            icon: f.get_icon().get_names()[0] ?? 'folder',
             type: f.get_content_type(),
             date: fileStat[name]?.date ?? ''
           });

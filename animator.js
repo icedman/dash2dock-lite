@@ -531,18 +531,17 @@ export let Animator = class {
         let ty = target._icon.translationY;
         let p = dock._get_position(target);
 
-        list._box.translationX = tp[0] - first.width / 2 + tx;
+        list._box.translationX = tp[0] - list._box.width / 2 + tx;
         list._box.translationY = tp[1] - first.height + ty;
 
         target._label.hide();
         list.opacity = 255;
 
         list._box.get_children().forEach(c => {
+          c._label.translationX = -c._label.width;
+          c._icon.translationX = c._icon.width;
           if (c._label.opacity < 255) c._label.opacity += 5;
-          c.translationX =
-            -c.width +
-            dock._list._box.width / 2 +
-            (c._icon.width / 2) * c._icon.scaleX;
+          c.translationX = c._icon.width * 2 * c._icon.scaleX;
           c.x = (c.x * list_coef + c._x) / (list_coef + 1);
           c.y = (c.y * list_coef + c._y) / (list_coef + 1);
           c.rotation_angle_z =

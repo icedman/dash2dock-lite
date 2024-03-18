@@ -176,6 +176,8 @@ export const DockItemList = GObject.registerClass(
       this._box = new St.Widget({ style_class: '-hi' });
       list.forEach(l => {
         let iconWithLabel = new St.BoxLayout({ style_class: '-hi' });
+        iconWithLabel.text_direction = 2;
+
         let label = new St.Label({
           style_class: 'dash-label',
           x_expand: false,
@@ -183,22 +185,21 @@ export const DockItemList = GObject.registerClass(
           x_align: Clutter.ActorAlign.CENTER,
           y_align: Clutter.ActorAlign.CENTER
         });
-        let short = (l.name ?? '').replace(/(.{12})..+/, '$1...');
+        let short = (l.name ?? '').replace(/(.{20})..+/, '$1...');
         label.text = short;
         label.style = `padding: 2px; padding-left: 6px; padding-right: 6px;`;
         label.opacity = 0;
         iconWithLabel._label = label;
 
-        iconWithLabel.reactive = true;
-        iconWithLabel.track_hover = true;
+        // iconWithLabel.reactive = true;
+        // iconWithLabel.track_hover = true;
 
-        let icon = new St.Icon({ gicon: l.icon });
+        let icon = new St.Icon({ icon_name: l.icon, reactive: true });
         iconWithLabel._icon = icon;
         let iconSize = this.dock._iconSizeScaledDown * this.dock._scaleFactor;
         icon.set_icon_size(iconSize);
         icon.set_scale(0.8, 0.8);
-        iconWithLabel.connect('button-press-event', () => {
-          console.log('was here');
+        icon.connect('button-press-event', () => {
           let path = Gio.File.new_for_path(`Downloads/${l.name}`).get_path();
           let cmd = `xdg-open "${path}"`;
           if (l.type.includes('directory')) {
@@ -214,8 +215,8 @@ export const DockItemList = GObject.registerClass(
             console.log(err);
           }
         });
-        iconWithLabel.add_child(label);
         iconWithLabel.add_child(icon);
+        iconWithLabel.add_child(label);
         this._box.add_child(iconWithLabel);
       });
 
@@ -231,7 +232,7 @@ export const DockItemList = GObject.registerClass(
         l.x = tx * 2 + rad * 2;
         l.y = ty * 3;
         l.rotation_angle_z = -rot;
-        rot -= 2;
+        rot -= 2 * this.dock._scaleFactor;
       });
 
       let first = children[0];

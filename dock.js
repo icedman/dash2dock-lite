@@ -599,7 +599,19 @@ export let Dock = GObject.registerClass(
             if (!this.extension.services._downloadFiles) {
               this.extension.services.checkDownloads();
             }
-            let files = this.extension.services._downloadFiles;
+            let files = [...this.extension.services._downloadFiles];
+            if (files.length < this.extension.services._downloadFilesLength) {
+              files = [
+                {
+                  index: -1,
+                  name: 'More...',
+                  path: 'Downloads',
+                  icon: target._icon.icon_name,
+                  type: 'directory'
+                },
+                ...files
+              ];
+            }
             files = files.sort(function(a, b) {
               return a.index > b.index ? 1 : -1;
             });

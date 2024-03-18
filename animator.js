@@ -539,6 +539,7 @@ export let Animator = class {
 
         list._box.get_children().forEach(c => {
           c._label.translationX = -c._label.width;
+          c._icon.set_icon_size(this._iconSizeScaledDown);
           c._icon.translationX = c._icon.width;
           if (c._label.opacity < 255) c._label.opacity += 5;
           c.translationX = c._icon.width * 2 * c._icon.scaleX;

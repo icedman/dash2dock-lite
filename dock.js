@@ -583,11 +583,11 @@ export let Dock = GObject.registerClass(
           path: '/tmp/downloads-dash2dock-lite.desktop',
           show: this.extension.downloads_icon // && this._position == 'bottom'
         },
-        {
-          icon: '_documentsIcon',
-          path: '/tmp/documents-dash2dock-lite.desktop',
-          show: this.extension.documents_icon // && this._position == 'bottom'
-        }
+        // {
+        //   icon: '_documentsIcon',
+        //   path: '/tmp/documents-dash2dock-lite.desktop',
+        //   show: this.extension.documents_icon // && this._position == 'bottom'
+        // }
       ];
       folders.forEach(f => {
         if (!this[f.icon] && f.show) {

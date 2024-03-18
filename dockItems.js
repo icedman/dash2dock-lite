@@ -198,7 +198,7 @@ export const DockItemList = GObject.registerClass(
         iconWithLabel._icon = icon;
         let iconSize = this.dock._iconSizeScaledDown * this.dock._scaleFactor;
         icon.set_icon_size(iconSize);
-        icon.set_scale(0.8, 0.8);
+        // icon.set_scale(0.8, 0.8);
         icon.connect('button-press-event', () => {
           let path = Gio.File.new_for_path(`Downloads/${l.name}`).get_path();
           let cmd = `xdg-open "${path}"`;

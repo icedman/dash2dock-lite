@@ -128,6 +128,10 @@ export const SettingsKeys = () => {
       default_value: false,
       widget_type: 'switch',
     },
+    'documents-icon': {
+      default_value: false,
+      widget_type: 'switch',
+    },
     'mounted-icon': {
       default_value: false,
       widget_type: 'switch',

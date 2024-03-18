@@ -108,10 +108,30 @@ export const Services = class {
       this
     );
 
-    this.checkMounts();
+    this._downloadsDir = Gio.File.new_for_path('Downloads');
+    this._downloadsMonitor = this._downloadsDir.monitor(
+      Gio.FileMonitorFlags.WATCH_MOVES,
+      null
+    );
+    this._downloadsMonitor.connectObject(
+      'changed',
+      (fileMonitor, file, otherFile, eventType) => {
+        switch (eventType) {
+          case Gio.FileMonitorEvent.CHANGED:
+          case Gio.FileMonitorEvent.CREATED:
+          case Gio.FileMonitorEvent.MOVED_IN:
+            return;
+        }
+        this.checkDownloads();
+      },
+      this
+    );
+
     this.checkTrash();
+    this.checkDownloads();
     this.checkNotifications();
 
+    this.checkMounts();
     this._commitMounts();
   }
 
@@ -198,8 +218,18 @@ export const Services = class {
 
   setupFolderIcons() {
     this.setupTrashIcon();
-    this.setupFolderIcon('downloads', 'Downloads', 'folder-downloads', 'Downloads');
-    this.setupFolderIcon('documents', 'Documents', 'folder-documents', 'Documents');
+    this.setupFolderIcon(
+      'downloads',
+      'Downloads',
+      'folder-downloads',
+      'Downloads'
+    );
+    this.setupFolderIcon(
+      'documents',
+      'Documents',
+      'folder-documents',
+      'Documents'
+    );
   }
 
   setupMountIcon(mount) {
@@ -348,6 +378,30 @@ export const Services = class {
     this.trashFull = iter.next_file(null) != null;
     iter = null;
     return this.trashFull;
+  }
+
+  checkDownloads() {
+    if (!this.extension.downloads_icon) return;
+    let iter = this._downloadsDir.enumerate_children(
+      'standard::*',
+      Gio.FileQueryInfoFlags.NONE,
+      null
+    );
+
+    this._downloadFiles = [];
+    let f = iter.next_file(null);
+    while (f) {
+      if (!f.get_is_hidden()) {
+        this._downloadFiles.push({
+          name: f.get_name(),
+          display: f.get_display_name(),
+          icon: f.get_icon(),
+          type: f.get_content_type(),
+          f,
+        });
+      }
+      f = iter.next_file(null);
+    }
   }
 
   checkMounts() {

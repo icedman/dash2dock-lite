@@ -2,6 +2,7 @@
 
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as Fav from 'resource:///org/gnome/shell/ui/appFavorites.js';
+import { trySpawnCommandLine } from 'resource:///org/gnome/shell/misc/util.js';
 
 import Meta from 'gi://Meta';
 import Shell from 'gi://Shell';
@@ -120,6 +121,9 @@ export let Dock = GObject.registerClass(
         appinfo_filename,
       });
       item.dock = this;
+      item._menu._onActivate = () => {
+        this._maybeBounce(item);
+      };
       this._extraIcons.add_child(item);
       return item;
     }
@@ -555,25 +559,52 @@ export let Dock = GObject.registerClass(
           if (!extraNames.includes(mount)) {
             let mountedIcon = this.createItem(mount);
             mountedIcon._mountType = true;
-            mountedIcon._menu._onActivate = () => {
-              this._maybeBounce(mountedIcon);
-            };
             this._icons = null;
           }
         });
       }
 
       //---------------
+      // the folder icons
+      //---------------
+      let folders = [
+        {
+          icon: '_downloadsIcon',
+          path: '/tmp/downloads-dash2dock-lite.desktop',
+          show: this.extension.downloads_icon,
+        },
+        {
+          icon: '_documentsIcon',
+          path: '/tmp/documents-dash2dock-lite.desktop',
+          show: this.extension.documents_icon,
+        },
+      ];
+      folders.forEach((f) => {
+        if (!this[f.icon] && f.show) {
+          // pin downloads icon
+          this[f.icon] = this.createItem(f.path);
+          this[f.icon]._onClick = () => {
+            try {
+              trySpawnCommandLine('xdg-open /home/iceman/Downloads');
+            } catch (err) {
+              console.log(err);
+            }
+          };
+          this._icons = null;
+        } else if (this[f.icon] && !f.show) {
+          // unpin downloads icon
+          this._extraIcons.remove_child(this[f.icon]);
+          this._downloadsIcon = null;
+          this._icons = null;
+        }
+      });
+
+      //---------------
       // the trash icon
       //---------------
       if (!this._trashIcon && this.extension.trash_icon) {
         // pin trash icon
-        this._trashIcon = this.createItem(
-          `/tmp/trash-dash2dock-lite.desktop`
-        );
-        this._trashIcon._menu._onActivate = () => {
-          this._maybeBounce(this._trashIcon);
-        };
+        this._trashIcon = this.createItem(`/tmp/trash-dash2dock-lite.desktop`);
         this._icons = null;
       } else if (this._trashIcon && !this.extension.trash_icon) {
         // unpin trash icon
@@ -586,26 +617,6 @@ export let Dock = GObject.registerClass(
           this._extraIcons.remove_child(this._trashIcon);
           this._extraIcons.add_child(this._trashIcon);
         }
-      }
-
-      //---------------
-      // the downloads icon
-      //---------------
-      if (!this._downloadsIcon && this.extension.downloads_icon) {
-        // pin downloads icon
-        this._downloadsIcon = this.createItem(
-          `/tmp/downloads-dash2dock-lite.desktop`
-        );
-        this._downloadsIcon._onClick = () => {};
-        this._downloadsIcon._menu._onActivate = () => {
-          this._maybeBounce(this._downloadsIcon);
-        };
-        this._icons = null;
-      } else if (this._downloadsIcon && !this.extension.downloads_icon) {
-        // unpin downloads icon
-        this._extraIcons.remove_child(this._downloadsIcon);
-        this._downloadsIcon = null;
-        this._icons = null;
       }
     }
 

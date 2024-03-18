@@ -512,20 +512,21 @@ export let Animator = class {
     // animate the list
     //---------------------
 
-    if (dock._list && dock._list.visible) {
-      dock._list.x = dock._monitor.x;
-      dock._list.y = dock._monitor.y;
-      dock._list.width = dock._monitor.width;
-      dock._list.height = dock._monitor.height;
+    if (dock._list && dock._list.visible && dock._list._box) {
+      let list = dock._list;
+      let first = list._box.first_child;
+      let target = list._target;
+
+      list.x = dock._monitor.x;
+      list.y = dock._monitor.y;
+      list.width = dock._monitor.width;
+      list.height = dock._monitor.height;
       let list_coef = 6;
-      let tp = dock._get_position(dock._list._target);
+      let tp = dock._get_position(target);
 
       {
         dock.autohider._debounceCheckHide();
         dock._debounceEndAnimation();
-        let list = dock._list;
-        let first = list._box.first_child;
-        let target = list._target;
         let tx = target._icon.translationX;
         let ty = target._icon.translationY;
         let p = dock._get_position(target);
@@ -537,6 +538,7 @@ export let Animator = class {
         list.opacity = 255;
 
         list._box.get_children().forEach(c => {
+          if (c._label.opacity < 255) c._label.opacity += 5;
           c.translationX =
             -c.width +
             dock._list._box.width / 2 +

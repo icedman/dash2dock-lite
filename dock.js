@@ -581,12 +581,12 @@ export let Dock = GObject.registerClass(
         {
           icon: '_downloadsIcon',
           path: '/tmp/downloads-dash2dock-lite.desktop',
-          show: this.extension.downloads_icon
+          show: this.extension.downloads_icon // && this._position == 'bottom'
         },
         {
           icon: '_documentsIcon',
           path: '/tmp/documents-dash2dock-lite.desktop',
-          show: this.extension.documents_icon
+          show: this.extension.documents_icon // && this._position == 'bottom'
         }
       ];
       folders.forEach(f => {
@@ -607,7 +607,8 @@ export let Dock = GObject.registerClass(
             if (!this._list) {
               this._list = new DockItemList();
               this._list.dock = this;
-              Main.uiGroup.add_child(this._list); // remove on disable
+              Main.uiGroup.remove_child(this._list); // remove so that it is repositioned to topmost
+              Main.uiGroup.add_child(this._list);
             } else if (this._list.visible) {
               this._list.visible = false;
             } else {

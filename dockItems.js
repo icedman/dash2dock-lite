@@ -153,14 +153,15 @@ export const DockItemList = GObject.registerClass(
   class DockItemList extends St.Widget {
     _init(renderer, params) {
       super._init({
-        name: 'DockItemContainer',
+        name: 'DockItemList',
         reactive: true,
-        style_class: 'hi',
+        style_class: '-hi',
         ...params
       });
 
-      this.connect('button-press-event', () => {
+      this.connect('button-press-event', (obj, evt) => {
         this.visible = false;
+        return Clutter.EVENT_PROPAGATE;
       });
     }
 
@@ -185,6 +186,7 @@ export const DockItemList = GObject.registerClass(
         let short = (l.name ?? '').replace(/(.{12})..+/, '$1...');
         label.text = short;
         label.style = `padding: 2px; padding-left: 6px; padding-right: 6px;`;
+        label.opacity = 0;
         iconWithLabel._label = label;
 
         iconWithLabel.reactive = true;
@@ -195,7 +197,8 @@ export const DockItemList = GObject.registerClass(
         let iconSize = this.dock._iconSizeScaledDown * this.dock._scaleFactor;
         icon.set_icon_size(iconSize);
         icon.set_scale(0.8, 0.8);
-        icon.connectObject('button-press-event', () => {
+        iconWithLabel.connect('button-press-event', () => {
+          console.log('was here');
           let path = Gio.File.new_for_path(`Downloads/${l.name}`).get_path();
           let cmd = `xdg-open "${path}"`;
           if (l.type.includes('directory')) {

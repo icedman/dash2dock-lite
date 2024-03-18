@@ -143,6 +143,7 @@ export default class Dash2DockLiteExt extends Extension {
     // service
     this.services = new Services();
     this.services.extension = this;
+    this.services.setupFolderIcons();
 
     // todo follow animator and autohider protocol
     this.services.enable();
@@ -402,6 +403,8 @@ export default class Dash2DockLiteExt extends Extension {
         case 'pressure-sense': {
           break;
         }
+        case 'downloads-icon':
+        case 'documents-icon':
         case 'trash-icon': {
           this._updateLayout();
           this.animate();

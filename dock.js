@@ -527,6 +527,88 @@ export let Dock = GObject.registerClass(
       return icons;
     }
 
+    _updateExtraIcons() {
+      if (!this._extraIcons) {
+        return;
+      }
+
+      // check these intermittently!
+      //---------------
+      // the mount icons
+      //---------------
+      {
+        let extras = [...this._extraIcons.get_children()];
+        let extraNames = extras.map((e) => e.name);
+        let mounted = Object.keys(this.extension.services._mounts);
+
+        extras.forEach((extra) => {
+          if (!extra._mountType) {
+            return;
+          }
+          if (!mounted.includes(extra.name)) {
+            this._extraIcons.remove_child(extra);
+            this._icons = null;
+          }
+        });
+
+        mounted.forEach((mount) => {
+          if (!extraNames.includes(mount)) {
+            let mountedIcon = this.createItem(mount);
+            mountedIcon._mountType = true;
+            mountedIcon._menu._onActivate = () => {
+              this._maybeBounce(mountedIcon);
+            };
+            this._icons = null;
+          }
+        });
+      }
+
+      //---------------
+      // the trash icon
+      //---------------
+      if (!this._trashIcon && this.extension.trash_icon) {
+        // pin trash icon
+        this._trashIcon = this.createItem(
+          `/tmp/trash-dash2dock-lite.desktop`
+        );
+        this._trashIcon._menu._onActivate = () => {
+          this._maybeBounce(this._trashIcon);
+        };
+        this._icons = null;
+      } else if (this._trashIcon && !this.extension.trash_icon) {
+        // unpin trash icon
+        this._extraIcons.remove_child(this._trashIcon);
+        this._trashIcon = null;
+        this._icons = null;
+      } else if (this._trashIcon && this.extension.trash_icon) {
+        // move trash icon to the end
+        if (this._extraIcons.last_child != this._trashIcon) {
+          this._extraIcons.remove_child(this._trashIcon);
+          this._extraIcons.add_child(this._trashIcon);
+        }
+      }
+
+      //---------------
+      // the downloads icon
+      //---------------
+      if (!this._downloadsIcon && this.extension.downloads_icon) {
+        // pin downloads icon
+        this._downloadsIcon = this.createItem(
+          `/tmp/downloads-dash2dock-lite.desktop`
+        );
+        this._downloadsIcon._onClick = () => {};
+        this._downloadsIcon._menu._onActivate = () => {
+          this._maybeBounce(this._downloadsIcon);
+        };
+        this._icons = null;
+      } else if (this._downloadsIcon && !this.extension.downloads_icon) {
+        // unpin downloads icon
+        this._extraIcons.remove_child(this._downloadsIcon);
+        this._downloadsIcon = null;
+        this._icons = null;
+      }
+    }
+
     layout() {
       if (this.extension.apps_icon_front) {
         this.dash.last_child.text_direction = 2; // RTL
@@ -545,63 +627,7 @@ export let Dock = GObject.registerClass(
       this._position =
         locations[this.extension.dock_location] || DockPosition.BOTTOM;
 
-      // check these intermittently!
-      if (this._extraIcons) {
-        //---------------
-        // the mount icons
-        //---------------
-        {
-          let extras = [...this._extraIcons.get_children()];
-          let extraNames = extras.map((e) => e.name);
-          let mounted = Object.keys(this.extension.services._mounts);
-
-          extras.forEach((extra) => {
-            if (
-              extra.name.includes('trash') ||
-              extra.name.includes('separator')
-            )
-              return;
-            if (!mounted.includes(extra.name)) {
-              this._extraIcons.remove_child(extra);
-              this._icons = null;
-            }
-          });
-
-          mounted.forEach((mount) => {
-            if (!extraNames.includes(mount)) {
-              let mountedIcon = this.createItem(mount);
-              mountedIcon._menu._onActivate = () => {
-                this._maybeBounce(mountedIcon);
-              };
-              this._icons = null;
-            }
-          });
-        }
-        //---------------
-        // the trash icon
-        //---------------
-        if (!this._trashIcon && this.extension.trash_icon) {
-          // pin trash icon
-          this._trashIcon = this.createItem(
-            `${this.extension.path}/apps/trash-dash2dock-lite.desktop`
-          );
-          this._trashIcon._menu._onActivate = () => {
-            this._maybeBounce(this._trashIcon);
-          };
-          this._icons = null;
-        } else if (this._trashIcon && !this.extension.trash_icon) {
-          // unpin trash icon
-          this._extraIcons.remove_child(this._trashIcon);
-          this._trashIcon = null;
-          this._icons = null;
-        } else if (this._trashIcon && this.extension.trash_icon) {
-          // move trash icon to the end
-          if (this._extraIcons.last_child != this._trashIcon) {
-            this._extraIcons.remove_child(this._trashIcon);
-            this._extraIcons.add_child(this._trashIcon);
-          }
-        }
-      }
+      this._updateExtraIcons();
 
       this._icons = this._findIcons();
 

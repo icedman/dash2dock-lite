@@ -161,6 +161,47 @@ export const Services = class {
     });
   }
 
+  setupTrashIcon() {
+    let extension_path = this.extension.path;
+    let appname = `trash-dash2dock-lite.desktop`;
+    let trash_action = `${extension_path}/apps/empty-trash.sh`;
+    let app_id = `/tmp/${appname}`;
+    let fn = Gio.File.new_for_path(app_id);
+
+    let content = `[Desktop Entry]\nVersion=1.0\nTerminal=false\nType=Application\nName=Trash\nExec=xdg-open trash:///\nIcon=user-trash\nStartupWMClass=trash-dash2dock-lite\nActions=trash\n\n[Desktop Action trash]\nName=Empty Trash\nExec=${extension_path}/apps/empty-trash.sh\nTerminal=true\n`;
+    const [, etag] = fn.replace_contents(
+      content,
+      null,
+      false,
+      Gio.FileCreateFlags.REPLACE_DESTINATION,
+      null
+    );
+  }
+
+  setupFolderIcon(name, title, icon, path) {
+    // expand
+    let full_path = Gio.file_new_for_path(path).get_path();
+    let extension_path = this.extension.path;
+    let appname = `${name}-dash2dock-lite.desktop`;
+    let app_id = `/tmp/${appname}`;
+    let fn = Gio.File.new_for_path(app_id);
+
+    let content = `[Desktop Entry]\nVersion=1.0\nTerminal=false\nType=Application\nName=${title}\nExec=xdg-open ${full_path}\nIcon=${icon}\nStartupWMClass=${name}-dash2dock-lite\n`;
+    const [, etag] = fn.replace_contents(
+      content,
+      null,
+      false,
+      Gio.FileCreateFlags.REPLACE_DESTINATION,
+      null
+    );
+  }
+
+  setupFolderIcons() {
+    this.setupTrashIcon();
+    this.setupFolderIcon('downloads', 'Downloads', 'folder-downloads', 'Downloads');
+    this.setupFolderIcon('documents', 'Documents', 'folder-documents', 'Documents');
+  }
+
   setupMountIcon(mount) {
     let basename = mount.get_default_location().get_basename();
     let label = mount.get_name();

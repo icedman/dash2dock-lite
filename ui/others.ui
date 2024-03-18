@@ -74,6 +74,31 @@
             </child>
           </object>
         </child>
+        <child>
+          <object class="AdwActionRow">
+            <property name="title" translatable="yes">Downloads</property>
+            <property name="subtitle" translatable="yes">Show downloads folder to access recent download.</property>
+            <property name="activatable-widget">downloads-icon</property>
+            <child>
+              <object class="GtkSwitch" id="downloads-icon">
+                <property name="valign">center</property>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="AdwActionRow">
+            <property name="visible">false</property>
+            <property name="title" translatable="yes">Documents</property>
+            <property name="subtitle" translatable="yes">Show documents folder to access recently edit documents.</property>
+            <property name="activatable-widget">documents-icon</property>
+            <child>
+              <object class="GtkSwitch" id="documents-icon">
+                <property name="valign">center</property>
+              </object>
+            </child>
+          </object>
+        </child>
       </object>
     </child>
     <child>

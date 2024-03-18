@@ -117,7 +117,7 @@ export class DockItemMenu extends PopupMenu.PopupMenu {
     super(sourceActor, 0.5, side);
 
     let { desktopApp } = params;
-    this._newWindowItem = this.addAction('New Window', () => {
+    this._newWindowItem = this.addAction('Open Window', () => {
       let workspaceManager = global.workspace_manager;
       let workspace = workspaceManager.get_active_workspace();
       let ctx = global.create_app_launch_context(0, workspace);
@@ -181,6 +181,12 @@ export const DockItemContainer = GObject.registerClass(
       this._menu.close();
     }
 
+    _onClick() {
+      if (this._menu && this._menu._newWindowItem) {
+        this._menu._newWindowItem.emit('activate', null);
+      }
+    }
+
     _createIcon(size) {
       this._iconActor = new St.Icon({
         icon_name: this._default_icon_name,
@@ -216,9 +222,7 @@ export const DockItemContainer = GObject.registerClass(
                 this._menu.popup();
               }
             } else {
-              if (this._menu && this._menu._newWindowItem) {
-                this._menu._newWindowItem.emit('activate', null);
-              }
+              this._onClick();
             }
           },
           this

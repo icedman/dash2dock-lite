@@ -8,11 +8,11 @@ import GLib from 'gi://GLib';
 import GObject from 'gi://GObject';
 import Clutter from 'gi://Clutter';
 
-const getShaderSource = (extensionDir) => {
+const getShaderSource = extensionDir => {
   const SHADER_PATH = GLib.build_filenamev([
     extensionDir,
     'effects',
-    'monochrome_effect.glsl',
+    'monochrome_effect.glsl'
   ]);
 
   try {

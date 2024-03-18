@@ -12,7 +12,7 @@ const pointer_wrapper = {
   },
   warp: (screen, x, y) => {
     screen.simulated_pointer = [x, y];
-  },
+  }
 };
 
 export const getPointer = () => {
@@ -37,10 +37,10 @@ export const setInterval = (func, delay, ...args) => {
   return GLib.timeout_add(GLib.PRIORITY_DEFAULT, delay, wrappedFunc);
 };
 
-export const clearTimeout = (id) => {
+export const clearTimeout = id => {
   GLib.source_remove(id);
 };
 
-export const clearInterval = (id) => {
+export const clearInterval = id => {
   GLib.source_remove(id);
 };

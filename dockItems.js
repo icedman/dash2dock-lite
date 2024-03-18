@@ -3,6 +3,7 @@
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as BoxPointer from 'resource:///org/gnome/shell/ui/boxpointer.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
+import { trySpawnCommandLine } from 'resource:///org/gnome/shell/misc/util.js';
 import { BaseIcon } from 'resource:///org/gnome/shell/ui/iconGrid.js';
 
 import Gio from 'gi://Gio';
@@ -25,7 +26,7 @@ const DockItemOverlay = GObject.registerClass(
     _init(renderer, params) {
       super._init({
         name: 'DockItemContainer',
-        ...params,
+        ...params
       });
 
       this.renderer = renderer;
@@ -71,7 +72,7 @@ export const DockItemDotsOverlay = GObject.registerClass(
             : 90
           : position == 'top'
           ? 180
-          : 0,
+          : 0
       });
     }
   }
@@ -101,7 +102,7 @@ export const DockItemBadgeOverlay = GObject.registerClass(
         color: notification_badge_color || [1, 1, 1, 1],
         style: notification_badge_style || 'default',
         rotate: position == 'bottom' ? 180 : 0,
-        translate: [0.4, 0],
+        translate: [0.4, 0]
       });
     }
   }
@@ -126,7 +127,7 @@ export class DockItemMenu extends PopupMenu.PopupMenu {
       this._onActivate();
     });
 
-    desktopApp.list_actions().forEach((action) => {
+    desktopApp.list_actions().forEach(action => {
       let name = desktopApp.get_action_name(action);
       this.addAction(name, () => {
         let workspaceManager = global.workspace_manager;
@@ -147,6 +148,104 @@ export class DockItemMenu extends PopupMenu.PopupMenu {
   }
 }
 
+export const DockItemList = GObject.registerClass(
+  {},
+  class DockItemList extends St.Widget {
+    _init(renderer, params) {
+      super._init({
+        name: 'DockItemContainer',
+        reactive: true,
+        style_class: 'hi',
+        ...params
+      });
+
+      this.connect('button-press-event', () => {
+        this.visible = false;
+      });
+    }
+
+    build(list) {
+      if (this._box) {
+        this.remove_child(this._box);
+        this._box = null;
+      }
+
+      if (!list.length) return;
+
+      this._box = new St.Widget({ style_class: '-hi' });
+      list.forEach(l => {
+        let iconWithLabel = new St.BoxLayout({ style_class: '-hi' });
+        let label = new St.Label({
+          style_class: 'dash-label',
+          x_expand: false,
+          y_expand: false,
+          x_align: Clutter.ActorAlign.CENTER,
+          y_align: Clutter.ActorAlign.CENTER
+        });
+        let short = (l.name ?? '').replace(/(.{12})..+/, '$1...');
+        label.text = short;
+        label.style = `padding: 2px; padding-left: 6px; padding-right: 6px;`;
+        iconWithLabel._label = label;
+
+        iconWithLabel.reactive = true;
+        iconWithLabel.track_hover = true;
+
+        let icon = new St.Icon({ gicon: l.icon });
+        iconWithLabel._icon = icon;
+        let iconSize = this.dock._iconSizeScaledDown * this.dock._scaleFactor;
+        icon.set_icon_size(iconSize);
+        icon.set_scale(0.8, 0.8);
+        icon.connectObject('button-press-event', () => {
+          let path = Gio.File.new_for_path(`Downloads/${l.name}`).get_path();
+          let cmd = `xdg-open "${path}"`;
+          if (l.type.includes('directory')) {
+            cmd = `nautilus --select "${path}"`;
+          }
+          this.visible = false;
+          this.dock._maybeBounce(this._target);
+
+          try {
+            console.log(cmd);
+            trySpawnCommandLine(cmd);
+          } catch (err) {
+            console.log(err);
+          }
+        });
+        iconWithLabel.add_child(label);
+        iconWithLabel.add_child(icon);
+        this._box.add_child(iconWithLabel);
+      });
+
+      let rad = 500;
+      let rot = 0;
+      let children = this._box.get_children();
+      children.reverse();
+      children.forEach(l => {
+        let rrX = (rot * 3.14) / 180;
+        let rrY = (rot * 3.14) / 180;
+        let tx = Math.cos(rrX) * -rad;
+        let ty = Math.sin(rrY) * rad;
+        l.x = tx * 2 + rad * 2;
+        l.y = ty * 3;
+        l.rotation_angle_z = -rot;
+        rot -= 2;
+      });
+
+      let first = children[0];
+      children.forEach(l => {
+        l._x = l.x;
+        l._y = l.y;
+        l._rotation_angle_z = l.rotation_angle_z;
+        l.x = first.x;
+        l.y = first.y;
+        l.rotation_angle_z = first.rotation_angle_z;
+      });
+
+      this.add_child(this._box);
+    }
+  }
+);
+
 export const DockItemContainer = GObject.registerClass(
   {},
   class DockItemContainer extends ShowAppsIcon {
@@ -154,7 +253,7 @@ export const DockItemContainer = GObject.registerClass(
       super._init({
         name: 'DockItemContainer',
         style_class: 'dash-item-container',
-        ...(params || {}),
+        ...(params || {})
       });
 
       this.name = params.appinfo_filename;
@@ -175,7 +274,7 @@ export const DockItemContainer = GObject.registerClass(
 
       // menu
       this._menu = new DockItemMenu(this, St.Side.TOP, {
-        desktopApp,
+        desktopApp
       });
       this._menuManager = new PopupMenu.PopupMenuManager(this);
       this._menu._menuManager = this._menuManager;
@@ -195,7 +294,7 @@ export const DockItemContainer = GObject.registerClass(
         icon_name: this._default_icon_name,
         icon_size: size,
         style_class: 'show-apps-icon',
-        track_hover: true,
+        track_hover: true
       });
 
       // attach event
@@ -205,7 +304,7 @@ export const DockItemContainer = GObject.registerClass(
 
       icon.reactive = true;
       icon.track_hover = true;
-      [icon].forEach((btn) => {
+      [icon].forEach(btn => {
         if (btn._connected) return;
         btn._connected = true;
         btn.button_mask = St.ButtonMask.ONE | St.ButtonMask.TWO;
@@ -243,7 +342,7 @@ export const DockBackground = GObject.registerClass(
     _init(params) {
       super._init({
         name: 'DockBackground',
-        ...(params || {}),
+        ...(params || {})
       });
     }
 
@@ -256,7 +355,7 @@ export const DockBackground = GObject.registerClass(
         vertical,
         position,
         panel_mode,
-        dashContainer,
+        dashContainer
       } = params;
 
       if (!first || !last) return;

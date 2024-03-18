@@ -1,6 +1,7 @@
 'use strict';
 
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
+import { trySpawnCommandLine } from 'resource:///org/gnome/shell/misc/util.js';
 
 import Gio from 'gi://Gio';
 import St from 'gi://St';
@@ -10,6 +11,8 @@ const Point = Graphene.Point;
 
 import { Clock } from './apps/clock.js';
 import { Calendar } from './apps/calendar.js';
+
+const MAX_RECENT_FILES = 12;
 
 // sync with animator
 const CANVAS_SIZE = 120;
@@ -46,7 +49,7 @@ export const Services = class {
         1000 * 60, // every minute
         // 1000 * 1, // every second
         () => {
-          this.extension.docks.forEach((d) => {
+          this.extension.docks.forEach(d => {
             d._onClock();
           });
         },
@@ -56,7 +59,7 @@ export const Services = class {
         'calendar',
         1000 * 60 * 15,
         () => {
-          this.extension.docks.forEach((d) => {
+          this.extension.docks.forEach(d => {
             d._onCalendar();
           });
         },
@@ -74,7 +77,7 @@ export const Services = class {
           this.checkNotifications();
         },
         0
-      ),
+      )
     ];
 
     this._disableNotifications = 0;
@@ -148,7 +151,7 @@ export const Services = class {
     if (this._deferredMounts && this._deferredMounts.length) {
       let mounts = [...this._deferredMounts];
       this._deferredMounts = [];
-      mounts.forEach((m) => {
+      mounts.forEach(m => {
         this._onMountAdded(null, m);
       });
     }
@@ -176,7 +179,7 @@ export const Services = class {
   }
 
   update(elapsed) {
-    this._services.forEach((s) => {
+    this._services.forEach(s => {
       s.update(elapsed);
     });
   }
@@ -187,8 +190,11 @@ export const Services = class {
     let trash_action = `${extension_path}/apps/empty-trash.sh`;
     let app_id = `/tmp/${appname}`;
     let fn = Gio.File.new_for_path(app_id);
+    // let open_app = 'xdg-open';
+    let open_app = 'nautilus --select';
 
-    let content = `[Desktop Entry]\nVersion=1.0\nTerminal=false\nType=Application\nName=Trash\nExec=xdg-open trash:///\nIcon=user-trash\nStartupWMClass=trash-dash2dock-lite\nActions=trash\n\n[Desktop Action trash]\nName=Empty Trash\nExec=${extension_path}/apps/empty-trash.sh\nTerminal=true\n`;
+    // let content = `[Desktop Entry]\nVersion=1.0\nTerminal=false\nType=Application\nName=Trash\nExec=xdg-open trash:///\nIcon=user-trash\nStartupWMClass=trash-dash2dock-lite\nActions=trash\n\n[Desktop Action trash]\nName=Empty Trash\nExec=${extension_path}/apps/empty-trash.sh\nTerminal=true\n`;
+    let content = `[Desktop Entry]\nVersion=1.0\nTerminal=false\nType=Application\nName=Trash\nExec=${open_app} trash:///\nIcon=user-trash\nStartupWMClass=trash-dash2dock-lite\nActions=trash\n\n[Desktop Action trash]\nName=Empty Trash\nExec=${extension_path}/apps/empty-trash.sh\nTerminal=true\n`;
     const [, etag] = fn.replace_contents(
       content,
       null,
@@ -205,8 +211,10 @@ export const Services = class {
     let appname = `${name}-dash2dock-lite.desktop`;
     let app_id = `/tmp/${appname}`;
     let fn = Gio.File.new_for_path(app_id);
+    // let open_app = 'xdg-open';
+    let open_app = 'nautilus --select';
 
-    let content = `[Desktop Entry]\nVersion=1.0\nTerminal=false\nType=Application\nName=${title}\nExec=xdg-open ${full_path}\nIcon=${icon}\nStartupWMClass=${name}-dash2dock-lite\n`;
+    let content = `[Desktop Entry]\nVersion=1.0\nTerminal=false\nType=Application\nName=${title}\nExec=${open_app} ${full_path}\nIcon=${icon}\nStartupWMClass=${name}-dash2dock-lite\n`;
     const [, etag] = fn.replace_contents(
       content,
       null,
@@ -267,18 +275,16 @@ export const Services = class {
       let tryBox = [
         Main.panel._centerBox,
         Main.panel._leftBox,
-        Main.panel._rightBox,
+        Main.panel._rightBox
       ];
       for (let i = 0; i < 3; i++) {
         let cc = tryBox[i].get_children();
-        cc.forEach((c) => {
+        cc.forEach(c => {
           if (media && messages) {
             return;
           }
-          media =
-            c.child._delegate._messageList._scrollView.last_child.get_children()[0];
-          messages =
-            c.child._delegate._messageList._scrollView.last_child.get_children()[1];
+          media = c.child._delegate._messageList._scrollView.last_child.get_children()[0];
+          messages = c.child._delegate._messageList._scrollView.last_child.get_children()[1];
         });
         if (media && messages) {
           break;
@@ -301,16 +307,16 @@ export const Services = class {
 
     this._appNotices = this._appNotices || {};
 
-    Object.keys(this._appNotices).forEach((k) => {
+    Object.keys(this._appNotices).forEach(k => {
       this._appNotices[k].previous = this._appNotices[k].count;
       this._appNotices[k].count = 0;
     });
 
     let app_map = {
-      'org.gnome.Evolution-alarm-notify.desktop': 'org.gnome.Calendar.desktop',
+      'org.gnome.Evolution-alarm-notify.desktop': 'org.gnome.Calendar.desktop'
     };
 
-    this._notifications.forEach((n) => {
+    this._notifications.forEach(n => {
       let appId = null;
       if (!n.notification) return;
       if (n.notification.source.app) {
@@ -334,7 +340,7 @@ export const Services = class {
           count: 0,
           previous: 0,
           urgency: 0,
-          source: n.notification.source,
+          source: n.notification.source
         };
       }
       this._appNotices[appId].count++;
@@ -348,14 +354,14 @@ export const Services = class {
     });
 
     let hasUpdates = false;
-    Object.keys(this._appNotices).forEach((k) => {
+    Object.keys(this._appNotices).forEach(k => {
       if (this._appNotices[k].previous != this._appNotices[k].count) {
         hasUpdates = true;
       }
     });
 
     let update = {};
-    Object.keys(this._appNotices).forEach((k) => {
+    Object.keys(this._appNotices).forEach(k => {
       if (this._appNotices[k].count > 0) {
         update[k] = this._appNotices[k];
       }
@@ -376,12 +382,47 @@ export const Services = class {
       null
     );
     this.trashFull = iter.next_file(null) != null;
-    iter = null;
     return this.trashFull;
   }
 
   checkDownloads() {
+    this._trySpawnCommandLine = trySpawnCommandLine;
     if (!this.extension.downloads_icon) return;
+    try {
+      let path = this._downloadsDir.get_path();
+      let cmd = `${this.extension.path}/apps/list-downloads.sh`;
+      trySpawnCommandLine(cmd);
+    } catch (err) {
+      console.log(err);
+    }
+
+    let fileStat = {};
+    let fn = Gio.File.new_for_path('/tmp/downloads.txt');
+    if (fn.query_exists(null)) {
+      try {
+        const [success, contents] = fn.load_contents(null);
+        const decoder = new TextDecoder();
+        let contentsString = decoder.decode(contents);
+        let idx = 0;
+        let lines = contentsString.split('\n');
+        lines.forEach(l => {
+          let res = /\s([a-zA-Z]{3})\s{1,3}([0-9]{1,3})\s{1,3}([0-9]{4})\s{1,3}(.*)/.exec(
+            l
+          );
+          if (res) {
+            fileStat[res[4]] = {
+              index: idx,
+              name: res[4],
+              date: `${res[1]}. ${res[2]}, ${res[3]}`
+            };
+            idx++;
+          }
+        });
+      } catch (err) {
+        console.log(err);
+      }
+    }
+
     let iter = this._downloadsDir.enumerate_children(
       'standard::*',
       Gio.FileQueryInfoFlags.NONE,
@@ -392,13 +433,17 @@ export const Services = class {
     let f = iter.next_file(null);
     while (f) {
       if (!f.get_is_hidden()) {
-        this._downloadFiles.push({
-          name: f.get_name(),
-          display: f.get_display_name(),
-          icon: f.get_icon(),
-          type: f.get_content_type(),
-          f,
-        });
+        let name = f.get_name();
+        if (fileStat[name]?.index < MAX_RECENT_FILES) {
+          this._downloadFiles.push({
+            index: fileStat[name]?.index,
+            name,
+            display: f.get_display_name(),
+            icon: f.get_icon(),
+            type: f.get_content_type(),
+            date: fileStat[name]?.date ?? ''
+          });
+        }
       }
       f = iter.next_file(null);
     }
@@ -414,7 +459,7 @@ export const Services = class {
     let mount_ids = [];
     if (this.extension.mounted_icon) {
       mounts = this._volumeMonitor.get_mounts();
-      mount_ids = mounts.map((mount) => {
+      mount_ids = mounts.map(mount => {
         let basename = mount.get_default_location().get_basename();
         let appname = `mount-${basename}-dash2dock-lite.desktop`;
         return appname;
@@ -422,7 +467,7 @@ export const Services = class {
     }
 
     this.mounts = mounts;
-    mounts.forEach((mount) => {
+    mounts.forEach(mount => {
       let basename = mount.get_default_location().get_basename();
       let appname = `mount-${basename}-dash2dock-lite.desktop`;
       this._deferredMounts.push(mount);

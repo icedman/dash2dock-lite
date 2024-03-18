@@ -25,7 +25,7 @@ const handledWindowTypes = [
   Meta.WindowType.MODAL_DIALOG,
   // Meta.WindowType.TOOLBAR,
   // Meta.WindowType.MENU,
-  Meta.WindowType.UTILITY,
+  Meta.WindowType.UTILITY
   // Meta.WindowType.SPLASHSCREEN
 ];
 
@@ -50,8 +50,8 @@ export let AutoHide = class {
     this._enabled = false;
 
     let actors = global.get_window_actors();
-    let windows = actors.map((a) => a.get_meta_window());
-    windows.forEach((w) => {
+    let windows = actors.map(a => a.get_meta_window());
+    windows.forEach(w => {
       if (w._tracked) {
         this._untrack(w);
       }
@@ -192,7 +192,7 @@ export let AutoHide = class {
       x: pos[0],
       y: pos[1],
       w: this.dashContainer.struts.width,
-      h: this.dashContainer.struts.height,
+      h: this.dashContainer.struts.height
     };
     let arect = [rect.x, rect.y, rect.w, rect.h];
     let dash_position = [this.dashContainer.x, this.dashContainer.y];
@@ -215,25 +215,25 @@ export let AutoHide = class {
 
     let monitor = this.dashContainer._monitor;
     let actors = global.get_window_actors();
-    let windows = actors.map((a) => {
+    let windows = actors.map(a => {
       let w = a.get_meta_window();
       w._parent = a;
       return w;
     });
-    windows = windows.filter((w) => w.can_close());
-    windows = windows.filter((w) => w.get_monitor() == monitor.index);
+    windows = windows.filter(w => w.can_close());
+    windows = windows.filter(w => w.get_monitor() == monitor.index);
 
     let workspace = global.workspace_manager.get_active_workspace_index();
     windows = windows.filter(
-      (w) =>
+      w =>
         workspace == w.get_workspace().index() && w.showing_on_its_workspace()
     );
-    windows = windows.filter((w) => w.get_window_type() in handledWindowTypes);
+    windows = windows.filter(w => w.get_window_type() in handledWindowTypes);
 
-    windows.forEach((w) => this._track(w));
+    windows.forEach(w => this._track(w));
 
     let isOverlapped = false;
-    windows.forEach((w) => {
+    windows.forEach(w => {
       let frame = w.get_frame_rect();
       // todo .. make accurate to work with multi-monitor
       if (this.dashContainer.isVertical()) {

@@ -155,7 +155,7 @@ export const DockItemList = GObject.registerClass(
       super._init({
         name: 'DockItemList',
         reactive: true,
-        style_class: '-hi',
+        style_class: 'hi',
         ...params
       });
 
@@ -175,30 +175,18 @@ export const DockItemList = GObject.registerClass(
 
       this._box = new St.Widget({ style_class: '-hi' });
       list.forEach(l => {
-        let iconWithLabel = new St.BoxLayout({ style_class: '-hi' });
-        iconWithLabel.text_direction = 2;
-
-        let label = new St.Label({
-          style_class: 'dash-label',
-          x_expand: false,
-          y_expand: false,
-          x_align: Clutter.ActorAlign.CENTER,
-          y_align: Clutter.ActorAlign.CENTER
-        });
-        let short = (l.name ?? '').replace(/(.{20})..+/, '$1...');
-        label.text = short;
-        label.style = `padding: 2px; padding-left: 6px; padding-right: 6px;`;
-        label.opacity = 0;
-        iconWithLabel._label = label;
-
-        // iconWithLabel.reactive = true;
-        // iconWithLabel.track_hover = true;
-
+        let w = new St.Widget({});
         let icon = new St.Icon({ icon_name: l.icon, reactive: true });
-        iconWithLabel._icon = icon;
-        let iconSize = this.dock._iconSizeScaledDown * this.dock._scaleFactor;
-        icon.set_icon_size(iconSize);
-        // icon.set_scale(0.8, 0.8);
+        icon.set_icon_size(this.dock._iconSizeScaledDown * this.dock._scaleFactor);
+        this._box.add_child(w);
+        let label = new St.Label({ style_class: 'dash-label' });
+        let short = (l.name ?? '').replace(/(.{32})..+/, '$1...');
+        label.text = short;
+        w.add_child(icon);
+        w.add_child(label);
+        w._icon = icon;
+        w._label = label;
+
         icon.connect('button-press-event', () => {
           let path = Gio.File.new_for_path(`Downloads/${l.name}`).get_path();
           let cmd = `xdg-open "${path}"`;
@@ -215,12 +203,13 @@ export const DockItemList = GObject.registerClass(
             console.log(err);
           }
         });
-        iconWithLabel.add_child(icon);
-        iconWithLabel.add_child(label);
-        this._box.add_child(iconWithLabel);
       });
 
       let rad = 500;
+      let circ = rad * 2 * 3.14;
+      let cr = circ / this.dock._iconSizeScaledDown;
+      let rinterval = cr / rad * 20;
+      // console.log(cr);
       let rot = 0;
       let children = this._box.get_children();
       children.reverse();
@@ -231,9 +220,23 @@ export const DockItemList = GObject.registerClass(
         let ty = Math.sin(rrY) * rad;
         l.x = tx * 2 + rad * 2;
         l.y = ty * 3;
+        
+        l.x += rad;
+        l.y += rad;
+
         l.rotation_angle_z = -rot;
-        rot -= 2 * this.dock._scaleFactor;
+
+        // todo .. determine angle for iconSize
+        // rot -= 2;
+        rot -= rinterval;
       });
+
+      this._firstPos = [
+        children[0].x,
+        children[1].y
+      ];
+
+      this.add_child(this._box);
 
       let first = children[0];
       children.forEach(l => {
@@ -244,8 +247,6 @@ export const DockItemList = GObject.registerClass(
         l.y = first.y;
         l.rotation_angle_z = first.rotation_angle_z;
       });
-
-      this.add_child(this._box);
     }
   }
 );

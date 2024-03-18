@@ -12,7 +12,7 @@ const Point = Graphene.Point;
 import { Clock } from './apps/clock.js';
 import { Calendar } from './apps/calendar.js';
 
-const MAX_RECENT_FILES = 8;
+const MAX_RECENT_FILES = 16;
 
 // sync with animator
 const CANVAS_SIZE = 120;

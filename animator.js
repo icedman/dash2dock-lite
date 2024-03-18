@@ -511,48 +511,47 @@ export let Animator = class {
     //---------------------
     // animate the list
     //---------------------
-
-    if (dock._list && dock._list.visible && dock._list._box) {
+    if (dock._list && dock._list.visible) {
       let list = dock._list;
-      let first = list._box.first_child;
-      let target = list._target;
-
       list.x = dock._monitor.x;
       list.y = dock._monitor.y;
       list.width = dock._monitor.width;
       list.height = dock._monitor.height;
-      let list_coef = 6;
+      list.opacity = 255;
+
+      let first = list._box.first_child;
+      let target = list._target;
+      let fp = [...list._firstPos];
       let tp = dock._get_position(target);
+      let bp = dock._get_position(list._box);
 
-      {
-        dock.autohider._debounceCheckHide();
-        dock._debounceEndAnimation();
-        let tx = target._icon.translationX;
-        let ty = target._icon.translationY;
-        let p = dock._get_position(target);
+      fp[0] -= bp[0];
+      fp[1] -= bp[1];
+      let tx = tp[0] - fp[0];
+      let ty = tp[1] - fp[1];
 
-        list._box.translationX = tp[0] - list._box.width / 2 + tx;
-        list._box.translationY = tp[1] - first.height + ty;
+      let list_coef = 6;
 
-        target._label.hide();
-        list.opacity = 255;
+      list._box.get_children().forEach(c => {
+        c.translationX = tx + target._icon.translationX;
+        c.translationY = ty/2 - target._icon.scaleX * target._icon.width + target._icon.width * 2;
+        c._label.translationX = - c._label.width;
 
-        list._box.get_children().forEach(c => {
-          c._label.translationX = -c._label.width;
-          c._icon.set_icon_size(this._iconSizeScaledDown);
-          c._icon.translationX = c._icon.width;
           if (c._label.opacity < 255) c._label.opacity += 5;
-          c.translationX = c._icon.width * 2 * c._icon.scaleX;
           c.x = (c.x * list_coef + c._x) / (list_coef + 1);
           c.y = (c.y * list_coef + c._y) / (list_coef + 1);
           c.rotation_angle_z =
             (c.rotation_angle_z * list_coef + c._rotation_angle_z) /
             (list_coef + 1);
-        });
-      }
+
+      });
+
+      target._label.hide();
+      didScale = true;
     }
 
     if (didScale) {
+      dock.autohider._debounceCheckHide();
       dock._debounceEndAnimation();
     }
   }
@@ -563,8 +562,8 @@ export let Animator = class {
     let scaleFactor = dock.getMonitor().geometry_scale;
     let travel =
       (dock._iconSize / 3) *
-      ((0.25 + dock.extension.animation_bounce) * 1.5) *
-      scaleFactor;
+      ((0.25 + dock.extension.animation_bounce) * 1.5);
+       // * scaleFactor;
     appwell.translation_y = 0;
 
     let icon = appwell.get_parent()._icon;

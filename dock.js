@@ -582,7 +582,7 @@ export let Dock = GObject.registerClass(
           icon: '_downloadsIcon',
           path: '/tmp/downloads-dash2dock-lite.desktop',
           show: this.extension.downloads_icon // && this._position == 'bottom'
-        },
+        }
         // {
         //   icon: '_documentsIcon',
         //   path: '/tmp/documents-dash2dock-lite.desktop',

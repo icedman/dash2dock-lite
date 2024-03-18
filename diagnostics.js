@@ -7,7 +7,7 @@ const Point = Graphene.Point;
 
 import { getPointer, warpPointer } from './utils.js';
 
-var print = (msg) => {
+var print = msg => {
   log(msg);
   if (Main.lookingGlass && Main.lookingGlass.isOpen) {
     Main.lookingGlass.close();
@@ -18,7 +18,7 @@ var print = (msg) => {
 function add_message(seqs, msg, delay) {
   seqs.push({
     func: () => print(msg),
-    delay,
+    delay
   });
 }
 
@@ -26,21 +26,21 @@ function add_move_pointer(seqs, x, y, delay, ext) {
   seqs.push({
     x: x,
     y: y,
-    func: (t) => {
+    func: t => {
       let p = getPointer();
       // print(`move ${t.x} ${t.y}`);
       warpPointer(p, t.x, t.y, ext);
     },
-    delay,
+    delay
   });
 
   seqs.push({
     x: x,
     y: y,
-    func: (t) => {
+    func: t => {
       ext.simulated_pointer = null;
     },
-    delay: 5,
+    delay: 5
   });
 }
 
@@ -54,12 +54,12 @@ function add_slide_pointer(seqs, x, y, x2, y2, intervals, delay, ext) {
     seqs.push({
       x: x,
       y: y,
-      func: (t) => {
+      func: t => {
         let p = getPointer();
         // print(`warp ${t.x} ${t.y}`);
         warpPointer(p, t.x, t.y, ext);
       },
-      delay: dd,
+      delay: dd
     });
     x += dx;
     y += dy;
@@ -68,10 +68,10 @@ function add_slide_pointer(seqs, x, y, x2, y2, intervals, delay, ext) {
   seqs.push({
     x: x,
     y: y,
-    func: (t) => {
+    func: t => {
       ext.simulated_pointer = null;
     },
-    delay: 5,
+    delay: 5
   });
 }
 
@@ -80,12 +80,12 @@ function add_test_values(seqs, extension, settings, name, value, values) {
   if (k.test && k.test.values) {
     values = k.test.values;
   }
-  values.forEach((c) => {
+  values.forEach(c => {
     seqs.push({
       func: () => {
         settings.setValue(name, c);
       },
-      delay: 1000,
+      delay: 1000
     });
 
     if (k.test) {
@@ -115,7 +115,7 @@ function add_test_values(seqs, extension, settings, name, value, values) {
     func: () => {
       settings.setValue(name, value);
     },
-    delay: 500,
+    delay: 500
   });
 }
 
@@ -124,14 +124,14 @@ function add_boolean_test(seqs, extension, settings, name, value) {
 }
 
 function add_scale_test(seqs, extension, settings, name, value) {
-  add_test_values(
-    seqs,
-    extension,
-    settings,
-    name,
-    value,
-    [0, 0.125, 0.25, 0.5, 0.75, 1]
-  );
+  add_test_values(seqs, extension, settings, name, value, [
+    0,
+    0.125,
+    0.25,
+    0.5,
+    0.75,
+    1
+  ]);
 }
 
 function add_color_test(seqs, extension, settings, name, value) {
@@ -142,7 +142,7 @@ function add_color_test(seqs, extension, settings, name, value) {
     [1, 1, 1, 0.5],
     [1, 1, 1, 1],
     [1, 0, 1, 0.5],
-    [1, 0, 1, 1],
+    [1, 0, 1, 1]
   ];
   add_test_values(seqs, extension, settings, name, value, colors);
 }
@@ -164,7 +164,7 @@ function addMotionTests(_seqs, extension, settings) {
       settings.setValue('animate-icons', true);
       settings.setValue('autohide-dash', false);
     },
-    delay: 500,
+    delay: 500
   });
 
   add_move_pointer(_seqs, 0, 0, 0.5, extension);
@@ -185,7 +185,7 @@ function addMotionTests(_seqs, extension, settings) {
       settings.setValue('animate-icons', true);
       settings.setValue('autohide-dash', true);
     },
-    delay: 1000,
+    delay: 1000
   });
 
   // _seqs.push({
@@ -212,7 +212,7 @@ function addMotionTests(_seqs, extension, settings) {
       settings.setValue('animate-icons', anim);
       settings.setValue('autohide-dash', hide);
     },
-    delay: 500,
+    delay: 500
   });
 
   // cleanup
@@ -220,7 +220,7 @@ function addMotionTests(_seqs, extension, settings) {
     func: () => {
       extension.simulated_pointer = null;
     },
-    delay: 500,
+    delay: 500
   });
 
   add_message(_seqs, 'done', 0);
@@ -232,7 +232,7 @@ function addPreferenceTests(_seqs, extension, settings) {
   add_message(_seqs, 'begin tests', 0);
 
   let keys = settings.keys();
-  Object.keys(keys).forEach((name) => {
+  Object.keys(keys).forEach(name => {
     let k = keys[name];
     k._value = k.value;
 

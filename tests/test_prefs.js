@@ -9,7 +9,7 @@ class PrefKeys {
   }
 
   setKeys(keys) {
-    Object.keys(keys).forEach((name) => {
+    Object.keys(keys).forEach(name => {
       let key = keys[name];
       this.setKey(
         name,
@@ -29,7 +29,7 @@ class PrefKeys {
       widget_type,
       value: default_value,
       maps: key_maps,
-      object: null,
+      object: null
     };
   }
 
@@ -57,7 +57,7 @@ class PrefKeys {
   }
 
   resetAll() {
-    Object.keys(this._keys).forEach((k) => {
+    Object.keys(this._keys).forEach(k => {
       this.reset(k);
     });
   }
@@ -76,13 +76,13 @@ class PrefKeys {
   connectSignals(builder) {
     let self = this;
     let keys = this._keys;
-    Object.keys(keys).forEach((name) => {
+    Object.keys(keys).forEach(name => {
       let key = keys[name];
       let signal_id = null;
       key.object = builder.get_object(key.name);
       switch (key.widget_type) {
         case 'switch': {
-          signal_id = key.object.connect('state-set', (w) => {
+          signal_id = key.object.connect('state-set', w => {
             let value = w.get_active();
             self.setValue(name, value);
             // print(value);
@@ -90,7 +90,7 @@ class PrefKeys {
           break;
         }
         case 'dropdown': {
-          signal_id = key.object.connect('notify::selected-item', (w) => {
+          signal_id = key.object.connect('notify::selected-item', w => {
             let index = w.get_selected();
             let value = index in key.maps ? key.maps[index] : index;
             self.setValue(name, value);
@@ -99,7 +99,7 @@ class PrefKeys {
           break;
         }
         case 'scale': {
-          signal_id = key.object.connect('value-changed', (w) => {
+          signal_id = key.object.connect('value-changed', w => {
             let value = w.get_value();
             self.setValue(name, value);
             // print(value);
@@ -107,7 +107,7 @@ class PrefKeys {
           break;
         }
         case 'color': {
-          signal_id = key.object.connect('color-set', (w) => {
+          signal_id = key.object.connect('color-set', w => {
             let rgba = w.get_rgba();
             let value = [rgba.red, rgba.green, rgba.blue, rgba.alpha];
             print(value);
@@ -116,7 +116,7 @@ class PrefKeys {
           break;
         }
         case 'button': {
-          signal_id = key.object.connect('clicked', (w) => {
+          signal_id = key.object.connect('clicked', w => {
             if (key.callback) {
               key.callback();
             }
@@ -127,7 +127,7 @@ class PrefKeys {
 
       this._signals.push({
         source: key.object,
-        signal_id: signal_id,
+        signal_id: signal_id
       });
     });
   }
@@ -138,13 +138,13 @@ prefKeys.setKeys({
   'animation-fps': {
     default_value: 0,
     widget_type: 'dropdown',
-    key_maps: {},
+    key_maps: {}
   },
   'running-indicator-color': {
     default_value: [1, 1, 1, 1],
     widget_type: 'color',
-    key_maps: {},
-  },
+    key_maps: {}
+  }
 });
 
 function find(n, name) {
@@ -176,10 +176,10 @@ function dump(n, l) {
 }
 
 let app = new Adw.Application({
-  application_id: 'com.dash2dock-lite.GtkApplication',
+  application_id: 'com.dash2dock-lite.GtkApplication'
 });
 
-app.connect('activate', (me) => {
+app.connect('activate', me => {
   m = new Gtk.ApplicationWindow({ application: me });
   m.set_default_size(600, 250);
   m.set_title('Prefs Test');
@@ -219,21 +219,21 @@ app.connect('activate', (me) => {
   const actions = [
     {
       name: 'open-bug-report',
-      link: 'https://github.com/icedman/dash2dock-lite/issues',
+      link: 'https://github.com/icedman/dash2dock-lite/issues'
     },
     {
       name: 'open-readme',
-      link: 'https://github.com/icedman/dash2dock-lite',
+      link: 'https://github.com/icedman/dash2dock-lite'
     },
     {
       name: 'open-license',
-      link: 'https://github.com/icedman/dash2dock-lite/blob/master/LICENSE',
-    },
+      link: 'https://github.com/icedman/dash2dock-lite/blob/master/LICENSE'
+    }
   ];
 
-  actions.forEach((action) => {
+  actions.forEach(action => {
     let act = new Gio.SimpleAction({ name: action.name });
-    act.connect('activate', (_) =>
+    act.connect('activate', _ =>
       Gtk.show_uri(w, action.link, Gdk.CURRENT_TIME)
     );
     actionGroup.add_action(act);

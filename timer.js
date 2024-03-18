@@ -99,7 +99,7 @@ export const Timer = class {
 
   onStart() {
     // print(`started ${this._name} [${this.subscriberNames().join(',')}]`);
-    this._subscribers.forEach((s) => {
+    this._subscribers.forEach(s => {
       if (s.onStart) {
         s.onStart(s);
       }
@@ -107,7 +107,7 @@ export const Timer = class {
   }
 
   onStop() {
-    this._subscribers.forEach((s) => {
+    this._subscribers.forEach(s => {
       if (s.onStop) {
         s.onStop(s);
       }
@@ -116,7 +116,7 @@ export const Timer = class {
   }
 
   onPause() {
-    this._subscribers.forEach((s) => {
+    this._subscribers.forEach(s => {
       if (s.onPause) {
         s.onPause(s);
       }
@@ -124,7 +124,7 @@ export const Timer = class {
   }
 
   onResume() {
-    this._subscribers.forEach((s) => {
+    this._subscribers.forEach(s => {
       if (s.onResume) {
         s.onResume(s);
       }
@@ -136,7 +136,7 @@ export const Timer = class {
       return true;
     }
 
-    this._subscribers.forEach((s) => {
+    this._subscribers.forEach(s => {
       if (s.onUpdate) {
         s.onUpdate(s, this._resolution);
       }
@@ -167,13 +167,13 @@ export const Timer = class {
     if (!obj._id) {
       obj._id = this._subscriberId++;
     }
-    let idx = this._subscribers.findIndex((s) => s._id == obj._id);
+    let idx = this._subscribers.findIndex(s => s._id == obj._id);
     if (idx == -1) {
       this._subscribers.push(obj);
     } else {
       this._subscribers[idx] = {
         ...this._subscribers[idx],
-        ...obj,
+        ...obj
       };
       obj = this._subscribers[idx];
     }
@@ -190,21 +190,21 @@ export const Timer = class {
   }
 
   unsubscribe(obj) {
-    let idx = this._subscribers.findIndex((s) => s._id == obj._id);
+    let idx = this._subscribers.findIndex(s => s._id == obj._id);
     if (idx != -1) {
       if (this._subscribers.length == 1) {
         this._subscribers = [];
       } else {
         this._subscribers = [
           ...this._subscribers.slice(0, idx),
-          ...this._subscribers.slice(idx + 1),
+          ...this._subscribers.slice(idx + 1)
         ];
       }
     }
   }
 
   subscriberNames() {
-    return this._subscribers.map((s) => {
+    return this._subscribers.map(s => {
       if (s._name) {
         return s._name;
       }
@@ -217,9 +217,9 @@ export const Timer = class {
       print('--------');
       print(this._name);
     }
-    this._subscribers.forEach((s) => {
+    this._subscribers.forEach(s => {
       print('--------');
-      Object.keys(s).forEach((k) => {
+      Object.keys(s).forEach(k => {
         print(`${k}: ${s[k]}`);
       });
     });
@@ -242,7 +242,7 @@ export const Timer = class {
           s._func(s);
           s._time -= s._delay;
         }
-      },
+      }
     };
     return this.subscribe(obj);
   }
@@ -264,7 +264,7 @@ export const Timer = class {
           s._func(s);
           this.unsubscribe(s);
         }
-      },
+      }
     };
     return this.subscribe(obj);
   }
@@ -286,7 +286,7 @@ export const Timer = class {
           s._func(s);
           this.unsubscribe(s);
         }
-      },
+      }
     };
     return this.subscribe(obj);
   }
@@ -317,7 +317,7 @@ export const Timer = class {
             s._currentIdx = 0;
           }
         }
-      },
+      }
     };
     return this.subscribe(obj);
   }
@@ -329,7 +329,7 @@ export const Timer = class {
     }
 
     let duration = 0;
-    array.forEach((f) => {
+    array.forEach(f => {
       if (!f._start) {
         f._start = duration;
       }
@@ -347,15 +347,15 @@ export const Timer = class {
 
         let frames = [];
         if (s._frames) {
-          frames = s._frames.filter((f) => {
+          frames = s._frames.filter(f => {
             return f._start <= s._time && s._time < f._start + f._duration;
           });
         }
         s._currentFrames = frames;
 
         if (!s._func) {
-          s._func = (s) => {
-            s._currentFrames.forEach((f) => {
+          s._func = s => {
+            s._currentFrames.forEach(f => {
               f._time = s._time - f._start;
               f._func(f, s);
             });
@@ -369,7 +369,7 @@ export const Timer = class {
           return;
         }
         s._func(s);
-      },
+      }
     };
     return this.subscribe(obj);
   }

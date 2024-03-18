@@ -20,7 +20,7 @@ export const Calendar = GObject.registerClass(
         dark_color: [0.2, 0.2, 0.2, 1.0],
         light_color: [1.0, 1.0, 1.0, 1.0],
         accent_color: [1.0, 0.0, 0.0, 1.0],
-        ...settings,
+        ...settings
       };
 
       this._canvas = new Clutter.Canvas();

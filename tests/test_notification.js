@@ -9,10 +9,10 @@
 const { Adw, Gdk, Gio, GLib, GObject, Gtk, Pango } = imports.gi;
 
 let app = new Gtk.Application({
-  application_id: 'org.gnome.clocks',
+  application_id: 'org.gnome.clocks'
 });
 
-app.connect('activate', (me) => {
+app.connect('activate', me => {
   m = new Gtk.ApplicationWindow({ application: me });
   m.set_default_size(600, 250);
   m.set_title('Notifications Test');

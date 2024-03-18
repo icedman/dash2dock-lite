@@ -12,15 +12,15 @@ import { schemaId, SettingsKeys } from './preferences/keys.js';
 
 import {
   ExtensionPreferences,
-  gettext as _,
+  gettext as _
 } from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
 
 // from Dock-to-Dock
 const MonitorsConfig = GObject.registerClass(
   {
     Signals: {
-      updated: {},
-    },
+      updated: {}
+    }
   },
   class MonitorsConfig extends GObject.Object {
     static get XML_INTERFACE() {
@@ -81,19 +81,25 @@ const MonitorsConfig = GObject.registerClass(
             vendor,
             product,
             serial,
-            displayName: props['display-name'].unpack(),
+            displayName: props['display-name'].unpack()
           });
         }
 
         for (const logicalMonitor of logicalMonitors) {
-          const [x_, y_, scale_, transform_, isPrimary, monitorsSpecs] =
-            logicalMonitor;
+          const [
+            x_,
+            y_,
+            scale_,
+            transform_,
+            isPrimary,
+            monitorsSpecs
+          ] = logicalMonitor;
 
           // We only care about the first one really
           for (const monitorSpecs of monitorsSpecs) {
             const [connector, vendor, product, serial] = monitorSpecs;
             const monitor = this._monitors.find(
-              (m) =>
+              m =>
                 m.connector === connector &&
                 m.vendor === vendor &&
                 m.product === product &&
@@ -109,10 +115,10 @@ const MonitorsConfig = GObject.registerClass(
           }
         }
 
-        const activeMonitors = this._monitors.filter((m) => m.active);
+        const activeMonitors = this._monitors.filter(m => m.active);
         if (activeMonitors.length > 1 && logicalMonitors.length === 1) {
           // We're in cloning mode, so let's just activate the primary monitor
-          this._monitors.forEach((m) => (m.active = false));
+          this._monitors.forEach(m => (m.active = false));
           this._primaryMonitor.active = true;
         }
 
@@ -186,25 +192,25 @@ export default class Preferences extends ExtensionPreferences {
     const actions = [
       {
         name: 'open-bug-report',
-        link: 'https://github.com/icedman/dash2dock-lite/issues',
+        link: 'https://github.com/icedman/dash2dock-lite/issues'
       },
       {
         name: 'open-readme',
-        link: 'https://github.com/icedman/dash2dock-lite',
+        link: 'https://github.com/icedman/dash2dock-lite'
       },
       {
         name: 'open-buy-coffee',
-        link: 'https://www.buymeacoffee.com/icedman',
+        link: 'https://www.buymeacoffee.com/icedman'
       },
       {
         name: 'open-license',
-        link: 'https://github.com/icedman/dash2dock-lite/blob/master/LICENSE',
-      },
+        link: 'https://github.com/icedman/dash2dock-lite/blob/master/LICENSE'
+      }
     ];
 
-    actions.forEach((action) => {
+    actions.forEach(action => {
       let act = new Gio.SimpleAction({ name: action.name });
-      act.connect('activate', (_) =>
+      act.connect('activate', _ =>
         Gtk.show_uri(window, action.link, Gdk.CURRENT_TIME)
       );
       actionGroup.add_action(act);

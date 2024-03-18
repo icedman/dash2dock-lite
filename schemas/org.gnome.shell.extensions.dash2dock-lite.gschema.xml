@@ -136,6 +136,16 @@
         <summary>Show trash icon</summary>
         <description>Show a dynamic trash icon.</description>
     </key>
+    <key type="b" name="downloads-icon">
+        <default>false</default>
+        <summary>Show downloads icon</summary>
+        <description>Show a dynamic downloads icon.</description>
+    </key>
+    <key type="b" name="documents-icon">
+        <default>false</default>
+        <summary>Show documents icon</summary>
+        <description>Show a dynamic documents icon.</description>
+    </key>
     <key type="b" name="mounted-icon">
         <default>false</default>
         <summary>Show mounted device icons</summary>

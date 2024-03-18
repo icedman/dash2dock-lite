@@ -9,6 +9,7 @@ install: build
 	echo "installing..."
 	mkdir -p ~/.local/share/gnome-shell/extensions/dash2dock-lite@icedman.github.com/
 	cp -R ./* ~/.local/share/gnome-shell/extensions/dash2dock-lite@icedman.github.com/
+	rm -R ~/.local/share/gnome-shell/extensions/dash2dock-lite@icedman.github.com/apps/*.desktop
 
 clean:
 	rm -rf ./build

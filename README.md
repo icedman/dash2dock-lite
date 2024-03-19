@@ -22,11 +22,12 @@
 
 ### Features
 
+* Multi-monitor support (new!)
 * Dash docked at the desktop
 * Animated dock icons
 * Resize icons
 * Autohide/intellihide
-* Dock position - left, right layout
+* Dock positions: bottom, top, left, right
 * Scrollwheel to cycle windows
 * Click to maximize/minimize windows
 * Style top panel
@@ -36,6 +37,7 @@
 * Dynamic calendar
 * Dynamic trash icon
 * Mounted devices
+* Downloads icon with fan animation (new!)
 * Icon color effects(Tint, Monochrome)
 
 ### Prerequisites

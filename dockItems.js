@@ -309,10 +309,14 @@ export const DockItemContainer = GObject.registerClass(
       this._menu.close();
     }
 
-    _onClick() {
+    activateNewWindow() {
       if (this._menu && this._menu._newWindowItem) {
         this._menu._newWindowItem.emit('activate', null);
       }
+    }
+
+    _onClick() {
+      this.activateNewWindow();
     }
 
     _createIcon(size) {

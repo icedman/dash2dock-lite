@@ -595,46 +595,53 @@ export let Dock = GObject.registerClass(
           this[f.icon] = this.createItem(f.path);
 
           let target = this[f.icon];
-          target._onClick = () => {
-            if (!this.extension.services._downloadFiles) {
-              this.extension.services.checkDownloads();
-            }
-            let files = [...this.extension.services._downloadFiles];
-            if (files.length < this.extension.services._downloadFilesLength) {
-              files = [
-                {
-                  index: -1,
-                  name: 'More...',
-                  path: 'Downloads',
-                  icon: target._icon.icon_name,
-                  type: 'directory',
-                },
-                ...files,
-              ];
-            }
-            files = files.sort(function (a, b) {
-              return a.index > b.index ? 1 : -1;
-            });
 
-            if (!this._list) {
-              this._list = new DockItemList();
-              this._list.dock = this;
-              Main.uiGroup.add_child(this._list);
-            } else if (this._list.visible) {
-              this._list.slideOut();
-            } else {
-              Main.uiGroup.remove_child(this._list); // remove so that it is repositioned to topmost
-              Main.uiGroup.add_child(this._list);
-              this._list.visible = true;
-            }
+          if (this._position != 'bottom') {
+            target._onClick = () => {
+              target.activateNewWindow();
+            };
+          } else {
+            target._onClick = () => {
+              if (!this.extension.services._downloadFiles) {
+                this.extension.services.checkDownloads();
+              }
+              let files = [...this.extension.services._downloadFiles];
+              if (files.length < this.extension.services._downloadFilesLength) {
+                files = [
+                  {
+                    index: -1,
+                    name: 'More...',
+                    path: 'Downloads',
+                    icon: target._icon.icon_name,
+                    type: 'directory',
+                  },
+                  ...files,
+                ];
+              }
+              files = files.sort(function (a, b) {
+                return a.index > b.index ? 1 : -1;
+              });
 
-            if (this._list.visible && !this._list._hidden) {
-              this._list.slideIn(target, files);
-              let pv = new Point();
-              pv.x = 0.5;
-              pv.y = 1;
-            }
-          };
+              if (!this._list) {
+                this._list = new DockItemList();
+                this._list.dock = this;
+                Main.uiGroup.add_child(this._list);
+              } else if (this._list.visible) {
+                this._list.slideOut();
+              } else {
+                Main.uiGroup.remove_child(this._list); // remove so that it is repositioned to topmost
+                Main.uiGroup.add_child(this._list);
+                this._list.visible = true;
+              }
+
+              if (this._list.visible && !this._list._hidden) {
+                this._list.slideIn(target, files);
+                let pv = new Point();
+                pv.x = 0.5;
+                pv.y = 1;
+              }
+            };
+          }
           this._icons = null;
         } else if (this[f.icon] && !f.show) {
           // unpin downloads icon

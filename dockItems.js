@@ -3,6 +3,7 @@
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as BoxPointer from 'resource:///org/gnome/shell/ui/boxpointer.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
+import { trySpawnCommandLine } from 'resource:///org/gnome/shell/misc/util.js';
 import { BaseIcon } from 'resource:///org/gnome/shell/ui/iconGrid.js';
 
 import Gio from 'gi://Gio';
@@ -117,7 +118,8 @@ export class DockItemMenu extends PopupMenu.PopupMenu {
     super(sourceActor, 0.5, side);
 
     let { desktopApp } = params;
-    this._newWindowItem = this.addAction('New Window', () => {
+    this.desktopApp = desktopApp;
+    this._newWindowItem = this.addAction('Open Window', () => {
       let workspaceManager = global.workspace_manager;
       let workspace = workspaceManager.get_active_workspace();
       let ctx = global.create_app_launch_context(0, workspace);
@@ -136,6 +138,8 @@ export class DockItemMenu extends PopupMenu.PopupMenu {
     });
   }
 
+  _buildFolder() {}
+
   _onActivate() {}
 
   popup() {
@@ -143,6 +147,132 @@ export class DockItemMenu extends PopupMenu.PopupMenu {
     this._menuManager.ignoreRelease();
   }
 }
+
+export const DockItemList = GObject.registerClass(
+  {},
+  class DockItemList extends St.Widget {
+    _init(renderer, params) {
+      super._init({
+        name: 'DockItemList',
+        reactive: true,
+        // style_class: 'hi',
+        ...params,
+      });
+
+      this.connect('button-press-event', (obj, evt) => {
+        // this.visible = false;
+        this.slideOut();
+        return Clutter.EVENT_PROPAGATE;
+      });
+    }
+
+    slideIn(target, list) {
+      if (this._box) {
+        this.remove_child(this._box);
+        this._box = null;
+      }
+
+      if (!list.length) return;
+
+      this.opacity = 0;
+
+      let dock = this.dock;
+      list.x = dock._monitor.x;
+      list.y = dock._monitor.y;
+      list.width = dock._monitor.width;
+      list.height = dock._monitor.height;
+
+      this._target = target;
+      let tp = dock._get_position(target);
+
+      console.log(list);
+
+      this._box = new St.Widget({ style_class: '-hi' });
+      list.forEach((l) => {
+        let w = new St.Widget({});
+        let icon = new St.Icon({ icon_name: l.icon, reactive: true });
+        icon.set_icon_size(
+          this.dock._iconSizeScaledDown * this.dock._scaleFactor
+        );
+        this._box.add_child(w);
+        let label = new St.Label({ style_class: 'dash-label' });
+        let short = (l.name ?? '').replace(/(.{32})..+/, '$1...');
+        label.text = short;
+        w.add_child(icon);
+        w.add_child(label);
+        w._icon = icon;
+        w._label = label;
+
+        icon.connect('button-press-event', () => {
+          let path = Gio.File.new_for_path(`Downloads/${l.name}`).get_path();
+          let cmd = `xdg-open "${path}"`;
+          if (l.type.includes('directory')) {
+            cmd = `nautilus --select "${path}"`;
+          }
+          this.visible = false;
+          this.dock._maybeBounce(this._target);
+
+          try {
+            console.log(cmd);
+            trySpawnCommandLine(cmd);
+          } catch (err) {
+            console.log(err);
+          }
+        });
+      });
+
+      let ox = 0;
+      let oy = 0;
+      let angle = 280;
+      let rad = dock._iconSize * 1.1 * dock._scaleFactor;
+
+      let children = this._box.get_children();
+      children.reverse();
+      children.forEach((l) => {
+        let hX = Math.cos(angle * 0.0174533);
+        let hY = Math.sin(angle * 0.0174533);
+        let hl = Math.sqrt(hX * hX + hY * hY);
+        hX /= hl;
+        hY /= hl;
+        hX *= rad;
+        hY *= rad;
+
+        l.x = tp[0] - list.x + ox;
+        l.y = tp[1] - list.y + oy;
+
+        ox += hX * 0.5;
+        oy += hY;
+        angle += 2;
+
+        l.rotation_angle_z = angle - 280;
+      });
+
+      this.add_child(this._box);
+
+      let first = children[0];
+      children.forEach((l) => {
+        l._ox = first.x;
+        l._oy = first.y;
+        l._oz = 0;
+        l._label.opacity = 0;
+        l._x = l.x;
+        l._y = l.y - rad * 0.8;
+        l._rotation_angle_z = l.rotation_angle_z;
+        l.x = first.x;
+        l.y = first.y;
+        l.rotation_angle_z = 0;
+      });
+
+      this._hidden = false;
+      this._hiddenFrames = 0;
+    }
+
+    slideOut() {
+      this._hidden = true;
+      this._hiddenFrames = 80;
+    }
+  }
+);
 
 export const DockItemContainer = GObject.registerClass(
   {},
@@ -181,6 +311,12 @@ export const DockItemContainer = GObject.registerClass(
       this._menu.close();
     }
 
+    _onClick() {
+      if (this._menu && this._menu._newWindowItem) {
+        this._menu._newWindowItem.emit('activate', null);
+      }
+    }
+
     _createIcon(size) {
       this._iconActor = new St.Icon({
         icon_name: this._default_icon_name,
@@ -216,9 +352,7 @@ export const DockItemContainer = GObject.registerClass(
                 this._menu.popup();
               }
             } else {
-              if (this._menu && this._menu._newWindowItem) {
-                this._menu._newWindowItem.emit('activate', null);
-              }
+              this._onClick();
             }
           },
           this

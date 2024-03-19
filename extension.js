@@ -143,6 +143,7 @@ export default class Dash2DockLiteExt extends Extension {
     // service
     this.services = new Services();
     this.services.extension = this;
+    this.services.setupFolderIcons();
 
     // todo follow animator and autohider protocol
     this.services.enable();
@@ -313,6 +314,9 @@ export default class Dash2DockLiteExt extends Extension {
         case 'calendar-style':
           this._updateWidgetStyle();
           break;
+        case 'max-recent-items':
+          this.services.checkDownloads();
+          break;
         case 'apps-icon':
         case 'apps-icon-front':
         case 'calendar-icon':
@@ -392,6 +396,12 @@ export default class Dash2DockLiteExt extends Extension {
         case 'topbar-border-thickness':
         case 'topbar-background-color':
         case 'topbar-foreground-color':
+        case 'customize-label':
+        case 'label-border-radius':
+        case 'label-border-color':
+        case 'label-border-thickness':
+        case 'label-background-color':
+        case 'label-foreground-color':
         case 'background-color':
         case 'panel-mode': {
           this._updateStyle();
@@ -402,6 +412,8 @@ export default class Dash2DockLiteExt extends Extension {
         case 'pressure-sense': {
           break;
         }
+        case 'downloads-icon':
+        case 'documents-icon':
         case 'trash-icon': {
           this._updateLayout();
           this.animate();
@@ -673,6 +685,32 @@ export default class Dash2DockLiteExt extends Extension {
       styles.push(`#d2dlBackground { ${ss.join(' ')}}`);
     }
 
+    // dash label
+    if (this.customize_label) {
+      let rads = [0, 2, 6, 10, 12, 16, 20];
+      let r = rads[Math.floor(this.label_border_radius)];
+      let ss = [];
+      ss.push(`border-radius: ${r}px;`);
+
+      {
+        let rgba = this._style.rgba(this.label_background_color);
+        ss.push(`background: rgba(${rgba});`);
+      }
+
+      {
+        let rgba = this._style.rgba(this.label_border_color);
+        let t = this.label_border_thickness;
+        ss.push(`border: ${t}px rgba(${rgba});`);
+      }
+
+      {
+        let rgba = this._style.rgba(this.label_foreground_color);
+        ss.push(`color: rgba(${rgba});`);
+      }
+
+      styles.push(`.dash-label { ${ss.join(' ')}}`);
+    }
+
     // topbar
     if (this.customize_topbar) {
       let ss = [];
@@ -713,7 +751,7 @@ export default class Dash2DockLiteExt extends Extension {
       );
     }
 
-    this._style.build('custom', styles);
+    this._style.build('custom-d2dl', styles);
 
     this._updateBorderStyle();
   }

@@ -82,9 +82,49 @@
         <description>Set topbar panel background color.</description>
     </key>
     <key type="(dddd)" name="topbar-foreground-color">
-        <default>(0.,0.,0.,0)</default>
+        <default>(1.,1.,1.,1.)</default>
         <summary>Topbar foreground color</summary>
         <description>Set topbar panel foreground color.</description>
+    </key>
+        <key type="(dddd)" name="topbar-border-color">
+        <default>(1.,1.,1.,1.)</default>
+        <summary>border color</summary>
+        <description>Set topbar border color.</description>
+    </key>
+    <key type="i" name="topbar-border-thickness">
+        <default>0</default>
+        <summary>Border thickness</summary>
+        <description>Border thickness.</description>
+    </key>
+    <key type="b" name="customize-label">
+        <default>false</default>
+        <summary>Customize the label</summary>
+        <description>Customize the label with border and color.</description>
+    </key>
+    <key type="(dddd)" name="label-background-color">
+        <default>(0.,0.,0.,0.25)</default>
+        <summary>label background color</summary>
+        <description>Set label panel background color.</description>
+    </key>
+    <key type="(dddd)" name="label-foreground-color">
+        <default>(1.,1.,1.,1.)</default>
+        <summary>label foreground color</summary>
+        <description>Set label panel foreground color.</description>
+    </key>
+        <key type="(dddd)" name="label-border-color">
+        <default>(1.,1.,1.,1.)</default>
+        <summary>border color</summary>
+        <description>Set label border color.</description>
+    </key>
+    <key type="d" name="label-border-radius">
+        <default>0</default>
+        <summary>Border radius</summary>
+        <description>Border radius.</description>
+    </key>
+    <key type="i" name="label-border-thickness">
+        <default>0</default>
+        <summary>Border thickness</summary>
+        <description>Border thickness.</description>
     </key>
     <key type="d" name="border-radius">
         <default>3</default>
@@ -121,20 +161,25 @@
         <summary>Icon spacing</summary>
         <description>Icon spacing.</description>
     </key>
-    <key type="(dddd)" name="topbar-border-color">
-        <default>(1.,1.,1.,1.)</default>
-        <summary>border color</summary>
-        <description>Set topbar border color.</description>
-    </key>
-    <key type="i" name="topbar-border-thickness">
-        <default>0</default>
-        <summary>Border thickness</summary>
-        <description>Border thickness.</description>
-    </key>
     <key type="b" name="trash-icon">
         <default>false</default>
         <summary>Show trash icon</summary>
         <description>Show a dynamic trash icon.</description>
+    </key>
+    <key type="b" name="downloads-icon">
+        <default>false</default>
+        <summary>Show downloads icon</summary>
+        <description>Show a dynamic downloads icon.</description>
+    </key>
+    <key type="b" name="documents-icon">
+        <default>false</default>
+        <summary>Show documents icon</summary>
+        <description>Show a dynamic documents icon.</description>
+    </key>
+    <key type="i" name="max-recent-items">
+        <default>0</default>
+        <summary>Maximum recent items</summary>
+        <description>Maximum recent items.</description>
     </key>
     <key type="b" name="mounted-icon">
         <default>false</default>

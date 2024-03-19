@@ -108,6 +108,32 @@ export const SettingsKeys = () => {
       default_value: [0, 0, 0, 0],
       widget_type: 'color',
     },
+    'customize-label': {
+      default_value: false,
+      widget_type: 'switch',
+      key_maps: {},
+    },
+    'label-border-radius': {
+      default_value: 0,
+      widget_type: 'scale',
+    },
+    'label-border-thickness': {
+      default_value: 0,
+      widget_type: 'dropdown',
+      test: { values: [0, 1, 2, 3] },
+    },
+    'label-border-color': {
+      default_value: [1, 1, 1, 1],
+      widget_type: 'color',
+    },
+    'label-background-color': {
+      default_value: [0, 0, 0, 0.5],
+      widget_type: 'color',
+    },
+    'label-foreground-color': {
+      default_value: [0, 0, 0, 0],
+      widget_type: 'color',
+    },
     'favorites-only': {
       default_value: false,
       widget_type: 'switch',
@@ -123,6 +149,19 @@ export const SettingsKeys = () => {
     'trash-icon': {
       default_value: false,
       widget_type: 'switch',
+    },
+    'downloads-icon': {
+      default_value: false,
+      widget_type: 'switch',
+    },
+    'documents-icon': {
+      default_value: false,
+      widget_type: 'switch',
+    },
+    'max-recent-items': {
+      default_value: 0,
+      widget_type: 'dropdown',
+      test: { values: [5, 10, 15, 20, 25] },
     },
     'mounted-icon': {
       default_value: false,

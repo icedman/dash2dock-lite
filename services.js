@@ -1,6 +1,7 @@
 'use strict';
 
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
+import { trySpawnCommandLine } from 'resource:///org/gnome/shell/misc/util.js';
 
 import Gio from 'gi://Gio';
 import St from 'gi://St';
@@ -108,10 +109,30 @@ export const Services = class {
       this
     );
 
-    this.checkMounts();
+    this._downloadsDir = Gio.File.new_for_path('Downloads');
+    this._downloadsMonitor = this._downloadsDir.monitor(
+      Gio.FileMonitorFlags.WATCH_MOVES,
+      null
+    );
+    this._downloadsMonitor.connectObject(
+      'changed',
+      (fileMonitor, file, otherFile, eventType) => {
+        switch (eventType) {
+          case Gio.FileMonitorEvent.CHANGED:
+          case Gio.FileMonitorEvent.CREATED:
+          case Gio.FileMonitorEvent.MOVED_IN:
+            return;
+        }
+        this.checkDownloads();
+      },
+      this
+    );
+
     this.checkTrash();
+    this.checkDownloads();
     this.checkNotifications();
 
+    this.checkMounts();
     this._commitMounts();
   }
 
@@ -159,6 +180,62 @@ export const Services = class {
     this._services.forEach((s) => {
       s.update(elapsed);
     });
+  }
+
+  setupTrashIcon() {
+    let extension_path = this.extension.path;
+    let appname = `trash-dash2dock-lite.desktop`;
+    let trash_action = `${extension_path}/apps/empty-trash.sh`;
+    let app_id = `/tmp/${appname}`;
+    let fn = Gio.File.new_for_path(app_id);
+    // let open_app = 'xdg-open';
+    let open_app = 'nautilus --select';
+
+    // let content = `[Desktop Entry]\nVersion=1.0\nTerminal=false\nType=Application\nName=Trash\nExec=xdg-open trash:///\nIcon=user-trash\nStartupWMClass=trash-dash2dock-lite\nActions=trash\n\n[Desktop Action trash]\nName=Empty Trash\nExec=${extension_path}/apps/empty-trash.sh\nTerminal=true\n`;
+    let content = `[Desktop Entry]\nVersion=1.0\nTerminal=false\nType=Application\nName=Trash\nExec=${open_app} trash:///\nIcon=user-trash\nStartupWMClass=trash-dash2dock-lite\nActions=trash\n\n[Desktop Action trash]\nName=Empty Trash\nExec=${extension_path}/apps/empty-trash.sh\nTerminal=true\n`;
+    const [, etag] = fn.replace_contents(
+      content,
+      null,
+      false,
+      Gio.FileCreateFlags.REPLACE_DESTINATION,
+      null
+    );
+  }
+
+  setupFolderIcon(name, title, icon, path) {
+    // expand
+    let full_path = Gio.file_new_for_path(path).get_path();
+    let extension_path = this.extension.path;
+    let appname = `${name}-dash2dock-lite.desktop`;
+    let app_id = `/tmp/${appname}`;
+    let fn = Gio.File.new_for_path(app_id);
+    // let open_app = 'xdg-open';
+    let open_app = 'nautilus --select';
+
+    let content = `[Desktop Entry]\nVersion=1.0\nTerminal=false\nType=Application\nName=${title}\nExec=${open_app} ${full_path}\nIcon=${icon}\nStartupWMClass=${name}-dash2dock-lite\n`;
+    const [, etag] = fn.replace_contents(
+      content,
+      null,
+      false,
+      Gio.FileCreateFlags.REPLACE_DESTINATION,
+      null
+    );
+  }
+
+  setupFolderIcons() {
+    this.setupTrashIcon();
+    this.setupFolderIcon(
+      'downloads',
+      'Downloads',
+      'folder-downloads',
+      'Downloads'
+    );
+    this.setupFolderIcon(
+      'documents',
+      'Documents',
+      'folder-documents',
+      'Documents'
+    );
   }
 
   setupMountIcon(mount) {
@@ -305,8 +382,78 @@ export const Services = class {
       null
     );
     this.trashFull = iter.next_file(null) != null;
-    iter = null;
     return this.trashFull;
+  }
+
+  checkDownloads() {
+    this._trySpawnCommandLine = trySpawnCommandLine;
+    if (!this.extension.downloads_icon) return;
+    try {
+      let path = this._downloadsDir.get_path();
+      let cmd = `${this.extension.path}/apps/list-downloads.sh`;
+      trySpawnCommandLine(cmd);
+    } catch (err) {
+      console.log(err);
+    }
+
+    let fileStat = {};
+    let fn = Gio.File.new_for_path('/tmp/downloads.txt');
+    if (fn.query_exists(null)) {
+      try {
+        const [success, contents] = fn.load_contents(null);
+        const decoder = new TextDecoder();
+        let contentsString = decoder.decode(contents);
+        let idx = 0;
+        let lines = contentsString.split('\n');
+        lines.forEach((l) => {
+          let res =
+            /\s([a-zA-Z]{3})\s{1,3}([0-9]{1,3})\s{1,3}([0-9:]{4,8})\s{1,3}(.*)/.exec(
+              l
+            );
+          if (res) {
+            fileStat[res[4]] = {
+              index: idx,
+              name: res[4],
+              date: `${res[1]}. ${res[2]}, ${res[3]}`,
+            };
+            idx++;
+          }
+        });
+      } catch (err) {
+        console.log(err);
+      }
+    }
+
+    let iter = this._downloadsDir.enumerate_children(
+      'standard::*',
+      Gio.FileQueryInfoFlags.NONE,
+      null
+    );
+
+    // console.log(fileStat);
+    
+    this._downloadFilesLength = Object.keys(fileStat).length;
+    let maxs = [5,10,15,20,25];
+    let max_recent_items = maxs[this.extension.max_recent_items];
+    
+    this._downloadFiles = [];
+    let f = iter.next_file(null);
+    while (f) {
+      if (!f.get_is_hidden()) {
+        let name = f.get_name();
+        if (fileStat[name]?.index < max_recent_items) {
+          this._downloadFiles.push({
+            index: fileStat[name]?.index,
+            name,
+            display: f.get_display_name(),
+            icon: f.get_icon().get_names()[0] ?? 'folder',
+            type: f.get_content_type(),
+            date: fileStat[name]?.date ?? '',
+          });
+        }
+      }
+      f = iter.next_file(null);
+    }
   }
 
   checkMounts() {

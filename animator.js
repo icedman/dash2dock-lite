@@ -508,7 +508,54 @@ export let Animator = class {
     }
     dock.dash.opacity = 255;
 
+    //---------------------
+    // animate the list
+    //---------------------
+    if (dock._list && dock._list.visible) {
+      let list = dock._list;
+      list.opacity = 255;
+
+      let target = list._target;
+      let list_coef = 4;
+
+      let tw = target.width * target._icon.scaleX;
+      let th = target.height * target._icon.scaleY;
+
+      list._box?.get_children().forEach((c) => {
+        c.translationX = target._icon.translationX + tw / 8;
+        c.translationY =
+          -target._icon.scaleX * target._icon.height + target._icon.height;
+        c._label.translationX = -c._label.width;
+
+        let tx = c._x;
+        let ty = c._y;
+        let tz = c._rotation_angle_z;
+        let to = 255;
+        if (list._hidden) {
+          tx = c._ox;
+          ty = c._oy;
+          tz = c._oz;
+          to = 0;
+          if (list._hiddenFrames-- == 0) {
+            list.visible = false;
+            list._hidden = false;
+          }
+        }
+
+        c._label.opacity =
+          (c._label.opacity * list_coef + to) / (list_coef + 1);
+        c.x = (c.x * list_coef + tx) / (list_coef + 1);
+        c.y = (c.y * list_coef + ty) / (list_coef + 1);
+        c.rotation_angle_z =
+          (c.rotation_angle_z * list_coef + tz) / (list_coef + 1);
+      });
+
+      target._label.hide();
+      didScale = true;
+    }
+
     if (didScale) {
+      dock.autohider._debounceCheckHide();
       dock._debounceEndAnimation();
     }
   }
@@ -518,9 +565,8 @@ export let Animator = class {
 
     let scaleFactor = dock.getMonitor().geometry_scale;
     let travel =
-      (dock._iconSize / 3) *
-      ((0.25 + dock.extension.animation_bounce) * 1.5) *
-      scaleFactor;
+      (dock._iconSize / 3) * ((0.25 + dock.extension.animation_bounce) * 1.5);
+    // * scaleFactor;
     appwell.translation_y = 0;
 
     let icon = appwell.get_parent()._icon;

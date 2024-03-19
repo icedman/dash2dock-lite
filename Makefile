@@ -9,6 +9,7 @@ install: build
 	echo "installing..."
 	mkdir -p ~/.local/share/gnome-shell/extensions/dash2dock-lite@icedman.github.com/
 	cp -R ./* ~/.local/share/gnome-shell/extensions/dash2dock-lite@icedman.github.com/
+	rm -R ~/.local/share/gnome-shell/extensions/dash2dock-lite@icedman.github.com/apps/*.desktop
 
 clean:
 	rm -rf ./build
@@ -46,7 +47,7 @@ test-prefs:
 test-shell: install
 	env GNOME_SHELL_SLOWDOWN_FACTOR=2 \
 		MUTTER_DEBUG_DUMMY_MODE_SPECS=1200x800 \
-	 	MUTTER_DEBUG_DUMMY_MONITOR_SCALES=1 \
+	 	MUTTER_DEBUG_DUMMY_MONITOR_SCALES=1.25 \
 		dbus-run-session -- gnome-shell --nested --wayland
 	rm /run/user/1000/gnome-shell-disable-extensions
 

@@ -155,7 +155,7 @@ export const DockItemList = GObject.registerClass(
       super._init({
         name: 'DockItemList',
         reactive: true,
-        style_class: 'hi',
+        // style_class: 'hi',
         ...params,
       });
 

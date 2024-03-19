@@ -314,6 +314,9 @@ export default class Dash2DockLiteExt extends Extension {
         case 'calendar-style':
           this._updateWidgetStyle();
           break;
+        case 'max-recent-items':
+          this.services.checkDownloads();
+          break;
         case 'apps-icon':
         case 'apps-icon-front':
         case 'calendar-icon':

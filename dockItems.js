@@ -185,6 +185,8 @@ export const DockItemList = GObject.registerClass(
       this._target = target;
       let tp = dock._get_position(target);
 
+      console.log(list);
+
       this._box = new St.Widget({ style_class: '-hi' });
       list.forEach((l) => {
         let w = new St.Widget({});

@@ -99,6 +99,19 @@
             </child>
           </object>
         </child>
+        <child>
+          <object class="AdwActionRow">
+            <property name="title" translatable="yes">Maximum Recent Items</property>
+            <property name="subtitle" translatable="yes">Set maximum recent items to show.</property>
+            <property name="activatable-widget">max-recent-items</property>
+            <child>
+              <object class="GtkDropDown" id="max-recent-items">
+                <property name="valign">center</property>
+                <property name="model">max-recent-items-model</property>
+              </object>
+            </child>
+          </object>
+        </child>
       </object>
     </child>
     <child>
@@ -180,6 +193,15 @@
       <item>Overlay 2</item>
       <item>Framed 1</item>
       <item>Framed 2</item>
+    </items>
+  </object>
+  <object class="GtkStringList" id="max-recent-items-model">
+    <items>
+      <item>5</item>
+      <item>10</item>
+      <item>15</item>
+      <item>20</item>
+      <item>25</item>
     </items>
   </object>
 </interface>

@@ -12,8 +12,6 @@ const Point = Graphene.Point;
 import { Clock } from './apps/clock.js';
 import { Calendar } from './apps/calendar.js';
 
-const MAX_RECENT_FILES = 8;
-
 // sync with animator
 const CANVAS_SIZE = 120;
 
@@ -409,7 +407,7 @@ export const Services = class {
         let lines = contentsString.split('\n');
         lines.forEach((l) => {
           let res =
-            /\s([a-zA-Z]{3})\s{1,3}([0-9]{1,3})\s{1,3}([0-9]{4})\s{1,3}(.*)/.exec(
+            /\s([a-zA-Z]{3})\s{1,3}([0-9]{1,3})\s{1,3}([0-9:]{4,8})\s{1,3}(.*)/.exec(
               l
             );
           if (res) {
@@ -432,14 +430,18 @@ export const Services = class {
       null
     );
 
+    // console.log(fileStat);
+    
     this._downloadFilesLength = Object.keys(fileStat).length;
-
+    let maxs = [5,10,15,20,25];
+    let max_recent_items = maxs[this.extension.max_recent_items];
+    
     this._downloadFiles = [];
     let f = iter.next_file(null);
     while (f) {
       if (!f.get_is_hidden()) {
         let name = f.get_name();
-        if (fileStat[name]?.index < MAX_RECENT_FILES) {
+        if (fileStat[name]?.index < max_recent_items) {
           this._downloadFiles.push({
             index: fileStat[name]?.index,
             name,

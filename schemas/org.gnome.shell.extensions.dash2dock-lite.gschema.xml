@@ -176,6 +176,11 @@
         <summary>Show documents icon</summary>
         <description>Show a dynamic documents icon.</description>
     </key>
+    <key type="i" name="max-recent-items">
+        <default>0</default>
+        <summary>Maximum recent items</summary>
+        <description>Maximum recent items.</description>
+    </key>
     <key type="b" name="mounted-icon">
         <default>false</default>
         <summary>Show mounted device icons</summary>

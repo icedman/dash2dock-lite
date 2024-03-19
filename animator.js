@@ -521,7 +521,7 @@ export let Animator = class {
       let tw = target.width * target._icon.scaleX;
       let th = target.height * target._icon.scaleY;
 
-      list._box.get_children().forEach((c) => {
+      list._box?.get_children().forEach((c) => {
         c.translationX = target._icon.translationX + tw / 8;
         c.translationY =
           -target._icon.scaleX * target._icon.height + target._icon.height;

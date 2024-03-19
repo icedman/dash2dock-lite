@@ -39,6 +39,7 @@ export const DockAlignment = {
   END: 'end',
 };
 
+const PREVIEW_FRAMES = 64;
 const ANIM_DEBOUNCE_END_DELAY = 750;
 
 const MIN_SCROLL_RESOLUTION = 4;
@@ -101,10 +102,10 @@ export let Dock = GObject.registerClass(
       this.autohider.enable();
 
       this.struts = new St.Widget({
-        name: 'd2daDockStruts',
+        name: 'DockStruts',
       });
       this.dwell = new St.Widget({
-        name: 'd2daDockDwell',
+        name: 'DockDwell',
         reactive: true,
         track_hover: true,
       });
@@ -799,8 +800,8 @@ export let Dock = GObject.registerClass(
       this.height = vertical ? width : height;
 
       if (this.animated) {
-        this.width *= vertical ? 1.35 : 1;
-        this.height *= !vertical ? 1.35 : 1;
+        this.width *= vertical ? 1.75 : 1;
+        this.height *= !vertical ? 1.75 : 1;
         this.width += !vertical * iconSizeSpaced * 2.5 * scaleFactor;
         this.height += vertical * iconSizeSpaced * 2.5 * scaleFactor;
 
@@ -863,8 +864,20 @@ export let Dock = GObject.registerClass(
       // console.log('---------------');
     }
 
+    preview() {
+      this._preview = PREVIEW_FRAMES;
+    }
+
     animate() {
+      if (this._preview) {
+        let p = this._get_position(this.dash);
+        p[0] += this.dash.width/2;
+        p[1] += this.dash.height/2;
+        this.simulated_pointer = p;
+        this._preview--;
+      }
       this.animator.animate();
+      this.simulated_pointer = null;
     }
 
     _get_position(obj) {
@@ -890,6 +903,7 @@ export let Dock = GObject.registerClass(
     }
 
     _isWithinDash(p) {
+      if (this._hidden) return false;
       return this._isInRect([this.x, this.y, this.width, this.height], p, 0);
     }
 

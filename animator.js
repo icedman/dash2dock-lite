@@ -43,6 +43,10 @@ export let Animator = class {
       pointer = [...dock.extension.simulated_pointer];
       simulation = true;
     }
+    if (dock.simulated_pointer) {
+      pointer = [...dock.simulated_pointer];
+      simulation = true;
+    }
 
     let vertical = dock.isVertical();
 
@@ -155,6 +159,7 @@ export let Animator = class {
 
       icon._pos = [...original_pos];
       icon._translate = 0;
+      icon._translateRise = 0;
 
       iconTable.push(icon);
 
@@ -175,16 +180,8 @@ export let Animator = class {
         }
 
         // affect rise
-        let sz = iconSize * fp;
-        if (vertical) {
-          if (dock._position == 'right') {
-            icon._pos[0] -= sz * 0.8 * rise;
-          } else {
-            icon._pos[0] += sz * 0.8 * rise;
-          }
-        } else {
-          icon._pos[1] -= sz * 0.8 * rise;
-        }
+        let sz = iconSize * fp * scaleFactor;
+        icon._translateRise = sz * 0.1 * rise;
 
         didScale = true;
       }
@@ -293,11 +290,13 @@ export let Animator = class {
       icon._icon.pivot_point = pv;
       icon._icon.set_scale(newScale, newScale);
 
+      let rdir = (this._position == 'top' || this._position == 'left') ? 1 : -1;
+
       let oldX = icon._icon.translationX;
       let oldY = icon._icon.translationY;
-      let translationX =
+      let translationX = (vertical * icon._translateRise * rdir) +
         (oldX + icon._translate * !vertical * _pos_coef) / (_pos_coef + 1);
-      let translationY =
+      let translationY = (!vertical * icon._translateRise * rdir) +
         (oldY + icon._translate * vertical * _pos_coef) / (_pos_coef + 1);
 
       icon._icon.translationX = translationX;

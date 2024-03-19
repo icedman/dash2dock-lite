@@ -209,8 +209,11 @@ export default class Dash2DockLiteExt extends Extension {
     log('dash2dock-lite disabled');
   }
 
-  animate() {
+  animate(settings) {
     this.docks.forEach((dock) => {
+      if (settings && settings.preview) {
+        dock.preview();
+      }
       dock._beginAnimation();
     });
   }
@@ -300,6 +303,7 @@ export default class Dash2DockLiteExt extends Extension {
         case 'animation-rise':
         case 'animation-bounce': {
           if (this.animate_icons) {
+            this.animate({preview: true});
           }
           break;
         }

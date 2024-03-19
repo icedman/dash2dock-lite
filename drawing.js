@@ -137,5 +137,5 @@ export const Drawing = {
   draw_circle,
   draw_rect,
   draw_rounded_rect,
-  draw_text
+  draw_text,
 };

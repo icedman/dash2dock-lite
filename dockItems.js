@@ -26,7 +26,7 @@ const DockItemOverlay = GObject.registerClass(
     _init(renderer, params) {
       super._init({
         name: 'DockItemContainer',
-        ...params
+        ...params,
       });
 
       this.renderer = renderer;
@@ -72,7 +72,7 @@ export const DockItemDotsOverlay = GObject.registerClass(
             : 90
           : position == 'top'
           ? 180
-          : 0
+          : 0,
       });
     }
   }
@@ -102,7 +102,7 @@ export const DockItemBadgeOverlay = GObject.registerClass(
         color: notification_badge_color || [1, 1, 1, 1],
         style: notification_badge_style || 'default',
         rotate: position == 'bottom' ? 180 : 0,
-        translate: [0.4, 0]
+        translate: [0.4, 0],
       });
     }
   }
@@ -127,7 +127,7 @@ export class DockItemMenu extends PopupMenu.PopupMenu {
       this._onActivate();
     });
 
-    desktopApp.list_actions().forEach(action => {
+    desktopApp.list_actions().forEach((action) => {
       let name = desktopApp.get_action_name(action);
       this.addAction(name, () => {
         let workspaceManager = global.workspace_manager;
@@ -155,17 +155,18 @@ export const DockItemList = GObject.registerClass(
       super._init({
         name: 'DockItemList',
         reactive: true,
-        style_class: 'hi',
-        ...params
+        // style_class: 'hi',
+        ...params,
       });
 
       this.connect('button-press-event', (obj, evt) => {
-        this.visible = false;
+        // this.visible = false;
+        this.slideOut();
         return Clutter.EVENT_PROPAGATE;
       });
     }
 
-    build(list) {
+    slideIn(target, list) {
       if (this._box) {
         this.remove_child(this._box);
         this._box = null;
@@ -173,11 +174,24 @@ export const DockItemList = GObject.registerClass(
 
       if (!list.length) return;
 
+      this.opacity = 0;
+
+      let dock = this.dock;
+      list.x = dock._monitor.x;
+      list.y = dock._monitor.y;
+      list.width = dock._monitor.width;
+      list.height = dock._monitor.height;
+
+      this._target = target;
+      let tp = dock._get_position(target);
+
       this._box = new St.Widget({ style_class: '-hi' });
-      list.forEach(l => {
+      list.forEach((l) => {
         let w = new St.Widget({});
         let icon = new St.Icon({ icon_name: l.icon, reactive: true });
-        icon.set_icon_size(this.dock._iconSizeScaledDown * this.dock._scaleFactor);
+        icon.set_icon_size(
+          this.dock._iconSizeScaledDown * this.dock._scaleFactor
+        );
         this._box.add_child(w);
         let label = new St.Label({ style_class: 'dash-label' });
         let short = (l.name ?? '').replace(/(.{32})..+/, '$1...');
@@ -205,48 +219,55 @@ export const DockItemList = GObject.registerClass(
         });
       });
 
-      let rad = 500;
-      let circ = rad * 2 * 3.14;
-      let cr = circ / this.dock._iconSizeScaledDown;
-      let rinterval = cr / rad * 20;
-      // console.log(cr);
-      let rot = 0;
+      let ox = 0;
+      let oy = 0;
+      let angle = 280;
+      let rad = dock._iconSize * 1.1 * dock._scaleFactor;
+
       let children = this._box.get_children();
       children.reverse();
-      children.forEach(l => {
-        let rrX = (rot * 3.14) / 180;
-        let rrY = (rot * 3.14) / 180;
-        let tx = Math.cos(rrX) * -rad;
-        let ty = Math.sin(rrY) * rad;
-        l.x = tx * 2 + rad * 2;
-        l.y = ty * 3;
-        
-        l.x += rad;
-        l.y += rad;
+      children.forEach((l) => {
+        let hX = Math.cos(angle * 0.0174533);
+        let hY = Math.sin(angle * 0.0174533);
+        let hl = Math.sqrt(hX * hX + hY * hY);
+        hX /= hl;
+        hY /= hl;
+        hX *= rad;
+        hY *= rad;
 
-        l.rotation_angle_z = -rot;
+        l.x = tp[0] - list.x + ox;
+        l.y = tp[1] - list.y + oy;
 
-        // todo .. determine angle for iconSize
-        // rot -= 2;
-        rot -= rinterval;
+        ox += hX * 0.5;
+        oy += hY;
+        angle += 2;
+
+        l.rotation_angle_z = angle - 280;
       });
-
-      this._firstPos = [
-        children[0].x,
-        children[1].y
-      ];
 
       this.add_child(this._box);
 
       let first = children[0];
-      children.forEach(l => {
+      children.forEach((l) => {
+        l._ox = first.x;
+        l._oy = first.y;
+        l._oz = 0;
+        l._label.opacity = 0;
         l._x = l.x;
-        l._y = l.y;
+        l._y = l.y - rad * 0.8;
         l._rotation_angle_z = l.rotation_angle_z;
         l.x = first.x;
         l.y = first.y;
-        l.rotation_angle_z = first.rotation_angle_z;
+        l.rotation_angle_z = 0;
       });
+
+      this._hidden = false;
+      this._hiddenFrames = 0;
+    }
+
+    slideOut() {
+      this._hidden = true;
+      this._hiddenFrames = 80;
     }
   }
 );
@@ -258,7 +279,7 @@ export const DockItemContainer = GObject.registerClass(
       super._init({
         name: 'DockItemContainer',
         style_class: 'dash-item-container',
-        ...(params || {})
+        ...(params || {}),
       });
 
       this.name = params.appinfo_filename;
@@ -279,7 +300,7 @@ export const DockItemContainer = GObject.registerClass(
 
       // menu
       this._menu = new DockItemMenu(this, St.Side.TOP, {
-        desktopApp
+        desktopApp,
       });
       this._menuManager = new PopupMenu.PopupMenuManager(this);
       this._menu._menuManager = this._menuManager;
@@ -299,7 +320,7 @@ export const DockItemContainer = GObject.registerClass(
         icon_name: this._default_icon_name,
         icon_size: size,
         style_class: 'show-apps-icon',
-        track_hover: true
+        track_hover: true,
       });
 
       // attach event
@@ -309,7 +330,7 @@ export const DockItemContainer = GObject.registerClass(
 
       icon.reactive = true;
       icon.track_hover = true;
-      [icon].forEach(btn => {
+      [icon].forEach((btn) => {
         if (btn._connected) return;
         btn._connected = true;
         btn.button_mask = St.ButtonMask.ONE | St.ButtonMask.TWO;
@@ -347,7 +368,7 @@ export const DockBackground = GObject.registerClass(
     _init(params) {
       super._init({
         name: 'DockBackground',
-        ...(params || {})
+        ...(params || {}),
       });
     }
 
@@ -360,7 +381,7 @@ export const DockBackground = GObject.registerClass(
         vertical,
         position,
         panel_mode,
-        dashContainer
+        dashContainer,
       } = params;
 
       if (!first || !last) return;

@@ -19,7 +19,7 @@ import { MonochromeEffect } from './effects/monochrome_effect.js';
 import {
   DockItemList,
   DockItemContainer,
-  DockBackground
+  DockBackground,
 } from './dockItems.js';
 import { AutoHide } from './autohide.js';
 import { Animator } from './animator.js';
@@ -30,13 +30,13 @@ export const DockPosition = {
   BOTTOM: 'bottom',
   LEFT: 'left',
   RIGHT: 'right',
-  TOP: 'top'
+  TOP: 'top',
 };
 
 export const DockAlignment = {
   CENTER: 'center',
   START: 'start',
-  END: 'end'
+  END: 'end',
 };
 
 const ANIM_DEBOUNCE_END_DELAY = 750;
@@ -56,7 +56,7 @@ export let Dock = GObject.registerClass(
         height: 0,
         clip_to_allocation: true,
         x_align: Clutter.ActorAlign.CENTER,
-        y_align: Clutter.ActorAlign.CENTER
+        y_align: Clutter.ActorAlign.CENTER,
       });
 
       this.extension = params.extension;
@@ -101,12 +101,12 @@ export let Dock = GObject.registerClass(
       this.autohider.enable();
 
       this.struts = new St.Widget({
-        name: 'd2daDockStruts'
+        name: 'd2daDockStruts',
       });
       this.dwell = new St.Widget({
         name: 'd2daDockDwell',
         reactive: true,
-        track_hover: true
+        track_hover: true,
       });
       this.dwell.connectObject(
         'motion-event',
@@ -121,7 +121,7 @@ export let Dock = GObject.registerClass(
 
     createItem(appinfo_filename) {
       let item = new DockItemContainer({
-        appinfo_filename
+        appinfo_filename,
       });
       item.dock = this;
       item._menu._onActivate = () => {
@@ -194,7 +194,7 @@ export let Dock = GObject.registerClass(
         case 1: {
           effect = new TintEffect({
             name: 'color',
-            color: this.extension.icon_effect_color
+            color: this.extension.icon_effect_color,
           });
           effect.preload(this.extension.path);
           break;
@@ -202,7 +202,7 @@ export let Dock = GObject.registerClass(
         case 2: {
           effect = new MonochromeEffect({
             name: 'color',
-            color: this.extension.icon_effect_color
+            color: this.extension.icon_effect_color,
           });
           effect.preload(this.extension.path);
           break;
@@ -259,7 +259,7 @@ export let Dock = GObject.registerClass(
       this._separator = new St.Widget({
         style_class: 'dash-separator',
         y_align: Clutter.ActorAlign.CENTER,
-        height: 48
+        height: 48,
       });
       this._separator.name = 'separator';
       this._extraIcons.add_child(this._separator);
@@ -278,19 +278,19 @@ export let Dock = GObject.registerClass(
       Main.layoutManager.addChrome(this.struts, {
         affectsStruts: !this.extension.autohide_dash,
         affectsInputRegion: false,
-        trackFullscreen: true
+        trackFullscreen: true,
       });
 
       Main.layoutManager.addChrome(this, {
         affectsStruts: false,
         affectsInputRegion: false,
-        trackFullscreen: true
+        trackFullscreen: true,
       });
 
       Main.layoutManager.addChrome(this.dwell, {
         affectsStruts: false,
         affectsInputRegion: false,
-        trackFullscreen: true
+        trackFullscreen: true,
       });
 
       this._onChrome = true;
@@ -344,7 +344,7 @@ export let Dock = GObject.registerClass(
       let extraSeparator = null;
 
       if (this._extraIcons) {
-        this._extraIcons.get_children().forEach(appsIcon => {
+        this._extraIcons.get_children().forEach((appsIcon) => {
           appsIcon._cls = appsIcon._cls || appsIcon.get_style_class_name();
           if (appsIcon._cls === 'dash-separator') {
             appsIcon.visible =
@@ -381,7 +381,7 @@ export let Dock = GObject.registerClass(
       }
 
       // W: breakable
-      let icons = this.dash._box.get_children().filter(actor => {
+      let icons = this.dash._box.get_children().filter((actor) => {
         actor._cls = actor._cls || actor.get_style_class_name();
         if (actor._cls === 'dash-separator') {
           separators.push(actor);
@@ -416,7 +416,7 @@ export let Dock = GObject.registerClass(
       if (this.extension.favorites_only) {
         let favorites = Fav.getAppFavorites();
         let favorite_ids = favorites._getIds();
-        icons = icons.filter(i => {
+        icons = icons.filter((i) => {
           let app = i.child.app;
           let appId = app ? app.get_id() : '';
           let shouldInclude = favorite_ids.includes(appId);
@@ -429,7 +429,7 @@ export let Dock = GObject.registerClass(
         });
       }
 
-      icons.forEach(c => {
+      icons.forEach((c) => {
         // W: breakable
         let label = c.label;
         let appwell = c.first_child;
@@ -465,7 +465,7 @@ export let Dock = GObject.registerClass(
       if (this._extraIcons) {
         icons = [
           ...icons,
-          ...this._extraIcons.get_children().filter(e => e._icon)
+          ...this._extraIcons.get_children().filter((e) => e._icon),
         ];
       }
 
@@ -518,7 +518,7 @@ export let Dock = GObject.registerClass(
         // could happen if ShowApps is hidden or not yet created?
       }
 
-      icons.forEach(icon => {
+      icons.forEach((icon) => {
         if (!icon._destroyConnectId) {
           icon._destroyConnectId = icon.connect('destroy', () => {
             this._icons = null;
@@ -552,10 +552,10 @@ export let Dock = GObject.registerClass(
       //---------------
       {
         let extras = [...this._extraIcons.get_children()];
-        let extraNames = extras.map(e => e.name);
+        let extraNames = extras.map((e) => e.name);
         let mounted = Object.keys(this.extension.services._mounts);
 
-        extras.forEach(extra => {
+        extras.forEach((extra) => {
           if (!extra._mountType) {
             return;
           }
@@ -565,7 +565,7 @@ export let Dock = GObject.registerClass(
           }
         });
 
-        mounted.forEach(mount => {
+        mounted.forEach((mount) => {
           if (!extraNames.includes(mount)) {
             let mountedIcon = this.createItem(mount);
             mountedIcon._mountType = true;
@@ -581,15 +581,15 @@ export let Dock = GObject.registerClass(
         {
           icon: '_downloadsIcon',
           path: '/tmp/downloads-dash2dock-lite.desktop',
-          show: this.extension.downloads_icon // && this._position == 'bottom'
-        }
+          show: this.extension.downloads_icon, // && this._position == 'bottom'
+        },
         // {
         //   icon: '_documentsIcon',
         //   path: '/tmp/documents-dash2dock-lite.desktop',
         //   show: this.extension.documents_icon // && this._position == 'bottom'
         // }
       ];
-      folders.forEach(f => {
+      folders.forEach((f) => {
         if (!this[f.icon] && f.show) {
           // pin downloads icon
           this[f.icon] = this.createItem(f.path);
@@ -607,33 +607,32 @@ export let Dock = GObject.registerClass(
                   name: 'More...',
                   path: 'Downloads',
                   icon: target._icon.icon_name,
-                  type: 'directory'
+                  type: 'directory',
                 },
-                ...files
+                ...files,
               ];
             }
-            files = files.sort(function(a, b) {
+            files = files.sort(function (a, b) {
               return a.index > b.index ? 1 : -1;
             });
 
             if (!this._list) {
               this._list = new DockItemList();
               this._list.dock = this;
-              Main.uiGroup.remove_child(this._list); // remove so that it is repositioned to topmost
               Main.uiGroup.add_child(this._list);
             } else if (this._list.visible) {
-              this._list.visible = false;
+              this._list.slideOut();
             } else {
+              Main.uiGroup.remove_child(this._list); // remove so that it is repositioned to topmost
+              Main.uiGroup.add_child(this._list);
               this._list.visible = true;
             }
 
-            if (this._list.visible) {
-              this._list._target = target;
-              this._list.build(files);
+            if (this._list.visible && !this._list._hidden) {
+              this._list.slideIn(target, files);
               let pv = new Point();
               pv.x = 0.5;
               pv.y = 1;
-              this._list.opacity = 0;
             }
           };
           this._icons = null;
@@ -679,7 +678,7 @@ export let Dock = GObject.registerClass(
         DockPosition.BOTTOM,
         DockPosition.LEFT,
         DockPosition.RIGHT,
-        DockPosition.TOP
+        DockPosition.TOP,
       ];
       this._position =
         locations[this.extension.dock_location] || DockPosition.BOTTOM;
@@ -701,7 +700,7 @@ export let Dock = GObject.registerClass(
           offsetX: 0,
           offsetY: 0,
           centerX: 1,
-          centerY: 0
+          centerY: 0,
         },
         bottom: {
           edgeX: 0,
@@ -709,7 +708,7 @@ export let Dock = GObject.registerClass(
           offsetX: 0,
           offsetY: -1,
           centerX: 1,
-          centerY: 0
+          centerY: 0,
         },
         left: {
           edgeX: 0,
@@ -717,7 +716,7 @@ export let Dock = GObject.registerClass(
           offsetX: 0,
           offsetY: 0,
           centerX: 0,
-          centerY: 1
+          centerY: 1,
         },
         right: {
           edgeX: 1,
@@ -725,8 +724,8 @@ export let Dock = GObject.registerClass(
           offsetX: -1,
           offsetY: 0,
           centerX: 0,
-          centerY: 1
-        }
+          centerY: 1,
+        },
       };
       let f = flags[this._position];
 
@@ -777,7 +776,7 @@ export let Dock = GObject.registerClass(
         this._edge_distance = 0;
       }
 
-      this._icons.forEach(icon => {
+      this._icons.forEach((icon) => {
         icon.width = iconSizeSpaced * scaleFactor;
         icon.height = iconSizeSpaced * scaleFactor;
 
@@ -969,7 +968,7 @@ export let Dock = GObject.registerClass(
       let activeWs = workspaceManager.get_active_workspace();
       let focusedWindow = null;
 
-      windows.forEach(w => {
+      windows.forEach((w) => {
         if (w.has_focus()) {
           focusedWindow = w;
         }
@@ -985,14 +984,14 @@ export let Dock = GObject.registerClass(
               focusedWindow.maximize(3);
             }
           } else {
-            windows.forEach(w => {
+            windows.forEach((w) => {
               w.minimize();
             });
           }
         }, 50);
       } else {
         this.extension._hiTimer.runOnce(() => {
-          windows.forEach(w => {
+          windows.forEach((w) => {
             if (w.is_hidden()) {
               w.unminimize();
               if (w.has_focus()) {
@@ -1071,7 +1070,7 @@ export let Dock = GObject.registerClass(
       let windows = app.get_windows();
 
       if (evt.modifier_state & Clutter.ModifierType.CONTROL_MASK) {
-        windows = windows.filter(w => {
+        windows = windows.filter((w) => {
           return activeWs == w.get_workspace();
         });
       }

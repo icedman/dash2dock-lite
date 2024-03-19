@@ -7,11 +7,11 @@ import GLib from 'gi://GLib';
 import GObject from 'gi://GObject';
 import Clutter from 'gi://Clutter';
 
-const getShaderSource = extensionDir => {
+const getShaderSource = (extensionDir) => {
   const SHADER_PATH = GLib.build_filenamev([
     extensionDir,
     'effects',
-    'color_effect.glsl'
+    'color_effect.glsl',
   ]);
 
   try {

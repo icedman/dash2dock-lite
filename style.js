@@ -14,7 +14,7 @@ export const Style = class {
   unloadAll() {
     let ctx = St.ThemeContext.get_for_stage(global.stage);
     let theme = ctx.get_theme();
-    Object.keys(this.styles).forEach(k => {
+    Object.keys(this.styles).forEach((k) => {
       let fn = this.styles[k];
       theme.unload_stylesheet(fn);
     });
@@ -26,7 +26,7 @@ export const Style = class {
     let theme = ctx.get_theme();
 
     let content = '';
-    style_array.forEach(k => {
+    style_array.forEach((k) => {
       content = `${content}\n${k}`;
     });
 
@@ -58,7 +58,7 @@ export const Style = class {
 
   rgba(color) {
     let clr = color || [1, 1, 1, 1];
-    let res = clr.map(r => Math.floor(255 * r));
+    let res = clr.map((r) => Math.floor(255 * r));
     res[3] = clr[3].toFixed(1);
     return res.join(',');
   }

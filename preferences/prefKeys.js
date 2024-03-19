@@ -10,7 +10,7 @@ export let PrefKeys = class {
   }
 
   setKeys(keys) {
-    Object.keys(keys).forEach(name => {
+    Object.keys(keys).forEach((name) => {
       let key = keys[name];
       this.setKey(
         name,
@@ -34,7 +34,7 @@ export let PrefKeys = class {
       test: test,
       callback,
       options,
-      object: null
+      object: null,
     };
   }
 
@@ -84,7 +84,7 @@ export let PrefKeys = class {
   }
 
   resetAll() {
-    Object.keys(this._keys).forEach(k => {
+    Object.keys(this._keys).forEach((k) => {
       this.reset(k);
     });
   }
@@ -101,7 +101,7 @@ export let PrefKeys = class {
     let self = this;
     let keys = this._keys;
 
-    Object.keys(keys).forEach(name => {
+    Object.keys(keys).forEach((name) => {
       let key = keys[name];
       key.object = builder ? builder.get_object(key.name) : null;
       switch (key.widget_type) {
@@ -142,7 +142,7 @@ export let PrefKeys = class {
                   red: key.value[0],
                   green: key.value[1],
                   blue: key.value[2],
-                  alpha: key.value[3]
+                  alpha: key.value[3],
                 })
               );
             }
@@ -197,7 +197,7 @@ export let PrefKeys = class {
   }
 
   disconnectSettings() {
-    this._settingsListeners.forEach(id => {
+    this._settingsListeners.forEach((id) => {
       this._settings.disconnect(id);
     });
     this._settingsListeners = [];
@@ -209,7 +209,7 @@ export let PrefKeys = class {
     this._builder = builder;
     let self = this;
     let keys = this._keys;
-    Object.keys(keys).forEach(name => {
+    Object.keys(keys).forEach((name) => {
       let key = keys[name];
       let signal_id = null;
       key.object = builder.get_object(key.name);
@@ -224,7 +224,7 @@ export let PrefKeys = class {
         }
         case 'switch': {
           key.object.set_active(key.default_value);
-          signal_id = key.object.connect('state-set', w => {
+          signal_id = key.object.connect('state-set', (w) => {
             let value = w.get_active();
             self.setValue(name, value);
             if (key.callback) {
@@ -234,7 +234,7 @@ export let PrefKeys = class {
           break;
         }
         case 'dropdown': {
-          signal_id = key.object.connect('notify::selected-item', w => {
+          signal_id = key.object.connect('notify::selected-item', (w) => {
             let index = w.get_selected();
             let value = key.maps && index in key.maps ? key.maps[index] : index;
             self.setValue(name, value);
@@ -242,14 +242,14 @@ export let PrefKeys = class {
           break;
         }
         case 'scale': {
-          signal_id = key.object.connect('value-changed', w => {
+          signal_id = key.object.connect('value-changed', (w) => {
             let value = w.get_value();
             self.setValue(name, value);
           });
           break;
         }
         case 'color': {
-          signal_id = key.object.connect('color-set', w => {
+          signal_id = key.object.connect('color-set', (w) => {
             let rgba = w.get_rgba();
             let value = [rgba.red, rgba.green, rgba.blue, rgba.alpha];
             self.setValue(name, value);
@@ -257,7 +257,7 @@ export let PrefKeys = class {
           break;
         }
         case 'button': {
-          signal_id = key.object.connect('clicked', w => {
+          signal_id = key.object.connect('clicked', (w) => {
             if (key.callback) {
               key.callback();
             }
@@ -269,7 +269,7 @@ export let PrefKeys = class {
       // when do we clean this up?
       this._builderListeners.push({
         source: key.object,
-        signal_id: signal_id
+        signal_id: signal_id,
       });
     });
   }

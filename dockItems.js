@@ -188,7 +188,11 @@ export const DockItemList = GObject.registerClass(
       this._box = new St.Widget({ style_class: '-hi' });
       list.forEach((l) => {
         let w = new St.Widget({});
-        let icon = new St.Icon({ icon_name: l.icon, reactive: true, track_hover: true });
+        let icon = new St.Icon({
+          icon_name: l.icon,
+          reactive: true,
+          track_hover: true,
+        });
         icon.set_icon_size(
           this.dock._iconSizeScaledDown * this.dock._scaleFactor
         );

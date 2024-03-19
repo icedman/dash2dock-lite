@@ -203,14 +203,17 @@ export let Animator = class {
     });
 
     // spread
-    let largestScale = null;
+    let hoveredIcon = null;
     for (let i = 0; i < iconTable.length; i++) {
       if (iconTable.length < 2) break;
       let icon = iconTable[i];
+      if (icon._icon && icon._icon.hover) {
+        hoveredIcon = icon;
+      }
       if (icon._scale > 1.1) {
-        if (largestScale == null || largestScale._scale < icon._scale) {
-          largestScale = icon;
-        }
+        // if (hoveredIcon == null || hoveredIcon._scale < icon._scale) {
+        //   hoveredIcon = icon;
+        // }
         // affect spread
         let offset =
           1.25 * (icon._scale - 1) * iconSize * scaleFactor * spread * 0.8;
@@ -231,11 +234,14 @@ export let Animator = class {
       }
     }
 
+    dock._hoveredIcon = hoveredIcon;
+
     // re-center to hovered icon
     let TRANSLATE_COEF = 24;
-    if (largestScale) {
-      largestScale._targetScale += 0.1;
-      let adjust = largestScale._translate / 2;
+    if (hoveredIcon) {
+      // console.log(hoveredIcon._icon.hover);
+      hoveredIcon._targetScale += 0.1;
+      let adjust = hoveredIcon._translate / 2;
       animateIcons.forEach((icon) => {
         if (icon._scale > 1) {
           let o = -adjust * (2 - icon._scale);
@@ -290,13 +296,15 @@ export let Animator = class {
       icon._icon.pivot_point = pv;
       icon._icon.set_scale(newScale, newScale);
 
-      let rdir = (this._position == 'top' || this._position == 'left') ? 1 : -1;
+      let rdir = this._position == 'top' || this._position == 'left' ? 1 : -1;
 
       let oldX = icon._icon.translationX;
       let oldY = icon._icon.translationY;
-      let translationX = (vertical * icon._translateRise * rdir) +
+      let translationX =
+        vertical * icon._translateRise * rdir +
         (oldX + icon._translate * !vertical * _pos_coef) / (_pos_coef + 1);
-      let translationY = (!vertical * icon._translateRise * rdir) +
+      let translationY =
+        !vertical * icon._translateRise * rdir +
         (oldY + icon._translate * vertical * _pos_coef) / (_pos_coef + 1);
 
       icon._icon.translationX = translationX;

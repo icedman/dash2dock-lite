@@ -455,6 +455,7 @@ export let Dock = GObject.registerClass(
         }
         if (icon) {
           c._icon = icon;
+          c._icon.track_hover = true;
           c._icon.reactive = true;
           let pv = new Point();
           pv.x = 0.5;
@@ -871,8 +872,8 @@ export let Dock = GObject.registerClass(
     animate() {
       if (this._preview) {
         let p = this._get_position(this.dash);
-        p[0] += this.dash.width/2;
-        p[1] += this.dash.height/2;
+        p[0] += this.dash.width / 2;
+        p[1] += this.dash.height / 2;
         this.simulated_pointer = p;
         this._preview--;
       }
@@ -903,15 +904,22 @@ export let Dock = GObject.registerClass(
     }
 
     _isWithinDash(p) {
-      if (this._hidden) return false;
-      return this._isInRect([this.x, this.y, this.width, this.height], p, 0);
+      if (this._hidden) {
+        return false;
+      }
+      if (this._hoveredIcon) return true;
+      let xy = this._get_position(this.struts);
+      let wh = [this.struts.width, this.struts.height];
+      if (this._isInRect([xy[0], xy[1], wh[0], wh[1]], p, 0)) {
+        return true;
+      }
+      return false;
     }
 
     _beginAnimation(caller) {
       // if (caller) {
       //   console.log(`animation triggered by ${caller}`);
       // }
-
       if (this.extension._hiTimer && this.debounceEndSeq) {
         this.extension._loTimer.runDebounced(this.debounceEndSeq);
         // this.extension._loTimer.cancel(this.debounceEndSeq);

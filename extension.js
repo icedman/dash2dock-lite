@@ -303,7 +303,7 @@ export default class Dash2DockLiteExt extends Extension {
         case 'animation-rise':
         case 'animation-bounce': {
           if (this.animate_icons) {
-            this.animate({preview: true});
+            this.animate({ preview: true });
           }
           break;
         }
@@ -674,8 +674,7 @@ export default class Dash2DockLiteExt extends Extension {
     let rads = [0, 8, 16, 20, 24, 28, 32];
 
     // icons-shadow
-    if (this.icon_shadow)
-    {
+    if (this.icon_shadow) {
       styles.push(
         '#dash StIcon, #DockItemList StIcon {icon-shadow: rgba(0, 0, 0, 0.24) 0 2px 6px;}'
       );

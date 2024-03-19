@@ -90,6 +90,18 @@
         </child>
         <child>
           <object class="AdwActionRow">
+            <property name="title" translatable="yes">Icon Shadow</property>
+            <property name="subtitle" translatable="yes">Add icon shadow effect.</property>
+            <property name="activatable-widget">icon-shadow</property>
+            <child>
+              <object class="GtkSwitch" id="icon-shadow">
+                <property name="valign">center</property>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="AdwActionRow">
             <property name="title" translatable="yes">Separator Thickness</property>
             <property name="subtitle" translatable="yes">Set separator thickness.</property>
             <property name="activatable-widget">separator-thickness</property>

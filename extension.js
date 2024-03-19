@@ -392,6 +392,7 @@ export default class Dash2DockLiteExt extends Extension {
         case 'border-color':
         case 'border-thickness':
         case 'customize-topbar':
+        case 'icon-shadow':
         case 'topbar-border-color':
         case 'topbar-border-thickness':
         case 'topbar-background-color':
@@ -667,6 +668,17 @@ export default class Dash2DockLiteExt extends Extension {
     let styles = [];
 
     let rads = [0, 8, 16, 20, 24, 28, 32];
+
+    // icons-shadow
+    if (this.icon_shadow)
+    {
+      styles.push(
+        '#dash StIcon, #DockItemList StIcon {icon-shadow: rgba(0, 0, 0, 0.24) 0 2px 6px;}'
+      );
+      styles.push(
+        '#dash StIcon:hover, #DockItemList StIcon:hover {icon-shadow: rgba(0, 0, 0, 0.24) 0 2px 8px;}'
+      );
+    }
 
     // dash
     {

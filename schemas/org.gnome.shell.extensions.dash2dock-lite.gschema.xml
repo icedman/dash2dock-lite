@@ -261,6 +261,11 @@
         <summary>Apps icon</summary>
         <description>Show the apps icon.</description>
     </key>
+    <key type="b" name="icon-shadow">
+        <default>true</default>
+        <summary>Icon shadow</summary>
+        <description>Add the icon shadow effect.</description>
+    </key>
     <key type="b" name="apps-icon-front">
         <default>false</default>
         <summary>Apps icon at front</summary>

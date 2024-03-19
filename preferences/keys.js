@@ -212,6 +212,10 @@ export const SettingsKeys = () => {
       widget_type: 'scale',
       test: { pointer: 'slide-through', values: [0, 0.5, 1] },
     },
+    'icon-shadow': {
+      default_value: true,
+      widget_type: 'switch',
+    },
     'edge-distance': {
       default_value: 0,
       widget_type: 'scale',

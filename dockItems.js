@@ -155,7 +155,7 @@ export const DockItemList = GObject.registerClass(
       super._init({
         name: 'DockItemList',
         reactive: true,
-        // style_class: 'hi',
+        style_class: 'hi',
         ...params,
       });
 
@@ -177,15 +177,13 @@ export const DockItemList = GObject.registerClass(
       this.opacity = 0;
 
       let dock = this.dock;
-      list.x = dock._monitor.x;
-      list.y = dock._monitor.y;
-      list.width = dock._monitor.width;
-      list.height = dock._monitor.height;
+      this.x = dock._monitor.x;
+      this.y = dock._monitor.y;
+      this.width = dock._monitor.width;
+      this.height = dock._monitor.height;
 
       this._target = target;
       let tp = dock._get_position(target);
-
-      console.log(list);
 
       this._box = new St.Widget({ style_class: '-hi' });
       list.forEach((l) => {
@@ -237,8 +235,8 @@ export const DockItemList = GObject.registerClass(
         hX *= rad;
         hY *= rad;
 
-        l.x = tp[0] - list.x + ox;
-        l.y = tp[1] - list.y + oy;
+        l.x = tp[0] - this.x + ox;
+        l.y = tp[1] - this.y + oy;
 
         ox += hX * 0.5;
         oy += hY;

@@ -8,6 +8,7 @@
 
 # Release 47
 
+* Add Downloads folder with fan pullout
 * Add separator with styles
 * Clock styles
 

@@ -359,6 +359,7 @@ export let Dock = GObject.registerClass(
       if (c._cls === 'dash-separator') {
         this._separators.push(c);
         this._lastSeparator = c;
+        c.visible = true;
         c.style = 'margin-left: 8px; margin-right: 8px;';
         return false;
       }
@@ -371,7 +372,6 @@ export let Dock = GObject.registerClass(
 
       /* DashItemContainer */
       if (
-        !c._icon &&
         c.child /* DashIcon */ &&
         c.child.icon /* IconGrid */ &&
         c.child.icon.icon /* StIcon */
@@ -379,7 +379,21 @@ export let Dock = GObject.registerClass(
         c._grid = c.child.icon;
         c._icon = c.child.icon.icon;
         c._appwell = c.child;
-        c._dot = c._appwell?._dot;
+        if (c._appwell) {
+          c._appwell.visible = true;
+          c._dot = c._appwell._dot;
+          // hide icons if favorites only
+          if (this.extension.favorites_only) {
+            let app = c._appwell.app;
+            let appId = app ? app.get_id() : '';
+            if (!this._favorite_ids.includes(appId)) {
+              c._appwell.visible = false;
+              c.width = -1;
+              c.height = -1;
+              return false;
+            }
+          }
+        }
         if (c._dot) {
           c._dot.opacity = 0;
         }
@@ -387,7 +401,11 @@ export let Dock = GObject.registerClass(
 
       if (c._icon) {
         c._label = c.label;
-        this._icons.push(c);
+        if (c == this.dash._showAppsIcon && this.extension.apps_icon_front) {
+          this._icons.unshift(c);
+        } else {
+          this._icons.push(c);
+        }
         return true;
       }
 
@@ -410,12 +428,23 @@ export let Dock = GObject.registerClass(
 
       if (!this.dash) return [];
 
-      let lastFavIcon = null;
+      if (this.extension.favorites_only) {
+        this._favorite_ids = Fav.getAppFavorites()._getIds();
+      }
+
       this.dash._box.get_children().forEach((icon) => {
-        if (this._inspectIcon(icon)) {
-          lastFavIcon = icon;
-        }
+        this._inspectIcon(icon);
       });
+
+      if (this.extension.favorites_only) {
+        if (this._separators.length) {
+          this._separators[0].visible = false;
+          this._separators = [];
+        }
+      }
+
+      let lastFavIcon = this._icons[this._icons.length-1] ?? null;
+
       if (this._extraIcons) {
         this._lastSeparator = null;
         this._extraIcons.get_children().forEach((icon) => {
@@ -424,6 +453,7 @@ export let Dock = GObject.registerClass(
         if (this._lastSeparator && lastFavIcon) {
           this._lastSeparator._prev = lastFavIcon;
         }
+        this._extraIcons.visible = this._extraIcons.get_children().length > 1;
       }
       if (this.dash._showAppsIcon) {
         this.dash._showAppsIcon.visible = this.extension.apps_icon;
@@ -901,7 +931,11 @@ export let Dock = GObject.registerClass(
       if (this.extension._hiTimer) {
         this.extension._hiTimer.cancel(this._animationSeq);
         this.extension._loTimer.cancel(this.debounceEndSeq);
-        Main.panel.first_child.remove_style_class_name('hi');
+        if (this.extension.debug_visual) {
+          this.remove_style_class_name('hi');
+          this.struts.remove_style_class_name('hi');
+          this.dwell.remove_style_class_name('hi');
+        }
       }
       this.autohider._debounceCheckHide();
       this._icons = null;

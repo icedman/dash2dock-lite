@@ -75,17 +75,9 @@ export let Animator = class {
       c._fixedPosition = dock._get_position(c);
     });
 
-    // sort
-    let cornerPos = dock._get_position(dock);
-    animateIcons.sort((a, b) => {
-      let dstA = dock._get_distance(cornerPos, a._pos);
-      let dstB = dock._get_distance(cornerPos, b._pos);
-      return dstA > dstB ? 1 : -1;
-    });
 
     let idx = 0;
     animateIcons.forEach((icon) => {
-      // let bin = icon._bin;
       let pos = [...icon._pos];
 
       icon._icon.set_icon_size(iconSize * dock.extension.icon_quality);
@@ -105,8 +97,6 @@ export let Animator = class {
         nearestIcon = icon;
         nearestIdx = idx;
         icon._distance = dst;
-        icon._dx = bposcenter[0] - pointer[0];
-        icon._dy = bposcenter[1] - pointer[1];
       }
 
       icon._target = pos;
@@ -240,7 +230,6 @@ export let Animator = class {
     // re-center to hovered icon
     let TRANSLATE_COEF = 24;
     if (hoveredIcon) {
-      // console.log(hoveredIcon._icon.hover);
       hoveredIcon._targetScale += 0.1;
       let adjust = hoveredIcon._translate / 2;
       animateIcons.forEach((icon) => {
@@ -519,7 +508,9 @@ export let Animator = class {
     }
 
     if (dock.extension.debug_visual) {
-      Main.panel.first_child.add_style_class_name('hi');
+      dock.add_style_class_name('hi');
+      dock.struts.add_style_class_name('hi');
+      dock.dwell.add_style_class_name('hi');
     }
     dock.dash.opacity = 255;
 

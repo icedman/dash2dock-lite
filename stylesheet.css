@@ -4,16 +4,16 @@
      border: 2px solid magenta !important;
 }
 
-#d2daDock {
-/*  border: 2px solid red; */
+#d2daDock.hi {
+  border: 2px solid red; 
 }
 
-#DockStruts {
-/*  border: 2px solid yellow; */
+#DockStruts.hi {
+  border: 2px solid yellow; 
 }
 
-#DockDwell {
-/*  border: 2px solid yellow; */
+#DockDwell.hi {
+  border: 2px solid yellow; 
 }
 
 #d2daDock * {

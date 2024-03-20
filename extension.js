@@ -209,10 +209,14 @@ export default class Dash2DockLiteExt extends Extension {
     log('dash2dock-lite disabled');
   }
 
-  animate(settings) {
+  animate(settings = {}) {
     this.docks.forEach((dock) => {
       if (settings && settings.preview) {
         dock.preview();
+      }
+      if (settings.refresh) {
+        dock._icons = null;
+        dock.layout();
       }
       dock._beginAnimation();
     });
@@ -220,11 +224,7 @@ export default class Dash2DockLiteExt extends Extension {
 
   startUp() {
     this.createTheDocks();
-    this._updateLayout();
-    this.docks.forEach((dock) => {
-      dock._icons = null;
-      dock._beginAnimation();
-    });
+    this.animate({refresh: true});
     this.docks.forEach((dock) => {
       dock._debounceEndAnimation();
     });
@@ -289,10 +289,7 @@ export default class Dash2DockLiteExt extends Extension {
         case 'mounted-icon': {
           this.services.checkMounts();
           this.services._commitMounts();
-          this.docks.forEach((dock) => {
-            dock._icons = null;
-            dock._beginAnimation();
-          });
+          this.animate({refresh: true});
           break;
         }
         case 'peek-hidden-icons': {
@@ -326,8 +323,7 @@ export default class Dash2DockLiteExt extends Extension {
         case 'calendar-icon':
         case 'clock-icon':
         case 'favorites-only': {
-          this._updateLayout();
-          this.animate();
+          this.animate({refresh: true});
           break;
         }
         // problematic settings needing animator restart
@@ -803,7 +799,6 @@ export default class Dash2DockLiteExt extends Extension {
   _updateLayout(disable) {
     // console.log(this.multi_monitor_preference);
     this.docks.forEach((dock) => {
-      dock._icons = null;
       dock.layout();
     });
   }

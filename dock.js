@@ -539,12 +539,12 @@ export let Dock = GObject.registerClass(
         {
           icon: '_downloadsIcon',
           path: '/tmp/downloads-dash2dock-lite.desktop',
-          show: this.extension.downloads_icon, // && this._position == 'bottom'
+          show: this.extension.downloads_icon, // && this._position == DockPosition.BOTTOM
         },
         // {
         //   icon: '_documentsIcon',
         //   path: '/tmp/documents-dash2dock-lite.desktop',
-        //   show: this.extension.documents_icon // && this._position == 'bottom'
+        //   show: this.extension.documents_icon // && this._position == DockPosition.BOTTOM
         // }
       ];
       folders.forEach((f) => {
@@ -554,7 +554,7 @@ export let Dock = GObject.registerClass(
 
           let target = this[f.icon];
 
-          if (this._position != 'bottom') {
+          if (this._position != DockPosition.BOTTOM) {
             target._onClick = () => {
               target.activateNewWindow();
             };

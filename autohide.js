@@ -8,6 +8,8 @@ import Clutter from 'gi://Clutter';
 import Graphene from 'gi://Graphene';
 import St from 'gi://St';
 
+import { DockPosition } from './dock.js';
+
 const Point = Graphene.Point;
 
 const HIDE_ANIMATION_INTERVAL = 15;
@@ -90,11 +92,11 @@ export let AutoHide = class {
       if (this.dashContainer.isVertical()) {
         if (
           // right
-          (this.dashContainer._position == 'right' &&
+          (this.dashContainer._position == DockPosition.RIGHT &&
             dy < area &&
             pointer[0] > monitor.x + sw - 4) ||
           // left
-          (this.dashContainer._position == 'left' &&
+          (this.dashContainer._position == DockPosition.LEFT &&
             dy < area &&
             pointer[0] < monitor.x + 4)
         ) {
@@ -256,7 +258,7 @@ export let AutoHide = class {
           }
         }
       } else {
-        if (this.dashContainer._position == 'top') {
+        if (this.dashContainer._position == DockPosition.TOP) {
           // top
           if (
             frame.y <= rect.y + rect.h &&

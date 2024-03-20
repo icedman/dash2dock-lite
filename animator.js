@@ -5,6 +5,7 @@ import Graphene from 'gi://Graphene';
 const Point = Graphene.Point;
 
 import { Dot } from './apps/dot.js';
+import { DockPosition } from './dock.js';
 
 import {
   DockItemDotsOverlay,
@@ -296,7 +297,11 @@ export let Animator = class {
       icon._icon.pivot_point = pv;
       icon._icon.set_scale(newScale, newScale);
 
-      let rdir = this._position == 'top' || this._position == 'left' ? 1 : -1;
+      let rdir =
+        dock._position == DockPosition.TOP ||
+        dock._position == DockPosition.LEFT
+          ? 1
+          : -1;
 
       let oldX = icon._icon.translationX;
       let oldY = icon._icon.translationY;
@@ -415,12 +420,16 @@ export let Animator = class {
       }
     }
 
-    let ed = dock._position == 'bottom' || dock._position == 'right' ? 1 : -1;
+    let ed =
+      dock._position == DockPosition.BOTTOM ||
+      dock._position == DockPosition.RIGHT
+        ? 1
+        : -1;
 
     // dash hide/show
     if (dock._hidden) {
       if (vertical) {
-        if (dock._position == 'left') {
+        if (dock._position == DockPosition.LEFT) {
           targetX =
             -(dock._background.width + dock._edge_distance * -ed * 2) *
             scaleFactor;
@@ -430,7 +439,7 @@ export let Animator = class {
             scaleFactor;
         }
       } else {
-        if (dock._position == 'bottom') {
+        if (dock._position == DockPosition.BOTTOM) {
           targetY =
             (dock._background.height - dock._edge_distance * -ed * 2) *
             scaleFactor;
@@ -472,7 +481,7 @@ export let Animator = class {
           dock._background.width + iconSize * 0.25 * scaleFactor;
         dock.struts.height = dock.height;
         dock.struts.y = dock.y;
-        if (dock._position == 'right') {
+        if (dock._position == DockPosition.RIGHT) {
           dock.struts.x = dock.x + dock.width - dock.struts.width;
         } else {
           dock.struts.x = dock.x;
@@ -482,7 +491,7 @@ export let Animator = class {
         dock.struts.height =
           dock._background.height + iconSize * 0.25 * scaleFactor;
         dock.struts.x = dock.x;
-        if (dock._position == 'bottom') {
+        if (dock._position == DockPosition.BOTTOM) {
           dock.struts.y = dock.y + dock.height - dock.struts.height;
         } else {
           dock.struts.y = dock.y;
@@ -495,7 +504,7 @@ export let Animator = class {
         dock.dwell.height = dock.height;
         dock.dwell.x = m.x;
         dock.dwell.y = dock.y;
-        if (dock._position == 'right') {
+        if (dock._position == DockPosition.RIGHT) {
           dock.dwell.x = m.x + m.width - dwellHeight;
         }
       } else {
@@ -503,7 +512,7 @@ export let Animator = class {
         dock.dwell.height = dwellHeight;
         dock.dwell.x = dock.x;
         dock.dwell.y = dock.y + dock.height - dock.dwell.height;
-        if (dock._position == 'top') {
+        if (dock._position == DockPosition.TOP) {
           dock.dwell.y = dock.y;
         }
       }
@@ -584,13 +593,15 @@ export let Animator = class {
         _func: (f, s) => {
           let res = Linear.easeNone(f._time, 0, travel, f._duration);
           if (dock.isVertical()) {
-            appwell.translation_x = dock._position == 'left' ? res : -res;
+            appwell.translation_x =
+              dock._position == DockPosition.LEFT ? res : -res;
             if (icon._badge) {
               icon._badge.translation_x = appwell.translation_x;
             }
           } else {
             // appwell.translation_y = -res;
-            appwell.translation_y = dock._position == 'bottom' ? -res : res;
+            appwell.translation_y =
+              dock._position == DockPosition.BOTTOM ? -res : res;
           }
         },
       },
@@ -600,10 +611,11 @@ export let Animator = class {
           let res = Bounce.easeOut(f._time, travel, -travel, f._duration);
           if (dock.isVertical()) {
             appwell.translation_x = appwell.translation_x =
-              dock._position == 'left' ? res : -res;
+              dock._position == DockPosition.LEFT ? res : -res;
           } else {
             // appwell.translation_y = -res;
-            appwell.translation_y = dock._position == 'bottom' ? -res : res;
+            appwell.translation_y =
+              dock._position == DockPosition.BOTTOM ? -res : res;
           }
         },
       },

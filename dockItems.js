@@ -15,6 +15,7 @@ import St from 'gi://St';
 import { ShowAppsIcon } from 'resource:///org/gnome/shell/ui/dash.js';
 
 import { Dot } from './apps/dot.js';
+import { DockPosition } from './dock.js';
 
 const Point = Graphene.Point;
 
@@ -50,12 +51,12 @@ export const DockItemDotsOverlay = GObject.registerClass(
 
       if (vertical) {
         renderer.translationX =
-          icon._icon.translationX + (position == 'left' ? -6 : 6);
+          icon._icon.translationX + (position == DockPosition.LEFT ? -6 : 6);
         renderer.translationY = icon._icon.translationY;
       } else {
         renderer.translationX = icon._icon.translationX;
         renderer.translationY =
-          icon._icon.translationY + (position == 'bottom' ? 8 : -8);
+          icon._icon.translationY + (position == DockPosition.BOTTOM ? 8 : -8);
       }
 
       let options = extension.running_indicator_style_options;
@@ -67,10 +68,10 @@ export const DockItemDotsOverlay = GObject.registerClass(
         color: running_indicator_color || [1, 1, 1, 1],
         style: running_indicator_style || 'default',
         rotate: vertical
-          ? position == 'right'
+          ? position == DockPosition.RIGHT
             ? -90
             : 90
-          : position == 'top'
+          : position == DockPosition.TOP
           ? 180
           : 0,
       });
@@ -101,7 +102,7 @@ export const DockItemBadgeOverlay = GObject.registerClass(
         count: noticesCount,
         color: notification_badge_color || [1, 1, 1, 1],
         style: notification_badge_style || 'default',
-        rotate: position == 'bottom' ? 180 : 0,
+        rotate: position == DockPosition.BOTTOM ? 180 : 0,
         translate: [0.4, 0],
       });
     }

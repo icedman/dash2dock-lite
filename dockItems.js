@@ -138,8 +138,6 @@ export class DockItemMenu extends PopupMenu.PopupMenu {
     });
   }
 
-  _buildFolder() {}
-
   _onActivate() {}
 
   popup() {
@@ -225,7 +223,9 @@ export const DockItemList = GObject.registerClass(
 
       let ox = 0;
       let oy = 0;
-      let angle = 280;
+      let angleInc = 2;
+      let startAngle = 268;
+      let angle = startAngle;
       let rad = dock._iconSize * 1.1 * dock._scaleFactor;
 
       let children = this._box.get_children();
@@ -244,9 +244,9 @@ export const DockItemList = GObject.registerClass(
 
         ox += hX * 0.5;
         oy += hY;
-        angle += 2;
+        angle += angleInc;
 
-        l.rotation_angle_z = angle - 280;
+        l.rotation_angle_z = angle - startAngle;
       });
 
       this.add_child(this._box);
@@ -446,6 +446,12 @@ export const DockBackground = GObject.registerClass(
           }
         }
       }
+
+      let dx = this.x - dashContainer.dash.x;
+      let dy = this.y - dashContainer.dash.y;
+      let dst = vertical ? dx * dx : dy * dy;
+      this.opacity = dst > 90 ? 0 : 255;
+      dashContainer.dash.opacity = dst > 90 ? 0 : 255;
     }
   }
 );

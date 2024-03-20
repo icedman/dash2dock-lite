@@ -761,9 +761,7 @@ export default class Dash2DockLiteExt extends Extension {
 
     if (this.separator_thickness) {
       let rgba = this._style.rgba(this.separator_color);
-      styles.push(
-        `.dash-separator { margin-left: 6px; margin-right: 6px; background-color: rgba(${rgba}); }`
-      );
+      styles.push(`.dash-separator { background-color: rgba(${rgba}); }`);
     }
 
     this._style.build('custom-d2dl', styles);

@@ -441,7 +441,7 @@ export const Services = class {
     while (f) {
       if (!f.get_is_hidden()) {
         let name = f.get_name();
-        if (fileStat[name]?.index <= max_recent_items+1) {
+        if (fileStat[name]?.index <= max_recent_items + 1) {
           this._downloadFiles.push({
             index: fileStat[name]?.index,
             name,

@@ -337,196 +337,152 @@ export let Dock = GObject.registerClass(
       return iconSize;
     }
 
-    _findIcons() {
-      if (!this.dash) return [];
+    /**
+     *  DashItemContainer
+     *    > child (DashIcon[appwell])
+     *      > .icon (IconGrid)
+     *        > .icon (StIcon)
+     *      > ._dot
+     *    > .label
+     *
+     *  ShowAppsIcon extends DashItemContainer
+     *    > .icon (IconGrid)
+     *      > .icon
+     *    > ._iconActor
+     */
 
-      let separators = [];
-      let noAnimation = !this.extension.animate_icons_unmute;
-      let extraSeparator = null;
+    _inspectIcon(c) {
+      if (!c.visible) return false;
 
-      if (this._extraIcons) {
-        this._extraIcons.get_children().forEach((appsIcon) => {
-          appsIcon._cls = appsIcon._cls || appsIcon.get_style_class_name();
-          if (appsIcon._cls === 'dash-separator') {
-            appsIcon.visible =
-              this.extension.separator_thickness > 0 &&
-              this._extraIcons.get_children().length > 1;
-            extraSeparator = appsIcon;
-            separators.push(appsIcon);
-            return;
-          }
-          let button = appsIcon.first_child;
-          let icongrid = button.first_child;
-          let boxlayout = icongrid.first_child;
-          let bin = boxlayout.first_child;
-          let icon = bin.first_child;
-          appsIcon._bin = bin;
-          appsIcon._icon = icon;
-          button.reactive = noAnimation;
-          button.track_hover = noAnimation;
-          button.toggle_mode = false;
-        });
-      }
-
-      let iconsLength = this.dash._box.get_children().length;
-      if (this._extraIcons) {
-        iconsLength += this._extraIcons.get_children().length;
-      }
-      if (this._icons && this._icons.length >= iconsLength) {
-        // return cached
-        return this._icons;
-      }
-
-      if (this.dash._showAppsIcon) {
-        this.dash._showAppsIcon.visible = this.extension.apps_icon;
-      }
-
-      // W: breakable
-      let icons = this.dash._box.get_children().filter((actor) => {
-        actor._cls = actor._cls || actor.get_style_class_name();
-        if (actor._cls === 'dash-separator') {
-          separators.push(actor);
-          return false;
-        }
-        if (!actor.child) {
-          return false;
-        }
-        if (actor.child._delegate && actor.child._delegate.icon) {
-          // hook activate function
-          if (actor.child.activate && !actor.child._activate) {
-            actor.child._activate = actor.child.activate;
-            actor.child.activate = () => {
-              this._maybeBounce(actor);
-              this._maybeMinimizeOrMaximize(actor.child.app);
-              actor.child._activate();
-            };
-          }
-
-          return true;
-        }
+      /* separator */
+      c._cls = c._cls || c.get_style_class_name();
+      if (c._cls === 'dash-separator') {
+        this._separators.push(c);
+        this._lastSeparator = c;
+        c.style = 'margin-left: 8px; margin-right: 8px;';
         return false;
-      });
-
-      if (extraSeparator && icons.length) {
-        extraSeparator._prev = icons[icons.length - 1];
       }
 
-      this._separators = separators;
-
-      // hide running apps
-      if (this.extension.favorites_only) {
-        let favorites = Fav.getAppFavorites();
-        let favorite_ids = favorites._getIds();
-        icons = icons.filter((i) => {
-          let app = i.child.app;
-          let appId = app ? app.get_id() : '';
-          let shouldInclude = favorite_ids.includes(appId);
-          i.child.visible = shouldInclude;
-          if (!shouldInclude) {
-            i.width = -1;
-            i.height = -1;
-          }
-          return shouldInclude;
-        });
+      /* ShowAppsIcon */
+      if (c.icon /* IconGrid */ && c.icon.icon /* StIcon */) {
+        c._icon = c.icon.icon;
+        c._button = c.child;
       }
 
-      icons.forEach((c) => {
-        // W: breakable
-        let label = c.label;
-        let appwell = c.first_child;
-        let draggable = appwell._draggable;
-        let widget = appwell.first_child;
-        let icongrid = widget.first_child;
-        let boxlayout = icongrid.first_child;
-        let bin = boxlayout.first_child;
-        let icon = bin.first_child;
-
-        c.child.visible = true;
-
-        icongrid.style = noAnimation ? '' : 'background: none !important;';
-
-        c._bin = bin;
-        c._label = label;
-        c._draggable = draggable;
-        c._appwell = appwell;
-        c._dot = appwell._dot;
+      /* DashItemContainer */
+      if (
+        !c._icon &&
+        c.child /* DashIcon */ &&
+        c.child.icon /* IconGrid */ &&
+        c.child.icon.icon /* StIcon */
+      ) {
+        c._grid = c.child.icon;
+        c._icon = c.child.icon.icon;
+        c._appwell = c.child;
+        c._dot = c._appwell?._dot;
         if (c._dot) {
           c._dot.opacity = 0;
         }
-        if (icon) {
-          c._icon = icon;
-          c._icon.track_hover = true;
-          c._icon.reactive = true;
-          let pv = new Point();
-          pv.x = 0.5;
-          pv.y = 0.5;
-          icon.pivot_point = pv;
+      }
+
+      if (c._icon) {
+        c._label = c.label;
+        this._icons.push(c);
+        return true;
+      }
+
+      return false;
+    }
+
+    _findIcons() {
+      if (this._icons) {
+        let iconsLength = this.dash._box.get_children().length;
+        if (this._extraIcons) {
+          iconsLength += this._extraIcons.get_children().length;
+        }
+        if (this._icons.length >= iconsLength) {
+          return this._icons;
+        }
+      }
+
+      this._separators = [];
+      this._icons = [];
+
+      if (!this.dash) return [];
+
+      let lastFavIcon = null;
+      this.dash._box.get_children().forEach((icon) => {
+        if (this._inspectIcon(icon)) {
+          lastFavIcon = icon;
         }
       });
-
       if (this._extraIcons) {
-        icons = [
-          ...icons,
-          ...this._extraIcons.get_children().filter((e) => e._icon),
-        ];
-      }
-
-      try {
-        // W: breakable
-        let appsButton = this.dash.showAppsButton;
-        let appsIcon = this.dash._showAppsIcon;
-        if (appsButton && appsIcon) {
-          let apps = appsButton.get_parent();
-          let widget = appsIcon.child;
-          if (widget && widget.width > 0 && widget.get_parent().visible) {
-            let icongrid = widget.first_child;
-            let boxlayout = icongrid.first_child;
-            let bin = boxlayout.first_child;
-            let icon = bin.first_child;
-            let c = apps;
-            c._bin = bin;
-            c._icon = icon;
-            c._label = widget._delegate.label;
-            c._showApps = appsButton;
-            appsButton.reactive = false;
-            appsButton.track_hover = false;
-            icons.push(c);
-            if (!c._connected) {
-              c._connected = true;
-              icon.reactive = true;
-              icon.track_hover = true;
-              icon.connectObject(
-                'button-press-event',
-                () => {
-                  Main.uiGroup
-                    .find_child_by_name('overview')
-                    ._controls._toggleAppsPage();
-                  return Clutter.EVENT_PROPAGATE;
-                },
-                'enter-event',
-                () => {
-                  c.showLabel();
-                },
-                'leave-event',
-                () => {
-                  c.hideLabel();
-                },
-                this
-              );
-            }
-          }
+        this._lastSeparator = null;
+        this._extraIcons.get_children().forEach((icon) => {
+          this._inspectIcon(icon);
+        });
+        if (this._lastSeparator && lastFavIcon) {
+          this._lastSeparator._prev = lastFavIcon;
         }
-      } catch (err) {
-        // could happen if ShowApps is hidden or not yet created?
+      }
+      if (this.dash._showAppsIcon) {
+        this.dash._showAppsIcon.visible = this.extension.apps_icon;
+        this._inspectIcon(this.dash._showAppsIcon);
+        let icon = this.dash._showAppsIcon._icon;
+        if (!icon._connected) {
+          icon._connected = true;
+          icon.connectObject(
+            'button-press-event',
+            () => {
+              Main.uiGroup
+                .find_child_by_name('overview')
+                ._controls._toggleAppsPage();
+              return Clutter.EVENT_PROPAGATE;
+            },
+            'enter-event',
+            () => {
+              this.dash._showAppsIcon.showLabel();
+            },
+            'leave-event',
+            () => {
+              this.dash._showAppsIcon.hideLabel();
+            },
+            this
+          );
+        }
       }
 
-      icons.forEach((icon) => {
+      let noAnimation = !this.extension.animate_icons_unmute;
+
+      let pv = new Point();
+      pv.x = 0.5;
+      pv.y = 0.5;
+      this._icons.forEach((c) => {
+        c._icon.track_hover = true;
+        c._icon.reactive = true;
+        c._icon.pivot_point = pv;
+        if (c._button) {
+          c._button.reactive = noAnimation;
+          c._button.track_hover = noAnimation;
+          c.toggle_mode = false;
+        }
+        if (c._grid) {
+          c._grid.style = noAnimation ? '' : 'background: none !important;';
+        }
+        if (c._appwell && !c._appwell._activate) {
+          c._appwell._activate = c._appwell.activate;
+          c._appwell.activate = () => {
+            this._maybeBounce(c);
+            this._maybeMinimizeOrMaximize(c._appwell.app);
+            c._appwell._activate();
+          };
+        }
+        let icon = c._icon;
         if (!icon._destroyConnectId) {
           icon._destroyConnectId = icon.connect('destroy', () => {
             this._icons = null;
           });
         }
-
         let { _draggable } = icon;
         if (_draggable && !_draggable._dragBeginId) {
           _draggable._dragBeginId = _draggable.connect('drag-begin', () => {
@@ -540,7 +496,7 @@ export let Dock = GObject.registerClass(
         }
       });
 
-      return icons;
+      return this._icons;
     }
 
     _updateExtraIcons() {

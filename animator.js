@@ -84,7 +84,7 @@ export let Animator = class {
 
     let idx = 0;
     animateIcons.forEach((icon) => {
-      let bin = icon._bin;
+      // let bin = icon._bin;
       let pos = [...icon._pos];
 
       icon._icon.set_icon_size(iconSize * dock.extension.icon_quality);
@@ -361,7 +361,6 @@ export let Animator = class {
       {
         let appCount = icon._appwell ? icon._appwell.app.get_n_windows() : 0;
         // appCount = 1;
-
         let target = icon._dot?.get_parent();
         let dots = target?._dots;
         if (!dots && icon._appwell && target) {

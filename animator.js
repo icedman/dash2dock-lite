@@ -518,7 +518,7 @@ export let Animator = class {
     //---------------------
     // animate the list
     //---------------------
-    if (dock._list && dock._list.visible) {
+    if (dock._list && dock._list.visible && dock._list._target) {
       let list = dock._list;
       list.opacity = 255;
 

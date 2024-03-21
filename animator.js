@@ -126,6 +126,7 @@ export let Animator = class {
     //------------------------
     // animation behavior
     //------------------------
+    let edge_distance = dock._edge_distance;
     let rise = dock.extension.animation_rise * ANIM_ICON_RAISE;
     let magnify = dock.extension.animation_magnify * ANIM_ICON_SCALE;
     let spread = dock.extension.animation_spread;
@@ -139,9 +140,12 @@ export let Animator = class {
     let padding = 10;
     let threshold = (iconSize + padding) * 2.5 * scaleFactor;
 
-    let iconTable = [];
+    if (animated && edge_distance < 0) {
+      edge_distance = 0;
+    }
 
     // animate
+    let iconTable = [];
     animateIcons.forEach((icon) => {
       let original_pos = dock._get_position(icon);
       original_pos[0] += icon.width / 2;
@@ -419,29 +423,29 @@ export let Animator = class {
       if (vertical) {
         if (dock._position == DockPosition.LEFT) {
           targetX =
-            -(dock._background.width + dock._edge_distance * -ed * 2) *
+            -(dock._background.width + edge_distance * -ed * 2) *
             scaleFactor;
         } else {
           targetX =
-            (dock._background.width - dock._edge_distance * -ed * 2) *
+            (dock._background.width - edge_distance * -ed * 2) *
             scaleFactor;
         }
       } else {
         if (dock._position == DockPosition.BOTTOM) {
           targetY =
-            (dock._background.height - dock._edge_distance * -ed * 2) *
+            (dock._background.height - edge_distance * -ed * 2) *
             scaleFactor;
         } else {
           targetY =
-            -(dock._background.height + dock._edge_distance * -ed * 2) *
+            -(dock._background.height + edge_distance * -ed * 2) *
             scaleFactor;
         }
       }
     }
 
     // edge
-    targetX += vertical ? dock._edge_distance * -ed : 0;
-    targetY += !vertical ? dock._edge_distance * -ed : 0;
+    targetX += vertical ? edge_distance * -ed : 0;
+    targetY += !vertical ? edge_distance * -ed : 0;
 
     _pos_coef += 5 - 5 * dock.extension.autohide_speed;
     dock.dash.translationY =
@@ -467,7 +471,7 @@ export let Animator = class {
       if (vertical) {
         dock.struts.width =
           dock._background.width + iconSize * 0.25 * scaleFactor +
-          dock._edge_distance;
+          edge_distance;
         dock.struts.height = dock.height;
         dock.struts.y = dock.y;
         if (dock._position == DockPosition.RIGHT) {
@@ -479,7 +483,7 @@ export let Animator = class {
         dock.struts.width = dock.width;
         dock.struts.height =
           dock._background.height + iconSize * 0.25 * scaleFactor +
-          dock._edge_distance;
+          edge_distance;
         dock.struts.x = dock.x;
         if (dock._position == DockPosition.BOTTOM) {
           dock.struts.y = dock.y + dock.height - dock.struts.height;

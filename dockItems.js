@@ -448,11 +448,11 @@ export const DockBackground = GObject.registerClass(
         }
       }
 
-      let dx = this.x - dashContainer.dash.x;
-      let dy = this.y - dashContainer.dash.y;
+      let dx = this.x - (dashContainer.dash.x + dashContainer.dash.translationX);
+      let dy = this.y - (dashContainer.dash.y + dashContainer.dash.translationY);
       let dst = vertical ? dx * dx : dy * dy;
-      this.opacity = dst > 90 ? 0 : 255;
-      dashContainer.dash.opacity = dst > 90 ? 0 : 255;
+      this.opacity = dst > 50 ? 0 : 255;
+      dashContainer.dash.opacity = dst > 50 ? 0 : 255;
     }
   }
 );

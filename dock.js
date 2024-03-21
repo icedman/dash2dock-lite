@@ -443,7 +443,7 @@ export let Dock = GObject.registerClass(
         }
       }
 
-      let lastFavIcon = this._icons[this._icons.length-1] ?? null;
+      let lastFavIcon = this._icons[this._icons.length - 1] ?? null;
 
       if (this._extraIcons) {
         this._lastSeparator = null;

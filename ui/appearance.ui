@@ -6,6 +6,23 @@
     <property name="icon-name">dash-symbolic</property>
     <child>
       <object class="AdwPreferencesGroup">
+        <child>
+          <object class="AdwActionRow">
+            <property name="title" translatable="yes">Preset</property>
+            <property name="subtitle" translatable="yes">Select a preset.</property>
+            <property name="activatable-widget">theme</property>
+            <child>
+              <object class="GtkDropDown" id="theme">
+                <property name="valign">center</property>
+                <property name="model">theme-model</property>
+              </object>
+            </child>
+          </object>
+        </child>
+      </object>
+    </child>
+    <child>
+      <object class="AdwPreferencesGroup">
         <property name="title" translatable="yes">Icons</property>
         <property name="description" translatable="yes"/>
         <child>
@@ -589,6 +606,11 @@
       <item>1px</item>
       <item>2px</item>
       <item>3px</item>
+    </items>
+  </object>
+  <object class="GtkStringList" id="theme-model">
+    <items>
+      <!-- <item translatable="yes">Custom</item> -->
     </items>
   </object>
 </interface>

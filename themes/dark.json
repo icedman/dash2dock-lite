@@ -1,0 +1,25 @@
+{
+   "meta": {
+      "title": "Dark"
+   },
+   "background-color" : [
+      0,
+      0,
+      0,
+      0.5
+   ],
+   "customize-topbar" : true,
+   "icon-effect" : 0,
+   "topbar-background-color" : [
+      0,
+      0,
+      0,
+      0.25
+   ],
+   "topbar-foreground-color" : [
+      1,
+      1,
+      1,
+      0.9
+   ]
+}

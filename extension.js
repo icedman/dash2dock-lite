@@ -224,7 +224,7 @@ export default class Dash2DockLiteExt extends Extension {
 
   startUp() {
     this.createTheDocks();
-    this.animate({refresh: true});
+    this.animate({ refresh: true });
     this.docks.forEach((dock) => {
       dock._debounceEndAnimation();
     });
@@ -289,7 +289,7 @@ export default class Dash2DockLiteExt extends Extension {
         case 'mounted-icon': {
           this.services.checkMounts();
           this.services._commitMounts();
-          this.animate({refresh: true});
+          this.animate({ refresh: true });
           break;
         }
         case 'peek-hidden-icons': {
@@ -323,7 +323,7 @@ export default class Dash2DockLiteExt extends Extension {
         case 'calendar-icon':
         case 'clock-icon':
         case 'favorites-only': {
-          this.animate({refresh: true});
+          this.animate({ refresh: true });
           break;
         }
         // problematic settings needing animator restart

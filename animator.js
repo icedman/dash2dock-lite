@@ -75,7 +75,6 @@ export let Animator = class {
       c._fixedPosition = dock._get_position(c);
     });
 
-
     let idx = 0;
     animateIcons.forEach((icon) => {
       let pos = [...icon._pos];

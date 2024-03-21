@@ -376,5 +376,10 @@
         <summary>Light color</summary>
         <description>Set light foreground color.</description>
     </key>
+    <key type="i" name="theme">
+        <default>0</default>
+        <summary>Theme</summary>
+        <description>Select a theme.</description>
+    </key>
   </schema>
 </schemalist>

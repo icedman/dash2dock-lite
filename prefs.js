@@ -4,6 +4,8 @@
 import Gdk from 'gi://Gdk';
 import Gtk from 'gi://Gtk';
 import Gio from 'gi://Gio';
+import GLib from 'gi://GLib';
+import Adw from 'gi://Adw';
 import GObject from 'gi://GObject';
 
 const GETTEXT_DOMAIN = 'dash2dock-light';
@@ -14,6 +16,24 @@ import {
   ExtensionPreferences,
   gettext as _,
 } from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
+
+let themed_presets = [
+  {},
+  {
+    'icon-effect': 0,
+    'background-color': [0, 0, 0, 0.5],
+    'customize-topbar': true,
+    'topbar-background-color': [0, 0, 0, 0.25],
+    'topbar-foreground-color': [1, 1, 1, 0.9],
+  },
+  {
+    'icon-effect': 0,
+    'background-color': [1, 1, 1, 0.5],
+    'customize-topbar': true,
+    'topbar-background-color': [1, 1, 1, 0.25],
+    'topbar-foreground-color': [0, 0, 0, 0.9],
+  },
+];
 
 // from Dock-to-Dock
 const MonitorsConfig = GObject.registerClass(
@@ -277,7 +297,75 @@ export default class Preferences extends ExtensionPreferences {
     this._monitorsConfig.connect('updated', () => this.updateMonitors());
     // settings.connect('changed::preferred-monitor', () => this.updateMonitors());
 
+    let theme = builder.get_object('theme');
+    theme.connect('notify::selected-item', (v) => {
+      let index = v.get_selected();
+      let model = this._builder.get_object('theme-model');
+      let model_count = model.get_n_items();
+      let item = model.get_item(index);
+      this.loadPreset(index, item.string);
+    });
+
+    this.preloadPresets();
     this.updateMonitors();
+  }
+
+  preloadPresets() {
+    let themes_path = `${this.path}/themes`;
+    let dir = Gio.File.new_for_path(themes_path);
+    let iter = dir.enumerate_children(
+      'standard::*',
+      Gio.FileQueryInfoFlags.NONE,
+      null
+    );
+
+    themed_presets = [{ meta: { title: 'Custom ' } }];
+
+    let f = iter.next_file(null);
+    while (f) {
+      let fn = Gio.File.new_for_path(`${themes_path}/${f.get_name()}`);
+      if (fn.query_exists(null)) {
+        const [success, contents] = fn.load_contents(null);
+        const decoder = new TextDecoder();
+        let contentsString = decoder.decode(contents);
+        let json = JSON.parse(contentsString);
+        if (json && json['meta'] && json['meta']['title']) {
+          themed_presets.push(json);
+        }
+      }
+      f = iter.next_file(null);
+    }
+
+    let model = this._builder.get_object('theme-model');
+    themed_presets.forEach((m) => {
+      model.append(m['meta']['title']);
+    });
+  }
+
+  loadPreset(i, value) {
+    if (i == 0) return;
+    let settingsKeys = SettingsKeys();
+    let p = themed_presets[i];
+    Object.keys(p).forEach((k) => {
+      let v = p[k];
+      let def = settingsKeys.getKey(k);
+      if (!def) return;
+      switch (def.widget_type) {
+        case 'color':
+          this._settings.set_value(k, new GLib.Variant('(dddd)', v));
+          break;
+        case 'switch':
+          this._settings.set_boolean(k, v);
+          break;
+        case 'dropdown':
+          this._settings.set_int(k, v);
+          break;
+      }
+    });
+
+    // settingsKeys.connectBuilder(this._builder);
+    settingsKeys._builder = this._builder;
+    settingsKeys.connectSettings(this._settings);
   }
 
   // updateMonitors() {

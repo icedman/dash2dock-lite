@@ -85,54 +85,66 @@ export const SettingsKeys = () => {
     'background-color': {
       default_value: [0, 0, 0, 0.5],
       widget_type: 'color',
+      themed: true,
     },
     'customize-topbar': {
       default_value: false,
       widget_type: 'switch',
       key_maps: {},
+      themed: true,
     },
     'topbar-border-thickness': {
       default_value: 0,
       widget_type: 'dropdown',
       test: { values: [0, 1, 2, 3] },
+      themed: true,
     },
     'topbar-border-color': {
       default_value: [1, 1, 1, 1],
       widget_type: 'color',
+      themed: true,
     },
     'topbar-background-color': {
       default_value: [0, 0, 0, 0.5],
       widget_type: 'color',
+      themed: true,
     },
     'topbar-foreground-color': {
       default_value: [0, 0, 0, 0],
       widget_type: 'color',
+      themed: true,
     },
     'customize-label': {
       default_value: false,
       widget_type: 'switch',
       key_maps: {},
+      themed: true,
     },
     'label-border-radius': {
       default_value: 0,
       widget_type: 'scale',
+      themed: true,
     },
     'label-border-thickness': {
       default_value: 0,
       widget_type: 'dropdown',
       test: { values: [0, 1, 2, 3] },
+      themed: true,
     },
     'label-border-color': {
       default_value: [1, 1, 1, 1],
       widget_type: 'color',
+      themed: true,
     },
     'label-background-color': {
       default_value: [0, 0, 0, 0.5],
       widget_type: 'color',
+      themed: true,
     },
     'label-foreground-color': {
       default_value: [0, 0, 0, 0],
       widget_type: 'color',
+      themed: true,
     },
     'favorites-only': {
       default_value: false,
@@ -224,24 +236,29 @@ export const SettingsKeys = () => {
     'border-radius': {
       default_value: 0,
       widget_type: 'scale',
+      themed: true,
     },
     'border-thickness': {
       default_value: 0,
       widget_type: 'dropdown',
       test: { values: [0, 1, 2, 3] },
+      themed: true,
     },
     'border-color': {
       default_value: [1, 1, 1, 1],
       widget_type: 'color',
+      themed: true,
     },
     'separator-thickness': {
       default_value: 0,
       widget_type: 'dropdown',
       test: { values: [0, 1, 2, 3] },
+      themed: true,
     },
     'separator-color': {
       default_value: [1, 1, 1, 1],
       widget_type: 'color',
+      themed: true,
     },
     'dock-padding': {
       default_value: 0.5,
@@ -315,10 +332,12 @@ export const SettingsKeys = () => {
       default_value: 0,
       widget_type: 'dropdown',
       test: { values: [0, 1, 2] },
+      themed: true,
     },
     'icon-effect-color': {
       default_value: [1, 1, 1, 1],
       widget_type: 'color',
+      themed: true,
     },
     'msg-to-ext': {
       default_value: '',

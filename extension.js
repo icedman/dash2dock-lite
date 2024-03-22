@@ -31,8 +31,6 @@ import { Dock } from './dock.js';
 import { Services } from './services.js';
 import { runTests } from './diagnostics.js';
 
-import * as LampAnimation from './effects/lamp_animation.js';
-
 import {
   Extension,
   gettext as _,
@@ -149,7 +147,6 @@ export default class Dash2DockLiteExt extends Extension {
     this.services.enable();
     this._onCheckServices();
 
-    this._updateLampAnimation();
     this._updateAnimationFPS();
     this._updateShrink();
     this._updateIconResolution();
@@ -180,7 +177,6 @@ export default class Dash2DockLiteExt extends Extension {
     this._removeEvents();
     this._disableSettings();
 
-    this._updateLampAnimation(true);
     this._updateShrink(true);
     this._updateLayout(true);
     this._updateAutohide(true);
@@ -378,10 +374,6 @@ export default class Dash2DockLiteExt extends Extension {
         case 'icon-size': {
           this._updateShrink();
           this.animate();
-          break;
-        }
-        case 'lamp-app-animation': {
-          this._updateLampAnimation();
           break;
         }
         case 'border-radius':
@@ -614,15 +606,6 @@ export default class Dash2DockLiteExt extends Extension {
       ANIM_INTERVAL + (this.animation_fps || 0) * ANIM_INTERVAL_PAD;
     this._hiTimer.shutdown();
     this._hiTimer.initialize(this.animationInterval);
-  }
-
-  _updateLampAnimation(disable) {
-    this.lamp_app_animation = false; // disable
-    if (this.lamp_app_animation && !disable) {
-      LampAnimation.enable();
-    } else {
-      LampAnimation.disable();
-    }
   }
 
   _updateShrink(disable) {

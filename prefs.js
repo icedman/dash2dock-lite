@@ -389,10 +389,17 @@ export default class Preferences extends ExtensionPreferences {
         null
       );
 
-      this.window.add_toast(new Adw.Toast({title:'Saved at /tmp/theme.json'}));
+      this.window.add_toast(
+        new Adw.Toast({ title: 'Saved to /tmp/theme.json' })
+      );
+      return;
     }
 
     let p = this._themed_presets[i];
+    if (!p['meta'] || !p['meta']['title']) {
+      return;
+    }
+
     Object.keys(p).forEach((k) => {
       let v = p[k];
       let def = settingsKeys.getKey(k);
@@ -413,6 +420,8 @@ export default class Preferences extends ExtensionPreferences {
     // settingsKeys.connectBuilder(this._builder);
     settingsKeys._builder = this._builder;
     settingsKeys.connectSettings(this._settings);
+
+    this.window.add_toast(new Adw.Toast({ title: `${p['meta']['title']}` }));
   }
 
   updateMonitors() {

@@ -93,6 +93,24 @@ Modify the script to match your system if necessary. And make sure that the scri
 chmod +x {EXTENSION_PATH}/apps/empty-trash.sh
 ```
 
+## Bug Reporting
+
+When reporting bugs. Please indicate the following:
+
+* Linux Flavor/Distribution and version
+* Gnome version (45.xx)
+* Dash2Dock Animated release number
+
+Also please check for any exceptions in the logs by running the following at the terminal:
+
+```sh
+journalctl /usr/bin/gnome-shell -f -o cat
+```
+
+To check incompatibilities with other extensions, try running Dash2Dock Animated with other extensions disabled.
+
+Please be specific on the errors encountered.
+
 ## License
 
 Distributed under the GPL 3.0 License. See [LICENSE](https://github.com/icedman/dash2dock-lite/blob/main/LICENSE.md) for more information.

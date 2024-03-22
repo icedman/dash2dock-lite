@@ -297,30 +297,27 @@ export default class Preferences extends ExtensionPreferences {
     this._monitorsConfig.connect('updated', () => this.updateMonitors());
     // settings.connect('changed::preferred-monitor', () => this.updateMonitors());
 
-    let theme = builder.get_object('theme');
-    theme.connect('notify::selected-item', (v) => {
-      let index = v.get_selected();
-      let model = this._builder.get_object('theme-model');
-      let model_count = model.get_n_items();
-      let item = model.get_item(index);
-      this.loadPreset(index, item.string);
-    });
-
-    this.preloadPresets();
+    this._themed_presets = [];
+    this.preloadPresets(`${this.path}/themes`);
+    this.preloadPresets(
+      Gio.File.new_for_path('.config/d2da/themes').get_path()
+    );
+    this._buildThemesMenu(window);
     this.updateMonitors();
   }
 
-  preloadPresets() {
-    let themes_path = `${this.path}/themes`;
+  preloadPresets(themes_path) {
     let dir = Gio.File.new_for_path(themes_path);
+    if (!dir.query_exists(null)) {
+      return;
+    }
     let iter = dir.enumerate_children(
       'standard::*',
       Gio.FileQueryInfoFlags.NONE,
       null
     );
 
-    themed_presets = [{ meta: { title: 'Custom ' } }];
-
+    themed_presets = [];
     let f = iter.next_file(null);
     while (f) {
       let fn = Gio.File.new_for_path(`${themes_path}/${f.get_name()}`);
@@ -335,17 +332,69 @@ export default class Preferences extends ExtensionPreferences {
       }
       f = iter.next_file(null);
     }
-
-    let model = this._builder.get_object('theme-model');
-    themed_presets.forEach((m) => {
-      model.append(m['meta']['title']);
-    });
+    this._themed_presets = [...this._themed_presets, ...themed_presets];
   }
 
-  loadPreset(i, value) {
-    if (i == 0) return;
+  _buildThemesMenu(window) {
+    this._themed_presets.push({ meta: { title: 'Export...' } });
+
+    const actionGroup = new Gio.SimpleActionGroup();
+    window.insert_action_group('themes', actionGroup);
+
+    let theme = this._builder.get_object('theme');
+    let model = new Gio.Menu();
+    let idx = 0;
+    this._themed_presets.forEach((m) => {
+      let action_name = `set_theme-${idx}`;
+      let act = new Gio.SimpleAction({ name: action_name });
+      act.connect('activate', (_) => {
+        let index = action_name.split('-')[1];
+        this.loadPreset(parseInt(index));
+      });
+      actionGroup.add_action(act);
+      model.append(m['meta']['title'], `themes.${action_name}`);
+      idx++;
+    });
+    theme.set_menu_model(model);
+  }
+
+  loadPreset(i) {
     let settingsKeys = SettingsKeys();
-    let p = themed_presets[i];
+    settingsKeys.connectSettings(this._settings);
+    if (i == this._themed_presets.length - 1) {
+      // export
+      let keys = settingsKeys.keys();
+      let json = {};
+      Object.keys(keys).forEach((n) => {
+        let k = keys[n];
+        if (k.themed) {
+          json[n] = settingsKeys.getValue(n);
+        }
+      });
+
+      json['meta'] = {
+        title: 'My Theme',
+      };
+
+      let fn = Gio.File.new_for_path(`/tmp/theme.json`);
+      let content = JSON.stringify(json, null, 4);
+      const [, etag] = fn.replace_contents(
+        content,
+        null,
+        false,
+        Gio.FileCreateFlags.REPLACE_DESTINATION,
+        null
+      );
+
+      // var notification = new Gio.Notification();
+      // notification.set_title('Export');
+      // notification.set_body('Theme settings export to /tmp/theme.json.');
+      // notification.set_icon(new Gio.ThemedIcon({ name: 'org.gnome.Clocks' }));
+      // console.log(Gio.Application.get_default());
+      //.send_notification(null, notification);
+    }
+
+    let p = this._themed_presets[i];
     Object.keys(p).forEach((k) => {
       let v = p[k];
       let def = settingsKeys.getKey(k);
@@ -368,25 +417,15 @@ export default class Preferences extends ExtensionPreferences {
     settingsKeys.connectSettings(this._settings);
   }
 
-  // updateMonitors() {
-  //   let monitors = this._monitorsConfig.monitors;
-  //   let count = monitors.length;
-  //   // let count = this._settings.get_int('monitor-count') || 1;
-  //   const monitors_model = this._builder.get_object('preferred-monitor-model');
-  //   monitors_model.splice(count, 6 - count, []);
-  // }
-
   updateMonitors() {
-    let model = this._builder.get_object('preferred-monitor-model');
-    let model_count = model.get_n_items();
-    model.splice(0, model_count, []);
     let monitors = this._monitorsConfig.monitors;
     let count = monitors.length;
-    model.append(`Primary Display`);
+    let list = new Gtk.StringList();
+    list.append('Primary Monitor');
     for (let i = 0; i < count; i++) {
-      if (model.get_n_items() >= count) break;
-      let name = monitors[i];
-      model.append(name.displayName);
+      let m = monitors[i];
+      list.append(m.displayName);
     }
+    this._builder.get_object('preferred-monitor').set_model(list);
   }
 }

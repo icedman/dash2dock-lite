@@ -8,13 +8,14 @@
       <object class="AdwPreferencesGroup">
         <child>
           <object class="AdwActionRow">
-            <property name="title" translatable="yes">Preset</property>
-            <property name="subtitle" translatable="yes">Select a preset.</property>
+            <property name="title" translatable="yes">Theme</property>
+            <property name="subtitle" translatable="yes">Select or Export a theme (/tmp/theme.json'). </property>
             <property name="activatable-widget">theme</property>
             <child>
-              <object class="GtkDropDown" id="theme">
+              <object class="GtkMenuButton" id="theme">
                 <property name="valign">center</property>
-                <property name="model">theme-model</property>
+                <property name="label">Themes</property>
+                <!-- <property name="model">theme-model</property> -->
               </object>
             </child>
           </object>

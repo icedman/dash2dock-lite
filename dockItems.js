@@ -119,7 +119,9 @@ export class DockItemMenu extends PopupMenu.PopupMenu {
     super(sourceActor, 0.5, side);
 
     let { desktopApp } = params;
+    if (!desktopApp) return;
     this.desktopApp = desktopApp;
+
     this._newWindowItem = this.addAction('Open Window', () => {
       let workspaceManager = global.workspace_manager;
       let workspace = workspaceManager.get_active_workspace();

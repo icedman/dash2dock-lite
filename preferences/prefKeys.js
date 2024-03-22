@@ -19,12 +19,22 @@ export let PrefKeys = class {
         key.key_maps,
         key.test,
         key.callback,
-        key.options
+        key.options,
+        key.themed
       );
     });
   }
 
-  setKey(name, default_value, widget_type, maps, test, callback, options) {
+  setKey(
+    name,
+    default_value,
+    widget_type,
+    maps,
+    test,
+    callback,
+    options,
+    themed
+  ) {
     this._keys[name] = {
       name,
       default_value,
@@ -35,6 +45,7 @@ export let PrefKeys = class {
       callback,
       options,
       object: null,
+      themed: themed || false,
     };
   }
 

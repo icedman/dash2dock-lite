@@ -245,12 +245,12 @@
   </object>
   <object class="GtkStringList" id="preferred-monitor-model">
     <items>
-      <item translatable="yes">Primary Monitor</item>
+      <!--       <item translatable="yes">Primary Monitor</item>
       <item translatable="yes">Secondary Monitor</item>
       <item translatable="yes">Monitor 3</item>
       <item translatable="yes">Monitor 4</item>
       <item translatable="yes">Monitor 5</item>
-      <item translatable="yes">Monitor 6</item>
+      <item translatable="yes">Monitor 6</item> -->
     </items>
   </object>
   <object class="GtkStringList" id="multi-monitor-preference-model">

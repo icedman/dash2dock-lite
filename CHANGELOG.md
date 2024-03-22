@@ -4,7 +4,7 @@
 
 # Current Issues
 
-* ?
+* check overlap with multi-monitor 
 
 # Release 47
 

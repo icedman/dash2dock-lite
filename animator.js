@@ -75,6 +75,21 @@ export let Animator = class {
       c._fixedPosition = dock._get_position(c);
     });
 
+    // sort
+    // todo apps_icon_front does not work in vertical layout
+    if (
+      dock.extension.apps_icon_front &&
+      dock.extension.apps_icon &&
+      vertical
+    ) {
+      let cornerPos = dock._get_position(dock);
+      animateIcons.sort((a, b) => {
+        let dstA = dock._get_distance(cornerPos, a._pos);
+        let dstB = dock._get_distance(cornerPos, b._pos);
+        return dstA > dstB ? 1 : -1;
+      });
+    }
+
     let idx = 0;
     animateIcons.forEach((icon) => {
       let pos = [...icon._pos];
@@ -423,22 +438,18 @@ export let Animator = class {
       if (vertical) {
         if (dock._position == DockPosition.LEFT) {
           targetX =
-            -(dock._background.width + edge_distance * -ed * 2) *
-            scaleFactor;
+            -(dock._background.width + edge_distance * -ed * 2) * scaleFactor;
         } else {
           targetX =
-            (dock._background.width - edge_distance * -ed * 2) *
-            scaleFactor;
+            (dock._background.width - edge_distance * -ed * 2) * scaleFactor;
         }
       } else {
         if (dock._position == DockPosition.BOTTOM) {
           targetY =
-            (dock._background.height - edge_distance * -ed * 2) *
-            scaleFactor;
+            (dock._background.height - edge_distance * -ed * 2) * scaleFactor;
         } else {
           targetY =
-            -(dock._background.height + edge_distance * -ed * 2) *
-            scaleFactor;
+            -(dock._background.height + edge_distance * -ed * 2) * scaleFactor;
         }
       }
     }
@@ -470,7 +481,8 @@ export let Animator = class {
       // allied areas
       if (vertical) {
         dock.struts.width =
-          dock._background.width + iconSize * 0.25 * scaleFactor +
+          dock._background.width +
+          iconSize * 0.25 * scaleFactor +
           edge_distance;
         dock.struts.height = dock.height;
         dock.struts.y = dock.y;
@@ -482,7 +494,8 @@ export let Animator = class {
       } else {
         dock.struts.width = dock.width;
         dock.struts.height =
-          dock._background.height + iconSize * 0.25 * scaleFactor +
+          dock._background.height +
+          iconSize * 0.25 * scaleFactor +
           edge_distance;
         dock.struts.x = dock.x;
         if (dock._position == DockPosition.BOTTOM) {

@@ -8,6 +8,11 @@ build:
 install: build
 	echo "installing..."
 	mkdir -p ~/.local/share/gnome-shell/extensions/dash2dock-lite@icedman.github.com/
+	rm -rf ~/.local/share/gnome-shell/extensions/dash2dock-lite@icedman.github.com/apps/*.js
+	rm -rf ~/.local/share/gnome-shell/extensions/dash2dock-lite@icedman.github.com/effects/*.js
+	rm -rf ~/.local/share/gnome-shell/extensions/dash2dock-lite@icedman.github.com/preferences/*.js
+	rm -rf ~/.local/share/gnome-shell/extensions/dash2dock-lite@icedman.github.com/tests/*.js
+	rm -rf ~/.local/share/gnome-shell/extensions/dash2dock-lite@icedman.github.com/*.js
 	cp -R ./* ~/.local/share/gnome-shell/extensions/dash2dock-lite@icedman.github.com/
 	rm -R ~/.local/share/gnome-shell/extensions/dash2dock-lite@icedman.github.com/apps/*.desktop
 

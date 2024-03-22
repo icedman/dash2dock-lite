@@ -385,13 +385,13 @@ export const Services = class {
     return this.trashFull;
   }
 
-  checkDownloads() {
+  async checkDownloads() {
     this._trySpawnCommandLine = trySpawnCommandLine;
     if (!this.extension.downloads_icon) return;
     try {
       let path = this._downloadsDir.get_path();
       let cmd = `${this.extension.path}/apps/list-downloads.sh`;
-      trySpawnCommandLine(cmd);
+      await trySpawnCommandLine(cmd);
     } catch (err) {
       console.log(err);
     }

@@ -101,7 +101,7 @@ When reporting bugs. Please indicate the following:
 * Gnome version (45.xx)
 * Dash2Dock Animated release number
 
-Also please check for any exceptions in the logs by running the following at the terminal:
+Check for any exceptions in the logs by running the following at the terminal:
 
 ```sh
 journalctl /usr/bin/gnome-shell -f -o cat
@@ -109,7 +109,21 @@ journalctl /usr/bin/gnome-shell -f -o cat
 
 To check incompatibilities with other extensions, try running Dash2Dock Animated with other extensions disabled.
 
-Please be specific on the errors encountered.
+To check for lag or inefficiency. Run the following in the terminal and observer gnome-shell CPU usage.
+
+```sh
+top -d 0.5
+```
+
+On my old Dell XPS13 i5-6200U. CPU usage is about 50% with icons quality high, frame rate high, shadows on.
+
+Please be specific on the errors encountered. Add screenshots whenever possible.
+
+## Testing Rig
+
+* Arch Linux (Primary development machine)
+* Ubuntu 23.10
+* Fedora 39 (virtual only)
 
 ## License
 

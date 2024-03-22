@@ -70,13 +70,11 @@ From Gnome Extensions Repository
 
 Visit [https://extensions.gnome.org/extension/4994/dash2dock-lite/](https://extensions.gnome.org/extension/4994/dash2dock-lite/)
 
-## Alternative
+## Theme Support
 
-Checkout Dash Animator. It adds animation to Dash-to-Dock.
+Export your settings under Style > Themes Button > "Export"...
 
-```bash
-$ git clone https://github.com/icedman/dash-animator.git
-```
+This will be saved to ```/tmp/theme.json```. Edit this json file and save under ```~/.config/d2da/themes``` or at ```{extension_path}/dash2dock-animated/themes``` so that it becomes available at the extension settings app.
 
 ## Dynamic Icons
 

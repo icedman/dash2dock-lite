@@ -297,17 +297,14 @@ export const DockItemContainer = GObject.registerClass(
         params.appinfo_filename
       );
 
-      if (!desktopApp) {
-        console.log(params);
-      }
-
       this._label = this.label;
 
       try {
         this._labelText = desktopApp.get_name();
         this._default_icon_name = desktopApp.get_icon().get_names()[0];
       } catch (err) {
-        //
+        console.log(err);
+        console.log(params);
       }
 
       // menu

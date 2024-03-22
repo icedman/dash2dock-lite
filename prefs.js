@@ -248,6 +248,7 @@ export default class Preferences extends ExtensionPreferences {
   }
 
   fillPreferencesWindow(window) {
+    // console.log(`>>${window.get_content()}`);
     let builder = new Gtk.Builder();
     this._builder = builder;
 
@@ -304,6 +305,8 @@ export default class Preferences extends ExtensionPreferences {
     );
     this._buildThemesMenu(window);
     this.updateMonitors();
+
+    this.window = window;
   }
 
   preloadPresets(themes_path) {
@@ -386,12 +389,7 @@ export default class Preferences extends ExtensionPreferences {
         null
       );
 
-      // var notification = new Gio.Notification();
-      // notification.set_title('Export');
-      // notification.set_body('Theme settings export to /tmp/theme.json.');
-      // notification.set_icon(new Gio.ThemedIcon({ name: 'org.gnome.Clocks' }));
-      // console.log(Gio.Application.get_default());
-      //.send_notification(null, notification);
+      this.window.add_toast(new Adw.Toast({title:'Saved at /tmp/theme.json'}));
     }
 
     let p = this._themed_presets[i];

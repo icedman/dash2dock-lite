@@ -313,7 +313,7 @@ export const DockItemContainer = GObject.registerClass(
       });
       this._menuManager = new PopupMenu.PopupMenuManager(this);
       this._menu._menuManager = this._menuManager;
-      Main.uiGroup.add_actor(this._menu.actor);
+      Main.uiGroup.add_child(this._menu.actor);
       this._menuManager.addMenu(this._menu);
       this._menu.close();
     }

@@ -140,6 +140,7 @@ export let Dock = GObject.registerClass(
 
     undock() {
       if (this._list) {
+        // todo Main.uiGroup no longer available in gnome 46
         Main.uiGroup.remove_child(this._list);
         this._list = null;
       }
@@ -368,6 +369,7 @@ export let Dock = GObject.registerClass(
       if (c.icon /* IconGrid */ && c.icon.icon /* StIcon */) {
         c._icon = c.icon.icon;
         c._button = c.child;
+        c.icon.style = 'background-color: transparent !important;';
       }
 
       /* DashItemContainer */
@@ -464,6 +466,7 @@ export let Dock = GObject.registerClass(
           icon.connectObject(
             'button-press-event',
             () => {
+              // error gnome 46
               Main.uiGroup
                 .find_child_by_name('overview')
                 ._controls._toggleAppsPage();

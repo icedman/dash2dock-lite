@@ -338,6 +338,7 @@ export let Animator = class {
         icon._label.translationY = translationY - iconSize * pvd.ly;
       }
 
+      // todo error gnome 46 (Canvas)
       // badges
       {
         let appNotices = icon._appwell

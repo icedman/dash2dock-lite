@@ -226,80 +226,29 @@ export let AutoHide = class {
     });
     windows = windows.filter((w) => w.can_close());
     windows = windows.filter((w) => w.get_monitor() == monitor.index);
-
-    let isOverlapped = false;
-    let dock = this.dashContainer._get_position(this.dashContainer.struts);
-    dock.push(this.dashContainer.struts.width);
-    dock.push(this.dashContainer.struts.height);
-
-    // console.log(`dock ${dock}`);
-
-    windows.forEach((w) => {
-      this._track(w);
-
-      let frame = w.get_frame_rect();
-      let win = [frame.x, frame.y, frame.width, frame.height];
-      // console.log(`>>>> win ${win}`);
-      
-      if (this.dashContainer._isOverlapRect(dock, win)) {
-        isOverlapped = true;
-      }
-    });
-
-    /*
     let workspace = global.workspace_manager.get_active_workspace_index();
     windows = windows.filter(
       (w) =>
         workspace == w.get_workspace().index() && w.showing_on_its_workspace()
     );
     windows = windows.filter((w) => w.get_window_type() in handledWindowTypes);
-
-    windows.forEach((w) => this._track(w));
+    
+    let isOverlapped = false;
+    let dock = this.dashContainer._get_position(this.dashContainer.struts);
+    dock.push(this.dashContainer.struts.width);
+    dock.push(this.dashContainer.struts.height);
 
     windows.forEach((w) => {
+      this._track(w);
+      if (isOverlapped) return;
+
       let frame = w.get_frame_rect();
-      // todo .. make accurate to work with multi-monitor
-      if (this.dashContainer.isVertical()) {
-        if (this.dashContainer._position == 'right') {
-          // right
-          if (
-            frame.x + frame.width >= rect.x &&
-            frame.x <
-              this.dashContainer._monitor.x + this.dashContainer._monitor.width
-          ) {
-            isOverlapped = true;
-          }
-        } else {
-          // left
-          if (
-            frame.x <= rect.x + rect.w &&
-            frame.x + frame.width > this.dashContainer._monitor.x
-          ) {
-            isOverlapped = true;
-          }
-        }
-      } else {
-        if (this.dashContainer._position == DockPosition.TOP) {
-          // top
-          if (
-            frame.y <= rect.y + rect.h &&
-            frame.y + frame.height > this.dashContainer._monitor.y
-          ) {
-            isOverlapped = true;
-          }
-        } else {
-          // bottom
-          if (
-            frame.y + frame.height >= rect.y &&
-            frame.y <
-              this.dashContainer._monitor.y + this.dashContainer._monitor.height
-          ) {
-            isOverlapped = true;
-          }
-        }
+      let win = [frame.x, frame.y, frame.width, frame.height];
+      
+      if (this.dashContainer._isOverlapRect(dock, win)) {
+        isOverlapped = true;
       }
     });
-    */
 
     this.windows = windows;
     return isOverlapped;

@@ -253,7 +253,7 @@ export const DockItemList = GObject.registerClass(
         l.x = tp[0] - this.x + ox;
         l.y = tp[1] - this.y + oy;
 
-        ox += hX * 0.5;
+        ox += hX * 0.85;
         oy += hY;
         angle += angleInc;
 

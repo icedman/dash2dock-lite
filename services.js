@@ -439,7 +439,7 @@ export const Services = class {
 
     // console.log(fileStat);
 
-    this._downloadFilesLength = 0; // Object.keys(fileStat).length;
+    this._downloadFilesLength = Object.keys(fileStat).length;
     let maxs = [5, 10, 15, 20, 25];
     let max_recent_items = maxs[this.extension.max_recent_items];
 

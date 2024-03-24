@@ -439,7 +439,7 @@ export const Services = class {
 
     // console.log(fileStat);
 
-    this._downloadFilesLength = Object.keys(fileStat).length;
+    this._downloadFilesLength = 0; // Object.keys(fileStat).length;
     let maxs = [5, 10, 15, 20, 25];
     let max_recent_items = maxs[this.extension.max_recent_items];
 
@@ -526,7 +526,7 @@ export const Services = class {
           clock.width = item._icon.width;
           clock.height = item._icon.height;
           clock.set_scale(item._icon.scaleX, item._icon.scaleY);
-          let canvasScale = clock.width / clock._canvas.width;
+          let canvasScale = clock.width / (clock._canvas.width + 2);
           clock._canvas.set_scale(canvasScale, canvasScale);
           clock.pivot_point = item._icon.pivot_point;
           clock.translationX = item._icon.translationX;
@@ -555,7 +555,7 @@ export const Services = class {
           calender.width = item._icon.width;
           calender.height = item._icon.height;
           calender.set_scale(item._icon.scaleX, item._icon.scaleY);
-          let canvasScale = calender.width / calender._canvas.width;
+          let canvasScale = calender.width / (calender._canvas.width + 2);
           calender._canvas.set_scale(canvasScale, canvasScale);
           calender.pivot_point = item._icon.pivot_point;
           calender.translationX = item._icon.translationX;

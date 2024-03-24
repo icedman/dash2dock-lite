@@ -13,7 +13,7 @@ export const Linear = {
   },
   easeInOut: (t, b, c, d) => {
     return (c * t) / d + b;
-  }
+  },
 };
 
 export const Bounce = {
@@ -39,7 +39,7 @@ export const Bounce = {
   easeInOut: (t, b, c, d) => {
     if (t < d / 2) return Bounce.easeIn(t * 2, 0, c, d) * 0.5 + b;
     else return Bounce.easeOut(t * 2 - d, 0, c, d) * 0.5 + c * 0.5 + b;
-  }
+  },
 };
 
 var Back = {
@@ -60,5 +60,5 @@ var Back = {
       return (c / 2) * (t * t * (((s *= 1.525) + 1) * t - s)) + b;
     let postFix = (t -= 2);
     return (c / 2) * (postFix * t * (((s *= 1.525) + 1) * t + s) + 2) + b;
-  }
+  },
 };

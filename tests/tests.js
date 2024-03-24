@@ -3,7 +3,7 @@
 const { Adw, Gdk, Gio, GLib, GObject, Gtk, Pango } = imports.gi;
 
 let _tests = [];
-var runSequence = (tests) => {
+var runSequence = tests => {
   if (tests) {
     _tests = tests;
   }
@@ -19,12 +19,12 @@ runSequence([
     func: () => {
       print(1);
     },
-    delay: 1.5,
+    delay: 1.5
   },
   {
     func: () => {
       print(2);
     },
-    delay: 1.5,
-  },
+    delay: 1.5
+  }
 ]);

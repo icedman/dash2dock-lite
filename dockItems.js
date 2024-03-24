@@ -27,7 +27,7 @@ const DockItemOverlay = GObject.registerClass(
     _init(renderer, params) {
       super._init({
         name: 'DockItemContainer',
-        ...params,
+        ...params
       });
 
       this.renderer = renderer;
@@ -73,7 +73,7 @@ export const DockItemDotsOverlay = GObject.registerClass(
             : 90
           : position == DockPosition.TOP
           ? 180
-          : 0,
+          : 0
       });
     }
   }
@@ -103,7 +103,7 @@ export const DockItemBadgeOverlay = GObject.registerClass(
         color: notification_badge_color || [1, 1, 1, 1],
         style: notification_badge_style || 'default',
         rotate: position == DockPosition.BOTTOM ? 180 : 0,
-        translate: [0.4, 0],
+        translate: [0.4, 0]
       });
     }
   }
@@ -131,7 +131,7 @@ export class DockItemMenu extends PopupMenu.PopupMenu {
       this._onActivate();
     });
 
-    desktopApp.list_actions().forEach((action) => {
+    desktopApp.list_actions().forEach(action => {
       let name = desktopApp.get_action_name(action);
       this.addAction(name, () => {
         let workspaceManager = global.workspace_manager;
@@ -158,7 +158,7 @@ export const DockItemList = GObject.registerClass(
         name: 'DockItemList',
         reactive: true,
         // style_class: 'hi',
-        ...params,
+        ...params
       });
 
       this.connect('button-press-event', (obj, evt) => {
@@ -188,12 +188,12 @@ export const DockItemList = GObject.registerClass(
       let tp = dock._get_position(target);
 
       this._box = new St.Widget({ style_class: '-hi' });
-      list.forEach((l) => {
+      list.forEach(l => {
         let w = new St.Widget({});
         let icon = new St.Icon({
           icon_name: l.icon,
           reactive: true,
-          track_hover: true,
+          track_hover: true
         });
         icon.set_icon_size(
           this.dock._iconSizeScaledDown * this.dock._scaleFactor
@@ -234,7 +234,7 @@ export const DockItemList = GObject.registerClass(
 
       let children = this._box.get_children();
       children.reverse();
-      children.forEach((l) => {
+      children.forEach(l => {
         let hX = Math.cos(angle * 0.0174533);
         let hY = Math.sin(angle * 0.0174533);
         let hl = Math.sqrt(hX * hX + hY * hY);
@@ -256,7 +256,7 @@ export const DockItemList = GObject.registerClass(
       this.add_child(this._box);
 
       let first = children[0];
-      children.forEach((l) => {
+      children.forEach(l => {
         l._ox = first.x;
         l._oy = first.y;
         l._oz = 0;
@@ -287,7 +287,7 @@ export const DockItemContainer = GObject.registerClass(
       super._init({
         name: 'DockItemContainer',
         style_class: 'dash-item-container',
-        ...(params || {}),
+        ...(params || {})
       });
 
       this.name = params.appinfo_filename;
@@ -309,7 +309,7 @@ export const DockItemContainer = GObject.registerClass(
 
       // menu
       this._menu = new DockItemMenu(this, St.Side.TOP, {
-        desktopApp,
+        desktopApp
       });
       this._menuManager = new PopupMenu.PopupMenuManager(this);
       this._menu._menuManager = this._menuManager;
@@ -333,7 +333,7 @@ export const DockItemContainer = GObject.registerClass(
         icon_name: this._default_icon_name,
         icon_size: size,
         style_class: 'show-apps-icon',
-        track_hover: true,
+        track_hover: true
       });
 
       // attach event
@@ -343,7 +343,7 @@ export const DockItemContainer = GObject.registerClass(
 
       icon.reactive = true;
       icon.track_hover = true;
-      [icon].forEach((btn) => {
+      [icon].forEach(btn => {
         if (btn._connected) return;
         btn._connected = true;
         btn.button_mask = St.ButtonMask.ONE | St.ButtonMask.TWO;
@@ -381,7 +381,7 @@ export const DockBackground = GObject.registerClass(
     _init(params) {
       super._init({
         name: 'DockBackground',
-        ...(params || {}),
+        ...(params || {})
       });
     }
 
@@ -394,7 +394,7 @@ export const DockBackground = GObject.registerClass(
         vertical,
         position,
         panel_mode,
-        dashContainer,
+        dashContainer
       } = params;
 
       if (!first || !last) return;

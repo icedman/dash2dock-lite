@@ -3,6 +3,7 @@
 import GObject from 'gi://GObject';
 import Clutter from 'gi://Clutter';
 import Cairo from 'gi://cairo';
+import St from 'gi://St';
 
 import { Drawing } from '../drawing.js';
 
@@ -125,8 +126,7 @@ function _drawClock(ctx, date, x, y, size, settings) {
 
 export const Clock = GObject.registerClass(
   {},
-  // todo St.DrawingArea
-  class Clock extends Clutter.Actor {
+  class Clock extends St.DrawingArea {
     _init(x, settings = {}) {
       super._init();
 
@@ -136,25 +136,21 @@ export const Clock = GObject.registerClass(
         dark_color: [0.2, 0.2, 0.2, 1.0],
         light_color: [1.0, 1.0, 1.0, 1.0],
         accent_color: [1.0, 0.0, 0.0, 1.0],
-        ...settings,
+        ...settings
       };
-
-      this._canvas = new Clutter.Canvas();
-      this._canvas.connect('draw', this.on_draw.bind(this));
-      this._canvas.invalidate();
-      this._canvas.set_size(size, size);
-      this.set_size(size, size);
-      this.set_content(this._canvas);
-      this.reactive = false;
     }
 
     redraw() {
-      this._canvas.invalidate();
+      this.queue_repaint();
     }
 
-    on_draw(canvas, ctx, width, height) {
+    vfunc_repaint() {
+      let ctx = this.get_context();
+      let [width, height] = this.get_surface_size();
       ctx.setOperator(Cairo.Operator.CLEAR);
       ctx.paint();
+
+      size = width;
 
       ctx.translate(size / 2, size / 2);
       ctx.setLineWidth(1);
@@ -168,7 +164,7 @@ export const Clock = GObject.registerClass(
         dark_foreground,
         light_foreground,
         secondary_color,
-        clock_style,
+        clock_style
       } = this.settings;
 
       let hideIcon = false;
@@ -177,24 +173,24 @@ export const Clock = GObject.registerClass(
       let style = {
         hands: {
           hour: accent_color,
-          minute: light_color,
+          minute: light_color
         },
         marks: {
           color: [0.5, 0.5, 0.5, 1],
-          width: 0,
+          width: 0
         },
         dial: {
           size: 0.84,
           background: dark_color,
           border: [0.85, 0.85, 0.85, 1],
-          borderWidth: 0,
+          borderWidth: 0
         },
         frame: {
           size: 0.9,
           background: [0.5, 0.5, 0.5, 1],
           border: [0.25, 0.25, 0.25, 1],
-          borderWidth: 0,
-        },
+          borderWidth: 0
+        }
       };
 
       // clock_style = 4;
@@ -225,7 +221,7 @@ export const Clock = GObject.registerClass(
           style.frame.background = light_foreground;
           style = {
             ...style,
-            marks: null,
+            marks: null
           };
           break;
         }
@@ -236,7 +232,7 @@ export const Clock = GObject.registerClass(
           style.marks.width = 2;
           style = {
             ...style,
-            marks: null,
+            marks: null
           };
           break;
         }
@@ -252,7 +248,7 @@ export const Clock = GObject.registerClass(
           style.marks.width = 2;
           style = {
             ...style,
-            frame: null,
+            frame: null
           };
           hideIcon = true;
           break;
@@ -266,7 +262,7 @@ export const Clock = GObject.registerClass(
           style.marks.width = 2;
           style = {
             ...style,
-            frame: null,
+            frame: null
           };
           hideIcon = true;
           break;
@@ -281,7 +277,7 @@ export const Clock = GObject.registerClass(
           style = {
             ...style,
             marks: null,
-            frame: null,
+            frame: null
           };
           hideIcon = true;
           break;
@@ -294,7 +290,7 @@ export const Clock = GObject.registerClass(
           style = {
             ...style,
             marks: null,
-            frame: null,
+            frame: null
           };
           hideIcon = true;
           break;
@@ -307,7 +303,7 @@ export const Clock = GObject.registerClass(
           style = {
             ...style,
             marks: null,
-            frame: null,
+            frame: null
           };
           break;
         }
@@ -316,7 +312,7 @@ export const Clock = GObject.registerClass(
           style = {
             ...style,
             marks: null,
-            frame: null,
+            frame: null
           };
           break;
       }
@@ -326,7 +322,5 @@ export const Clock = GObject.registerClass(
       this._hideIcon = hideIcon;
       ctx.$dispose();
     }
-
-    destroy() {}
   }
 );

@@ -11,7 +11,7 @@ import {
   DockItemDotsOverlay,
   DockItemBadgeOverlay,
   DockItemContainer,
-  DockBackground,
+  DockBackground
 } from './dockItems.js';
 
 import { Bounce, Linear } from './effects/easing.js';
@@ -69,7 +69,7 @@ export let Animator = class {
     let nearestIcon = null;
     let nearestDistance = -1;
 
-    animateIcons.forEach((c) => {
+    animateIcons.forEach(c => {
       c._container = c;
       c._pos = dock._get_position(c);
       c._fixedPosition = dock._get_position(c);
@@ -91,7 +91,7 @@ export let Animator = class {
     }
 
     let idx = 0;
-    animateIcons.forEach((icon) => {
+    animateIcons.forEach(icon => {
       let pos = [...icon._pos];
 
       icon._icon.set_icon_size(iconSize * dock.extension.icon_quality);
@@ -129,7 +129,7 @@ export let Animator = class {
     let didScale = false;
 
     let off = (iconSize * scaleFactor) / 2;
-    animateIcons.forEach((i) => {
+    animateIcons.forEach(i => {
       if (!i._pos) return;
       let p = [...i._pos];
       if (!p) return;
@@ -161,7 +161,7 @@ export let Animator = class {
 
     // animate
     let iconTable = [];
-    animateIcons.forEach((icon) => {
+    animateIcons.forEach(icon => {
       let original_pos = dock._get_position(icon);
       original_pos[0] += icon.width / 2;
       original_pos[1] += icon.height / 2;
@@ -250,7 +250,7 @@ export let Animator = class {
     if (hoveredIcon) {
       hoveredIcon._targetScale += 0.1;
       let adjust = hoveredIcon._translate / 2;
-      animateIcons.forEach((icon) => {
+      animateIcons.forEach(icon => {
         if (icon._scale > 1) {
           let o = -adjust * (2 - icon._scale);
           let nt = icon._translate - o;
@@ -283,7 +283,7 @@ export let Animator = class {
       _scale_coef *= 4;
     }
 
-    animateIcons.forEach((icon) => {
+    animateIcons.forEach(icon => {
       let scale = icon._icon.get_scale();
 
       let newScale =
@@ -294,7 +294,7 @@ export let Animator = class {
         bottom: { x: 0.5, y: 1, lx: 0, ly: 0.5 * newScale },
         top: { x: 0.5, y: 0, lx: 0, ly: -1.75 * newScale },
         left: { x: 0, y: 0.5, lx: -1.25 * newScale, ly: -1.25 },
-        right: { x: 1, y: 0.5, lx: 1.5 * newScale, ly: -1.25 },
+        right: { x: 1, y: 0.5, lx: 1.5 * newScale, ly: -1.25 }
       };
       let pvd = flags[dock._position];
 
@@ -338,7 +338,6 @@ export let Animator = class {
         icon._label.translationY = translationY - iconSize * pvd.ly;
       }
 
-      // todo error gnome 46 (Canvas)
       // badges
       {
         let appNotices = icon._appwell
@@ -362,7 +361,7 @@ export let Animator = class {
             noticesCount,
             position: dock._position,
             vertical,
-            extension: dock.extension,
+            extension: dock.extension
           });
           badge.show();
         } else {
@@ -386,7 +385,7 @@ export let Animator = class {
             appCount,
             position: dock._position,
             vertical,
-            extension: dock.extension,
+            extension: dock.extension
           });
           dots.show();
         } else {
@@ -399,13 +398,13 @@ export let Animator = class {
         dock.extension.services.updateIcon(icon, {
           scaleFactor,
           iconSize,
-          dock,
+          dock
         });
       }
     });
 
     // separators
-    dock._separators.forEach((actor) => {
+    dock._separators.forEach(actor => {
       let prev = actor.get_previous_sibling() || actor._prev;
       let next = actor.get_next_sibling();
       if (prev && next && prev._icon && next._icon) {
@@ -476,7 +475,7 @@ export let Animator = class {
         position: dock._position,
         vertical: vertical,
         panel_mode: dock.extension.panel_mode,
-        dashContainer: dock,
+        dashContainer: dock
       });
 
       // allied areas
@@ -546,7 +545,7 @@ export let Animator = class {
       let tw = target.width * target._icon.scaleX;
       let th = target.height * target._icon.scaleY;
 
-      list._box?.get_children().forEach((c) => {
+      list._box?.get_children().forEach(c => {
         c.translationX = target._icon.translationX + tw / 8;
         c.translationY =
           -target._icon.scaleX * target._icon.height + target._icon.height;
@@ -613,7 +612,7 @@ export let Animator = class {
             appwell.translation_y =
               dock._position == DockPosition.BOTTOM ? -res : res;
           }
-        },
+        }
       },
       {
         _duration: t * 3,
@@ -627,15 +626,15 @@ export let Animator = class {
             appwell.translation_y =
               dock._position == DockPosition.BOTTOM ? -res : res;
           }
-        },
-      },
+        }
+      }
     ];
 
     let frames = [];
     for (let i = 0; i < 3; i++) {
-      _frames.forEach((b) => {
+      _frames.forEach(b => {
         frames.push({
-          ...b,
+          ...b
         });
       });
     }
@@ -646,8 +645,8 @@ export let Animator = class {
         _duration: 10,
         _func: (f, s) => {
           appwell.translation_y = 0;
-        },
-      },
+        }
+      }
     ]);
   }
 };

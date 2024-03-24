@@ -18,7 +18,7 @@ export const DebugOverlay = GObject.registerClass(
 
       this.state = {
         color: [0.8, 0.25, 0.15, 1],
-        monitor: { x: 0, y: 0, width: 0, height: 0 },
+        monitor: { x: 0, y: 0, width: 0, height: 0 }
       };
       this.objects = [];
 
@@ -68,7 +68,7 @@ export const DebugOverlay = GObject.registerClass(
 
     onDraw(ctx) {
       let monitor = this.state.monitor;
-      this.objects.forEach((d) => {
+      this.objects.forEach(d => {
         // log(`${d.t} ${d.x} ${d.y}`);
         switch (d.t) {
           case 'line':

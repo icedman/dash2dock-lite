@@ -47,7 +47,7 @@ export const Services = class {
         1000 * 60, // every minute
         // 1000 * 1, // every second
         () => {
-          this.extension.docks.forEach((d) => {
+          this.extension.docks.forEach(d => {
             d._onClock();
           });
         },
@@ -57,7 +57,7 @@ export const Services = class {
         'calendar',
         1000 * 60 * 15,
         () => {
-          this.extension.docks.forEach((d) => {
+          this.extension.docks.forEach(d => {
             d._onCalendar();
           });
         },
@@ -75,7 +75,7 @@ export const Services = class {
           this.checkNotifications();
         },
         0
-      ),
+      )
     ];
 
     this._disableNotifications = 0;
@@ -149,7 +149,7 @@ export const Services = class {
     if (this._deferredMounts && this._deferredMounts.length) {
       let mounts = [...this._deferredMounts];
       this._deferredMounts = [];
-      mounts.forEach((m) => {
+      mounts.forEach(m => {
         this._onMountAdded(null, m);
       });
     }
@@ -177,7 +177,7 @@ export const Services = class {
   }
 
   update(elapsed) {
-    this._services.forEach((s) => {
+    this._services.forEach(s => {
       s.update(elapsed);
     });
   }
@@ -273,18 +273,16 @@ export const Services = class {
       let tryBox = [
         Main.panel._centerBox,
         Main.panel._leftBox,
-        Main.panel._rightBox,
+        Main.panel._rightBox
       ];
       for (let i = 0; i < 3; i++) {
         let cc = tryBox[i].get_children();
-        cc.forEach((c) => {
+        cc.forEach(c => {
           if (media && messages) {
             return;
           }
-          media =
-            c.child._delegate._messageList._scrollView.last_child.get_children()[0];
-          messages =
-            c.child._delegate._messageList._scrollView.last_child.get_children()[1];
+          media = c.child._delegate._messageList._scrollView.last_child.get_children()[0];
+          messages = c.child._delegate._messageList._scrollView.last_child.get_children()[1];
         });
         if (media && messages) {
           break;
@@ -307,16 +305,16 @@ export const Services = class {
 
     this._appNotices = this._appNotices || {};
 
-    Object.keys(this._appNotices).forEach((k) => {
+    Object.keys(this._appNotices).forEach(k => {
       this._appNotices[k].previous = this._appNotices[k].count;
       this._appNotices[k].count = 0;
     });
 
     let app_map = {
-      'org.gnome.Evolution-alarm-notify.desktop': 'org.gnome.Calendar.desktop',
+      'org.gnome.Evolution-alarm-notify.desktop': 'org.gnome.Calendar.desktop'
     };
 
-    this._notifications.forEach((n) => {
+    this._notifications.forEach(n => {
       let appId = null;
       if (!n.notification) return;
       if (n.notification.source.app) {
@@ -340,7 +338,7 @@ export const Services = class {
           count: 0,
           previous: 0,
           urgency: 0,
-          source: n.notification.source,
+          source: n.notification.source
         };
       }
       this._appNotices[appId].count++;
@@ -354,14 +352,14 @@ export const Services = class {
     });
 
     let hasUpdates = false;
-    Object.keys(this._appNotices).forEach((k) => {
+    Object.keys(this._appNotices).forEach(k => {
       if (this._appNotices[k].previous != this._appNotices[k].count) {
         hasUpdates = true;
       }
     });
 
     let update = {};
-    Object.keys(this._appNotices).forEach((k) => {
+    Object.keys(this._appNotices).forEach(k => {
       if (this._appNotices[k].count > 0) {
         update[k] = this._appNotices[k];
       }
@@ -405,16 +403,15 @@ export const Services = class {
         let contentsString = decoder.decode(contents);
         let idx = 0;
         let lines = contentsString.split('\n');
-        lines.forEach((l) => {
-          let res =
-            /\s([a-zA-Z]{3})\s{1,3}([0-9]{1,3})\s{1,3}([0-9:]{4,8})\s{1,3}(.*)/.exec(
-              l
-            );
+        lines.forEach(l => {
+          let res = /\s([a-zA-Z]{3})\s{1,3}([0-9]{1,3})\s{1,3}([0-9:]{4,8})\s{1,3}(.*)/.exec(
+            l
+          );
           if (res) {
             fileStat[res[4]] = {
               index: idx,
               name: res[4],
-              date: `${res[1]}. ${res[2]}, ${res[3]}`,
+              date: `${res[1]}. ${res[2]}, ${res[3]}`
             };
             idx++;
           }
@@ -448,7 +445,7 @@ export const Services = class {
             display: f.get_display_name(),
             icon: f.get_icon().get_names()[0] ?? 'folder',
             type: f.get_content_type(),
-            date: fileStat[name]?.date ?? '',
+            date: fileStat[name]?.date ?? ''
           });
         }
       }
@@ -466,7 +463,7 @@ export const Services = class {
     let mount_ids = [];
     if (this.extension.mounted_icon) {
       mounts = this._volumeMonitor.get_mounts();
-      mount_ids = mounts.map((mount) => {
+      mount_ids = mounts.map(mount => {
         let basename = mount.get_default_location().get_basename();
         let appname = `mount-${basename}-dash2dock-lite.desktop`;
         return appname;
@@ -474,7 +471,7 @@ export const Services = class {
     }
 
     this.mounts = mounts;
-    mounts.forEach((mount) => {
+    mounts.forEach(mount => {
       let basename = mount.get_default_location().get_basename();
       let appname = `mount-${basename}-dash2dock-lite.desktop`;
       this._deferredMounts.push(mount);

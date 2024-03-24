@@ -33,7 +33,7 @@ import { runTests } from './diagnostics.js';
 
 import {
   Extension,
-  gettext as _,
+  gettext as _
 } from 'resource:///org/gnome/shell/extensions/extension.js';
 
 import { schemaId, SettingsKeys } from './preferences/keys.js';
@@ -90,7 +90,7 @@ export default class Dash2DockLiteExt extends Extension {
   }
 
   destroyDocks() {
-    (this.docks || []).forEach((dock) => {
+    (this.docks || []).forEach(dock => {
       dock.undock();
       dock.cancelAnimations();
       this.dock = null;
@@ -184,7 +184,7 @@ export default class Dash2DockLiteExt extends Extension {
     Main.overview.dash.last_child.visible = true;
     Main.overview.dash.opacity = 255;
 
-    this.docks.forEach((container) => {
+    this.docks.forEach(container => {
       container.undock();
     });
     this.docks = [];
@@ -206,7 +206,7 @@ export default class Dash2DockLiteExt extends Extension {
   }
 
   animate(settings = {}) {
-    this.docks.forEach((dock) => {
+    this.docks.forEach(dock => {
       if (settings && settings.preview) {
         dock.preview();
       }
@@ -221,13 +221,13 @@ export default class Dash2DockLiteExt extends Extension {
   startUp() {
     this.createTheDocks();
     this.animate({ refresh: true });
-    this.docks.forEach((dock) => {
+    this.docks.forEach(dock => {
       dock._debounceEndAnimation();
     });
   }
 
   _autohiders() {
-    return this.docks.map((d) => {
+    return this.docks.map(d => {
       return d.autohider;
     });
   }
@@ -333,13 +333,13 @@ export default class Dash2DockLiteExt extends Extension {
           break;
         }
         case 'icon-effect': {
-          this.docks.forEach((dock) => {
+          this.docks.forEach(dock => {
             dock._updateIconEffect();
           });
           break;
         }
         case 'icon-effect-color': {
-          this.docks.forEach((dock) => {
+          this.docks.forEach(dock => {
             if (dock.iconEffect) {
               dock.iconEffect.color = this.icon_effect_color;
             }
@@ -415,7 +415,7 @@ export default class Dash2DockLiteExt extends Extension {
       }
     });
 
-    Object.keys(this._settingsKeys._keys).forEach((k) => {
+    Object.keys(this._settingsKeys._keys).forEach(k => {
       let key = this._settingsKeys.getKey(k);
       let name = k.replace(/-/g, '_');
       this[name] = key.value;
@@ -472,7 +472,7 @@ export default class Dash2DockLiteExt extends Extension {
 
     Main.messageTray.connectObject(
       'queue-changed',
-      (count) => {
+      count => {
         this.services.checkNotifications();
         this.animate();
       },
@@ -533,35 +533,35 @@ export default class Dash2DockLiteExt extends Extension {
 
   _onFocusWindow() {
     let listeners = [...this.listeners];
-    listeners.forEach((l) => {
+    listeners.forEach(l => {
       if (l._onFocusWindow) l._onFocusWindow();
     });
   }
 
   _onAppsChanged() {
     let listeners = [...this.listeners];
-    listeners.forEach((l) => {
+    listeners.forEach(l => {
       if (l._onAppsChanged) l._onAppsChanged();
     });
   }
 
   _onFullScreen() {
     let listeners = [...this.listeners];
-    listeners.forEach((l) => {
+    listeners.forEach(l => {
       if (l._onFullScreen) l._onFullScreen();
     });
   }
 
   _onOverviewShowing() {
     this._inOverview = true;
-    this._autohiders().forEach((autohider) => {
+    this._autohiders().forEach(autohider => {
       autohider._debounceCheckHide();
     });
   }
 
   _onOverviewHidden() {
     this._inOverview = false;
-    this._autohiders().forEach((autohider) => {
+    this._autohiders().forEach(autohider => {
       autohider._debounceCheckHide();
     });
   }
@@ -584,11 +584,11 @@ export default class Dash2DockLiteExt extends Extension {
       dark_foreground: this.drawing_dark_foreground,
       light_foreground: this.drawing_light_foreground,
       secondary_color: this.drawing_secondary_color,
-      clock_style: this.clock_style,
+      clock_style: this.clock_style
     };
-    this.docks.forEach((dock) => {
+    this.docks.forEach(dock => {
       let widgets = [dock._clock, dock._calendar];
-      widgets.forEach((w) => {
+      widgets.forEach(w => {
         if (w) {
           w.settings = this._widgetStyle;
           w.redraw();
@@ -599,7 +599,7 @@ export default class Dash2DockLiteExt extends Extension {
   }
 
   _updateAnimationFPS() {
-    this.docks.forEach((dock) => {
+    this.docks.forEach(dock => {
       dock.cancelAnimations();
     });
     this.animationInterval =
@@ -781,7 +781,7 @@ export default class Dash2DockLiteExt extends Extension {
 
   _updateLayout(disable) {
     // console.log(this.multi_monitor_preference);
-    this.docks.forEach((dock) => {
+    this.docks.forEach(dock => {
       dock.layout();
     });
   }
@@ -789,9 +789,9 @@ export default class Dash2DockLiteExt extends Extension {
   _updateIconSpacing(disable) {
     if (!this._iconSpacingDebounceSeq) {
       this._iconSpacingDebounceSeq = this._loTimer.runDebounced(() => {
-        this.docks.forEach((dock) => {
+        this.docks.forEach(dock => {
           dock._findIcons();
-          dock._icons?.forEach((icon) => {
+          dock._icons?.forEach(icon => {
             icon.style = '';
           });
           dock._beginAnimation();
@@ -804,17 +804,17 @@ export default class Dash2DockLiteExt extends Extension {
 
   _updateAutohide(disable) {
     if (this.autohide_dash && !disable) {
-      this._autohiders().forEach((autohider) => {
+      this._autohiders().forEach(autohider => {
         autohider.enable();
       });
     } else {
-      this._autohiders().forEach((autohider) => {
+      this._autohiders().forEach(autohider => {
         autohider.disable();
       });
     }
 
     if (!disable) {
-      this.docks.forEach((dock) => {
+      this.docks.forEach(dock => {
         dock.removeFromChrome();
         dock.addToChrome();
       });

@@ -1,6 +1,7 @@
 import GObject from 'gi://GObject';
 import Clutter from 'gi://Clutter';
 import Cairo from 'gi://cairo';
+import St from 'gi://St';
 
 import { Drawing } from '../drawing.js';
 
@@ -8,9 +9,7 @@ let size = 400;
 
 export const Calendar = GObject.registerClass(
   {},
-
-  // todo St.DrawingArea
-  class Calendar extends Clutter.Actor {
+  class Calendar extends St.DrawingArea {
     _init(x, settings = {}) {
       super._init();
 
@@ -20,23 +19,20 @@ export const Calendar = GObject.registerClass(
         dark_color: [0.2, 0.2, 0.2, 1.0],
         light_color: [1.0, 1.0, 1.0, 1.0],
         accent_color: [1.0, 0.0, 0.0, 1.0],
-        ...settings,
+        ...settings
       };
-
-      this._canvas = new Clutter.Canvas();
-      this._canvas.connect('draw', this.on_draw.bind(this));
-      this._canvas.invalidate();
-      this._canvas.set_size(size, size);
-      this.set_size(size, size);
-      this.set_content(this._canvas);
-      this.reactive = false;
     }
 
     redraw() {
-      this._canvas.invalidate();
+      this.queue_repaint();
     }
 
-    on_draw(canvas, ctx, width, height) {
+    vfunc_repaint() {
+      let ctx = this.get_context();
+      let [width, height] = this.get_surface_size();
+
+      size = width;
+
       const hd_color = 'red';
       const bg_color = 'white';
       const day_color = 'black';
@@ -76,7 +72,5 @@ export const Calendar = GObject.registerClass(
 
       ctx.$dispose();
     }
-
-    destroy() {}
   }
 );

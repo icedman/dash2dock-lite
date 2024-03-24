@@ -4,36 +4,25 @@
 import GObject from 'gi://GObject';
 import Clutter from 'gi://Clutter';
 import Cairo from 'gi://cairo';
+import St from 'gi://St';
 
 import { Drawing } from '../drawing.js';
 let size = 400;
 
 export const Dot = GObject.registerClass(
   {},
-  class Dot extends Clutter.Actor {
-    _init(x) {
-      super._init({
-        name: 'dotCanvas',
-      });
-
+  class Dot extends St.DrawingArea {
+    _init(x, settings = {}) {
+      super._init();
       if (x) size = x;
-
-      this._canvas = new Clutter.Canvas();
-      this._canvas.connect('draw', this.on_draw.bind(this));
-      this._canvas.invalidate();
-      this._canvas.set_size(size, size);
-      this.set_size(size, size);
-      this.set_content(this._canvas);
-      this.reactive = false;
 
       this.state = {};
 
       this._padding = 8;
       this._barHeight = 6;
     }
-
     redraw() {
-      this._canvas.invalidate();
+      this.queue_repaint();
     }
 
     set_state(s) {
@@ -50,7 +39,12 @@ export const Dot = GObject.registerClass(
       }
     }
 
-    on_draw(canvas, ctx, width, height) {
+    vfunc_repaint() {
+      let ctx = this.get_context();
+      let [width, height] = this.get_surface_size();
+
+      size = width;
+
       if (!this.state || !this.state.color || !this.state.count) return;
 
       const dot_color = this.state.color;
@@ -86,8 +80,6 @@ export const Dot = GObject.registerClass(
 
       ctx.$dispose();
     }
-
-    destroy() {}
 
     _draw_segmented(ctx, state) {
       let count = state.count;

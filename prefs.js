@@ -14,7 +14,7 @@ import { schemaId, SettingsKeys } from './preferences/keys.js';
 
 import {
   ExtensionPreferences,
-  gettext as _,
+  gettext as _
 } from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
 
 let themed_presets = [
@@ -24,23 +24,23 @@ let themed_presets = [
     'background-color': [0, 0, 0, 0.5],
     'customize-topbar': true,
     'topbar-background-color': [0, 0, 0, 0.25],
-    'topbar-foreground-color': [1, 1, 1, 0.9],
+    'topbar-foreground-color': [1, 1, 1, 0.9]
   },
   {
     'icon-effect': 0,
     'background-color': [1, 1, 1, 0.5],
     'customize-topbar': true,
     'topbar-background-color': [1, 1, 1, 0.25],
-    'topbar-foreground-color': [0, 0, 0, 0.9],
-  },
+    'topbar-foreground-color': [0, 0, 0, 0.9]
+  }
 ];
 
 // from Dock-to-Dock
 const MonitorsConfig = GObject.registerClass(
   {
     Signals: {
-      updated: {},
-    },
+      updated: {}
+    }
   },
   class MonitorsConfig extends GObject.Object {
     static get XML_INTERFACE() {
@@ -101,19 +101,25 @@ const MonitorsConfig = GObject.registerClass(
             vendor,
             product,
             serial,
-            displayName: props['display-name'].unpack(),
+            displayName: props['display-name'].unpack()
           });
         }
 
         for (const logicalMonitor of logicalMonitors) {
-          const [x_, y_, scale_, transform_, isPrimary, monitorsSpecs] =
-            logicalMonitor;
+          const [
+            x_,
+            y_,
+            scale_,
+            transform_,
+            isPrimary,
+            monitorsSpecs
+          ] = logicalMonitor;
 
           // We only care about the first one really
           for (const monitorSpecs of monitorsSpecs) {
             const [connector, vendor, product, serial] = monitorSpecs;
             const monitor = this._monitors.find(
-              (m) =>
+              m =>
                 m.connector === connector &&
                 m.vendor === vendor &&
                 m.product === product &&
@@ -129,10 +135,10 @@ const MonitorsConfig = GObject.registerClass(
           }
         }
 
-        const activeMonitors = this._monitors.filter((m) => m.active);
+        const activeMonitors = this._monitors.filter(m => m.active);
         if (activeMonitors.length > 1 && logicalMonitors.length === 1) {
           // We're in cloning mode, so let's just activate the primary monitor
-          this._monitors.forEach((m) => (m.active = false));
+          this._monitors.forEach(m => (m.active = false));
           this._primaryMonitor.active = true;
         }
 
@@ -206,25 +212,25 @@ export default class Preferences extends ExtensionPreferences {
     const actions = [
       {
         name: 'open-bug-report',
-        link: 'https://github.com/icedman/dash2dock-lite/issues',
+        link: 'https://github.com/icedman/dash2dock-lite/issues'
       },
       {
         name: 'open-readme',
-        link: 'https://github.com/icedman/dash2dock-lite',
+        link: 'https://github.com/icedman/dash2dock-lite'
       },
       {
         name: 'open-buy-coffee',
-        link: 'https://www.buymeacoffee.com/icedman',
+        link: 'https://www.buymeacoffee.com/icedman'
       },
       {
         name: 'open-license',
-        link: 'https://github.com/icedman/dash2dock-lite/blob/master/LICENSE',
-      },
+        link: 'https://github.com/icedman/dash2dock-lite/blob/master/LICENSE'
+      }
     ];
 
-    actions.forEach((action) => {
+    actions.forEach(action => {
       let act = new Gio.SimpleAction({ name: action.name });
-      act.connect('activate', (_) =>
+      act.connect('activate', _ =>
         Gtk.show_uri(window, action.link, Gdk.CURRENT_TIME)
       );
       actionGroup.add_action(act);
@@ -347,10 +353,10 @@ export default class Preferences extends ExtensionPreferences {
     let theme = this._builder.get_object('theme');
     let model = new Gio.Menu();
     let idx = 0;
-    this._themed_presets.forEach((m) => {
+    this._themed_presets.forEach(m => {
       let action_name = `set_theme-${idx}`;
       let act = new Gio.SimpleAction({ name: action_name });
-      act.connect('activate', (_) => {
+      act.connect('activate', _ => {
         let index = action_name.split('-')[1];
         this.loadPreset(parseInt(index));
       });
@@ -368,7 +374,7 @@ export default class Preferences extends ExtensionPreferences {
       // export
       let keys = settingsKeys.keys();
       let json = {};
-      Object.keys(keys).forEach((n) => {
+      Object.keys(keys).forEach(n => {
         let k = keys[n];
         if (k.themed) {
           json[n] = settingsKeys.getValue(n);
@@ -376,7 +382,7 @@ export default class Preferences extends ExtensionPreferences {
       });
 
       json['meta'] = {
-        title: 'My Theme',
+        title: 'My Theme'
       };
 
       let fn = Gio.File.new_for_path(`/tmp/theme.json`);
@@ -400,7 +406,7 @@ export default class Preferences extends ExtensionPreferences {
       return;
     }
 
-    Object.keys(p).forEach((k) => {
+    Object.keys(p).forEach(k => {
       let v = p[k];
       let def = settingsKeys.getKey(k);
       if (!def) return;

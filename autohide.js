@@ -159,9 +159,11 @@ export let AutoHide = class {
       // log('tracking...');
       window.connectObject(
         'position-changed',
-        this._debounceCheckHide.bind(this),
+        // this._debounceCheckHide.bind(this),
+        () => {this.dashContainer.extension.checkHide();},
         'size-changed',
-        this._debounceCheckHide.bind(this),
+        // this._debounceCheckHide.bind(this),
+        () => {this.dashContainer.extension.checkHide();},
         this
       );
       window._tracked = true;
@@ -225,6 +227,26 @@ export let AutoHide = class {
     windows = windows.filter((w) => w.can_close());
     windows = windows.filter((w) => w.get_monitor() == monitor.index);
 
+    let isOverlapped = false;
+    let dock = this.dashContainer._get_position(this.dashContainer.struts);
+    dock.push(this.dashContainer.struts.width);
+    dock.push(this.dashContainer.struts.height);
+
+    // console.log(`dock ${dock}`);
+
+    windows.forEach((w) => {
+      this._track(w);
+
+      let frame = w.get_frame_rect();
+      let win = [frame.x, frame.y, frame.width, frame.height];
+      // console.log(`>>>> win ${win}`);
+      
+      if (this.dashContainer._isOverlapRect(dock, win)) {
+        isOverlapped = true;
+      }
+    });
+
+    /*
     let workspace = global.workspace_manager.get_active_workspace_index();
     windows = windows.filter(
       (w) =>
@@ -234,7 +256,6 @@ export let AutoHide = class {
 
     windows.forEach((w) => this._track(w));
 
-    let isOverlapped = false;
     windows.forEach((w) => {
       let frame = w.get_frame_rect();
       // todo .. make accurate to work with multi-monitor
@@ -278,9 +299,9 @@ export let AutoHide = class {
         }
       }
     });
+    */
 
     this.windows = windows;
-
     return isOverlapped;
   }
 

@@ -218,6 +218,14 @@ export default class Dash2DockLiteExt extends Extension {
     });
   }
 
+  checkHide() {
+    this.docks.forEach((dock) => {
+      if (dock.autohider) {
+        dock.autohider._debounceCheckHide();
+      }
+    });
+  }
+
   startUp() {
     this.createTheDocks();
     this.animate({ refresh: true });

@@ -889,6 +889,22 @@ export let Dock = GObject.registerClass(
       return Math.sqrt(this._get_distance_sqr(pos1, pos2));
     }
 
+    _isOverlapRect(r1, r2) {
+      let [r1x, r1y, r1w, r1h] = r1;
+      let [r2x, r2y, r2w, r2h] = r2;
+      // are the sides of one rectangle touching the other?
+      if (
+        r1x + r1w >= r2x && // r1 right edge past r2 left
+        r1x <= r2x + r2w && // r1 left edge past r2 right
+        r1y + r1h >= r2y && // r1 top edge past r2 bottom
+        r1y <= r2y + r2h
+      ) {
+        // r1 bottom edge past r2 top
+        return true;
+      }
+      return false;
+    }
+
     _isInRect(r, p, pad) {
       let [x1, y1, w, h] = r;
       let x2 = x1 + w;

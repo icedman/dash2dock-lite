@@ -9,11 +9,30 @@ let size = 400;
 
 export const Calendar = GObject.registerClass(
   {},
-  class Calendar extends St.DrawingArea {
+  class Calendar extends St.Widget {
     _init(x, settings = {}) {
       super._init();
 
       if (x) size = x;
+
+      this._canvas = new CalendarCanvas(settings);
+      this._canvas.width = size;
+      this._canvas.height = size;
+      this.add_child(this._canvas);
+    }
+
+    redraw() {
+      this.visible = true;
+      this._canvas.redraw();
+    }
+  }
+);
+
+const CalendarCanvas = GObject.registerClass(
+  {},
+  class CalendarCanvas extends St.DrawingArea {
+    _init(settings = {}) {
+      super._init();
 
       this.settings = {
         dark_color: [0.2, 0.2, 0.2, 1.0],
@@ -30,8 +49,6 @@ export const Calendar = GObject.registerClass(
     vfunc_repaint() {
       let ctx = this.get_context();
       let [width, height] = this.get_surface_size();
-
-      size = width;
 
       const hd_color = 'red';
       const bg_color = 'white';

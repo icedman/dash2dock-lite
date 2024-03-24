@@ -11,16 +11,39 @@ let size = 400;
 
 export const Dot = GObject.registerClass(
   {},
-  class Dot extends St.DrawingArea {
+  class Dot extends St.Widget {
     _init(x, settings = {}) {
       super._init();
+
       if (x) size = x;
+
+      this._canvas = new DotCanvas(settings);
+      this._canvas.width = size;
+      this._canvas.height = size;
+      this.add_child(this._canvas);
+
+      this.set_state = this._canvas.set_state.bind(this._canvas);
+    }
+
+    redraw() {
+      this.visible = true;
+      this._canvas.redraw();
+    }
+  }
+);
+
+const DotCanvas = GObject.registerClass(
+  {},
+  class DotCanvas extends St.DrawingArea {
+    _init(settings = {}) {
+      super._init();
 
       this.state = {};
 
       this._padding = 8;
       this._barHeight = 6;
     }
+
     redraw() {
       this.queue_repaint();
     }

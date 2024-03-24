@@ -49,6 +49,9 @@ export const DockItemDotsOverlay = GObject.registerClass(
       renderer.height = icon._icon.height;
       renderer.pivot_point = icon._icon.pivot_point;
 
+      let canvasScale = renderer.width / renderer._canvas.width;
+      renderer._canvas.set_scale(canvasScale, canvasScale);
+
       if (vertical) {
         renderer.translationX =
           icon._icon.translationX + (position == DockPosition.LEFT ? -6 : 6);
@@ -92,6 +95,9 @@ export const DockItemBadgeOverlay = GObject.registerClass(
       renderer.pivot_point = icon._icon.pivot_point;
       renderer.translationX = icon._icon.translationX + 4;
       renderer.translationY = icon._icon.translationY - 4;
+
+      let canvasScale = renderer.width / renderer._canvas.width;
+      renderer._canvas.set_scale(canvasScale, canvasScale);
 
       let options = extension.notification_badge_style_options;
       let notification_badge_style =

@@ -466,7 +466,11 @@ export let Dock = GObject.registerClass(
           icon.connectObject(
             'button-press-event',
             () => {
-              let overview = Main.uiGroup.get_children().find((c) => c.name == 'overviewGroup').get_children().find((c) => c.name == 'overview');
+              let overview = Main.uiGroup
+                .get_children()
+                .find(c => c.name == 'overviewGroup')
+                .get_children()
+                .find(c => c.name == 'overview');
               if (overview._delegate.visible) {
                 overview._delegate.toggle();
               } else {

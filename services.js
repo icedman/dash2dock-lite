@@ -516,6 +516,8 @@ export const Services = class {
           clock.width = item._icon.width;
           clock.height = item._icon.height;
           clock.set_scale(item._icon.scaleX, item._icon.scaleY);
+          let canvasScale = clock.width / clock._canvas.width;
+          clock._canvas.set_scale(canvasScale, canvasScale);
           clock.pivot_point = item._icon.pivot_point;
           clock.translationX = item._icon.translationX;
           clock.translationY = item._icon.translationY;
@@ -543,6 +545,8 @@ export const Services = class {
           calender.width = item._icon.width;
           calender.height = item._icon.height;
           calender.set_scale(item._icon.scaleX, item._icon.scaleY);
+          let canvasScale = calender.width / calender._canvas.width;
+          calender._canvas.set_scale(canvasScale, canvasScale);
           calender.pivot_point = item._icon.pivot_point;
           calender.translationX = item._icon.translationX;
           calender.translationY = item._icon.translationY;

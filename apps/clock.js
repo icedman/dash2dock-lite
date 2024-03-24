@@ -126,11 +126,29 @@ function _drawClock(ctx, date, x, y, size, settings) {
 
 export const Clock = GObject.registerClass(
   {},
-  class Clock extends St.DrawingArea {
+  class Clock extends St.Widget {
     _init(x, settings = {}) {
       super._init();
 
       if (x) size = x;
+
+      this._canvas = new ClockCanvas(settings);
+      this._canvas.width = size;
+      this._canvas.height = size;
+      this.add_child(this._canvas);
+    }
+
+    redraw() {
+      this._canvas.redraw();
+    }
+  }
+);
+
+const ClockCanvas = GObject.registerClass(
+  {},
+  class ClockCanvas extends St.DrawingArea {
+    _init(settings = {}) {
+      super._init();
 
       this.settings = {
         dark_color: [0.2, 0.2, 0.2, 1.0],
@@ -149,8 +167,6 @@ export const Clock = GObject.registerClass(
       let [width, height] = this.get_surface_size();
       ctx.setOperator(Cairo.Operator.CLEAR);
       ctx.paint();
-
-      size = width;
 
       ctx.translate(size / 2, size / 2);
       ctx.setLineWidth(1);

@@ -347,7 +347,7 @@ export let Animator = class {
         if (appNotices) {
           noticesCount = appNotices.count;
         }
-        // noticesCount = 1;
+        noticesCount = 1;
         let target = icon._dot?.get_parent();
         let badge = target?._badge;
 
@@ -372,7 +372,7 @@ export let Animator = class {
       // dots
       {
         let appCount = icon._appwell ? icon._appwell.app.get_n_windows() : 0;
-        // appCount = 1;
+        appCount = 1;
         let target = icon._dot?.get_parent();
         let dots = target?._dots;
         if (!dots && icon._appwell && target) {

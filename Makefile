@@ -23,6 +23,7 @@ publish:
 	echo "publishing..."
 	rm -rf build
 	mkdir build
+	rm -R ./dist
 	cp LICENSE ./build
 	cp *.js ./build
 	cp metadata.json ./build
@@ -34,9 +35,11 @@ publish:
 	cp -R apps ./build
 	cp -R preferences ./build
 	cp -R effects ./build
+	rm -rf ./*.py
 	rm -rf ./*.zip
 	rm -rf build/apps/*.desktop
 	rm -rf build/*_.js
+	rm ./imports.txt
 	cd build ; \
 	zip -qr ../dash2dock-lite@icedman.github.com.zip .
 

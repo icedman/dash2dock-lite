@@ -19,8 +19,6 @@ import { DockPosition } from './dock.js';
 
 const Point = Graphene.Point;
 
-const DOT_CANVAS_SIZE = 96;
-
 const DockItemOverlay = GObject.registerClass(
   {},
   class DockItemOverlay extends St.Widget {

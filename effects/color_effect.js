@@ -7,7 +7,7 @@ import GLib from 'gi://GLib';
 import GObject from 'gi://GObject';
 import Clutter from 'gi://Clutter';
 
-const getShaderSource = (extensionDir) => {
+const getColorEffectShaderSource = (extensionDir) => {
   const SHADER_PATH = GLib.build_filenamev([
     extensionDir,
     'effects',
@@ -55,7 +55,7 @@ export const ColorEffect = GObject.registerClass(
 
     preload(path) {
       // set shader source
-      this._source = getShaderSource(path);
+      this._source = getColorEffectShaderSource(path);
       if (this._source) this.set_shader_source(this._source);
 
       this.update_enabled();

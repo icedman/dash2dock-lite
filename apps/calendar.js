@@ -5,15 +5,13 @@ import St from 'gi://St';
 
 import { Drawing } from '../drawing.js';
 
-let size = 400;
-
 export const Calendar = GObject.registerClass(
   {},
   class Calendar extends St.Widget {
     _init(x, settings = {}) {
       super._init();
 
-      if (x) size = x;
+      let size = x || 400;
 
       this._canvas = new CalendarCanvas(settings);
       this._canvas.width = size;
@@ -49,6 +47,8 @@ const CalendarCanvas = GObject.registerClass(
     vfunc_repaint() {
       let ctx = this.get_context();
       let [width, height] = this.get_surface_size();
+
+      let size = width;
 
       const hd_color = 'red';
       const bg_color = 'white';

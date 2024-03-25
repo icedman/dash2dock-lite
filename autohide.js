@@ -160,10 +160,14 @@ export let AutoHide = class {
       window.connectObject(
         'position-changed',
         // this._debounceCheckHide.bind(this),
-        () => {this.dashContainer.extension.checkHide();},
+        () => {
+          this.dashContainer.extension.checkHide();
+        },
         'size-changed',
         // this._debounceCheckHide.bind(this),
-        () => {this.dashContainer.extension.checkHide();},
+        () => {
+          this.dashContainer.extension.checkHide();
+        },
         this
       );
       window._tracked = true;
@@ -232,7 +236,7 @@ export let AutoHide = class {
         workspace == w.get_workspace().index() && w.showing_on_its_workspace()
     );
     windows = windows.filter((w) => w.get_window_type() in handledWindowTypes);
-    
+
     let isOverlapped = false;
     let dock = this.dashContainer._get_position(this.dashContainer.struts);
     dock.push(this.dashContainer.struts.width);
@@ -244,7 +248,7 @@ export let AutoHide = class {
 
       let frame = w.get_frame_rect();
       let win = [frame.x, frame.y, frame.width, frame.height];
-      
+
       if (this.dashContainer._isOverlapRect(dock, win)) {
         isOverlapped = true;
       }

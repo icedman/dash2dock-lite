@@ -7,7 +7,6 @@ import Cairo from 'gi://cairo';
 import St from 'gi://St';
 
 import { Drawing } from '../drawing.js';
-let size = 400;
 
 export const Dot = GObject.registerClass(
   {},
@@ -15,7 +14,7 @@ export const Dot = GObject.registerClass(
     _init(x, settings = {}) {
       super._init();
 
-      if (x) size = x;
+      let size = x || 400;
 
       this._canvas = new DotCanvas(settings);
       this._canvas.width = size;
@@ -66,7 +65,7 @@ const DotCanvas = GObject.registerClass(
       let ctx = this.get_context();
       let [width, height] = this.get_surface_size();
 
-      size = width;
+      let size = width;
 
       if (!this.state || !this.state.color || !this.state.count) return;
 
@@ -105,6 +104,8 @@ const DotCanvas = GObject.registerClass(
     }
 
     _draw_segmented(ctx, state) {
+      let [size, _] = this.get_surface_size();
+
       let count = state.count;
       if (count > 4) count = 4;
       let height = this._barHeight;
@@ -131,6 +132,8 @@ const DotCanvas = GObject.registerClass(
     }
 
     _draw_dashes(ctx, state) {
+      let [size, _] = this.get_surface_size();
+
       let count = state.count;
       if (count > 4) count = 4;
       let height = this._barHeight + 2;
@@ -160,6 +163,8 @@ const DotCanvas = GObject.registerClass(
     }
 
     _draw_squares(ctx, state) {
+      let [size, _] = this.get_surface_size();
+
       let count = state.count;
       if (count > 4) count = 4;
       let height = this._barHeight + 5;
@@ -188,6 +193,8 @@ const DotCanvas = GObject.registerClass(
     }
 
     _draw_triangles(ctx, state) {
+      let [size, _] = this.get_surface_size();
+
       let count = state.count;
       if (count > 4) count = 4;
       let height = this._barHeight + 6;
@@ -218,6 +225,8 @@ const DotCanvas = GObject.registerClass(
     }
 
     _draw_diamonds(ctx, state) {
+      let [size, _] = this.get_surface_size();
+
       let count = state.count;
       if (count > 4) count = 4;
       let height = this._barHeight + 10;
@@ -249,6 +258,8 @@ const DotCanvas = GObject.registerClass(
     }
 
     _draw_dots(ctx, state) {
+      let [size, _] = this.get_surface_size();
+
       let count = state.count;
       if (count > 4) count = 4;
       let height = this._barHeight;
@@ -281,6 +292,8 @@ const DotCanvas = GObject.registerClass(
     }
 
     _draw_binary(ctx, state) {
+      let [size, _] = this.get_surface_size();
+
       let count = 4;
       let n = Math.min(15, state.count);
       let binaryValue = String('0000' + (n >>> 0).toString(2)).slice(-4);

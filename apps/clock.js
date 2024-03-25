@@ -7,8 +7,6 @@ import St from 'gi://St';
 
 import { Drawing } from '../drawing.js';
 
-let size = 400;
-
 function _drawFrame(ctx, size, settings) {
   if (!settings.frame) {
     return;
@@ -130,7 +128,7 @@ export const Clock = GObject.registerClass(
     _init(x, settings = {}) {
       super._init();
 
-      if (x) size = x;
+      let size = x || 400;
 
       this._canvas = new ClockCanvas(settings);
       this._canvas.width = size;
@@ -167,6 +165,8 @@ const ClockCanvas = GObject.registerClass(
       let [width, height] = this.get_surface_size();
       ctx.setOperator(Cairo.Operator.CLEAR);
       ctx.paint();
+
+      let size = width;
 
       ctx.translate(size / 2, size / 2);
       ctx.setLineWidth(1);

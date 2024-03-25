@@ -128,15 +128,15 @@ export let Animator = class {
 
     let didScale = false;
 
-    let off = (iconSize * scaleFactor) / 2;
-    animateIcons.forEach((i) => {
-      if (!i._pos) return;
-      let p = [...i._pos];
-      if (!p) return;
-      p[0] += off;
-      p[1] += off;
-      i._pos = p;
-    });
+    // let off = (iconSize * scaleFactor) / 2;
+    // animateIcons.forEach((i) => {
+    //   if (!i._pos) return;
+    //   let p = [...i._pos];
+    //   if (!p) return;
+    //   p[0] += off;
+    //   p[1] += off;
+    //   i._pos = p;
+    // });
 
     //------------------------
     // animation behavior

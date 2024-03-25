@@ -17,24 +17,6 @@ import {
   gettext as _,
 } from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
 
-let themed_presets = [
-  {},
-  {
-    'icon-effect': 0,
-    'background-color': [0, 0, 0, 0.5],
-    'customize-topbar': true,
-    'topbar-background-color': [0, 0, 0, 0.25],
-    'topbar-foreground-color': [1, 1, 1, 0.9],
-  },
-  {
-    'icon-effect': 0,
-    'background-color': [1, 1, 1, 0.5],
-    'customize-topbar': true,
-    'topbar-background-color': [1, 1, 1, 0.25],
-    'topbar-foreground-color': [0, 0, 0, 0.9],
-  },
-];
-
 // from Dock-to-Dock
 const MonitorsConfig = GObject.registerClass(
   {
@@ -320,7 +302,7 @@ export default class Preferences extends ExtensionPreferences {
       null
     );
 
-    themed_presets = [];
+    let themed_presets = [];
     let f = iter.next_file(null);
     while (f) {
       let fn = Gio.File.new_for_path(`${themes_path}/${f.get_name()}`);

@@ -1,9 +1,5 @@
 #!/usr/bin/python
 
-# TODO
-# { ShowAppsIcon, Extension, etc... }
-# getShaderSource
-
 import sys
 import re
 
@@ -13,10 +9,6 @@ from shutil import copyfile, copytree, rmtree
 from pprint import pprint
 
 imports = []
-
-output = open("./dist/extension.js", "w")
-output.write(open("./imports_legacy.txt", "r").read())
-output.write("\n\n")
 
 def dump(f):
     if f.startswith("./tests/"):
@@ -34,13 +26,14 @@ def dump(f):
     for l in open(f, "r"):
         commentOut = False
 
+
         if l.startswith("'use strict'") or l.startswith("const Point"):
             commentOut = True
+        if "getSettings" in l:
+            l = "this._settings = ExtensionUtils.getSettings(schemaId)";
         if l.startswith("import "):
             commentOut = True
-            inImport = "from" not in l
-            if ("gi:" in l or "import *" in l) and l not in imports:
-                imports.append(l)
+            inImport = True
         if l.startswith("export default"):
             l = l.replace("export default", "")
         if l.startswith("export "):
@@ -49,6 +42,10 @@ def dump(f):
         if commentOut or inImport:
             output.write("//")
         output.write(l);
+
+        if inImport and "from" in l:
+            inImport = False
+
     output.write("\n\n")
 
 
@@ -68,8 +65,18 @@ def dumpFiles(path):
     for p in morePaths:
         dumpFiles(p)
 
+def dumpPref(path):
+    dump(join(path, "prefs.js"))
+    dumpFiles(join(path, "preferences"))
+
+output = open("./dist/extension.js", "w")
+output.write(open("./imports_legacy.txt", "r").read())
+output.write("\n\n")
 
 dumpFiles("./")
 
-# for l in imports:
-#     print(l.strip())
+output = open("./dist/prefs.js", "w")
+output.write(open("./imports_prefs.txt", "r").read())
+output.write("\n\n")
+
+dumpPref("./")

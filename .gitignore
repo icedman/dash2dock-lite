@@ -1,6 +1,5 @@
 node_modules
 build
-dist
 *.log
 *.zip
 _*.js

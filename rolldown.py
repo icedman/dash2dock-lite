@@ -15,7 +15,7 @@ from pprint import pprint
 imports = []
 
 output = open("./dist/extension.js", "w")
-output.write(open("./imports.txt", "r").read())
+output.write(open("./imports_legacy.txt", "r").read())
 output.write("\n\n")
 
 def dump(f):

@@ -15,8 +15,9 @@ const Fav = imports.ui.appFavorites;
 const IconGrid = imports.ui.iconGrid;
 const BaseIcon = IconGrid.BaseIcon;
 
-const Utils = imports.shell.util;
-const trySpawnCommandLine = Utils.trySpawnCommandLine;
+const ExtensionUtils = imports.misc.extensionUtils;
+// const Utils = imports.shell.util;
+// const trySpawnCommandLine = Utils.trySpawnCommandLine;
 
 const Dash = imports.ui.dash.Dash;
 const ShowAppsIcon = imports.ui.dash.ShowAppsIcon;
@@ -34,7 +35,7 @@ const Shell = imports.gi.Shell;
 const Gtk = imports.gi.Gtk;
 const Gdk = imports.gi.Gdk;
 const Adw = imports.gi.Adw;
-const Cairo = imports.gi.Cairo;
+const Cairo = imports.cairo;
 
 const Point = Graphene.Point;
 
@@ -4322,7 +4323,11 @@ const ANIM_INTERVAL_PAD = 15;
   }
 
   _enableSettings() {
-    this._settings = this.getSettings(schemaId);
+    if (ExtensionUtils) {
+      this._settings = ExtensionUtils.getSettings(schemaId);
+    } else {
+      this._settings = this.getSettings(schemaId);
+    }
     this._settingsKeys = SettingsKeys();
 
     this._settingsKeys.connectSettings(this._settings, (name, value) => {

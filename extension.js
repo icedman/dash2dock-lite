@@ -265,7 +265,11 @@ export default class Dash2DockLiteExt extends Extension {
   }
 
   _enableSettings() {
-    this._settings = this.getSettings(schemaId);
+    if (ExtensionUtils) {
+      this._settings = ExtensionUtils.getSettings(schemaId);
+    } else {
+      this._settings = this.getSettings(schemaId);
+    }
     this._settingsKeys = SettingsKeys();
 
     this._settingsKeys.connectSettings(this._settings, (name, value) => {

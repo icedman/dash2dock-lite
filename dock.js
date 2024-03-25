@@ -754,7 +754,7 @@ export let Dock = GObject.registerClass(
       }
 
       let iconSize = this._preferredIconSize();
-      let iconSizeSpaced = iconSize + 16 + 8 * animation_spread;
+      let iconSizeSpaced = iconSize + 2 + 8 * animation_spread;
 
       let projectedWidth =
         iconSize +

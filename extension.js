@@ -800,13 +800,7 @@ export default class Dash2DockLiteExt extends Extension {
   _updateIconSpacing(disable) {
     if (!this._iconSpacingDebounceSeq) {
       this._iconSpacingDebounceSeq = this._loTimer.runDebounced(() => {
-        this.docks.forEach((dock) => {
-          dock._findIcons();
-          dock._icons?.forEach((icon) => {
-            icon.style = '';
-          });
-          dock._beginAnimation();
-        });
+        this.animate({refresh: true});
       }, 750);
     } else {
       this._loTimer.runDebounced(this._iconSpacingDebounceSeq);

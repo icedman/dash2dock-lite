@@ -148,6 +148,8 @@ export let Dock = GObject.registerClass(
       this.dash._box.remove_effect_by_name('icon-effect');
       this.autohider.disable();
       this.removeFromChrome();
+
+      this.restorePanel();
     }
 
     _onButtonPressEvent(evt) {
@@ -459,35 +461,36 @@ export let Dock = GObject.registerClass(
       }
       if (this.dash._showAppsIcon) {
         this.dash._showAppsIcon.visible = this.extension.apps_icon;
-        this._inspectIcon(this.dash._showAppsIcon);
-        let icon = this.dash._showAppsIcon._icon;
-        if (!icon._connected) {
-          icon._connected = true;
-          icon.connectObject(
-            'button-press-event',
-            () => {
-              let overview = Main.uiGroup
-                .get_children()
-                .find((c) => c.name == 'overviewGroup')
-                .get_children()
-                .find((c) => c.name == 'overview');
-              if (overview._delegate.visible) {
-                overview._delegate.toggle();
-              } else {
-                overview._delegate.showApps();
-              }
-              return Clutter.EVENT_PROPAGATE;
-            },
-            'enter-event',
-            () => {
-              this.dash._showAppsIcon.showLabel();
-            },
-            'leave-event',
-            () => {
-              this.dash._showAppsIcon.hideLabel();
-            },
-            this
-          );
+        if (this._inspectIcon(this.dash._showAppsIcon)) {
+          let icon = this.dash._showAppsIcon._icon;
+          if (!icon._connected) {
+            icon._connected = true;
+            icon.connectObject(
+              'button-press-event',
+              () => {
+                let overview = Main.uiGroup
+                  .get_children()
+                  .find((c) => c.name == 'overviewGroup')
+                  .get_children()
+                  .find((c) => c.name == 'overview');
+                if (overview._delegate.visible) {
+                  overview._delegate.toggle();
+                } else {
+                  overview._delegate.showApps();
+                }
+                return Clutter.EVENT_PROPAGATE;
+              },
+              'enter-event',
+              () => {
+                this.dash._showAppsIcon.showLabel();
+              },
+              'leave-event',
+              () => {
+                this.dash._showAppsIcon.hideLabel();
+              },
+              this
+            );
+          }
         }
       }
 
@@ -857,6 +860,59 @@ export let Dock = GObject.registerClass(
       // resize dash icons
       // console.log(this.dash.height);
       // console.log('---------------');
+
+      // this.acquirePanel();
+    }
+
+    acquirePanel() {
+      // panel
+      if (!this.panel && Main.panel) {
+        this.panel = Main.panel;
+        this.panelLeft = this.panel._leftBox;
+        this.panelRight = this.panel._rightBox;
+        this.panelCenter = this.panel._centerBox;
+      }
+
+      if (!this.panel) return;
+
+      // W: breakable
+      let reparent = [this.panelLeft, this.panelRight, this.panelCenter];
+      reparent.forEach((c) => {
+        if (c.get_parent()) {
+          c._parent = c.get_parent();
+          c.get_parent().remove_child(c);
+        }
+        this._background.add_child(c);
+      });
+      this.panel.visible = false;
+
+      this.panelLeft.height = this.panel.height - 8;
+      this.panelLeft.x = 20;
+      this.panelLeft.y =
+        this.height - this.struts.height + this.panelLeft.height / 2;
+      this.panelRight.track_hover = false;
+
+      this.panelRight.height = this.panel.height - 8;
+      this.panelRight.x = this.struts.width - this.panelRight.width - 20;
+      this.panelRight.y = this.panelRight.height / 2;
+
+      this.panelCenter.height = this.panel.height - 8;
+      this.panelCenter.x = this.struts.width - this.panelCenter.width - 20;
+      this.panelCenter.y = this.panelRight.y + this.panelRight.height;
+    }
+
+    restorePanel() {
+      if (!this.panel) return;
+
+      // W: breakable
+      let reparent = [this.panelLeft, this.panelRight, this.panelCenter];
+      reparent.forEach((c) => {
+        if (c.get_parent()) {
+          c.get_parent().remove_child(c);
+        }
+        c._parent.add_child(c);
+      });
+      this.panel.visible = true;
     }
 
     preview() {

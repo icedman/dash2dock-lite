@@ -5,7 +5,6 @@ const Gtk = imports.gi.Gtk;
 const Gdk = imports.gi.Gdk;
 const Adw = imports.gi.Adw;
 
-
 //-----------------------------
 // ./prefs.js
 //-----------------------------
@@ -144,7 +143,7 @@ const MonitorsConfig = GObject.registerClass(
   }
 );
 
- class Preferences extends ExtensionPreferences {
+class Preferences extends ExtensionPreferences {
   constructor(metadata) {
     super(metadata);
 
@@ -261,7 +260,7 @@ const MonitorsConfig = GObject.registerClass(
 
     // this.dump(window, 0);
 
-this._settings = ExtensionUtils.getSettings(schemaId);
+    this._settings = ExtensionUtils.getSettings(schemaId);
     settings.set_string('msg-to-ext', '');
 
     let settingsKeys = SettingsKeys();
@@ -430,7 +429,6 @@ this._settings = ExtensionUtils.getSettings(schemaId);
     this._builder.get_object('preferred-monitor').set_model(list);
   }
 }
-
 
 //-----------------------------
 // ./preferences/prefKeys.js
@@ -723,7 +721,6 @@ let PrefKeys = class {
     });
   }
 };
-
 
 //-----------------------------
 // ./preferences/keys.js
@@ -1111,5 +1108,3 @@ const SettingsKeys = () => {
 
   return settingsKeys;
 };
-
-

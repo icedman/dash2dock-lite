@@ -433,6 +433,10 @@ export let Animator = class {
         ? 1
         : -1;
 
+    // if (!animated && !dock._hidden && dock.extension.peek_hidden_icons) {
+    //   edge_distance = -dock._iconSizeScaledDown * scaleFactor / 1.5;
+    // }
+
     // dash hide/show
     if (dock._hidden) {
       if (vertical) {
@@ -566,12 +570,14 @@ export let Animator = class {
           }
         }
 
+        let list_coef_x = list_coef + 6;
+        let list_coef_z = list_coef + 8;
         c._label.opacity =
           (c._label.opacity * list_coef + to) / (list_coef + 1);
-        c.x = (c.x * list_coef + tx) / (list_coef + 1);
+        c.x = (c.x * list_coef_x + tx) / (list_coef_x + 1);
         c.y = (c.y * list_coef + ty) / (list_coef + 1);
         c.rotation_angle_z =
-          (c.rotation_angle_z * list_coef + tz) / (list_coef + 1);
+          (c.rotation_angle_z * list_coef_z + tz) / (list_coef_z + 1);
       });
 
       target._label.hide();

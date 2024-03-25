@@ -299,6 +299,7 @@ export default class Dash2DockLiteExt extends Extension {
           break;
         }
         case 'peek-hidden-icons': {
+          this.animate();
           break;
         }
         case 'animation-magnify':

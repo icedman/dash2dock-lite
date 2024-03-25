@@ -145,9 +145,9 @@
         </child>
         <child>
           <object class="AdwActionRow" id="peek-hidden-icons-row">
-            <property name="visible">false</property>
+            <property name="visible">true</property>
             <property name="title" translatable="yes">Peek Icons</property>
-            <property name="subtitle" translatable="yes">Partially show animated icons when the dash is auto hidden.This works only when pressure sense is enabled.</property>
+            <property name="subtitle" translatable="yes">Partially show icons when the dash is not hovered or hidden.</property>
             <property name="activatable-widget">peek-hidden-icons</property>
             <child>
               <object class="GtkSwitch" id="peek-hidden-icons">

@@ -1,4 +1,3 @@
-
 const Main = imports.ui.main;
 const BoxPointer = imports.ui.boxpointer;
 const PopupMenu = imports.ui.popupMenu;
@@ -36,7 +35,6 @@ class Extension {}
 function init() {
   return new Dash2DockLiteExt();
 }
-
 
 //-----------------------------
 // ./drawing.js
@@ -183,7 +181,6 @@ const Drawing = {
   draw_rounded_rect,
   draw_text,
 };
-
 
 //-----------------------------
 // ./diagnostics.js
@@ -453,7 +450,6 @@ const runTests = (extension, settings) => {
   addPreferenceTests(_seqs, extension, settings);
   extension._diagnosticTimer.runSequence(_seqs);
 };
-
 
 //-----------------------------
 // ./dock.js
@@ -1630,7 +1626,6 @@ let Dock = GObject.registerClass(
   }
 );
 
-
 //-----------------------------
 // ./autohide.js
 //-----------------------------
@@ -1921,7 +1916,6 @@ let AutoHide = class {
     }
   }
 };
-
 
 //-----------------------------
 // ./services.js
@@ -2501,7 +2495,6 @@ const Services = class {
   }
 };
 
-
 //-----------------------------
 // ./utils.js
 //-----------------------------
@@ -2552,7 +2545,6 @@ const clearTimeout = (id) => {
 const clearInterval = (id) => {
   GLib.source_remove(id);
 };
-
 
 //-----------------------------
 // ./prefs.js
@@ -2692,7 +2684,7 @@ const MonitorsConfig = GObject.registerClass(
   }
 );
 
- class Preferences extends ExtensionPreferences {
+class Preferences extends ExtensionPreferences {
   constructor(metadata) {
     super(metadata);
 
@@ -2809,7 +2801,7 @@ const MonitorsConfig = GObject.registerClass(
 
     // this.dump(window, 0);
 
-this._settings = ExtensionUtils.getSettings(schemaId);
+    this._settings = ExtensionUtils.getSettings(schemaId);
     settings.set_string('msg-to-ext', '');
 
     let settingsKeys = SettingsKeys();
@@ -2978,7 +2970,6 @@ this._settings = ExtensionUtils.getSettings(schemaId);
     this._builder.get_object('preferred-monitor').set_model(list);
   }
 }
-
 
 //-----------------------------
 // ./timer.js
@@ -3366,7 +3357,6 @@ const Timer = class {
     }
   }
 };
-
 
 //-----------------------------
 // ./animator.js
@@ -4025,7 +4015,6 @@ let Animator = class {
   }
 };
 
-
 //-----------------------------
 // ./extension.js
 //-----------------------------
@@ -4076,7 +4065,7 @@ const ANIM_ICON_QUALITY = 2.0;
 const ANIM_INTERVAL = 15;
 const ANIM_INTERVAL_PAD = 15;
 
- class Dash2DockLiteExt extends Extension {
+class Dash2DockLiteExt extends Extension {
   createDock() {
     let d = new Dock({ extension: this });
     d.extension = this;
@@ -4297,7 +4286,7 @@ const ANIM_INTERVAL_PAD = 15;
   }
 
   _enableSettings() {
-this._settings = ExtensionUtils.getSettings(schemaId);
+    this._settings = ExtensionUtils.getSettings(schemaId);
     this._settingsKeys = SettingsKeys();
 
     this._settingsKeys.connectSettings(this._settings, (name, value) => {
@@ -4883,7 +4872,6 @@ this._settings = ExtensionUtils.getSettings(schemaId);
   }
 }
 
-
 //-----------------------------
 // ./style.js
 //-----------------------------
@@ -4953,7 +4941,6 @@ const Style = class {
     return res.join(',');
   }
 };
-
 
 //-----------------------------
 // ./dockItems.js
@@ -5430,7 +5417,6 @@ const DockBackground = GObject.registerClass(
   }
 );
 
-
 //-----------------------------
 // ./preferences/prefKeys.js
 //-----------------------------
@@ -5722,7 +5708,6 @@ let PrefKeys = class {
     });
   }
 };
-
 
 //-----------------------------
 // ./preferences/keys.js
@@ -6111,7 +6096,6 @@ const SettingsKeys = () => {
   return settingsKeys;
 };
 
-
 //-----------------------------
 // ./apps/dot.js
 //-----------------------------
@@ -6458,7 +6442,6 @@ const DotCanvas = GObject.registerClass(
     }
   }
 );
-
 
 //-----------------------------
 // ./apps/clock.js
@@ -6807,7 +6790,6 @@ const ClockCanvas = GObject.registerClass(
   }
 );
 
-
 //-----------------------------
 // ./apps/calendar.js
 //-----------------------------
@@ -6905,7 +6887,6 @@ const CalendarCanvas = GObject.registerClass(
     }
   }
 );
-
 
 //-----------------------------
 // ./apps/overlay.js
@@ -7013,7 +6994,6 @@ const DebugOverlay = GObject.registerClass(
     destroy() {}
   }
 );
-
 
 //-----------------------------
 // ./effects/color_effect.js
@@ -7163,7 +7143,6 @@ const ColorEffect = GObject.registerClass(
   }
 );
 
-
 //-----------------------------
 // ./effects/easing.js
 //-----------------------------
@@ -7232,7 +7211,6 @@ var Back = {
     return (c / 2) * (postFix * t * (((s *= 1.525) + 1) * t + s) + 2) + b;
   },
 };
-
 
 //-----------------------------
 // ./effects/tint_effect.js
@@ -7389,7 +7367,6 @@ const TintEffect = GObject.registerClass(
   }
 );
 
-
 //-----------------------------
 // ./effects/monochrome_effect.js
 //-----------------------------
@@ -7544,5 +7521,3 @@ const MonochromeEffect = GObject.registerClass(
     }
   }
 );
-
-

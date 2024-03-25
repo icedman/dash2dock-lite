@@ -468,3 +468,80 @@ export const DockBackground = GObject.registerClass(
     }
   }
 );
+
+export const DockPanelOverlay = GObject.registerClass(
+  {},
+  class DockPanelOverlay extends St.Widget {
+    _init(params) {
+      super._init({
+        name: 'DockOverlay',
+        ...(params || {}),
+      });
+    }
+
+    update(params) {
+      let {
+        background,
+        left,
+        right,
+        center,
+        panel_mode,
+        vertical,
+        dashContainer,
+        combine_top_bar,
+      } = params;
+
+      if (!combine_top_bar || !panel_mode || vertical) {
+        if (this.visible) {
+          dashContainer.restorePanel();
+        }
+        this.visible = false;
+        return;
+      }
+
+      this.visible = true;
+      dashContainer.panel.visible = false;
+
+      // this.style = 'border: 2px solid red;';
+      this.x = background.x;
+      this.y = background.y;
+      this.width = background.width;
+      this.height = background.height;
+
+      let margin = 20;
+
+      // left
+      if (left.get_parent() != this) {
+        left.get_parent().remove_child(left);
+        this.add_child(left);
+      }
+      left.x = margin;
+      left.y = this.height / 2 - left.height / 2;
+
+      // center
+      if (center.get_parent() != this) {
+        center.get_parent().remove_child(center);
+        this.add_child(center);
+      }
+      center.x = this.width - margin / 2 - center.width;
+      center.y = this.height / 2 - center.height / 2;
+
+      // right
+      if (right.get_parent() != this) {
+        right.get_parent().remove_child(right);
+        this.add_child(right);
+      }
+      right.height = center.height;
+      right.x = this.width - margin - right.width;
+      right.y = this.height / 2 - right.height / 2;
+
+      // align
+      if (center.height * 3 < this.height) {
+        right.y -= right.height / 1.5;
+        center.y += center.height / 1.5;
+      } else {
+        right.x -= center.width;
+      }
+    }
+  }
+);

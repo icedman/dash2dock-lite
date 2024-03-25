@@ -229,9 +229,11 @@ export default class Dash2DockLiteExt extends Extension {
   startUp() {
     this.createTheDocks();
     this.animate({ refresh: true });
-    this.docks.forEach((dock) => {
-      dock._debounceEndAnimation();
-    });
+    this._loTimer.runOnce(() => {
+      this.docks.forEach((dock) => {
+        dock._debounceEndAnimation();
+      });
+    }, 200);
   }
 
   _autohiders() {

@@ -30,7 +30,7 @@ def dump(f):
         if l.startswith("'use strict'") or l.startswith("const Point"):
             commentOut = True
         if "getSettings" in l:
-            l = "this._settings = ExtensionUtils.getSettings(schemaId)";
+            l = "this._settings = ExtensionUtils.getSettings(schemaId);\n";
         if l.startswith("import "):
             commentOut = True
             inImport = True

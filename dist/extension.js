@@ -2809,7 +2809,8 @@ const MonitorsConfig = GObject.registerClass(
 
     // this.dump(window, 0);
 
-this._settings = ExtensionUtils.getSettings(schemaId)    settings.set_string('msg-to-ext', '');
+this._settings = ExtensionUtils.getSettings(schemaId);
+    settings.set_string('msg-to-ext', '');
 
     let settingsKeys = SettingsKeys();
     settingsKeys.connectBuilder(builder);
@@ -4296,7 +4297,8 @@ const ANIM_INTERVAL_PAD = 15;
   }
 
   _enableSettings() {
-this._settings = ExtensionUtils.getSettings(schemaId)    this._settingsKeys = SettingsKeys();
+this._settings = ExtensionUtils.getSettings(schemaId);
+    this._settingsKeys = SettingsKeys();
 
     this._settingsKeys.connectSettings(this._settings, (name, value) => {
       let n = name.replace(/-/g, '_');

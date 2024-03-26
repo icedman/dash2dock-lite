@@ -408,6 +408,8 @@ export const DockBackground = GObject.registerClass(
       let p1 = first.get_transformed_position();
       let p2 = last.get_transformed_position();
 
+      let padding = 4 + 10 * (dashContainer.extension.dock_padding || 0);
+
       if (!isNaN(p1[0]) && !isNaN(p1[1])) {
         let tx = first._icon.translationX;
         let ty = first._icon.translationY;
@@ -417,14 +419,14 @@ export const DockBackground = GObject.registerClass(
         // bottom
         this.x = p1[0] + tx;
         this.y = first._fixedPosition[1];
-        let width = dashContainer.dash.width + Math.abs(tx) + tx2;
+        let width = dashContainer.dash.width + Math.abs(tx) + tx2 - padding;
         let height = dashContainer.dash.height;
 
         if (dashContainer.isVertical()) {
           this.x = first._fixedPosition[0];
           this.y = first._fixedPosition[1] + ty;
           width = dashContainer.dash.width;
-          height = dashContainer.dash.height + Math.abs(ty) + ty2;
+          height = dashContainer.dash.height + Math.abs(ty) + ty2 - padding;
         }
 
         if (!isNaN(width)) {
@@ -436,10 +438,11 @@ export const DockBackground = GObject.registerClass(
 
         this.x -= dashContainer.x;
         this.y -= dashContainer.y;
+        this._padding = padding;
 
         // adjust padding
         // let az = 4 + 8 * (dashContainer.extension.dock_padding || 0);
-        let az = -(4 + 10 * (dashContainer.extension.dock_padding || 0));
+        let az = -padding;
         this.x += az / 2;
         this.width -= az;
         this.y += az / 2;

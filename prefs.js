@@ -225,7 +225,7 @@ export default class Preferences extends ExtensionPreferences {
     builder.get_object('reset').connect('clicked', () => {
       settings.list_keys().forEach((k) => {
         settings.reset(k);
-      })
+      });
     });
 
     if (builder.get_object('self-test')) {

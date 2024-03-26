@@ -408,7 +408,12 @@ export const DockBackground = GObject.registerClass(
       let p1 = first.get_transformed_position();
       let p2 = last.get_transformed_position();
 
-      let padding = 4 + 10 * (dashContainer.extension.dock_padding || 0);
+      let padding =
+        4 +
+        iconSize *
+          scaleFactor *
+          0.15 *
+          (dashContainer.extension.dock_padding || 0);
 
       if (!isNaN(p1[0]) && !isNaN(p1[1])) {
         let tx = first._icon.translationX;
@@ -441,12 +446,11 @@ export const DockBackground = GObject.registerClass(
         this._padding = padding;
 
         // adjust padding
-        // let az = 4 + 8 * (dashContainer.extension.dock_padding || 0);
         let az = -padding;
         this.x += az / 2;
-        this.width -= az;
+        this.width -= az * (1 + !vertical);
         this.y += az / 2;
-        this.height -= az;
+        this.height -= az * (1 + vertical);
 
         if (panel_mode) {
           if (vertical) {
@@ -458,14 +462,6 @@ export const DockBackground = GObject.registerClass(
           }
         }
       }
-
-      let dx =
-        this.x - (dashContainer.dash.x + dashContainer.dash.translationX);
-      let dy =
-        this.y - (dashContainer.dash.y + dashContainer.dash.translationY);
-      let dst = vertical ? dx * dx : dy * dy;
-      this.opacity = dst > 50 ? 0 : 255;
-      dashContainer.dash.opacity = dst > 50 ? 0 : 255;
     }
   }
 );

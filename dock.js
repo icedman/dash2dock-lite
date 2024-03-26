@@ -798,10 +798,11 @@ export let Dock = GObject.registerClass(
       this.height = vertical ? width : height;
 
       if (this.animated) {
-        this.width *= vertical ? 1.75 : 1;
-        this.height *= !vertical ? 1.75 : 1;
-        this.width += !vertical * iconSizeSpaced * 2.5 * scaleFactor;
-        this.height += vertical * iconSizeSpaced * 2.5 * scaleFactor;
+        let adjust = 3.0;
+        this.width *= vertical ? adjust : 1;
+        this.height *= !vertical ? adjust : 1;
+        this.width += !vertical * iconSizeSpaced * adjust * scaleFactor;
+        this.height += vertical * iconSizeSpaced * adjust * scaleFactor;
 
         if (this.width > m.width) {
           this.width = m.width;

@@ -283,6 +283,9 @@ export let Animator = class {
       _scale_coef *= 4;
     }
 
+    let first = animateIcons[0];
+    let last = animateIcons[animateIcons.length - 1];
+
     animateIcons.forEach((icon) => {
       let scale = icon._icon.get_scale();
 
@@ -321,6 +324,24 @@ export let Animator = class {
 
       icon._icon.translationX = translationX;
       icon._icon.translationY = translationY;
+
+      // jitter reduction hack
+      if ((icon == first || icon == last) && icon._scale < 1.05) {
+        let size = 20;
+        icon._translation = icon._translation || [];
+        icon._translation.push(icon._icon.translationX);
+        if (icon._translation.length > size) {
+          icon._translation.shift();
+          let sum = icon._translation.reduce((accumulator, currentValue) => {
+            return accumulator + currentValue;
+          }, 0);
+          let avg = Math.floor(sum / size);
+          let diff = Math.abs(icon._icon.translationX - avg);
+          if (diff <= 2) {
+            icon._icon.translationX = Math.floor(avg);
+          }
+        }
+      }
 
       // todo center the appwell (scaling correction)
       let child = icon._appwell || icon.first_child;
@@ -472,8 +493,8 @@ export let Animator = class {
     {
       dock._background.style = dock.extension._backgroundStyle;
       dock._background.update({
-        first: animateIcons[0],
-        last: animateIcons[animateIcons.length - 1],
+        first,
+        last,
         iconSize,
         scaleFactor,
         position: dock._position,
@@ -546,7 +567,7 @@ export let Animator = class {
       list.opacity = 255;
 
       let target = list._target;
-      let list_coef = 4;
+      let list_coef = 2;
 
       let tw = target.width * target._icon.scaleX;
       let th = target.height * target._icon.scaleY;
@@ -572,8 +593,8 @@ export let Animator = class {
           }
         }
 
-        let list_coef_x = list_coef + 6;
-        let list_coef_z = list_coef + 8;
+        let list_coef_x = list_coef + 4;
+        let list_coef_z = list_coef + 6;
         c._label.opacity =
           (c._label.opacity * list_coef + to) / (list_coef + 1);
         c.x = (c.x * list_coef_x + tx) / (list_coef_x + 1);

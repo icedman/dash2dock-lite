@@ -817,7 +817,6 @@ export default class Dash2DockLiteExt extends Extension {
     } else {
       this._loTimer.runDebounced(this._iconSpacingDebounceSeq);
     }
-    this.recreateAllDocks(1250);
   }
 
   _updateAutohide(disable) {

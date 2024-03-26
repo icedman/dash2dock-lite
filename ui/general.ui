@@ -240,6 +240,43 @@
             </child>
           </object>
         </child>
+        <child>
+          <object class="AdwActionRow" id="reset-row">
+            <property name="visible">true</property>
+            <property name="title" translatable="yes">Reset Settings</property>
+            <property name="subtitle" translatable="yes">WARNING: This will revert all user settings to default values.</property>
+            <property name="activatable-widget">reset</property>
+            <child>
+              <object class="GtkButton" id="reset">
+                <property name="halign">start</property>
+                <property name="valign">center</property>
+                <child>
+                  <object class="GtkBox">
+                    <property name="margin-start">20</property>
+                    <property name="margin-end">20</property>
+                    <property name="margin-top">6</property>
+                    <property name="margin-bottom">6</property>
+                    <!-- <child>
+                      <object class="GtkImage">
+                        <property name="margin-end">6</property>
+                        <property name="icon-name">pulse-symbolic</property>
+                      </object>
+                    </child> -->
+                    <child>
+                      <object class="GtkLabel">
+                        <property name="label" translatable="yes">Reset</property>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+                <style>
+                  <class name="circular"/>
+                  <class name="destructive-action"/>
+                </style>
+              </object>
+            </child>
+          </object>
+        </child>
       </object>
     </child>
   </object>

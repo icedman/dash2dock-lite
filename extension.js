@@ -98,6 +98,18 @@ export default class Dash2DockLiteExt extends Extension {
     this.docks = [];
   }
 
+  recreateAllDocks(delay = 750) {
+    // some settings change cause glitches ... recreate all docks (workaround)
+    if (!this._recreateSeq) {
+      this._recreateSeq = this._loTimer.runDebounced(() => {
+        this.destroyDocks();
+        this.createTheDocks();
+      }, delay);
+    } else {
+      this._loTimer.runDebounced(this._recreateSeq);
+    }
+  }
+
   enable() {
     // for debugging - set to 255
     this._dash_opacity = 0;
@@ -805,6 +817,7 @@ export default class Dash2DockLiteExt extends Extension {
     } else {
       this._loTimer.runDebounced(this._iconSpacingDebounceSeq);
     }
+    this.recreateAllDocks(1250);
   }
 
   _updateAutohide(disable) {

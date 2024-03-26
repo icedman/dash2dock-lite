@@ -222,6 +222,12 @@ export default class Preferences extends ExtensionPreferences {
     //   builder.get_object('animation-magnify').set_value(0);
     // });
 
+    builder.get_object('reset').connect('clicked', () => {
+      settings.list_keys().forEach((k) => {
+        settings.reset(k);
+      })
+    });
+
     if (builder.get_object('self-test')) {
       builder.get_object('self-test').connect('clicked', () => {
         settings.set_string('msg-to-ext', 'this.runDiagnostics()');

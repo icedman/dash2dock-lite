@@ -1,10 +1,23 @@
 # Roadmap
 
-* Panel mode
+* Panel mode features
+* Support for Gnome 42-44 (test with Debian)
+* Support for Gnome 40-42 (test with OpenSuse)
 
 # Current Issues
 
 * check overlap with multi-monitor 
+* vertical layout does not support rearranging icons (as this is dependent on Gnome's own Dash which doesn't support this properly)
+* vertical layout does not support Apps Icon at front
+
+# Next Release
+
+* Gnome 46
+* Minor bug fixes
+
+# Release 50
+
+* Major bug fixes
 
 # Release 47
 

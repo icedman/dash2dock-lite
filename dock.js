@@ -1125,7 +1125,17 @@ export let Dock = GObject.registerClass(
           this._scrollCounter = 0;
 
         let icon = this._nearestIcon;
-        // console.log(`scroll - (${icon._pos}) (${pointer})`);
+
+        // add scrollwheel vs touchpad differentiation
+        let multiplier = 1;
+        if (evt.get_source_device().get_device_type() == 5 ||
+          evt.get_source_device().get_device_name().includes("Touch")) {
+          multiplier = 1;
+        } else {
+          multiplier = 5;
+        }
+
+        // console.log(this._scrollCounter);
 
         let SCROLL_RESOLUTION =
           MIN_SCROLL_RESOLUTION +
@@ -1137,11 +1147,11 @@ export let Dock = GObject.registerClass(
           switch (direction) {
             case Clutter.ScrollDirection.UP:
             case Clutter.ScrollDirection.LEFT:
-              this._scrollCounter += 1 / SCROLL_RESOLUTION;
+              this._scrollCounter += (1 / SCROLL_RESOLUTION) * multiplier;
               break;
             case Clutter.ScrollDirection.DOWN:
             case Clutter.ScrollDirection.RIGHT:
-              this._scrollCounter -= 1 / SCROLL_RESOLUTION;
+              this._scrollCounter -= (1 / SCROLL_RESOLUTION) * multiplier;
               break;
           }
           this._cycleWindows(icon._appwell.app, evt);

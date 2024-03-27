@@ -161,18 +161,18 @@ export default class Dash2DockLiteExt extends Extension {
     this.services.enable();
     this._onCheckServices();
 
-    this._updateAnimationFPS();
-    this._updateShrink();
-    this._updateIconResolution();
-    this._updateLayout();
-    this._updateAutohide();
-    this._updateWidgetStyle();
+    // this._updateAnimationFPS();
+    // this._updateShrink();
+    // this._updateIconResolution();
+    // this._updateLayout();
+    // this._updateAutohide();
+    // this._updateWidgetStyle();
 
     this._addEvents();
 
     this._queryDisplay();
 
-    this._updateStyle();
+    // this._updateStyle();
 
     this.startUp();
 

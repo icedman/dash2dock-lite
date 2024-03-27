@@ -326,8 +326,8 @@ export let Animator = class {
       icon._icon.translationY = Math.floor(translationY);
 
       // jitter reduction hack
-      if ((icon == first || icon == last) && icon._scale < 1.05) {
-        let size = 20;
+      if (icon._scale < 1.05) {
+        let size = 32;
         icon._translation = icon._translation || [];
         let currentTranslation = icon._icon.translationX;
         if (!vertical) {

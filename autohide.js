@@ -15,9 +15,7 @@ const Point = Graphene.Point;
 const HIDE_ANIMATION_INTERVAL = 15;
 const HIDE_ANIMATION_INTERVAL_PAD = 15;
 const DEBOUNCE_HIDE_TIMEOUT = 120;
-const PRESSURE_SENSE_DISTANCE = 20;
-
-const DWELL_COUNT = 24;
+const PRESSURE_SENSE_DISTANCE = 40;
 
 // some codes lifted from dash-to-dock intellihide
 const handledWindowTypes = [
@@ -89,6 +87,9 @@ export let AutoHide = class {
         dy = dy * dy;
       }
 
+      let dwell_count =
+        80 - 60 * (this.extension.pressure_sense_sensitivity || 0);
+
       if (this.dashContainer.isVertical()) {
         if (
           // right
@@ -114,7 +115,10 @@ export let AutoHide = class {
           this.last_pointer = pointer;
         }
       }
-      if (this._dwell > DWELL_COUNT) {
+
+      // console.log(`${this._dwell} ${dwell_count} ${this.extension.pressure_sense_sensitivity}`);
+
+      if (this._dwell > dwell_count) {
         this.show();
       }
     }
@@ -142,6 +146,7 @@ export let AutoHide = class {
   }
 
   show() {
+    this._dwell = 0;
     this.frameDelay = 0;
     this._shown = true;
     this.dashContainer.slideIn();

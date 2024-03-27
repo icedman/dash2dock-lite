@@ -348,6 +348,10 @@ export const SettingsKeys = () => {
       widget_type: 'dropdown',
       test: { values: [0, 1, 2] },
     },
+    'pressure-sense-sensitivity': {
+      default_value: 0.4,
+      widget_type: 'scale',
+    },
     'scroll-sensitivity': {
       default_value: 0.4,
       widget_type: 'scale',

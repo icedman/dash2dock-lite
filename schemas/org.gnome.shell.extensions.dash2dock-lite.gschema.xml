@@ -336,6 +336,11 @@
         <summary>Scroll sensitivity</summary>
         <description>Scroll sensitivity</description>
     </key>
+    <key type="d" name="pressure-sense-sensitivity">
+        <default>0.4</default>
+        <summary>Pressure sense sensitivity</summary>
+        <description>Pressure sense sensitivity</description>
+    </key>
     <key type="s" name="msg-to-pref">
         <default>""</default>
         <summary>MsgBus</summary>

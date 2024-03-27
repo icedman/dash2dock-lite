@@ -84,6 +84,12 @@
             </child>
           </object>
         </child>
+      </object>
+    </child>
+    <child>
+      <object class="AdwPreferencesGroup">
+        <property name="title" translatable="yes">Autohide</property>
+        <property name="description" translatable="yes">Tweak autohide settings.</property>
         <child>
           <object class="AdwActionRow">
             <property name="title" translatable="yes">Autohide Speed</property>
@@ -99,6 +105,25 @@
                 <property name="orientation">horizontal</property>
                 <property name="digits">2</property>
                 <property name="adjustment">autohide-speed-adjust</property>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="AdwActionRow">
+            <property name="title" translatable="yes">Pressure Sense-sitivity</property>
+            <property name="subtitle" translatable="yes">Set pressure sense sensitivity.</property>
+            <property name="activatable-widget">pressure-sense-sensitivity</property>
+            <child>
+              <object class="GtkScale" id="pressure-sense-sensitivity">
+                <property name="valign">center</property>
+                <property name="hexpand">true</property>
+                <property name="width-request">140px</property>
+                <property name="draw-value">true</property>
+                <property name="value-pos">right</property>
+                <property name="orientation">horizontal</property>
+                <property name="digits">2</property>
+                <property name="adjustment">scroll-sensitivity-adjust</property>
               </object>
             </child>
           </object>

@@ -541,6 +541,13 @@ export let Dock = GObject.registerClass(
             this._icons = null;
           });
         }
+
+        // icon image quality
+        if (this._iconSizeScaledDown) {
+          icon.set_icon_size(
+            this._iconSizeScaledDown * this.extension.icon_quality
+          );
+        }
       });
 
       return this._icons;

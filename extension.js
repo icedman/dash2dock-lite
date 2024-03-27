@@ -111,6 +111,8 @@ export default class Dash2DockLiteExt extends Extension {
   }
 
   enable() {
+    this._enableJitterHack = false;
+
     // for debugging - set to 255
     this._dash_opacity = 0;
 
@@ -240,8 +242,8 @@ export default class Dash2DockLiteExt extends Extension {
 
   startUp() {
     this.createTheDocks();
-    this.animate({ refresh: true });
     this._loTimer.runOnce(() => {
+      this.animate({ refresh: true });
       this.docks.forEach((dock) => {
         dock._debounceEndAnimation();
       });

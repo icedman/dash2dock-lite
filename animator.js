@@ -70,17 +70,14 @@ export let Animator = class {
     let nearestIcon = null;
     let nearestDistance = -1;
 
-    animateIcons.forEach((c) => {
-      c._pos = dock._get_position(c);
-      c._fixedPosition = [...c._pos];
-    });
-
     let idx = 0;
     animateIcons.forEach((icon) => {
-      let pos = [...icon._pos];
+      let pos = dock._get_position(icon);
+      icon._pos = [...pos];
+      icon._fixedPosition = [...pos];
 
-      // move to find icons
-      icon._icon.set_icon_size(iconSize * dock.extension.icon_quality);
+      // moved to findIcons
+      // icon._icon.set_icon_size(iconSize * dock.extension.icon_quality);
 
       // get nearest
       let bposcenter = [...pos];
@@ -139,6 +136,10 @@ export let Animator = class {
     let iconTable = [];
     animateIcons.forEach((icon) => {
       let original_pos = dock._get_position(icon);
+
+      // used by background resizing and repositioning
+      icon._fixedPosition = [...original_pos];
+
       original_pos[0] += icon.width / 2;
       original_pos[1] += icon.height / 2;
 
@@ -173,11 +174,8 @@ export let Animator = class {
 
       icon._scale = scale;
       icon._targetScale = scale * scaleFactor;
-
       icon._icon.set_size(iconSize, iconSize);
-      if (icon._icon._img) {
-        icon._icon._img.set_icon_size(iconSize * dock.extension.icon_quality);
-      }
+      // icon._icon.set_icon_size(iconSize * dock.extension.icon_quality);
 
       if (!icon._pos) {
         return;
@@ -299,7 +297,7 @@ export let Animator = class {
       icon._icon.translationY = Math.floor(translationY);
 
       // jitter reduction hack
-      if (icon._scale < 1.05 && isWithin) {
+      if (dock.extension._enableJitterHack && icon._scale < 1.05 && isWithin) {
         let size = 16;
         icon._translation = icon._translation || [];
         let currentTranslation = icon._icon.translationX;

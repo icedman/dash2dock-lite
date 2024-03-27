@@ -99,7 +99,9 @@ export let Dock = GObject.registerClass(
       this.autohider = new AutoHide();
       this.autohider.dashContainer = this;
       this.autohider.extension = this.extension;
-      this.autohider.enable();
+      if (this.extension.autohide_dash) {
+        this.autohider.enable();
+      }
 
       this.struts = new St.Widget({
         name: 'DockStruts',

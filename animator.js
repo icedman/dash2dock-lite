@@ -322,23 +322,33 @@ export let Animator = class {
         !vertical * icon._translateRise * rdir +
         (oldY + icon._translate * vertical * _pos_coef) / (_pos_coef + 1);
 
-      icon._icon.translationX = translationX;
-      icon._icon.translationY = translationY;
+      icon._icon.translationX = Math.floor(translationX);
+      icon._icon.translationY = Math.floor(translationY);
 
       // jitter reduction hack
       if ((icon == first || icon == last) && icon._scale < 1.05) {
         let size = 20;
         icon._translation = icon._translation || [];
-        icon._translation.push(icon._icon.translationX);
-        if (icon._translation.length > size) {
+        let currentTranslation = icon._icon.translationX;
+        if (!vertical) {
+          icon._translation.push(icon._icon.translationX);
+        } else {
+          currentTranslation = icon._icon.translationY;
+          icon._translation.push(icon._icon.translationY);
+        }
+        if (icon._translation.length > size / 2) {
           icon._translation.shift();
           let sum = icon._translation.reduce((accumulator, currentValue) => {
             return accumulator + currentValue;
           }, 0);
-          let avg = Math.floor(sum / size);
-          let diff = Math.abs(icon._icon.translationX - avg);
+          let avg = Math.floor(sum / icon._translation.length);
+          let diff = Math.abs(currentTranslation - avg);
           if (diff <= 2) {
-            icon._icon.translationX = Math.floor(avg);
+            if (!vertical) {
+              icon._icon.translationX = Math.floor(avg);
+            } else {
+              icon._icon.translationY = Math.floor(avg);
+            }
           }
         }
       }

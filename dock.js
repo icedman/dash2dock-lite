@@ -977,7 +977,7 @@ export let Dock = GObject.registerClass(
       if (this._hoveredIcon) return true;
       let xy = this._get_position(this.struts);
       let wh = [this.struts.width, this.struts.height];
-      if (this._isInRect([xy[0], xy[1], wh[0], wh[1]], p, 0)) {
+      if (this._isInRect([xy[0], xy[1], wh[0], wh[1]], p, 20)) {
         return true;
       }
       return false;

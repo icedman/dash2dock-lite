@@ -326,8 +326,8 @@ export let Animator = class {
       icon._icon.translationY = Math.floor(translationY);
 
       // jitter reduction hack
-      if (icon._scale < 1.05) {
-        let size = 32;
+      if (icon._scale < 1.05 && isWithin) {
+        let size = 16;
         icon._translation = icon._translation || [];
         let currentTranslation = icon._icon.translationX;
         if (!vertical) {
@@ -338,6 +338,7 @@ export let Animator = class {
         }
         if (icon._translation.length > size / 2) {
           icon._translation.shift();
+          // todo ... what the cpu usage :)
           let sum = icon._translation.reduce((accumulator, currentValue) => {
             return accumulator + currentValue;
           }, 0);
@@ -345,9 +346,9 @@ export let Animator = class {
           let diff = Math.abs(currentTranslation - avg);
           if (diff <= 2) {
             if (!vertical) {
-              icon._icon.translationX = Math.floor(avg);
+              icon._icon.translationX = avg;
             } else {
-              icon._icon.translationY = Math.floor(avg);
+              icon._icon.translationY = avg;
             }
           }
         }

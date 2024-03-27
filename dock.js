@@ -1128,8 +1128,10 @@ export let Dock = GObject.registerClass(
 
         // add scrollwheel vs touchpad differentiation
         let multiplier = 1;
-        if (evt.get_source_device().get_device_type() == 5 ||
-          evt.get_source_device().get_device_name().includes("Touch")) {
+        if (
+          evt.get_source_device().get_device_type() == 5 ||
+          evt.get_source_device().get_device_name().includes('Touch')
+        ) {
           multiplier = 1;
         } else {
           multiplier = 5;

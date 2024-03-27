@@ -73,6 +73,7 @@ export let Animator = class {
     let idx = 0;
     animateIcons.forEach((icon) => {
       let pos = dock._get_position(icon);
+      icon._checked = 0;
       icon._pos = [...pos];
       icon._fixedPosition = [...pos];
 
@@ -147,6 +148,7 @@ export let Animator = class {
       icon._translate = 0;
       icon._translateRise = 0;
 
+      icon._index = iconTable.length;
       iconTable.push(icon);
 
       let scale = 1;
@@ -187,65 +189,109 @@ export let Animator = class {
 
     // spread
     let hoveredIcon = null;
-    for (let i = 0; i < iconTable.length; i++) {
-      if (iconTable.length < 2) break;
-      let icon = iconTable[i];
-      if (icon._icon && icon._icon.hover) {
-        hoveredIcon = icon;
-      }
-      if (icon._scale > 1.1) {
-        // affect spread
-        let offset =
-          1.25 * (icon._scale - 1) * iconSize * scaleFactor * spread * 0.8;
-        let o = offset;
-        // left
-        for (let j = i - 1; j >= 0; j--) {
-          let left = iconTable[j];
-          left._translate -= offset;
-          o *= 0.98;
-        }
-        // right
-        o = offset;
-        for (let j = i + 1; j < iconTable.length; j++) {
-          let right = iconTable[j];
-          right._translate += offset;
-          o *= 0.98;
-        }
-      }
-    }
-
-    dock._hoveredIcon = hoveredIcon;
-
-    // re-center to hovered icon
-    let TRANSLATE_COEF = 24;
-    if (hoveredIcon) {
-      hoveredIcon._targetScale += 0.1;
-      let adjust = hoveredIcon._translate / 2;
+    if (didScale && animateIcons.length) {
+      let grow = (dock._iconSize * scaleFactor * 2) / animateIcons.length;
+      let totalGrowth = grow * animateIcons.length;
+      let o = 0;
       animateIcons.forEach((icon) => {
-        if (icon._scale > 1) {
-          let o = -adjust * (2 - icon._scale);
-          let nt = icon._translate - o;
-          icon._translate =
-            (icon._translate * TRANSLATE_COEF + nt) / (TRANSLATE_COEF + 1);
+        icon._translate = o - totalGrowth / 2;
+        o += grow;
+        if (icon._icon && icon._icon.hover) {
+          hoveredIcon = icon;
         }
       });
+
+      // collision detection
+      let col = [];
+      if (hoveredIcon) {
+        col = [hoveredIcon];
+      }
+
+      while(col.length) {
+        let c = col[0];
+        c._checked++;
+        let cp = dock._get_position(c._icon);
+        col.shift();
+        let left = iconTable[c._index - 1];
+        if (left && left._checked < 4) {
+          let lp = dock._get_position(left._icon);
+          let dst = Math.abs(cp[0] - lp[0]);
+          let tr = (left._icon.width * left._icon.scaleX + c._icon.width * c._icon.scaleX)/2;
+          if (tr > dst) {
+            let tz = tr - dst;
+            tz *= 0.8;
+            col.push(left);
+            left._translate -= tz / 2;
+            c._translate += tz / 2;
+          }
+          // console.log(`${cp[0]} ${lp[0]} = ${tr}? ${dst}`);
+        }
+        let right = iconTable[c._index + 1];
+        if (right && right._checked < 4) {
+          let lp = dock._get_position(right._icon);
+          let dst = Math.abs(cp[0] - lp[0]);
+          let tr = (right._icon.width * right._icon.scaleX + c._icon.width * c._icon.scaleX)/2;
+          if (tr > dst) {
+            let tz = tr - dst;
+            tz *= 0.8;
+            col.push(right);
+            right._translate += tz / 2;
+            c._translate -= tz / 2;
+          }
+        }
+      }
+
+      if (false)
+      for (let i = 0; i < iconTable.length; i++) {
+        if (iconTable.length < 2) break;
+        let icon = iconTable[i];
+        if (icon._scale > 1.1) {
+          // affect spread
+          let offset =
+            0.65 * (icon._scale - 1) * iconSize * scaleFactor * spread * 0.8;
+          // left
+          for (let j = i - 1; j >= 0; j--) {
+            let left = iconTable[j];
+            left._translate -= offset;
+          }
+          // right
+          for (let j = i + 1; j < iconTable.length; j++) {
+            let right = iconTable[j];
+            right._translate += offset;
+          }
+        }
+      }
+
+      dock._hoveredIcon = hoveredIcon;
+
+      // re-center to hovered icon
+      // let TRANSLATE_COEF = 24;
+      // if (hoveredIcon) {
+      //   hoveredIcon._targetScale += 0.1;
+      //   let adjust = hoveredIcon._translate / 2;
+      //   animateIcons.forEach((icon) => {
+      //     if (icon._scale > 1) {
+      //       let o = -adjust * (2 - icon._scale);
+      //       let nt = icon._translate - o;
+      //       icon._translate =
+      //         (icon._translate * TRANSLATE_COEF + nt) / (TRANSLATE_COEF + 1);
+      //     }
+      //   });
+      // }
     }
 
     //-------------------
     // interpolation / animation
     //-------------------
     let _scale_coef = ANIM_SCALE_COEF;
-    // let _spread_coef = ANIM_SPREAD_COEF;
     let _pos_coef = ANIM_POS_COEF;
     if (dock.extension.animation_fps > 0) {
       _pos_coef /= 1 + dock.extension.animation_fps / 2;
       _scale_coef /= 1 + dock.extension.animation_fps / 2;
-      // _spread_coef /= 1 + dock.extension.animation_fps / 2;
     }
     if (!nearestIcon) {
       _scale_coef *= ANIM_ON_LEAVE_COEF;
       _pos_coef *= ANIM_ON_LEAVE_COEF;
-      // _spread_coef *= ANIM_ON_LEAVE_COEF;
     }
 
     // low frame rate
@@ -295,35 +341,6 @@ export let Animator = class {
 
       icon._icon.translationX = Math.floor(translationX);
       icon._icon.translationY = Math.floor(translationY);
-
-      // jitter reduction hack
-      if (dock.extension._enableJitterHack && icon._scale < 1.05 && isWithin) {
-        let size = 32;
-        icon._translation = icon._translation || [];
-        let currentTranslation = icon._icon.translationX;
-        if (!vertical) {
-          icon._translation.push(icon._icon.translationX);
-        } else {
-          currentTranslation = icon._icon.translationY;
-          icon._translation.push(icon._icon.translationY);
-        }
-        if (icon._translation.length > size / 2) {
-          icon._translation.shift();
-          // todo ... what the cpu usage :)
-          let sum = icon._translation.reduce((accumulator, currentValue) => {
-            return accumulator + currentValue;
-          }, 0);
-          let avg = Math.floor(sum / icon._translation.length);
-          let diff = Math.abs(currentTranslation - avg);
-          if (diff <= 2) {
-            if (!vertical) {
-              icon._icon.translationX = avg;
-            } else {
-              icon._icon.translationY = avg;
-            }
-          }
-        }
-      }
 
       // todo center the appwell (scaling correction)
       let child = icon._appwell || icon.first_child;

@@ -111,8 +111,6 @@ export default class Dash2DockLiteExt extends Extension {
   }
 
   enable() {
-    this._enableJitterHack = true;
-
     // for debugging - set to 255
     this._dash_opacity = 0;
 

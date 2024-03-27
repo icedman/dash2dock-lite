@@ -36,6 +36,7 @@ export let Animator = class {
 
     let simulation = false;
     // this._hidden = true;
+
     dock.layout();
 
     let m = dock.getMonitor();
@@ -70,30 +71,15 @@ export let Animator = class {
     let nearestDistance = -1;
 
     animateIcons.forEach((c) => {
-      c._container = c;
       c._pos = dock._get_position(c);
       c._fixedPosition = [...c._pos];
     });
-
-    // sort
-    // todo apps_icon_front does not work in vertical layout
-    if (
-      dock.extension.apps_icon_front &&
-      dock.extension.apps_icon &&
-      vertical
-    ) {
-      let cornerPos = dock._get_position(dock);
-      animateIcons.sort((a, b) => {
-        let dstA = dock._get_distance(cornerPos, a._pos);
-        let dstB = dock._get_distance(cornerPos, b._pos);
-        return dstA > dstB ? 1 : -1;
-      });
-    }
 
     let idx = 0;
     animateIcons.forEach((icon) => {
       let pos = [...icon._pos];
 
+      // move to find icons
       icon._icon.set_icon_size(iconSize * dock.extension.icon_quality);
 
       // get nearest
@@ -127,16 +113,6 @@ export let Animator = class {
     dock._nearestIcon = nearestIcon;
 
     let didScale = false;
-
-    // let off = (iconSize * scaleFactor) / 2;
-    // animateIcons.forEach((i) => {
-    //   if (!i._pos) return;
-    //   let p = [...i._pos];
-    //   if (!p) return;
-    //   p[0] += off;
-    //   p[1] += off;
-    //   i._pos = p;
-    // });
 
     //------------------------
     // animation behavior
@@ -220,9 +196,6 @@ export let Animator = class {
         hoveredIcon = icon;
       }
       if (icon._scale > 1.1) {
-        // if (hoveredIcon == null || hoveredIcon._scale < icon._scale) {
-        //   hoveredIcon = icon;
-        // }
         // affect spread
         let offset =
           1.25 * (icon._scale - 1) * iconSize * scaleFactor * spread * 0.8;

@@ -3434,9 +3434,8 @@ let Animator = class {
     let nearestDistance = -1;
 
     animateIcons.forEach((c) => {
-      c._container = c;
       c._pos = dock._get_position(c);
-      c._fixedPosition = dock._get_position(c);
+      c._fixedPosition = [...c._pos];
     });
 
     // sort

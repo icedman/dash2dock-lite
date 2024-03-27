@@ -405,7 +405,11 @@ export let Dock = GObject.registerClass(
 
       if (c._icon) {
         c._label = c.label;
-        if (c == this.dash._showAppsIcon && this.extension.apps_icon_front) {
+        if (
+          c == this.dash._showAppsIcon &&
+          this.extension.apps_icon_front &&
+          !this.isVertical()
+        ) {
           this._icons.unshift(c);
         } else {
           this._icons.push(c);
@@ -422,7 +426,8 @@ export let Dock = GObject.registerClass(
         if (this._extraIcons) {
           iconsLength += this._extraIcons.get_children().length;
         }
-        if (this._icons.length >= iconsLength) {
+        if (this._icons.length + 2 >= iconsLength) {
+          // use icons cache
           return this._icons;
         }
       }
@@ -628,7 +633,8 @@ export let Dock = GObject.registerClass(
             } else if (this._list.visible) {
               this._list.slideOut();
             } else {
-              Main.uiGroup.remove_child(this._list); // remove so that it is repositioned to topmost
+              // remove and re-add so that it is repositioned to topmost
+              Main.uiGroup.remove_child(this._list);
               Main.uiGroup.add_child(this._list);
               this._list.visible = true;
             }
@@ -680,7 +686,7 @@ export let Dock = GObject.registerClass(
         this.dash._box.text_direction = 1; // LTR
       }
 
-      let locations = [
+      const locations = [
         DockPosition.BOTTOM,
         DockPosition.LEFT,
         DockPosition.RIGHT,
@@ -783,9 +789,8 @@ export let Dock = GObject.registerClass(
       }
 
       this._icons.forEach((icon) => {
-        icon.width = iconSizeSpaced * scaleFactor;
-        icon.height = iconSizeSpaced * scaleFactor;
-
+        icon.width = Math.floor(iconSizeSpaced * scaleFactor);
+        icon.height = Math.floor(iconSizeSpaced * scaleFactor);
         if (icon.style != iconStyle) {
           icon.style = iconStyle;
         }

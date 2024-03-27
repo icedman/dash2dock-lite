@@ -298,7 +298,7 @@ export let Animator = class {
 
       // jitter reduction hack
       if (dock.extension._enableJitterHack && icon._scale < 1.05 && isWithin) {
-        let size = 16;
+        let size = 32;
         icon._translation = icon._translation || [];
         let currentTranslation = icon._icon.translationX;
         if (!vertical) {
@@ -534,11 +534,6 @@ export let Animator = class {
       }
     }
 
-    if (dock.extension.debug_visual) {
-      dock.add_style_class_name('hi');
-      dock.struts.add_style_class_name('hi');
-      dock.dwell.add_style_class_name('hi');
-    }
     dock.dash.opacity = 255;
 
     //---------------------

@@ -998,6 +998,11 @@ export let Dock = GObject.registerClass(
     }
 
     _beginAnimation(caller) {
+      if (this.extension.debug_visual) {
+        this.add_style_class_name('hi');
+        this.struts.add_style_class_name('hi');
+        this.dwell.add_style_class_name('hi');
+      }
       // if (caller) {
       //   console.log(`animation triggered by ${caller}`);
       // }
@@ -1023,14 +1028,14 @@ export let Dock = GObject.registerClass(
     }
 
     _endAnimation() {
+      if (this.extension.debug_visual) {
+        this.remove_style_class_name('hi');
+        this.struts.remove_style_class_name('hi');
+        this.dwell.remove_style_class_name('hi');
+      }
       if (this.extension._hiTimer) {
         this.extension._hiTimer.cancel(this._animationSeq);
         this.extension._loTimer.cancel(this.debounceEndSeq);
-        if (this.extension.debug_visual) {
-          this.remove_style_class_name('hi');
-          this.struts.remove_style_class_name('hi');
-          this.dwell.remove_style_class_name('hi');
-        }
       }
       this.autohider._debounceCheckHide();
       this._icons = null;

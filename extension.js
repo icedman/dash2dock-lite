@@ -111,7 +111,7 @@ export default class Dash2DockLiteExt extends Extension {
   }
 
   enable() {
-    this._enableJitterHack = false;
+    this._enableJitterHack = true;
 
     // for debugging - set to 255
     this._dash_opacity = 0;
@@ -315,6 +315,9 @@ export default class Dash2DockLiteExt extends Extension {
           this._updateAnimationFPS();
           break;
         }
+        case 'debug-visual':
+          this.animate();
+          break;
         case 'mounted-icon': {
           this.services.checkMounts();
           this.services._commitMounts();

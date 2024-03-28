@@ -18,8 +18,7 @@ clean:
 publish:
 	echo "publishing..."
 	rm -rf build
-	mkdir build
-	rm -R ./dist
+	mkdir ./build
 	cp LICENSE ./build
 	cp *.js ./build
 	cp metadata.json ./build
@@ -41,9 +40,9 @@ publish:
 publish-g44:
 	echo "publishing..."
 	rm -rf build
-	mkdir build
-	rm -R ./dist
-	mkdir -p ./dist
+	rm -rf ./dist
+	mkdir ./build
+	mkdir ./dist
 	python3 ./rolldown.py
 	cp LICENSE ./build
 	cp ./dist/*.js ./build

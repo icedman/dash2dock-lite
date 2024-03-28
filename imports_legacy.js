@@ -1,4 +1,3 @@
-
 const Main = imports.ui.main;
 const BoxPointer = imports.ui.boxpointer;
 const PopupMenu = imports.ui.popupMenu;

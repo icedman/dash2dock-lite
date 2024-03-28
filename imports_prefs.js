@@ -17,24 +17,21 @@ function init() {
 }
 
 function buildPrefsWidget() {
-    let notebook = new Gtk.Notebook();
-    notebook.add = ((p) => {
-        notebook.append_page.bind(p, 
-            new Gtk.Label({ label: _('General') })
-        );
-    }).bind(notebook);
-    notebook.set_search_enabled = () => {};
-    
-    let p = new Preferences();
-    p.path = Me.dir.get_path();
-    p.fillPreferencesWindow(notebook);
+  let notebook = new Gtk.Notebook();
+  notebook.add = ((p) => {
+    notebook.append_page.bind(p, new Gtk.Label({ label: _('General') }));
+  }).bind(notebook);
+  notebook.set_search_enabled = () => {};
 
-    return notebook;
+  let p = new Preferences();
+  p.path = Me.dir.get_path();
+  p.fillPreferencesWindow(notebook);
+
+  return notebook;
 }
 
 function fillPreferencesWindow(window) {
-    let p = new Preferences();
-    p.path = Me.dir.get_path();
-    p.fillPreferencesWindow(window);
+  let p = new Preferences();
+  p.path = Me.dir.get_path();
+  p.fillPreferencesWindow(window);
 }
-  

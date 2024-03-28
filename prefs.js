@@ -303,7 +303,6 @@ export default class Preferences extends ExtensionPreferences {
     this.updateMonitors();
 
     this.window = window;
-    
   }
 
   preloadPresets(themes_path) {

@@ -532,7 +532,7 @@ export const Services = class {
           clock.translationX = item._icon.translationX;
           clock.translationY = item._icon.translationY;
           clock.show();
-          item._icon.visible = !clock._hideIcon;
+          item._icon.visible = !clock.shouldHideIcon();
         }
       } else {
         let clock = item._clock;
@@ -561,7 +561,7 @@ export const Services = class {
           calender.translationX = item._icon.translationX;
           calender.translationY = item._icon.translationY;
           calender.show();
-          item._icon.visible = !calender._hideIcon;
+          item._icon.visible = !calender.shouldHideIcon();
         }
       } else {
         let calender = item._calender;

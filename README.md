@@ -121,11 +121,12 @@ Please be specific on the errors encountered. Add screenshots whenever possible.
 
 ## Testing Rig
 
-* Arch Linux (Primary development machine)
+* Arch Linux (Gnome 45.5)
 * Ubuntu 23.10 (Gnome 45)
 * Debian 12.x (Gnome 43.9)
+* Manjaro Linux (Gnome 45.3)
 * Gnome OS Nightly (virtual, Gnome 46)
-* Fedora 39 (virtual)
+* Fedora 39 (virtual, Gnome 45)
 
 ## License
 

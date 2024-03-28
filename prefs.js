@@ -251,8 +251,8 @@ export default class Preferences extends ExtensionPreferences {
     builder.add_from_file(`${UIFolderPath}/menu.ui`);
     window.add(builder.get_object('general'));
     window.add(builder.get_object('appearance'));
-    window.add(builder.get_object('tweaks'));
     window.add(builder.get_object('others'));
+    window.add(builder.get_object('tweaks'));
     window.set_search_enabled(true);
 
     // this.dump(window, 0);

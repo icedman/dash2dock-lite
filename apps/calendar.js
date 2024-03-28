@@ -20,8 +20,13 @@ export const Calendar = GObject.registerClass(
     }
 
     redraw() {
+      this._canvas.settings = this.settings;
       this.visible = true;
       this._canvas.redraw();
+    }
+
+    shouldHideIcon() {
+      return false;
     }
   }
 );

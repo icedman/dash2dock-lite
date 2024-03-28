@@ -137,7 +137,12 @@ export const Clock = GObject.registerClass(
     }
 
     redraw() {
+      this._canvas.settings = this.settings;
       this._canvas.redraw();
+    }
+
+    shouldHideIcon() {
+      return this._canvas && this._canvas._hideIcon;
     }
   }
 );

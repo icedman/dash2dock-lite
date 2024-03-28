@@ -130,6 +130,7 @@ export const Clock = GObject.registerClass(
 
       let size = x || 400;
 
+      this.settings = settings;
       this._canvas = new ClockCanvas(settings);
       this._canvas.width = size;
       this._canvas.height = size;

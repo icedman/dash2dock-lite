@@ -12,7 +12,8 @@ export const Calendar = GObject.registerClass(
       super._init();
 
       let size = x || 400;
-
+      
+      this.settings = settings;
       this._canvas = new CalendarCanvas(settings);
       this._canvas.width = size;
       this._canvas.height = size;

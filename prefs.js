@@ -17,81 +17,11 @@ import {
   gettext as _,
 } from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
 
-<<<<<<< HEAD
-function init() {
-  let iconTheme = Gtk.IconTheme.get_for_display(Gdk.Display.get_default());
-  iconTheme.add_search_path(`${UIFolderPath}/icons`);
-  ExtensionUtils.initTranslations();
-}
-
-function updateMonitors(window, builder, settings) {
-  // monitors (use dbus?)
-  let count = settings.get_int('monitor-count') || 1;
-  const monitors_model = builder.get_object('preferred-monitor-model');
-  monitors_model.splice(count, 6 - count, []);
-}
-
-function find(n, name) {
-  if (n.get_name() == name) {
-    return n;
-  }
-  let c = n.get_first_child();
-  while (c) {
-    let cn = find(c, name);
-    if (cn) {
-      return cn;
-    }
-    c = c.get_next_sibling();
-  }
-  return null;
-}
-
-function dump(n, l) {
-  let s = '';
-  for (let i = 0; i < l; i++) {
-    s += ' ';
-  }
-  print(`${s}${n.get_name()}`);
-  let c = n.get_first_child();
-  while (c) {
-    dump(c, l + 1);
-    c = c.get_next_sibling();
-  }
-}
-
-function addMenu(window, builder) {
-  // let menu_util = builder.get_object('menu_util');
-  // window.add(menu_util);
-
-  // const page = builder.get_object('menu_util');
-  // const pages_stack = page.get_parent(); // AdwViewStack
-  // const content_stack = pages_stack.get_parent().get_parent(); // GtkStack
-  // const preferences = content_stack.get_parent(); // GtkBox
-  // const headerbar = preferences.get_first_child(); // AdwHeaderBar
-  // headerbar.pack_start(builder.get_object('info_menu'));
-
-  let headerbar = this.find(window, 'AdwHeaderBar');
-  if (!headerbar) {
-    return;
-  }
-  headerbar.pack_start(builder.get_object('info_menu'));
-
-  // setup menu actions
-  const actionGroup = new Gio.SimpleActionGroup();
-  window.insert_action_group('prefs', actionGroup);
-
-  // a list of actions with their associated link
-  const actions = [
-    {
-      name: 'open-bug-report',
-      link: 'https://github.com/icedman/dash2dock-lite/issues',
-=======
 // from Dock-to-Dock
 const MonitorsConfig = GObject.registerClass(
   {
     Signals: {
       updated: {},
->>>>>>> development
     },
   },
   class MonitorsConfig extends GObject.Object {
@@ -113,13 +43,8 @@ const MonitorsConfig = GObject.registerClass(
       return Gio.DBusProxy.makeProxyWrapper(MonitorsConfig.XML_INTERFACE);
     }
 
-<<<<<<< HEAD
-  // window.remove(menu_util);
-}
-=======
     constructor() {
       super();
->>>>>>> development
 
       this._monitorsConfigProxy = new MonitorsConfig.ProxyWrapper(
         Gio.DBus.session,

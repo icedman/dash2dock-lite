@@ -10,10 +10,19 @@ from pprint import pprint
 
 imports = []
 
+def modifyMetadata():
+    o = open("./dist/metadata.json", "w")
+    for l in open("./metadata.json", "r"):
+        if '"45"' in l:
+            l = '    "42", "43", "44", ' + l.strip() + "\n"
+        o.write(l)
+
 def dump(f):
     if f.startswith("./tests/"):
         return
     if f.startswith("./dist/"):
+        return
+    if "prefs.js" in f:
         return
     f = f.strip()
     if not f.endswith(".js"):
@@ -80,3 +89,5 @@ output.write(open("./imports_prefs.txt", "r").read())
 output.write("\n\n")
 
 dumpPref("./")
+
+modifyMetadata()

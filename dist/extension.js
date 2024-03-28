@@ -1,3 +1,4 @@
+
 const Main = imports.ui.main;
 const BoxPointer = imports.ui.boxpointer;
 const PopupMenu = imports.ui.popupMenu;
@@ -25,7 +26,6 @@ const Meta = imports.gi.Meta;
 const Shell = imports.gi.Shell;
 const Gtk = imports.gi.Gtk;
 const Gdk = imports.gi.Gdk;
-const Adw = imports.gi.Adw;
 const Cairo = imports.cairo;
 
 const Point = Graphene.Point;
@@ -36,151 +36,1905 @@ function init() {
   return new Dash2DockLiteExt();
 }
 
+
 //-----------------------------
-// ./drawing.js
+// ./dockItems.js
 //-----------------------------
 
 //'use strict';
 
-//import PangoCairo from 'gi://PangoCairo';
-//import Pango from 'gi://Pango';
+//import * as Main from 'resource:///org/gnome/shell/ui/main.js';
+//import * as BoxPointer from 'resource:///org/gnome/shell/ui/boxpointer.js';
+//import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
+//import { trySpawnCommandLine } from 'resource:///org/gnome/shell/misc/util.js';
+//import { BaseIcon } from 'resource:///org/gnome/shell/ui/iconGrid.js';
+
+//import Gio from 'gi://Gio';
+//import GObject from 'gi://GObject';
 //import Clutter from 'gi://Clutter';
+//import Graphene from 'gi://Graphene';
+//import St from 'gi://St';
 
-function draw_rotated_line(ctx, color, width, angle, len, offset) {
-  offset = offset || 0;
-  ctx.save();
-  ctx.rotate(angle);
-  set_color(ctx, color, 1);
-  ctx.setLineWidth(width);
-  ctx.moveTo(0, offset);
-  ctx.lineTo(0, len);
-  ctx.stroke();
-  ctx.restore();
-}
+//import { ShowAppsIcon } from 'resource:///org/gnome/shell/ui/dash.js';
 
-function draw_line(ctx, color, width, x, y, x2, y2) {
-  ctx.save();
-  set_color(ctx, color, 1);
-  ctx.setLineWidth(width);
-  ctx.moveTo(x, y);
-  ctx.lineTo(x2, y2);
-  ctx.stroke();
-  ctx.restore();
-}
+//import { Dot } from './apps/dot.js';
+//import { DockPosition } from './dock.js';
 
-function draw_circle(ctx, color, x, y, diameter, line_width) {
-  ctx.save();
-  set_color(ctx, color, 1);
-  ctx.arc(x, y, diameter / 2 - diameter / 20, 0, 2 * Math.PI);
-  ctx.setLineWidth(line_width || 0);
-  if (line_width > 0) {
-    ctx.stroke();
-  } else {
-    ctx.fill();
-  }
-  ctx.restore();
-}
+//const Point = Graphene.Point;
 
-function draw_rounded_rect(
-  ctx,
-  color,
-  x,
-  y,
-  h_size,
-  v_size,
-  line_width,
-  border_radius
-) {
-  ctx.save();
-  set_color(ctx, color, 1);
-  ctx.translate(x, y);
-  ctx.setLineWidth(line_width || 0);
-  ctx.moveTo(border_radius, 0);
-  ctx.lineTo(h_size - border_radius, 0);
-  // ctx.lineTo(h_size, border_radius);
-  ctx.curveTo(h_size - border_radius, 0, h_size, 0, h_size, border_radius);
-  ctx.lineTo(h_size, v_size - border_radius);
-  // ctx.lineTo(h_size - border_radius, h_size);
-  ctx.curveTo(
-    h_size,
-    v_size - border_radius,
-    h_size,
-    v_size,
-    h_size - border_radius,
-    v_size
-  );
-  ctx.lineTo(border_radius, v_size);
-  // ctx.lineTo(0, h_size - border_radius);
-  ctx.curveTo(border_radius, v_size, 0, v_size, 0, v_size - border_radius);
-  ctx.lineTo(0, border_radius);
-  ctx.curveTo(0, border_radius, 0, 0, border_radius, 0);
-  if (line_width == 0) {
-    ctx.fill();
-  } else {
-    ctx.stroke();
-  }
-  ctx.restore();
-}
+const DockItemOverlay = GObject.registerClass(
+  {},
+  class DockItemOverlay extends St.Widget {
+    _init(renderer, params) {
+      super._init({
+        name: 'DockItemContainer',
+        ...params,
+      });
 
-function draw_rect(ctx, color, x, y, h_size, v_size, line_width) {
-  ctx.save();
-  set_color(ctx, color, 1);
-  ctx.translate(x, y);
-  ctx.setLineWidth(line_width || 0);
-  ctx.moveTo(0, 0);
-  ctx.lineTo(h_size, 0);
-  ctx.lineTo(h_size, v_size);
-  ctx.lineTo(0, v_size);
-  ctx.lineTo(0, 0);
-  if (line_width == 0) {
-    ctx.fill();
-  } else {
-    ctx.stroke();
-  }
-  ctx.restore();
-}
-
-function draw_text(ctx, showtext, font = 'DejaVuSans 42') {
-  ctx.save();
-  let pl = PangoCairo.create_layout(ctx);
-  pl.set_text(showtext, -1);
-  pl.set_font_description(Pango.FontDescription.from_string(font));
-  PangoCairo.update_layout(ctx, pl);
-  let [w, h] = pl.get_pixel_size();
-  ctx.relMoveTo(-w / 2, -h / 2);
-  PangoCairo.show_layout(ctx, pl);
-  ctx.relMoveTo(w / 2, 0);
-  ctx.restore();
-  return [w, h];
-}
-
-function set_color(ctx, clr, alpha) {
-  if (typeof clr === 'string') {
-    const [, cc] = Clutter.Color.from_string(clr);
-    ctx.setSourceRGBA(cc.red, cc.green, cc.blue, alpha);
-  } else {
-    if (clr.red) {
-      ctx.setSourceRGBA(clr.red, clr.green, clr.blue, alpha);
-    } else {
-      ctx.setSourceRGBA(clr[0], clr[1], clr[2], alpha);
+      this.renderer = renderer;
+      if (renderer) {
+        this.add_child(renderer);
+      }
     }
   }
+);
+
+const DockItemDotsOverlay = GObject.registerClass(
+  {},
+  class DockItemDotsOverlay extends DockItemOverlay {
+    update(icon, data) {
+      let renderer = this.renderer;
+      let { appCount, position, vertical, extension } = data;
+
+      renderer.width = icon._icon.width;
+      renderer.height = icon._icon.height;
+      renderer.pivot_point = icon._icon.pivot_point;
+
+      let canvasScale = renderer.width / renderer._canvas.width;
+      renderer._canvas.set_scale(canvasScale, canvasScale);
+
+      if (vertical) {
+        renderer.translationX =
+          icon._icon.translationX + (position == DockPosition.LEFT ? -6 : 6);
+        renderer.translationY = icon._icon.translationY;
+      } else {
+        renderer.translationX = icon._icon.translationX;
+        renderer.translationY =
+          icon._icon.translationY + (position == DockPosition.BOTTOM ? 8 : -8);
+      }
+
+      let options = extension.running_indicator_style_options;
+      let running_indicator_style = options[extension.running_indicator_style];
+      let running_indicator_color = extension.running_indicator_color;
+
+      renderer.set_state({
+        count: appCount,
+        color: running_indicator_color || [1, 1, 1, 1],
+        style: running_indicator_style || 'default',
+        rotate: vertical
+          ? position == DockPosition.RIGHT
+            ? -90
+            : 90
+          : position == DockPosition.TOP
+          ? 180
+          : 0,
+      });
+    }
+  }
+);
+
+const DockItemBadgeOverlay = GObject.registerClass(
+  {},
+  class DockItemBadgeOverlay extends DockItemOverlay {
+    update(icon, data) {
+      let renderer = this.renderer;
+      let { noticesCount, position, vertical, extension } = data;
+
+      renderer.width = icon._icon.width;
+      renderer.height = icon._icon.height;
+      renderer.set_scale(icon._icon.scaleX, icon._icon.scaleY);
+      renderer.pivot_point = icon._icon.pivot_point;
+      renderer.translationX = icon._icon.translationX + 4;
+      renderer.translationY = icon._icon.translationY - 4;
+
+      let canvasScale = renderer.width / renderer._canvas.width;
+      renderer._canvas.set_scale(canvasScale, canvasScale);
+
+      let options = extension.notification_badge_style_options;
+      let notification_badge_style =
+        options[extension.notification_badge_style];
+      let notification_badge_color = extension.notification_badge_color;
+
+      renderer.set_state({
+        count: noticesCount,
+        color: notification_badge_color || [1, 1, 1, 1],
+        style: notification_badge_style || 'default',
+        rotate: position == DockPosition.BOTTOM ? 180 : 0,
+        translate: [0.4, 0],
+      });
+    }
+  }
+);
+
+class DockItemMenu extends PopupMenu.PopupMenu {
+  constructor(sourceActor, side = St.Side.TOP, params = {}) {
+    if (Clutter.get_default_text_direction() === Clutter.TextDirection.RTL) {
+      if (side === St.Side.LEFT) side = St.Side.RIGHT;
+      else if (side === St.Side.RIGHT) side = St.Side.LEFT;
+    }
+
+    super(sourceActor, 0.5, side);
+
+    let { desktopApp } = params;
+    if (!desktopApp) return;
+
+    this.desktopApp = desktopApp;
+
+    this._newWindowItem = this.addAction('Open Window', () => {
+      let workspaceManager = global.workspace_manager;
+      let workspace = workspaceManager.get_active_workspace();
+      let ctx = global.create_app_launch_context(0, workspace);
+      desktopApp.launch([], ctx);
+      this._onActivate();
+    });
+
+    desktopApp.list_actions().forEach((action) => {
+      let name = desktopApp.get_action_name(action);
+      this.addAction(name, () => {
+        let workspaceManager = global.workspace_manager;
+        let workspace = workspaceManager.get_active_workspace();
+        let ctx = global.create_app_launch_context(0, workspace);
+        desktopApp.launch_action(action, ctx);
+        this.item.dock.extension.animate({ refresh: true });
+      });
+    });
+  }
+
+  _onActivate() {}
+
+  popup() {
+    this.open(BoxPointer.PopupAnimation.FULL);
+    this._menuManager.ignoreRelease();
+  }
 }
 
-function set_color_rgba(ctx, red, green, blue, alpha) {
-  ctx.setSourceRGBA(red, green, blue, alpha);
-}
+const DockItemList = GObject.registerClass(
+  {},
+  class DockItemList extends St.Widget {
+    _init(renderer, params) {
+      super._init({
+        name: 'DockItemList',
+        reactive: true,
+        // style_class: 'hi',
+        ...params,
+      });
 
-const Drawing = {
-  set_color,
-  set_color_rgba,
-  draw_rotated_line,
-  draw_line,
-  draw_circle,
-  draw_rect,
-  draw_rounded_rect,
-  draw_text,
+      this.connect('button-press-event', (obj, evt) => {
+        // this.visible = false;
+        this.slideOut();
+        return Clutter.EVENT_PROPAGATE;
+      });
+    }
+
+    slideIn(target, list) {
+      if (this._box) {
+        this.remove_child(this._box);
+        this._box = null;
+      }
+
+      if (!list.length) return;
+
+      this.opacity = 0;
+
+      let dock = this.dock;
+      this.x = dock._monitor.x;
+      this.y = dock._monitor.y;
+      this.width = dock._monitor.width;
+      this.height = dock._monitor.height;
+
+      this._target = target;
+      let tp = dock._get_position(target);
+
+      this._box = new St.Widget({ style_class: '-hi' });
+      list.forEach((l) => {
+        let w = new St.Widget({});
+        let icon = new St.Icon({
+          icon_name: l.icon,
+          reactive: true,
+          track_hover: true,
+        });
+        icon.set_icon_size(
+          this.dock._iconSizeScaledDown * this.dock._scaleFactor
+        );
+        this._box.add_child(w);
+        let label = new St.Label({ style_class: 'dash-label' });
+        let short = (l.name ?? '').replace(/(.{32})..+/, '$1...');
+        label.text = short;
+        w.add_child(icon);
+        w.add_child(label);
+        w._icon = icon;
+        w._label = label;
+
+        icon.connect('button-press-event', () => {
+          let path = Gio.File.new_for_path(`Downloads/${l.name}`).get_path();
+          let cmd = `xdg-open "${path}"`;
+          if (l.type.includes('directory')) {
+            cmd = `nautilus --select "${path}"`;
+          }
+          this.visible = false;
+          this.dock._maybeBounce(this._target);
+
+          try {
+            console.log(cmd);
+            trySpawnCommandLine(cmd);
+          } catch (err) {
+            console.log(err);
+          }
+        });
+      });
+
+      let ox = 0;
+      let oy = 0;
+      let angleInc = 2;
+      let startAngle = 268;
+      let angle = startAngle;
+      let rad = dock._iconSize * 1.1 * dock._scaleFactor;
+
+      let children = this._box.get_children();
+      children.reverse();
+      children.forEach((l) => {
+        let hX = Math.cos(angle * 0.0174533);
+        let hY = Math.sin(angle * 0.0174533);
+        let hl = Math.sqrt(hX * hX + hY * hY);
+        hX /= hl;
+        hY /= hl;
+        hX *= rad;
+        hY *= rad;
+
+        l.x = tp[0] - this.x + ox;
+        l.y = tp[1] - this.y + oy;
+
+        ox += hX * 0.85;
+        oy += hY;
+        angle += angleInc;
+
+        l.rotation_angle_z = angle - startAngle;
+      });
+
+      this.add_child(this._box);
+
+      let first = children[0];
+      children.forEach((l) => {
+        l._ox = first.x;
+        l._oy = first.y;
+        l._oz = 0;
+        l._label.opacity = 0;
+        l._x = l.x;
+        l._y = l.y - rad * 0.8;
+        l._rotation_angle_z = l.rotation_angle_z;
+        l.x = first.x;
+        l.y = first.y;
+        l.rotation_angle_z = 0;
+      });
+
+      this._hidden = false;
+      this._hiddenFrames = 0;
+    }
+
+    slideOut() {
+      this._hidden = true;
+      this._hiddenFrames = 80;
+    }
+  }
+);
+
+const DockItemContainer = GObject.registerClass(
+  {},
+  class DockItemContainer extends ShowAppsIcon {
+    _init(params) {
+      super._init({
+        name: 'DockItemContainer',
+        style_class: 'dash-item-container',
+        ...(params || {}),
+      });
+
+      this.name = params.appinfo_filename;
+      this.show(false);
+
+      let desktopApp = Gio.DesktopAppInfo.new_from_filename(
+        params.appinfo_filename
+      );
+
+      this._label = this.label;
+
+      try {
+        this._labelText = desktopApp.get_name();
+        this._default_icon_name = desktopApp.get_icon().get_names()[0];
+      } catch (err) {
+        console.log(err);
+        console.log(params);
+      }
+
+      // menu
+      this._menu = new DockItemMenu(this, St.Side.TOP, {
+        desktopApp,
+      });
+      this._menu.item = this;
+      this._menuManager = new PopupMenu.PopupMenuManager(this);
+      this._menu._menuManager = this._menuManager;
+      Main.uiGroup.add_child(this._menu.actor);
+      this._menuManager.addMenu(this._menu);
+      this._menu.close();
+    }
+
+    activateNewWindow() {
+      if (this._menu && this._menu._newWindowItem) {
+        this._menu._newWindowItem.emit('activate', null);
+      }
+    }
+
+    _onClick() {
+      this.activateNewWindow();
+    }
+
+    _createIcon(size) {
+      this._iconActor = new St.Icon({
+        icon_name: this._default_icon_name,
+        icon_size: size,
+        style_class: 'show-apps-icon',
+        track_hover: true,
+      });
+
+      // attach event
+      let button = this.first_child;
+      button.reactive = false;
+      let icon = this._iconActor;
+
+      icon.reactive = true;
+      icon.track_hover = true;
+      [icon].forEach((btn) => {
+        if (btn._connected) return;
+        btn._connected = true;
+        btn.button_mask = St.ButtonMask.ONE | St.ButtonMask.TWO;
+        btn.connectObject(
+          'enter-event',
+          () => {
+            this.showLabel();
+          },
+          'leave-event',
+          () => {
+            this.hideLabel();
+          },
+          'button-press-event',
+          (actor, evt) => {
+            if (evt.get_button() != 1) {
+              if (this._menu) {
+                this._menu.popup();
+              }
+            } else {
+              this._onClick();
+            }
+          },
+          this
+        );
+      });
+
+      return this._iconActor;
+    }
+  }
+);
+
+const DockBackground = GObject.registerClass(
+  {},
+  class DockBackground extends St.Widget {
+    _init(params) {
+      super._init({
+        name: 'DockBackground',
+        ...(params || {}),
+      });
+    }
+
+    update(params) {
+      let {
+        first,
+        last,
+        iconSize,
+        scaleFactor,
+        vertical,
+        position,
+        panel_mode,
+        dashContainer,
+      } = params;
+
+      if (!first || !last) return;
+
+      let p1 = first.get_transformed_position();
+      let p2 = last.get_transformed_position();
+
+      let padding =
+        4 +
+        iconSize *
+          scaleFactor *
+          0.15 *
+          (dashContainer.extension.dock_padding || 0);
+
+      if (!isNaN(p1[0]) && !isNaN(p1[1])) {
+        let tx = first._icon.translationX;
+        let ty = first._icon.translationY;
+        let tx2 = last._icon.translationX;
+        let ty2 = last._icon.translationY;
+
+        // bottom
+        this.x = p1[0] + tx;
+        this.y = first._fixedPosition[1];
+        let width = dashContainer.dash.width + Math.abs(tx) + tx2 - padding;
+        let height = dashContainer.dash.height;
+
+        if (dashContainer.isVertical()) {
+          this.x = first._fixedPosition[0];
+          this.y = first._fixedPosition[1] + ty;
+          width = dashContainer.dash.width;
+          height = dashContainer.dash.height + Math.abs(ty) + ty2 - padding;
+        }
+
+        if (!isNaN(width)) {
+          this.width = width;
+        }
+        if (!isNaN(height)) {
+          this.height = height;
+        }
+
+        this.x -= dashContainer.x;
+        this.y -= dashContainer.y;
+        this._padding = padding;
+
+        // adjust padding
+        let az = -padding;
+        this.x += az / 2;
+        this.width -= az * (1 + !vertical);
+        this.y += az / 2;
+        this.height -= az * (1 + vertical);
+
+        if (panel_mode) {
+          if (vertical) {
+            this.y = dashContainer.y;
+            this.height = dashContainer.height;
+          } else {
+            this.x = dashContainer.x;
+            this.width = dashContainer.width;
+          }
+        }
+      }
+    }
+  }
+);
+
+const DockPanelOverlay = GObject.registerClass(
+  {},
+  class DockPanelOverlay extends St.Widget {
+    _init(params) {
+      super._init({
+        name: 'DockOverlay',
+        ...(params || {}),
+      });
+    }
+
+    update(params) {
+      let {
+        background,
+        left,
+        right,
+        center,
+        panel_mode,
+        vertical,
+        dashContainer,
+        combine_top_bar,
+      } = params;
+
+      if (!combine_top_bar || !panel_mode || vertical) {
+        if (this.visible) {
+          dashContainer.restorePanel();
+        }
+        this.visible = false;
+        return;
+      }
+
+      this.visible = true;
+      dashContainer.panel.visible = false;
+
+      // this.style = 'border: 2px solid red;';
+      this.x = background.x;
+      this.y = background.y;
+      this.width = background.width;
+      this.height = background.height;
+
+      let margin = 20;
+
+      // left
+      if (left.get_parent() != this) {
+        left.get_parent().remove_child(left);
+        this.add_child(left);
+      }
+      left.x = margin;
+      left.y = this.height / 2 - left.height / 2;
+
+      // center
+      if (center.get_parent() != this) {
+        center.get_parent().remove_child(center);
+        this.add_child(center);
+      }
+      center.x = this.width - margin / 2 - center.width;
+      center.y = this.height / 2 - center.height / 2;
+
+      // right
+      if (right.get_parent() != this) {
+        right.get_parent().remove_child(right);
+        this.add_child(right);
+      }
+      right.height = center.height;
+      right.x = this.width - margin - right.width;
+      right.y = this.height / 2 - right.height / 2;
+
+      // align
+      if (center.height * 3 < this.height) {
+        right.y -= right.height / 1.5;
+        center.y += center.height / 1.5;
+      } else {
+        right.x -= center.width;
+      }
+    }
+  }
+);
+
+
+//-----------------------------
+// ./autohide.js
+//-----------------------------
+
+//'use strict';
+
+//import * as Main from 'resource:///org/gnome/shell/ui/main.js';
+//import Meta from 'gi://Meta';
+//import Shell from 'gi://Shell';
+//import GObject from 'gi://GObject';
+//import Clutter from 'gi://Clutter';
+//import Graphene from 'gi://Graphene';
+//import St from 'gi://St';
+
+//import { DockPosition } from './dock.js';
+
+//const Point = Graphene.Point;
+
+const HIDE_ANIMATION_INTERVAL = 15;
+const HIDE_ANIMATION_INTERVAL_PAD = 15;
+const DEBOUNCE_HIDE_TIMEOUT = 120;
+const PRESSURE_SENSE_DISTANCE = 40;
+
+// some codes lifted from dash-to-dock intellihide
+const handledWindowTypes = [
+  Meta.WindowType.NORMAL,
+  // Meta.WindowType.DOCK,
+  Meta.WindowType.DIALOG,
+  Meta.WindowType.MODAL_DIALOG,
+  // Meta.WindowType.TOOLBAR,
+  // Meta.WindowType.MENU,
+  Meta.WindowType.UTILITY,
+  // Meta.WindowType.SPLASHSCREEN
+];
+
+let AutoHide = class {
+  enable() {
+    if (this._enabled) return;
+    // console.log('enable autohide');
+    this._enabled = true;
+    this._shown = true;
+    this._dwell = 0;
+    console.log('autohide enabled');
+  }
+
+  disable() {
+    if (!this._enabled) return;
+    if (this.extension._hiTimer) {
+      this.extension._hiTimer.cancel(this._animationSeq);
+    }
+
+    this.show();
+
+    this._enabled = false;
+
+    let actors = global.get_window_actors();
+    let windows = actors.map((a) => a.get_meta_window());
+    windows.forEach((w) => {
+      if (w._tracked) {
+        this._untrack(w);
+      }
+    });
+
+    console.log('autohide disabled');
+  }
+
+  _getScaleFactor() {
+    let scaleFactor = this.dashContainer._monitor.geometry_scale;
+    return scaleFactor;
+  }
+
+  _onMotionEvent() {
+    if (this.extension.pressure_sense && !this._shown) {
+      let monitor = this.dashContainer._monitor;
+      let pointer = global.get_pointer();
+      if (this.extension.simulated_pointer) {
+        pointer = [...this.extension.simulated_pointer];
+      }
+
+      let sw = monitor.width;
+      let sh = monitor.height;
+      let scale = this._getScaleFactor();
+      let area = scale * (PRESSURE_SENSE_DISTANCE * PRESSURE_SENSE_DISTANCE);
+      let dx = 0;
+      let dy = 0;
+
+      if (this.last_pointer) {
+        dx = pointer[0] - this.last_pointer[0];
+        dx = dx * dx;
+        dy = pointer[1] - this.last_pointer[1];
+        dy = dy * dy;
+      }
+
+      let dwell_count =
+        80 - 60 * (this.extension.pressure_sense_sensitivity || 0);
+
+      if (this.dashContainer.isVertical()) {
+        if (
+          // right
+          (this.dashContainer._position == DockPosition.RIGHT &&
+            dy < area &&
+            pointer[0] > monitor.x + sw - 4) ||
+          // left
+          (this.dashContainer._position == DockPosition.LEFT &&
+            dy < area &&
+            pointer[0] < monitor.x + 4)
+        ) {
+          this._dwell++;
+        } else {
+          this._dwell = 0;
+          this.last_pointer = pointer;
+        }
+      } else {
+        // bottom
+        if (dx < area && pointer[1] + 4 > monitor.y + sh) {
+          this._dwell++;
+        } else {
+          this._dwell = 0;
+          this.last_pointer = pointer;
+        }
+      }
+
+      // console.log(`${this._dwell} ${dwell_count} ${this.extension.pressure_sense_sensitivity}`);
+
+      if (this._dwell > dwell_count) {
+        this.show();
+      }
+    }
+  }
+
+  _onEnterEvent() {
+    if (!this.extension.pressure_sense) {
+      this.show();
+    }
+  }
+
+  _onLeaveEvent() {
+    if (this._shown) {
+      this._dwell = 0;
+      this._debounceCheckHide();
+    }
+  }
+
+  _onFocusWindow() {
+    this._debounceCheckHide();
+  }
+
+  _onFullScreen() {
+    this._debounceCheckHide();
+  }
+
+  show() {
+    this._dwell = 0;
+    this.frameDelay = 0;
+    this._shown = true;
+    this.dashContainer.slideIn();
+  }
+
+  hide() {
+    this._dwell = 0;
+    this.frameDelay = 10;
+    this._shown = false;
+    this.dashContainer.slideOut();
+  }
+
+  _track(window) {
+    if (!window._tracked) {
+      // log('tracking...');
+      window.connectObject(
+        'position-changed',
+        // this._debounceCheckHide.bind(this),
+        () => {
+          this.dashContainer.extension.checkHide();
+        },
+        'size-changed',
+        // this._debounceCheckHide.bind(this),
+        () => {
+          this.dashContainer.extension.checkHide();
+        },
+        this
+      );
+      window._tracked = true;
+    }
+  }
+
+  _untrack(window) {
+    try {
+      if (window && window._tracked) {
+        window.disconnectObject(this);
+        window._tracked = false;
+      }
+    } catch (err) {
+      // may have been destroyed already
+    }
+  }
+
+  _checkOverlap() {
+    if (this.extension._inOverview) {
+      return false;
+    }
+    let pointer = global.get_pointer();
+    if (this.extension.simulated_pointer) {
+      pointer = [...this.extension.simulated_pointer];
+    }
+
+    // inaccurate
+    let pos = this.dashContainer._get_position(this.dashContainer.struts);
+    let rect = {
+      x: pos[0],
+      y: pos[1],
+      w: this.dashContainer.struts.width,
+      h: this.dashContainer.struts.height,
+    };
+    let arect = [rect.x, rect.y, rect.w, rect.h];
+    let dash_position = [this.dashContainer.x, this.dashContainer.y];
+
+    if (!this.extension.autohide_dash) {
+      return false;
+    }
+
+    // within the dash
+    if (
+      this.dashContainer._isWithinDash(pointer) ||
+      this.dashContainer._isInRect(arect, pointer)
+    ) {
+      return false;
+    }
+
+    if (!this.extension.autohide_dodge) {
+      return true;
+    }
+
+    let monitor = this.dashContainer._monitor;
+    let actors = global.get_window_actors();
+    let windows = actors.map((a) => {
+      let w = a.get_meta_window();
+      w._parent = a;
+      return w;
+    });
+    windows = windows.filter((w) => w.can_close());
+    windows = windows.filter((w) => w.get_monitor() == monitor.index);
+    let workspace = global.workspace_manager.get_active_workspace_index();
+    windows = windows.filter(
+      (w) =>
+        workspace == w.get_workspace().index() && w.showing_on_its_workspace()
+    );
+    windows = windows.filter((w) => w.get_window_type() in handledWindowTypes);
+
+    let isOverlapped = false;
+    let dock = this.dashContainer._get_position(this.dashContainer.struts);
+    dock.push(this.dashContainer.struts.width);
+    dock.push(this.dashContainer.struts.height);
+
+    windows.forEach((w) => {
+      this._track(w);
+      if (isOverlapped) return;
+
+      let frame = w.get_frame_rect();
+      let win = [frame.x, frame.y, frame.width, frame.height];
+
+      if (this.dashContainer._isOverlapRect(dock, win)) {
+        isOverlapped = true;
+      }
+    });
+
+    this.windows = windows;
+    return isOverlapped;
+  }
+
+  _debounceCheckHide() {
+    if (this.extension._loTimer) {
+      if (!this._debounceCheckSeq) {
+        this._debounceCheckSeq = this.extension._loTimer.runDebounced(
+          () => {
+            this._checkHide();
+          },
+          DEBOUNCE_HIDE_TIMEOUT,
+          'debounceCheckHide'
+        );
+      } else {
+        this.extension._loTimer.runDebounced(this._debounceCheckSeq);
+      }
+    }
+  }
+
+  _checkHide() {
+    if (this._enabled) {
+      if (this._checkOverlap()) {
+        this.hide();
+      } else {
+        this.show();
+      }
+    }
+  }
 };
+
+
+//-----------------------------
+// ./animator.js
+//-----------------------------
+
+//'use strict';
+
+//import * as Main from 'resource:///org/gnome/shell/ui/main.js';
+//import Graphene from 'gi://Graphene';
+//const Point = Graphene.Point;
+
+//import { Dot } from './apps/dot.js';
+//import { DockPosition } from './dock.js';
+
+//import {
+//  DockItemDotsOverlay,
+//  DockItemBadgeOverlay,
+//  DockItemContainer,
+//  DockBackground,
+//} from './dockItems.js';
+
+//import { Bounce, Linear } from './effects/easing.js';
+
+const ANIM_POS_COEF = 0.5;
+const ANIM_SCALE_COEF = 1.5 * 2;
+const ANIM_SPREAD_COEF = 1.25 * 1;
+const ANIM_ON_LEAVE_COEF = 2.0;
+const ANIM_ICON_RAISE = 0.6;
+const ANIM_ICON_SCALE = 1.5;
+const ANIM_ICON_HIT_AREA = 2.5;
+
+const DOT_CANVAS_SIZE = 96;
+
+let Animator = class {
+  enable() {}
+
+  disable() {}
+
+  animate() {
+    let dock = this.dashContainer;
+
+    let simulation = false;
+    // this._hidden = true;
+
+    dock.layout();
+
+    let m = dock.getMonitor();
+    let pointer = global.get_pointer();
+    if (dock.extension.simulated_pointer) {
+      pointer = [...dock.extension.simulated_pointer];
+      simulation = true;
+    }
+    if (dock.simulated_pointer) {
+      pointer = [...dock.simulated_pointer];
+      simulation = true;
+    }
+
+    let vertical = dock.isVertical();
+
+    let [px, py] = pointer;
+
+    let p = new Point();
+    p.x = 0.5;
+    p.y = 0.5;
+
+    let isWithin = dock._isWithinDash([px, py]);
+    let animated = isWithin;
+    dock.animated = animated;
+
+    let animateIcons = dock._icons;
+    let iconSize = dock._iconSizeScaledDown;
+    let scaleFactor = dock._scaleFactor;
+
+    let nearestIdx = -1;
+    let nearestIcon = null;
+    let nearestDistance = -1;
+
+    let idx = 0;
+    animateIcons.forEach((icon) => {
+      let pos = dock._get_position(icon);
+      icon._pos = [...pos];
+      icon._fixedPosition = [...pos];
+
+      // moved to findIcons
+      // icon._icon.set_icon_size(iconSize * dock.extension.icon_quality);
+
+      // get nearest
+      let bposcenter = [...pos];
+      bposcenter[0] += (iconSize * scaleFactor) / 2;
+      bposcenter[1] += (iconSize * scaleFactor) / 2;
+      let dst = dock._get_distance(pointer, bposcenter);
+
+      if (
+        isWithin &&
+        (nearestDistance == -1 || nearestDistance > dst) &&
+        dst < iconSize * ANIM_ICON_HIT_AREA * scaleFactor
+      ) {
+        nearestDistance = dst;
+        nearestIcon = icon;
+        nearestIdx = idx;
+        icon._distance = dst;
+      }
+
+      icon._target = pos;
+      icon._targetScale = 1;
+
+      idx++;
+    });
+
+    let noAnimation = !dock.extension.animate_icons_unmute;
+    if ((!simulation && !isWithin) || noAnimation) {
+      nearestIcon = null;
+    }
+
+    dock._nearestIcon = nearestIcon;
+
+    let didScale = false;
+
+    //------------------------
+    // animation behavior
+    //------------------------
+    let edge_distance = dock._edge_distance;
+    let rise = dock.extension.animation_rise * ANIM_ICON_RAISE;
+    let magnify = dock.extension.animation_magnify * ANIM_ICON_SCALE;
+    let spread = dock.extension.animation_spread;
+    if (spread < 0.2) {
+      magnify *= 0.8;
+    }
+    if (magnify > 0.5 && spread < 0.55) {
+      spread = 0.55 + spread * 0.2;
+    }
+
+    let padding = 10;
+    let threshold = (iconSize + padding) * 2.5 * scaleFactor;
+
+    if (animated && edge_distance < 0) {
+      edge_distance = 0;
+    }
+
+    // animate
+    let iconTable = [];
+    animateIcons.forEach((icon) => {
+      let original_pos = dock._get_position(icon);
+
+      // used by background resizing and repositioning
+      icon._fixedPosition = [...original_pos];
+
+      original_pos[0] += icon.width / 2;
+      original_pos[1] += icon.height / 2;
+
+      icon._pos = [...original_pos];
+      icon._translate = 0;
+      icon._translateRise = 0;
+
+      iconTable.push(icon);
+
+      let scale = 1;
+      let dx = original_pos[0] - px;
+      if (vertical) {
+        dx = original_pos[1] - py;
+      }
+      if (dx * dx < threshold * threshold && nearestIcon) {
+        let adx = Math.abs(dx);
+        let p = 1.0 - adx / threshold;
+        let fp = p * 0.6 * (1 + magnify);
+        icon._p = p;
+
+        // affect scale;
+        if (magnify != 0) {
+          scale += fp;
+        }
+
+        // affect rise
+        let sz = iconSize * fp * scaleFactor;
+        icon._translateRise = sz * 0.1 * rise;
+
+        didScale = true;
+      }
+
+      icon._scale = scale;
+      icon._targetScale = scale * scaleFactor;
+      icon._icon.set_size(iconSize, iconSize);
+      // icon._icon.set_icon_size(iconSize * dock.extension.icon_quality);
+
+      if (!icon._pos) {
+        return;
+      }
+
+      icon.opacity = icon == dock._dragged && dock._dragging ? 50 : 255;
+      icon._prevTranslate = icon._translate;
+    });
+
+    // spread
+    let hoveredIcon = null;
+    for (let i = 0; i < iconTable.length; i++) {
+      if (iconTable.length < 2) break;
+      let icon = iconTable[i];
+      if (icon._icon && icon._icon.hover) {
+        hoveredIcon = icon;
+      }
+      if (icon._scale > 1.1) {
+        // affect spread
+        let offset =
+          1.25 * (icon._scale - 1) * iconSize * scaleFactor * spread * 0.8;
+        let o = offset;
+        // left
+        for (let j = i - 1; j >= 0; j--) {
+          let left = iconTable[j];
+          left._translate -= offset;
+          o *= 0.98;
+        }
+        // right
+        o = offset;
+        for (let j = i + 1; j < iconTable.length; j++) {
+          let right = iconTable[j];
+          right._translate += offset;
+          o *= 0.98;
+        }
+      }
+    }
+
+    dock._hoveredIcon = hoveredIcon;
+
+    // re-center to hovered icon
+    let TRANSLATE_COEF = 24;
+    if (hoveredIcon) {
+      hoveredIcon._targetScale += 0.1;
+      let adjust = hoveredIcon._translate / 2;
+      animateIcons.forEach((icon) => {
+        if (icon._scale > 1) {
+          let o = -adjust * (2 - icon._scale);
+          let nt = icon._translate - o;
+          icon._translate =
+            (icon._translate * TRANSLATE_COEF + nt) / (TRANSLATE_COEF + 1);
+        }
+      });
+    }
+
+    //-------------------
+    // interpolation / animation
+    //-------------------
+    let _scale_coef = ANIM_SCALE_COEF;
+    // let _spread_coef = ANIM_SPREAD_COEF;
+    let _pos_coef = ANIM_POS_COEF;
+    if (dock.extension.animation_fps > 0) {
+      _pos_coef /= 1 + dock.extension.animation_fps / 2;
+      _scale_coef /= 1 + dock.extension.animation_fps / 2;
+      // _spread_coef /= 1 + dock.extension.animation_fps / 2;
+    }
+    if (!nearestIcon) {
+      _scale_coef *= ANIM_ON_LEAVE_COEF;
+      _pos_coef *= ANIM_ON_LEAVE_COEF;
+      // _spread_coef *= ANIM_ON_LEAVE_COEF;
+    }
+
+    // low frame rate
+    if (dock.extension.animation_fps == 2) {
+      _pos_coef *= 4;
+      _scale_coef *= 4;
+    }
+
+    let first = animateIcons[0];
+    let last = animateIcons[animateIcons.length - 1];
+
+    animateIcons.forEach((icon) => {
+      let scale = icon._icon.get_scale();
+
+      let newScale =
+        (icon._targetScale + scale[0] * _scale_coef) / (_scale_coef + 1);
+      icon._scale = newScale;
+
+      let flags = {
+        bottom: { x: 0.5, y: 1, lx: 0, ly: 0.5 * newScale },
+        top: { x: 0.5, y: 0, lx: 0, ly: -1.75 * newScale },
+        left: { x: 0, y: 0.5, lx: -1.25 * newScale, ly: -1.25 },
+        right: { x: 1, y: 0.5, lx: 1.5 * newScale, ly: -1.25 },
+      };
+      let pvd = flags[dock._position];
+
+      let pv = new Point();
+      pv.x = pvd.x;
+      pv.y = pvd.y;
+      icon._icon.pivot_point = pv;
+      icon._icon.set_scale(newScale, newScale);
+
+      let rdir =
+        dock._position == DockPosition.TOP ||
+        dock._position == DockPosition.LEFT
+          ? 1
+          : -1;
+
+      let oldX = icon._icon.translationX;
+      let oldY = icon._icon.translationY;
+      let translationX =
+        vertical * icon._translateRise * rdir +
+        (oldX + icon._translate * !vertical * _pos_coef) / (_pos_coef + 1);
+      let translationY =
+        !vertical * icon._translateRise * rdir +
+        (oldY + icon._translate * vertical * _pos_coef) / (_pos_coef + 1);
+
+      icon._icon.translationX = Math.floor(translationX);
+      icon._icon.translationY = Math.floor(translationY);
+
+      // jitter reduction hack
+      if (dock.extension._enableJitterHack && icon._scale < 1.05 && isWithin) {
+        let size = 32;
+        icon._translation = icon._translation || [];
+        let currentTranslation = icon._icon.translationX;
+        if (!vertical) {
+          icon._translation.push(icon._icon.translationX);
+        } else {
+          currentTranslation = icon._icon.translationY;
+          icon._translation.push(icon._icon.translationY);
+        }
+        if (icon._translation.length > size / 2) {
+          icon._translation.shift();
+          // todo ... what the cpu usage :)
+          let sum = icon._translation.reduce((accumulator, currentValue) => {
+            return accumulator + currentValue;
+          }, 0);
+          let avg = Math.floor(sum / icon._translation.length);
+          let diff = Math.abs(currentTranslation - avg);
+          if (diff <= 2) {
+            if (!vertical) {
+              icon._icon.translationX = avg;
+            } else {
+              icon._icon.translationY = avg;
+            }
+          }
+        }
+      }
+
+      // todo center the appwell (scaling correction)
+      let child = icon._appwell || icon.first_child;
+      if (child && scaleFactor > 1) {
+        let correction = icon._icon.height * scaleFactor - icon._icon.height;
+        if (!icon._appwell) {
+          child.x = correction;
+        }
+        child.y = correction;
+      }
+
+      // labels
+      if (icon._label) {
+        icon._label.translationX = translationX - iconSize * pvd.lx;
+        icon._label.translationY = translationY - iconSize * pvd.ly;
+      }
+
+      // badges
+      {
+        let appNotices = icon._appwell
+          ? dock.extension.services._appNotices[icon._appwell.app.get_id()]
+          : null;
+        let noticesCount = 0;
+        if (appNotices) {
+          noticesCount = appNotices.count;
+        }
+        // noticesCount = 1;
+        let target = icon._dot?.get_parent();
+        let badge = target?._badge;
+
+        if (!badge && icon._appwell && target) {
+          badge = new DockItemBadgeOverlay(new Dot(DOT_CANVAS_SIZE));
+          target._badge = badge;
+          target.add_child(badge);
+        }
+        if (badge && noticesCount > 0) {
+          badge.update(icon, {
+            noticesCount,
+            position: dock._position,
+            vertical,
+            extension: dock.extension,
+          });
+          badge.show();
+        } else {
+          badge?.hide();
+        }
+      }
+
+      // dots
+      {
+        let appCount = icon._appwell ? icon._appwell.app.get_n_windows() : 0;
+        // appCount = 1;
+        let target = icon._dot?.get_parent();
+        let dots = target?._dots;
+        if (!dots && icon._appwell && target) {
+          dots = new DockItemDotsOverlay(new Dot(DOT_CANVAS_SIZE));
+          target._dots = dots;
+          target.add_child(dots);
+        }
+        if (dots && appCount > 0) {
+          dots.update(icon, {
+            appCount,
+            position: dock._position,
+            vertical,
+            extension: dock.extension,
+          });
+          dots.show();
+        } else {
+          dots?.hide();
+        }
+      }
+
+      // custom icons
+      if (dock.extension.services) {
+        dock.extension.services.updateIcon(icon, {
+          scaleFactor,
+          iconSize,
+          dock,
+        });
+      }
+    });
+
+    // separators
+    dock._separators.forEach((actor) => {
+      let prev = actor.get_previous_sibling() || actor._prev;
+      let next = actor.get_next_sibling();
+      if (prev && next && prev._icon && next._icon) {
+        actor.translationX =
+          (prev._icon.translationX + next._icon.translationX) / 2;
+        actor.translationY =
+          (prev._icon.translationY + next._icon.translationY) / 2;
+        let thickness = dock.extension.separator_thickness || 0;
+        actor.width = !vertical ? thickness : iconSize * 0.5 * scaleFactor;
+        actor.height = vertical ? thickness : iconSize * 0.75 * scaleFactor;
+        actor.visible = thickness > 0;
+      }
+    });
+
+    let targetX = 0;
+    let targetY = 0;
+    if (dock._hidden && dock.extension.autohide_dash) {
+      if (isWithin) {
+        dock.slideIn();
+      }
+    }
+
+    let ed =
+      dock._position == DockPosition.BOTTOM ||
+      dock._position == DockPosition.RIGHT
+        ? 1
+        : -1;
+
+    // if (!animated && !dock._hidden && dock.extension.peek_hidden_icons) {
+    //   edge_distance = -dock._iconSizeScaledDown * scaleFactor / 1.5;
+    // }
+
+    // dash hide/show
+    if (dock._hidden) {
+      if (vertical) {
+        if (dock._position == DockPosition.LEFT) {
+          targetX =
+            -(dock._background.width + edge_distance * -ed * 2) * scaleFactor;
+        } else {
+          targetX =
+            (dock._background.width - edge_distance * -ed * 2) * scaleFactor;
+        }
+      } else {
+        if (dock._position == DockPosition.BOTTOM) {
+          targetY =
+            (dock._background.height - edge_distance * -ed * 2) * scaleFactor;
+        } else {
+          targetY =
+            -(dock._background.height + edge_distance * -ed * 2) * scaleFactor;
+        }
+      }
+    }
+
+    // edge
+    targetX += vertical ? edge_distance * -ed : 0;
+    targetY += !vertical ? edge_distance * -ed : 0;
+
+    _pos_coef += 5 - 5 * dock.extension.autohide_speed;
+    dock.dash.translationY =
+      (dock.dash.translationY * _pos_coef + targetY) / (_pos_coef + 1);
+    dock.dash.translationX =
+      (dock.dash.translationX * _pos_coef + targetX) / (_pos_coef + 1);
+
+    // background
+    {
+      dock._background.style = dock.extension._backgroundStyle;
+      dock._background.update({
+        first,
+        last,
+        iconSize,
+        scaleFactor,
+        position: dock._position,
+        vertical: vertical,
+        panel_mode: dock.extension.panel_mode,
+        dashContainer: dock,
+      });
+
+      // allied areas
+      if (vertical) {
+        dock.struts.width =
+          dock._background.width +
+          iconSize * 0.2 * scaleFactor +
+          edge_distance -
+          dock._background._padding * scaleFactor;
+        dock.struts.height = dock.height;
+        dock.struts.y = dock.y;
+        if (dock._position == DockPosition.RIGHT) {
+          dock.struts.x = dock.x + dock.width - dock.struts.width;
+        } else {
+          dock.struts.x = dock.x;
+        }
+      } else {
+        dock.struts.width = dock.width;
+        dock.struts.height =
+          dock._background.height +
+          iconSize * 0.2 * scaleFactor +
+          edge_distance -
+          dock._background._padding * scaleFactor;
+        dock.struts.x = dock.x;
+        if (dock._position == DockPosition.BOTTOM) {
+          dock.struts.y = dock.y + dock.height - dock.struts.height;
+        } else {
+          dock.struts.y = dock.y;
+        }
+      }
+
+      let dwellHeight = 4;
+      if (vertical) {
+        dock.dwell.width = dwellHeight;
+        dock.dwell.height = dock.height;
+        dock.dwell.x = m.x;
+        dock.dwell.y = dock.y;
+        if (dock._position == DockPosition.RIGHT) {
+          dock.dwell.x = m.x + m.width - dwellHeight;
+        }
+      } else {
+        dock.dwell.width = dock.width;
+        dock.dwell.height = dwellHeight;
+        dock.dwell.x = dock.x;
+        dock.dwell.y = dock.y + dock.height - dock.dwell.height;
+        if (dock._position == DockPosition.TOP) {
+          dock.dwell.y = dock.y;
+        }
+      }
+    }
+
+    dock.dash.opacity = 255;
+
+    //---------------------
+    // animate the list
+    //---------------------
+    if (dock._list && dock._list.visible && dock._list._target) {
+      let list = dock._list;
+      list.opacity = 255;
+
+      let target = list._target;
+      let list_coef = 2;
+
+      let tw = target.width * target._icon.scaleX;
+      let th = target.height * target._icon.scaleY;
+
+      list._box?.get_children().forEach((c) => {
+        c.translationX = target._icon.translationX + tw / 8;
+        c.translationY =
+          -target._icon.scaleX * target._icon.height + target._icon.height;
+        c._label.translationX = -c._label.width;
+
+        let tx = c._x;
+        let ty = c._y;
+        let tz = c._rotation_angle_z;
+        let to = 255;
+        if (list._hidden) {
+          tx = c._ox;
+          ty = c._oy;
+          tz = c._oz;
+          to = 0;
+          if (list._hiddenFrames-- == 0) {
+            list.visible = false;
+            list._hidden = false;
+          }
+        }
+
+        let list_coef_x = list_coef + 4;
+        let list_coef_z = list_coef + 6;
+        c._label.opacity =
+          (c._label.opacity * list_coef + to) / (list_coef + 1);
+        c.x = (c.x * list_coef_x + tx) / (list_coef_x + 1);
+        c.y = (c.y * list_coef + ty) / (list_coef + 1);
+        c.rotation_angle_z =
+          (c.rotation_angle_z * list_coef_z + tz) / (list_coef_z + 1);
+      });
+
+      target._label.hide();
+      didScale = true;
+    }
+
+    if (didScale) {
+      dock.autohider._debounceCheckHide();
+      dock._debounceEndAnimation();
+    }
+  }
+
+  bounceIcon(appwell) {
+    let dock = this.dashContainer;
+
+    let scaleFactor = dock.getMonitor().geometry_scale;
+    let travel =
+      (dock._iconSize / 3) * ((0.25 + dock.extension.animation_bounce) * 1.5);
+    // * scaleFactor;
+    appwell.translation_y = 0;
+
+    let icon = appwell.get_parent()._icon;
+
+    let t = 250;
+    let _frames = [
+      {
+        _duration: t,
+        _func: (f, s) => {
+          let res = Linear.easeNone(f._time, 0, travel, f._duration);
+          if (dock.isVertical()) {
+            appwell.translation_x =
+              dock._position == DockPosition.LEFT ? res : -res;
+            if (icon._badge) {
+              icon._badge.translation_x = appwell.translation_x;
+            }
+          } else {
+            // appwell.translation_y = -res;
+            appwell.translation_y =
+              dock._position == DockPosition.BOTTOM ? -res : res;
+          }
+        },
+      },
+      {
+        _duration: t * 3,
+        _func: (f, s) => {
+          let res = Bounce.easeOut(f._time, travel, -travel, f._duration);
+          if (dock.isVertical()) {
+            appwell.translation_x = appwell.translation_x =
+              dock._position == DockPosition.LEFT ? res : -res;
+          } else {
+            // appwell.translation_y = -res;
+            appwell.translation_y =
+              dock._position == DockPosition.BOTTOM ? -res : res;
+          }
+        },
+      },
+    ];
+
+    let frames = [];
+    for (let i = 0; i < 3; i++) {
+      _frames.forEach((b) => {
+        frames.push({
+          ...b,
+        });
+      });
+    }
+
+    dock.extension._hiTimer.runAnimation([
+      ...frames,
+      {
+        _duration: 10,
+        _func: (f, s) => {
+          appwell.translation_y = 0;
+        },
+      },
+    ]);
+  }
+};
+
+
+//-----------------------------
+// ./timer.js
+//-----------------------------
+
+//'use strict';
+
+//import GLib from 'gi://GLib';
+
+const Timer = class {
+  constructor(name) {
+    this._name = name;
+    this._subscribers = [];
+    this._subscriberId = 0xff;
+  }
+
+  initialize(resolution) {
+    this._resolution = resolution || 1000;
+    this._autoStart = true;
+    this._autoHibernate = true;
+
+    this._hibernating = false;
+    this._hibernatCounter = 0;
+    this._hibernateWait = 250 + this._resolution * 2;
+  }
+
+  shutdown() {
+    this._autoStart = false;
+    this._hibernating = false;
+    this.stop();
+  }
+
+  start(resolution) {
+    if (this.is_running()) {
+      // print('already running');
+      return;
+    }
+    this._resolution = resolution || 1000;
+    this._time = 0;
+    this._timeoutId = GLib.timeout_add(
+      GLib.PRIORITY_DEFAULT,
+      this._resolution,
+      this.onUpdate.bind(this)
+    );
+    this._hibernating = false;
+    this.onStart();
+  }
+
+  stop() {
+    if (!this.is_running()) {
+      // print('already stopped');
+      return;
+    }
+    GLib.source_remove(this._timeoutId);
+    this._timeoutId = null;
+    this.onStop();
+  }
+
+  restart(resolution) {
+    this.stop();
+    this.start(resolution || this._resolution || 1000);
+  }
+
+  pause() {
+    if (!this.is_running()) {
+      return;
+    }
+    this._paused = true;
+    this.onPause();
+  }
+
+  resume() {
+    if (!this.is_running()) {
+      return;
+    }
+    this._paused = false;
+    this.onResume();
+  }
+
+  hibernate() {
+    if (!this.is_running()) {
+      return;
+    }
+
+    this.stop();
+    this._hibernating = true;
+    this._hibernatCounter = 0;
+  }
+
+  is_running() {
+    return this._timeoutId != null;
+  }
+
+  toggle_pause() {
+    if (!this.is_running()) {
+      return;
+    }
+    if (!this._paused) {
+      this.pause();
+    } else {
+      this.resume();
+    }
+  }
+
+  onStart() {
+    // print(`started ${this._name} [${this.subscriberNames().join(',')}]`);
+    this._subscribers.forEach((s) => {
+      if (s.onStart) {
+        s.onStart(s);
+      }
+    });
+  }
+
+  onStop() {
+    this._subscribers.forEach((s) => {
+      if (s.onStop) {
+        s.onStop(s);
+      }
+    });
+    // print(`stopped ${this._name}`);
+  }
+
+  onPause() {
+    this._subscribers.forEach((s) => {
+      if (s.onPause) {
+        s.onPause(s);
+      }
+    });
+  }
+
+  onResume() {
+    this._subscribers.forEach((s) => {
+      if (s.onResume) {
+        s.onResume(s);
+      }
+    });
+  }
+
+  onUpdate() {
+    if (!this._timeoutId || this._paused) {
+      return true;
+    }
+
+    this._subscribers.forEach((s) => {
+      if (s.onUpdate) {
+        s.onUpdate(s, this._resolution);
+      }
+    });
+
+    this._time += this._resolution;
+
+    if (this._autoHibernate) {
+      if (!this._subscribers.length) {
+        this._hibernatCounter += this._resolution;
+        if (this._hibernatCounter >= this._hibernateWait) {
+          this.hibernate();
+        }
+      } else {
+        this._hibernatCounter = 0;
+      }
+    }
+
+    // print(`${this._time/1000} subs:${this._subscribers.length}`);
+    return true;
+  }
+
+  runningTime() {
+    return this._time;
+  }
+
+  subscribe(obj) {
+    if (!obj._id) {
+      obj._id = this._subscriberId++;
+    }
+    let idx = this._subscribers.findIndex((s) => s._id == obj._id);
+    if (idx == -1) {
+      this._subscribers.push(obj);
+    } else {
+      this._subscribers[idx] = {
+        ...this._subscribers[idx],
+        ...obj,
+      };
+      obj = this._subscribers[idx];
+    }
+
+    if (
+      (this._hibernating || this._autoStart) &&
+      this._subscribers.length == 1
+    ) {
+      this.start(this._resolution);
+    }
+
+    // log(`subscribers: ${this.subscriberNames().join(',')}`);
+    return obj;
+  }
+
+  unsubscribe(obj) {
+    let idx = this._subscribers.findIndex((s) => s._id == obj._id);
+    if (idx != -1) {
+      if (this._subscribers.length == 1) {
+        this._subscribers = [];
+      } else {
+        this._subscribers = [
+          ...this._subscribers.slice(0, idx),
+          ...this._subscribers.slice(idx + 1),
+        ];
+      }
+    }
+  }
+
+  subscriberNames() {
+    return this._subscribers.map((s) => {
+      if (s._name) {
+        return s._name;
+      }
+      return `${s._id}`;
+    });
+  }
+
+  dumpSubscribers() {
+    if (this._name) {
+      print('--------');
+      print(this._name);
+    }
+    this._subscribers.forEach((s) => {
+      print('--------');
+      Object.keys(s).forEach((k) => {
+        print(`${k}: ${s[k]}`);
+      });
+    });
+  }
+
+  runLoop(func, delay, name) {
+    if (typeof func === 'object') {
+      func._time = 0;
+      return this.subscribe(func);
+    }
+    let obj = {
+      _name: name,
+      _type: 'loop',
+      _time: 0,
+      _delay: delay,
+      _func: func,
+      onUpdate: (s, dt) => {
+        s._time += dt;
+        if (s._time >= s._delay) {
+          s._func(s);
+          s._time -= s._delay;
+        }
+      },
+    };
+    return this.subscribe(obj);
+  }
+
+  runOnce(func, delay, name) {
+    if (typeof func === 'object') {
+      func._time = 0;
+      return this.subscribe(func);
+    }
+    let obj = {
+      _name: name,
+      _type: 'once',
+      _time: 0,
+      _delay: delay,
+      _func: func,
+      onUpdate: (s, dt) => {
+        s._time += dt;
+        if (s._time >= s._delay) {
+          s._func(s);
+          this.unsubscribe(s);
+        }
+      },
+    };
+    return this.subscribe(obj);
+  }
+
+  runDebounced(func, delay, name) {
+    if (typeof func === 'object') {
+      func._time = 0;
+      return this.subscribe(func);
+    }
+    let obj = {
+      _name: name,
+      _type: 'debounced',
+      _time: 0,
+      _delay: delay,
+      _func: func,
+      onUpdate: (s, dt) => {
+        s._time += dt;
+        if (s._time >= s._delay) {
+          s._func(s);
+          this.unsubscribe(s);
+        }
+      },
+    };
+    return this.subscribe(obj);
+  }
+
+  runSequence(array, settings) {
+    if (typeof array === 'object' && !array.length) {
+      array._time = 0;
+      array._currentIdx = 0;
+      return this.subscribe(array);
+    }
+    let obj = {
+      _time: 0,
+      _currentIdx: 0,
+      _sequences: [...array],
+      ...settings,
+      onUpdate: (s, dt) => {
+        let current = s._sequences[s._currentIdx];
+        if (!current) {
+          this.unsubscribe(s);
+          return;
+        }
+        s._time += dt;
+        if (s._time >= current.delay) {
+          current.func(current);
+          s._time = -current.delay;
+          s._currentIdx++;
+          if (s._currentIdx >= s._sequences.length && s._loop) {
+            s._currentIdx = 0;
+          }
+        }
+      },
+    };
+    return this.subscribe(obj);
+  }
+
+  runAnimation(array, settings) {
+    if (typeof func === 'object' && !array.length) {
+      func._time = 0;
+      return this.subscribe(func);
+    }
+
+    let duration = 0;
+    array.forEach((f) => {
+      if (!f._start) {
+        f._start = duration;
+      }
+      duration += f._duration;
+    });
+
+    let obj = {
+      _time: 0,
+      _duration: duration,
+      _loop: false,
+      _frames: [...array],
+      ...(settings || {}),
+      onUpdate: (s, dt) => {
+        s._time += dt;
+
+        let frames = [];
+        if (s._frames) {
+          frames = s._frames.filter((f) => {
+            return f._start <= s._time && s._time < f._start + f._duration;
+          });
+        }
+        s._currentFrames = frames;
+
+        if (!s._func) {
+          s._func = (s) => {
+            s._currentFrames.forEach((f) => {
+              f._time = s._time - f._start;
+              f._func(f, s);
+            });
+          };
+        }
+
+        if (s._time > s._duration) {
+          this.unsubscribe(s);
+          s._time = s._duration;
+          s._func(s);
+          return;
+        }
+        s._func(s);
+      },
+    };
+    return this.subscribe(obj);
+  }
+
+  cancel(obj) {
+    if (obj) {
+      this.unsubscribe(obj);
+    }
+  }
+};
+
 
 //-----------------------------
 // ./diagnostics.js
@@ -451,1471 +2205,6 @@ const runTests = (extension, settings) => {
   extension._diagnosticTimer.runSequence(_seqs);
 };
 
-//-----------------------------
-// ./dock.js
-//-----------------------------
-
-//'use strict';
-
-//import * as Main from 'resource:///org/gnome/shell/ui/main.js';
-//import * as Fav from 'resource:///org/gnome/shell/ui/appFavorites.js';
-
-//import Meta from 'gi://Meta';
-//import Shell from 'gi://Shell';
-//import GObject from 'gi://GObject';
-//import Clutter from 'gi://Clutter';
-//import Graphene from 'gi://Graphene';
-//import St from 'gi://St';
-//import Gio from 'gi://Gio';
-
-//import { Dash } from 'resource:///org/gnome/shell/ui/dash.js';
-
-//import { TintEffect } from './effects/tint_effect.js';
-//import { MonochromeEffect } from './effects/monochrome_effect.js';
-
-//import {
-//  DockItemList,
-//  DockItemContainer,
-//  DockBackground,
-//} from './dockItems.js';
-//import { AutoHide } from './autohide.js';
-//import { Animator } from './animator.js';
-
-//const Point = Graphene.Point;
-
-const DockPosition = {
-  BOTTOM: 'bottom',
-  LEFT: 'left',
-  RIGHT: 'right',
-  TOP: 'top',
-};
-
-const DockAlignment = {
-  CENTER: 'center',
-  START: 'start',
-  END: 'end',
-};
-
-const PREVIEW_FRAMES = 64;
-const ANIM_DEBOUNCE_END_DELAY = 750;
-
-const MIN_SCROLL_RESOLUTION = 4;
-const MAX_SCROLL_RESOLUTION = 10;
-
-let Dock = GObject.registerClass(
-  {},
-  class Dock extends St.Widget {
-    _init(params) {
-      super._init({
-        name: 'd2daDock',
-        reactive: false,
-        track_hover: false,
-        width: 0,
-        height: 0,
-        clip_to_allocation: true,
-        x_align: Clutter.ActorAlign.CENTER,
-        y_align: Clutter.ActorAlign.CENTER,
-      });
-
-      this.extension = params.extension;
-
-      this._alignment = DockAlignment.CENTER;
-      this._monitorIndex = Main.layoutManager.primaryIndex;
-
-      this._background = new DockBackground({ name: 'd2dlBackground' });
-      this.add_child(this._background);
-
-      this.addDash();
-
-      this.dash.reactive = true;
-      this.dash.track_hover = true;
-      this.dash.connectObject(
-        'scroll-event',
-        this._onScrollEvent.bind(this),
-        'button-press-event',
-        this._onButtonPressEvent.bind(this),
-        'motion-event',
-        this._onMotionEvent.bind(this),
-        'enter-event',
-        this._onEnterEvent.bind(this),
-        'leave-event',
-        this._onLeaveEvent.bind(this),
-        'destroy',
-        () => {},
-        this
-      );
-
-      this.dash.opacity = 0;
-      this._scrollCounter = 0;
-
-      this.animator = new Animator();
-      this.animator.dashContainer = this;
-      this.animator.extension = this.extension;
-      this.animator.enable();
-
-      this.autohider = new AutoHide();
-      this.autohider.dashContainer = this;
-      this.autohider.extension = this.extension;
-      this.autohider.enable();
-
-      this.struts = new St.Widget({
-        name: 'DockStruts',
-      });
-      this.dwell = new St.Widget({
-        name: 'DockDwell',
-        reactive: true,
-        track_hover: true,
-      });
-      this.dwell.connectObject(
-        'motion-event',
-        this.autohider._onMotionEvent.bind(this.autohider),
-        'enter-event',
-        this.autohider._onEnterEvent.bind(this.autohider),
-        'leave-event',
-        this.autohider._onLeaveEvent.bind(this.autohider),
-        this
-      );
-    }
-
-    createItem(appinfo_filename) {
-      let item = new DockItemContainer({
-        appinfo_filename,
-      });
-      item.dock = this;
-      item._menu._onActivate = () => {
-        this._maybeBounce(item);
-      };
-      this._extraIcons.add_child(item);
-      return item;
-    }
-
-    dock() {
-      this.addToChrome();
-      this.layout();
-      this._beginAnimation();
-    }
-
-    undock() {
-      if (this._list) {
-        // todo Main.uiGroup no longer available in gnome 46
-        Main.uiGroup.remove_child(this._list);
-        this._list = null;
-      }
-      this._endAnimation();
-      this.dash._box.remove_effect_by_name('icon-effect');
-      this.autohider.disable();
-      this.removeFromChrome();
-    }
-
-    _onButtonPressEvent(evt) {
-      return Clutter.EVENT_PROPAGATE;
-    }
-    _onMotionEvent(evt) {
-      this._beginAnimation();
-      this.autohider._debounceCheckHide();
-      return Clutter.EVENT_PROPAGATE;
-    }
-    _onEnterEvent(evt) {
-      this._beginAnimation();
-      return Clutter.EVENT_PROPAGATE;
-    }
-    _onLeaveEvent(evt) {
-      this.autohider._debounceCheckHide();
-      this._debounceEndAnimation();
-      return Clutter.EVENT_PROPAGATE;
-    }
-    _onFocusWindow(evt) {
-      this._beginAnimation();
-      this.autohider._debounceCheckHide();
-      return Clutter.EVENT_PROPAGATE;
-    }
-    _onFullScreen() {
-      this._beginAnimation();
-      this.autohider._debounceCheckHide();
-      return Clutter.EVENT_PROPAGATE;
-    }
-    _onAppsChanged(evt) {
-      this._icons = null;
-      this._beginAnimation();
-      this.autohider._debounceCheckHide();
-      return Clutter.EVENT_PROPAGATE;
-    }
-    _onClock() {
-      this._clock?.redraw();
-    }
-    _onCalendar() {
-      this._calendar?.redraw();
-    }
-
-    _createEffect(idx) {
-      let effect = null;
-      switch (idx) {
-        case 1: {
-          effect = new TintEffect({
-            name: 'color',
-            color: this.extension.icon_effect_color,
-          });
-          effect.preload(this.extension.path);
-          break;
-        }
-        case 2: {
-          effect = new MonochromeEffect({
-            name: 'color',
-            color: this.extension.icon_effect_color,
-          });
-          effect.preload(this.extension.path);
-          break;
-        }
-      }
-      return effect;
-    }
-
-    _updateIconEffect() {
-      this.dash._box.get_parent().remove_effect_by_name('icon-effect');
-      let effect = this._createEffect(this.extension.icon_effect);
-      if (effect) {
-        this.dash._box.get_parent().add_effect_with_name('icon-effect', effect);
-      }
-      this.iconEffect = effect;
-    }
-
-    slideIn() {
-      if (this._hidden) {
-        this._hidden = false;
-        this._beginAnimation();
-      }
-    }
-
-    slideOut() {
-      if (this._list && this._list.visible) {
-        return;
-      }
-      if (!this._hidden) {
-        this._hidden = true;
-        this._beginAnimation();
-      }
-    }
-
-    getMonitor() {
-      this._monitorIndex = this.extension._queryDisplay(this._monitorIndex);
-      let m =
-        Main.layoutManager.monitors[this._monitorIndex] ||
-        Main.layoutManager.primaryMonitor;
-      this._monitor = m;
-      return m;
-    }
-
-    addDash() {
-      let dash = new Dash();
-      dash._adjustIconSize = () => {};
-      this.dash = dash;
-      this.dash._background.visible = false;
-      this.dash._box.clip_to_allocation = false;
-
-      this._extraIcons = new St.BoxLayout();
-      this.dash._box.add_child(this._extraIcons);
-
-      this._separator = new St.Widget({
-        style_class: 'dash-separator',
-        y_align: Clutter.ActorAlign.CENTER,
-        height: 48,
-      });
-      this._separator.name = 'separator';
-      this._extraIcons.add_child(this._separator);
-
-      this.add_child(dash);
-      return dash;
-    }
-
-    addToChrome() {
-      if (this._onChrome) {
-        return;
-      }
-
-      this._updateIconEffect();
-
-      Main.layoutManager.addChrome(this.struts, {
-        affectsStruts: !this.extension.autohide_dash,
-        affectsInputRegion: false,
-        trackFullscreen: true,
-      });
-
-      Main.layoutManager.addChrome(this, {
-        affectsStruts: false,
-        affectsInputRegion: false,
-        trackFullscreen: true,
-      });
-
-      Main.layoutManager.addChrome(this.dwell, {
-        affectsStruts: false,
-        affectsInputRegion: false,
-        trackFullscreen: true,
-      });
-
-      this._onChrome = true;
-    }
-
-    removeFromChrome() {
-      if (!this._onChrome) {
-        return;
-      }
-      Main.layoutManager.removeChrome(this.struts);
-      Main.layoutManager.removeChrome(this);
-      Main.layoutManager.removeChrome(this.dwell);
-      this._onChrome = false;
-      this.dash._box.get_parent().remove_effect_by_name('icon-effect');
-    }
-
-    isVertical() {
-      return (
-        this._position == DockPosition.LEFT ||
-        this._position == DockPosition.RIGHT
-      );
-    }
-
-    _preferredIconSize() {
-      let preferredIconSizes = this._preferredIconSizes;
-      let iconSize = 64;
-      if (!preferredIconSizes) {
-        preferredIconSizes = [32];
-        for (let i = 16; i < 128; i += 4) {
-          preferredIconSizes.push(i);
-        }
-        this._preferredIconSizes = preferredIconSizes;
-      }
-
-      iconSize =
-        2 *
-        (preferredIconSizes[
-          Math.floor(this.extension.icon_size * preferredIconSizes.length)
-        ] || 64);
-      iconSize *= this.extension.scale;
-
-      this._iconSize = iconSize;
-      return iconSize;
-    }
-
-    /**
-     *  DashItemContainer
-     *    > child (DashIcon[appwell])
-     *      > .icon (IconGrid)
-     *        > .icon (StIcon)
-     *      > ._dot
-     *    > .label
-     *
-     *  ShowAppsIcon extends DashItemContainer
-     *    > .icon (IconGrid)
-     *      > .icon
-     *    > ._iconActor
-     */
-
-    _inspectIcon(c) {
-      if (!c.visible) return false;
-
-      /* separator */
-      c._cls = c._cls || c.get_style_class_name();
-      if (c._cls === 'dash-separator') {
-        this._separators.push(c);
-        this._lastSeparator = c;
-        c.visible = true;
-        c.style = 'margin-left: 8px; margin-right: 8px;';
-        return false;
-      }
-
-      /* ShowAppsIcon */
-      if (c.icon /* IconGrid */ && c.icon.icon /* StIcon */) {
-        c._icon = c.icon.icon;
-        c._button = c.child;
-        c.icon.style = 'background-color: transparent !important;';
-      }
-
-      /* DashItemContainer */
-      if (
-        c.child /* DashIcon */ &&
-        c.child.icon /* IconGrid */ &&
-        c.child.icon.icon /* StIcon */
-      ) {
-        c._grid = c.child.icon;
-        c._icon = c.child.icon.icon;
-        c._appwell = c.child;
-        if (c._appwell) {
-          c._appwell.visible = true;
-          c._dot = c._appwell._dot;
-          // hide icons if favorites only
-          if (this.extension.favorites_only) {
-            let app = c._appwell.app;
-            let appId = app ? app.get_id() : '';
-            if (!this._favorite_ids.includes(appId)) {
-              c._appwell.visible = false;
-              c.width = -1;
-              c.height = -1;
-              return false;
-            }
-          }
-        }
-        if (c._dot) {
-          c._dot.opacity = 0;
-        }
-      }
-
-      if (c._icon) {
-        c._label = c.label;
-        if (c == this.dash._showAppsIcon && this.extension.apps_icon_front) {
-          this._icons.unshift(c);
-        } else {
-          this._icons.push(c);
-        }
-        return true;
-      }
-
-      return false;
-    }
-
-    _findIcons() {
-      if (this._icons) {
-        let iconsLength = this.dash._box.get_children().length;
-        if (this._extraIcons) {
-          iconsLength += this._extraIcons.get_children().length;
-        }
-        if (this._icons.length >= iconsLength) {
-          return this._icons;
-        }
-      }
-
-      this._separators = [];
-      this._icons = [];
-
-      if (!this.dash) return [];
-
-      if (this.extension.favorites_only) {
-        this._favorite_ids = Fav.getAppFavorites()._getIds();
-      }
-
-      this.dash._box.get_children().forEach((icon) => {
-        this._inspectIcon(icon);
-      });
-
-      if (this.extension.favorites_only) {
-        if (this._separators.length) {
-          this._separators[0].visible = false;
-          this._separators = [];
-        }
-      }
-
-      let lastFavIcon = this._icons[this._icons.length - 1] ?? null;
-
-      if (this._extraIcons) {
-        this._lastSeparator = null;
-        this._extraIcons.get_children().forEach((icon) => {
-          this._inspectIcon(icon);
-        });
-        if (this._lastSeparator && lastFavIcon) {
-          this._lastSeparator._prev = lastFavIcon;
-        }
-        this._extraIcons.visible = this._extraIcons.get_children().length > 1;
-      }
-      if (this.dash._showAppsIcon) {
-        this.dash._showAppsIcon.visible = this.extension.apps_icon;
-        this._inspectIcon(this.dash._showAppsIcon);
-        let icon = this.dash._showAppsIcon._icon;
-        if (!icon._connected) {
-          icon._connected = true;
-          icon.connectObject(
-            'button-press-event',
-            () => {
-              let overview = Main.uiGroup
-                .get_children()
-                .find((c) => c.name == 'overviewGroup')
-                .get_children()
-                .find((c) => c.name == 'overview');
-              if (overview._delegate.visible) {
-                overview._delegate.toggle();
-              } else {
-                overview._delegate.showApps();
-              }
-              return Clutter.EVENT_PROPAGATE;
-            },
-            'enter-event',
-            () => {
-              this.dash._showAppsIcon.showLabel();
-            },
-            'leave-event',
-            () => {
-              this.dash._showAppsIcon.hideLabel();
-            },
-            this
-          );
-        }
-      }
-
-      let noAnimation = !this.extension.animate_icons_unmute;
-
-      let pv = new Point();
-      pv.x = 0.5;
-      pv.y = 0.5;
-      this._icons.forEach((c) => {
-        c._icon.track_hover = true;
-        c._icon.reactive = true;
-        c._icon.pivot_point = pv;
-        if (c._button) {
-          c._button.reactive = noAnimation;
-          c._button.track_hover = noAnimation;
-          c.toggle_mode = false;
-        }
-        if (c._grid) {
-          c._grid.style = noAnimation ? '' : 'background: none !important;';
-        }
-        if (c._appwell && !c._appwell._activate) {
-          c._appwell._activate = c._appwell.activate;
-          c._appwell.activate = () => {
-            this._maybeBounce(c);
-            this._maybeMinimizeOrMaximize(c._appwell.app);
-            c._appwell._activate();
-          };
-        }
-        let icon = c._icon;
-        if (!icon._destroyConnectId) {
-          icon._destroyConnectId = icon.connect('destroy', () => {
-            this._icons = null;
-          });
-        }
-        let { _draggable } = icon;
-        if (_draggable && !_draggable._dragBeginId) {
-          _draggable._dragBeginId = _draggable.connect('drag-begin', () => {
-            this._dragging = true;
-            this._dragged = icon;
-          });
-          _draggable._dragEndId = _draggable.connect('drag-end', () => {
-            this._dragging = false;
-            this._icons = null;
-          });
-        }
-      });
-
-      return this._icons;
-    }
-
-    _updateExtraIcons() {
-      if (!this._extraIcons) {
-        return;
-      }
-
-      // check these intermittently!
-      //---------------
-      // the mount icons
-      //---------------
-      {
-        let extras = [...this._extraIcons.get_children()];
-        let extraNames = extras.map((e) => e.name);
-        let mounted = Object.keys(this.extension.services._mounts);
-
-        extras.forEach((extra) => {
-          if (!extra._mountType) {
-            return;
-          }
-          if (!mounted.includes(extra.name)) {
-            this._extraIcons.remove_child(extra);
-            this._icons = null;
-          }
-        });
-
-        mounted.forEach((mount) => {
-          if (!extraNames.includes(mount)) {
-            let mountedIcon = this.createItem(mount);
-            mountedIcon._mountType = true;
-            this._icons = null;
-          }
-        });
-      }
-
-      //---------------
-      // the folder icons
-      //---------------
-      let folders = [
-        {
-          icon: '_downloadsIcon',
-          path: '/tmp/downloads-dash2dock-lite.desktop',
-          show: this.extension.downloads_icon, // && this._position == DockPosition.BOTTOM
-        },
-        // {
-        //   icon: '_documentsIcon',
-        //   path: '/tmp/documents-dash2dock-lite.desktop',
-        //   show: this.extension.documents_icon // && this._position == DockPosition.BOTTOM
-        // }
-      ];
-      folders.forEach((f) => {
-        if (!this[f.icon] && f.show) {
-          // pin downloads icon
-          this[f.icon] = this.createItem(f.path);
-
-          let target = this[f.icon];
-
-          target._onClick = () => {
-            if (this._position != DockPosition.BOTTOM) {
-              target.activateNewWindow();
-              return;
-            }
-            if (!this.extension.services._downloadFiles) {
-              this.extension.services.checkDownloads();
-            }
-            let files = [...this.extension.services._downloadFiles];
-            if (files.length < this.extension.services._downloadFilesLength) {
-              files = [
-                {
-                  index: -1,
-                  name: 'More...',
-                  path: 'Downloads',
-                  icon: target._icon.icon_name,
-                  type: 'directory',
-                },
-                ...files,
-              ];
-            }
-            files = files.sort(function (a, b) {
-              return a.index > b.index ? 1 : -1;
-            });
-
-            if (!this._list) {
-              this._list = new DockItemList();
-              this._list.dock = this;
-              Main.uiGroup.add_child(this._list);
-            } else if (this._list.visible) {
-              this._list.slideOut();
-            } else {
-              Main.uiGroup.remove_child(this._list); // remove so that it is repositioned to topmost
-              Main.uiGroup.add_child(this._list);
-              this._list.visible = true;
-            }
-
-            if (this._list.visible && !this._list._hidden) {
-              this._list.slideIn(target, files);
-              let pv = new Point();
-              pv.x = 0.5;
-              pv.y = 1;
-            }
-          };
-
-          this._icons = null;
-        } else if (this[f.icon] && !f.show) {
-          // unpin downloads icon
-          this._extraIcons.remove_child(this[f.icon]);
-          this._downloadsIcon = null;
-          this._icons = null;
-        }
-      });
-
-      //---------------
-      // the trash icon
-      //---------------
-      if (!this._trashIcon && this.extension.trash_icon) {
-        // pin trash icon
-        this._trashIcon = this.createItem(`/tmp/trash-dash2dock-lite.desktop`);
-        this._icons = null;
-      } else if (this._trashIcon && !this.extension.trash_icon) {
-        // unpin trash icon
-        this._extraIcons.remove_child(this._trashIcon);
-        this._trashIcon = null;
-        this._icons = null;
-      } else if (this._trashIcon && this.extension.trash_icon) {
-        // move trash icon to the end
-        if (this._extraIcons.last_child != this._trashIcon) {
-          this._extraIcons.remove_child(this._trashIcon);
-          this._extraIcons.add_child(this._trashIcon);
-        }
-      }
-    }
-
-    layout() {
-      if (this.extension.apps_icon_front) {
-        this.dash.last_child.text_direction = 2; // RTL
-        this.dash._box.text_direction = 1; // LTR
-      } else {
-        this.dash.last_child.text_direction = 1; // LTR
-        this.dash._box.text_direction = 1; // LTR
-      }
-
-      let locations = [
-        DockPosition.BOTTOM,
-        DockPosition.LEFT,
-        DockPosition.RIGHT,
-        DockPosition.TOP,
-      ];
-      this._position =
-        locations[this.extension.dock_location] || DockPosition.BOTTOM;
-
-      this._updateExtraIcons();
-
-      this._icons = this._findIcons();
-
-      let m = this.getMonitor();
-      let scaleFactor = m.geometry_scale;
-      let vertical = this.isVertical();
-
-      this._scaleFactor = scaleFactor;
-
-      let flags = {
-        top: {
-          edgeX: 0,
-          edgeY: 0,
-          offsetX: 0,
-          offsetY: 0,
-          centerX: 1,
-          centerY: 0,
-        },
-        bottom: {
-          edgeX: 0,
-          edgeY: 1,
-          offsetX: 0,
-          offsetY: -1,
-          centerX: 1,
-          centerY: 0,
-        },
-        left: {
-          edgeX: 0,
-          edgeY: 0,
-          offsetX: 0,
-          offsetY: 0,
-          centerX: 0,
-          centerY: 1,
-        },
-        right: {
-          edgeX: 1,
-          edgeY: 0,
-          offsetX: -1,
-          offsetY: 0,
-          centerX: 0,
-          centerY: 1,
-        },
-      };
-      let f = flags[this._position];
-
-      let width = 1200;
-      let height = 140;
-      let dock_size_limit = 1;
-      let animation_spread = this.extension.animation_spread;
-      let animation_magnify = this.extension.animation_magnify;
-
-      let iconMargins = 0;
-      let iconStyle = '';
-      if (this.extension.icon_spacing > 0) {
-        let margin = 8 * this.extension.icon_spacing;
-        if (vertical) {
-          iconStyle = `margin-top: ${margin}px; margin-bottom: ${margin}px;`;
-        } else {
-          iconStyle = `margin-left: ${margin}px; margin-right: ${margin}px;`;
-        }
-        iconMargins = margin * 2 * this._icons.length;
-      }
-
-      let iconSize = this._preferredIconSize();
-      let iconSizeSpaced = iconSize + 16 + 8 * animation_spread;
-
-      let projectedWidth =
-        iconSize +
-        iconSizeSpaced * (this._icons.length > 3 ? this._icons.length : 3);
-      projectedWidth += iconMargins;
-
-      let scaleDown = 1.0;
-      let limit = vertical ? 0.96 : 0.98;
-
-      let maxWidth = (vertical ? m.height : m.width) * limit;
-
-      if (projectedWidth * scaleFactor > maxWidth * 0.98) {
-        scaleDown = (maxWidth - iconSize / 2) / (projectedWidth * scaleFactor);
-      }
-
-      iconSize *= scaleDown;
-      iconSizeSpaced *= scaleDown;
-      projectedWidth *= scaleDown;
-      this._projectedWidth = projectedWidth;
-
-      this._edge_distance =
-        (this.extension.edge_distance || 0) * 20 * scaleFactor;
-
-      if (this.extension.panel_mode) {
-        this._edge_distance = 0;
-      }
-
-      this._icons.forEach((icon) => {
-        icon.width = iconSizeSpaced * scaleFactor;
-        icon.height = iconSizeSpaced * scaleFactor;
-
-        if (icon.style != iconStyle) {
-          icon.style = iconStyle;
-        }
-      });
-
-      width = this._projectedWidth * scaleFactor;
-      height = iconSizeSpaced * 1.5 * scaleFactor;
-
-      this.width = vertical ? height : width;
-      this.height = vertical ? width : height;
-
-      if (this.animated) {
-        this.width *= vertical ? 1.75 : 1;
-        this.height *= !vertical ? 1.75 : 1;
-        this.width += !vertical * iconSizeSpaced * 2.5 * scaleFactor;
-        this.height += vertical * iconSizeSpaced * 2.5 * scaleFactor;
-
-        if (this.width > m.width) {
-          this.width = m.width;
-        }
-        if (this.height > m.height) {
-          this.height = m.height;
-        }
-      }
-
-      // console.log(`${width} ${height}`);
-
-      // reposition the dash
-      this.dash.last_child.layout_manager.orientation = vertical;
-      this.dash._box.layout_manager.orientation = vertical;
-      if (this._extraIcons) {
-        this._extraIcons.layout_manager.orientation = vertical;
-      }
-
-      this.x =
-        m.x +
-        m.width * f.edgeX +
-        this.width * f.offsetX +
-        (m.width / 2 - this.width / 2) * f.centerX;
-
-      this.y =
-        m.y +
-        m.height * f.edgeY +
-        this.height * f.offsetY +
-        (m.height / 2 - this.height / 2) * f.centerY;
-
-      // todo vertical
-      if (this.extension.panel_mode) {
-        if (vertical) {
-          this.y = m.y;
-          this.height = m.height;
-        } else {
-          this.x = m.x;
-          this.width = m.width;
-        }
-      }
-
-      // center the dash
-      this.dash.x = this.width / 2 - this.dash.width / 2;
-      this.dash.y = this.height / 2 - this.dash.height / 2;
-
-      // hug the edge
-      if (vertical) {
-        this.dash.x = this.width * f.edgeX + this.dash.width * f.offsetX;
-      } else {
-        this.dash.y = this.height * f.edgeY + this.dash.height * f.offsetY;
-      }
-
-      this._iconSizeScaledDown = iconSize;
-      this._scaledDown = scaleDown;
-
-      // resize dash icons
-      // console.log(this.dash.height);
-      // console.log('---------------');
-    }
-
-    preview() {
-      this._preview = PREVIEW_FRAMES;
-    }
-
-    animate() {
-      if (this._preview) {
-        let p = this._get_position(this.dash);
-        p[0] += this.dash.width / 2;
-        p[1] += this.dash.height / 2;
-        this.simulated_pointer = p;
-        this._preview--;
-      }
-      this.animator.animate();
-      this.simulated_pointer = null;
-    }
-
-    _get_position(obj) {
-      return [...obj.get_transformed_position()];
-    }
-
-    _get_distance_sqr(pos1, pos2) {
-      let a = pos1[0] - pos2[0];
-      let b = pos1[1] - pos2[1];
-      return a * a + b * b;
-    }
-
-    _get_distance(pos1, pos2) {
-      return Math.sqrt(this._get_distance_sqr(pos1, pos2));
-    }
-
-    _isOverlapRect(r1, r2) {
-      let [r1x, r1y, r1w, r1h] = r1;
-      let [r2x, r2y, r2w, r2h] = r2;
-      // are the sides of one rectangle touching the other?
-      if (
-        r1x + r1w >= r2x && // r1 right edge past r2 left
-        r1x <= r2x + r2w && // r1 left edge past r2 right
-        r1y + r1h >= r2y && // r1 top edge past r2 bottom
-        r1y <= r2y + r2h
-      ) {
-        // r1 bottom edge past r2 top
-        return true;
-      }
-      return false;
-    }
-
-    _isInRect(r, p, pad) {
-      let [x1, y1, w, h] = r;
-      let x2 = x1 + w;
-      let y2 = y1 + h;
-      let [px, py] = p;
-      return px + pad >= x1 && px - pad < x2 && py + pad >= y1 && py - pad < y2;
-    }
-
-    _isWithinDash(p) {
-      if (this._hidden) {
-        return false;
-      }
-      if (this._hoveredIcon) return true;
-      let xy = this._get_position(this.struts);
-      let wh = [this.struts.width, this.struts.height];
-      if (this._isInRect([xy[0], xy[1], wh[0], wh[1]], p, 0)) {
-        return true;
-      }
-      return false;
-    }
-
-    _beginAnimation(caller) {
-      // if (caller) {
-      //   console.log(`animation triggered by ${caller}`);
-      // }
-      if (this.extension._hiTimer && this.debounceEndSeq) {
-        this.extension._loTimer.runDebounced(this.debounceEndSeq);
-        // this.extension._loTimer.cancel(this.debounceEndSeq);
-      }
-
-      this.animationInterval = this.extension.animationInterval;
-      if (this.extension._hiTimer) {
-        if (!this._animationSeq) {
-          this._animationSeq = this.extension._hiTimer.runLoop(
-            () => {
-              this.animate();
-            },
-            this.animationInterval,
-            'animationTimer'
-          );
-        } else {
-          this.extension._hiTimer.runLoop(this._animationSeq);
-        }
-      }
-    }
-
-    _endAnimation() {
-      if (this.extension._hiTimer) {
-        this.extension._hiTimer.cancel(this._animationSeq);
-        this.extension._loTimer.cancel(this.debounceEndSeq);
-        if (this.extension.debug_visual) {
-          this.remove_style_class_name('hi');
-          this.struts.remove_style_class_name('hi');
-          this.dwell.remove_style_class_name('hi');
-        }
-      }
-      this.autohider._debounceCheckHide();
-      this._icons = null;
-    }
-
-    _debounceEndAnimation() {
-      if (this.extension._loTimer) {
-        if (!this.debounceEndSeq) {
-          this.debounceEndSeq = this.extension._loTimer.runDebounced(
-            () => {
-              this._endAnimation();
-            },
-            ANIM_DEBOUNCE_END_DELAY + this.animationInterval,
-            'debounceEndAnimation'
-          );
-        } else {
-          this.extension._loTimer.runDebounced(this.debounceEndSeq);
-        }
-      }
-    }
-
-    cancelAnimations() {
-      this.extension._hiTimer.cancel(this._animationSeq);
-      this._animationSeq = null;
-      this.extension._hiTimer.cancel(this.autohider._animationSeq);
-      this.autohider._animationSeq = null;
-    }
-
-    _maybeMinimizeOrMaximize(app) {
-      let windows = app.get_windows();
-      if (!windows.length) return;
-
-      let event = Clutter.get_current_event();
-      let modifiers = event ? event.get_state() : 0;
-      let pressed = event.type() == Clutter.EventType.BUTTON_PRESS;
-      let button1 = (modifiers & Clutter.ModifierType.BUTTON1_MASK) != 0;
-      let button2 = (modifiers & Clutter.ModifierType.BUTTON2_MASK) != 0;
-      let button3 = (modifiers & Clutter.ModifierType.BUTTON3_MASK) != 0;
-      let shift = (modifiers & Clutter.ModifierType.SHIFT_MASK) != 0;
-      let isMiddleButton = button3; // middle?
-      let isCtrlPressed = (modifiers & Clutter.ModifierType.CONTROL_MASK) != 0;
-      let openNewWindow =
-        app.can_open_new_window() &&
-        app.state == Shell.AppState.RUNNING &&
-        (isCtrlPressed || isMiddleButton);
-      if (openNewWindow) return;
-
-      let workspaceManager = global.workspace_manager;
-      let activeWs = workspaceManager.get_active_workspace();
-      let focusedWindow = null;
-
-      windows.forEach((w) => {
-        if (w.has_focus()) {
-          focusedWindow = w;
-        }
-      });
-
-      // delay - allow dash to actually call 'activate' first
-      if (focusedWindow) {
-        this.extension._hiTimer.runOnce(() => {
-          if (shift) {
-            if (focusedWindow.get_maximized() == 3) {
-              focusedWindow.unmaximize(3);
-            } else {
-              focusedWindow.maximize(3);
-            }
-          } else {
-            windows.forEach((w) => {
-              w.minimize();
-            });
-          }
-        }, 50);
-      } else {
-        this.extension._hiTimer.runOnce(() => {
-          windows.forEach((w) => {
-            if (w.is_hidden()) {
-              w.unminimize();
-              if (w.has_focus()) {
-                w.raise();
-              }
-            }
-          });
-        }, 50);
-      }
-    }
-
-    _maybeBounce(container) {
-      if (!this.extension.open_app_animation) {
-        return;
-      }
-      if (
-        !container.child.app ||
-        (container.child.app && !container.child.app.get_n_windows())
-      ) {
-        if (container.child) {
-          this.animator.bounceIcon(container.child);
-        }
-      }
-    }
-
-    _onScrollEvent(obj, evt) {
-      this._lastScrollEvent = evt;
-      let pointer = global.get_pointer();
-      if (this._nearestIcon) {
-        if (this._scrollCounter < -2 || this._scrollCounter > 2)
-          this._scrollCounter = 0;
-
-        let icon = this._nearestIcon;
-        // console.log(`scroll - (${icon._pos}) (${pointer})`);
-
-        let SCROLL_RESOLUTION =
-          MIN_SCROLL_RESOLUTION +
-          MAX_SCROLL_RESOLUTION -
-          (MAX_SCROLL_RESOLUTION * this.extension.scroll_sensitivity || 0);
-        if (icon._appwell && icon._appwell.app) {
-          this._lastScrollObject = icon;
-          let direction = evt.get_scroll_direction();
-          switch (direction) {
-            case Clutter.ScrollDirection.UP:
-            case Clutter.ScrollDirection.LEFT:
-              this._scrollCounter += 1 / SCROLL_RESOLUTION;
-              break;
-            case Clutter.ScrollDirection.DOWN:
-            case Clutter.ScrollDirection.RIGHT:
-              this._scrollCounter -= 1 / SCROLL_RESOLUTION;
-              break;
-          }
-          this._cycleWindows(icon._appwell.app, evt);
-        }
-      }
-    }
-
-    _lockCycle() {
-      if (this._lockedCycle) return;
-      this._lockedCycle = true;
-      this.extension._hiTimer.runOnce(() => {
-        this._lockedCycle = false;
-      }, 500);
-    }
-
-    _cycleWindows(app, evt) {
-      if (this._lockedCycle) {
-        this._scrollCounter = 0;
-        return false;
-      }
-
-      let focusId = 0;
-      let workspaceManager = global.workspace_manager;
-      let activeWs = workspaceManager.get_active_workspace();
-
-      let windows = app.get_windows();
-
-      if (evt.modifier_state & Clutter.ModifierType.CONTROL_MASK) {
-        windows = windows.filter((w) => {
-          return activeWs == w.get_workspace();
-        });
-      }
-
-      let nw = windows.length;
-      windows.sort((w1, w2) => {
-        return w1.get_id() > w2.get_id() ? -1 : 1;
-      });
-
-      if (nw > 1) {
-        for (let i = 0; i < nw; i++) {
-          if (windows[i].has_focus()) {
-            focusId = i;
-          }
-          if (windows[i].is_hidden()) {
-            windows[i].unminimize();
-            windows[i].raise();
-          }
-        }
-
-        let current_focus = focusId;
-
-        if (this._scrollCounter < -1 || this._scrollCounter > 1) {
-          focusId += Math.round(this._scrollCounter);
-          if (focusId < 0) {
-            focusId = nw - 1;
-          }
-          if (focusId >= nw) {
-            focusId = 0;
-          }
-          this._scrollCounter = 0;
-        }
-
-        if (current_focus == focusId) return;
-      } else if (nw == 1) {
-        if (windows[0].is_hidden()) {
-          windows[0].unminimize();
-          windows[0].raise();
-        }
-      }
-
-      let window = windows[focusId];
-      if (window) {
-        this._lockCycle();
-        if (activeWs == window.get_workspace()) {
-          window.raise();
-          window.focus(0);
-        } else {
-          activeWs.activate_with_focus(window, global.get_current_time());
-        }
-      }
-    }
-  }
-);
-
-//-----------------------------
-// ./autohide.js
-//-----------------------------
-
-//'use strict';
-
-//import * as Main from 'resource:///org/gnome/shell/ui/main.js';
-//import Meta from 'gi://Meta';
-//import Shell from 'gi://Shell';
-//import GObject from 'gi://GObject';
-//import Clutter from 'gi://Clutter';
-//import Graphene from 'gi://Graphene';
-//import St from 'gi://St';
-
-//import { DockPosition } from './dock.js';
-
-//const Point = Graphene.Point;
-
-const HIDE_ANIMATION_INTERVAL = 15;
-const HIDE_ANIMATION_INTERVAL_PAD = 15;
-const DEBOUNCE_HIDE_TIMEOUT = 120;
-const PRESSURE_SENSE_DISTANCE = 20;
-
-const DWELL_COUNT = 24;
-
-// some codes lifted from dash-to-dock intellihide
-const handledWindowTypes = [
-  Meta.WindowType.NORMAL,
-  // Meta.WindowType.DOCK,
-  Meta.WindowType.DIALOG,
-  Meta.WindowType.MODAL_DIALOG,
-  // Meta.WindowType.TOOLBAR,
-  // Meta.WindowType.MENU,
-  Meta.WindowType.UTILITY,
-  // Meta.WindowType.SPLASHSCREEN
-];
-
-let AutoHide = class {
-  enable() {
-    if (this._enabled) return;
-    // console.log('enable autohide');
-    this._enabled = true;
-    this._shown = true;
-    this._dwell = 0;
-    console.log('autohide enabled');
-  }
-
-  disable() {
-    if (!this._enabled) return;
-    if (this.extension._hiTimer) {
-      this.extension._hiTimer.cancel(this._animationSeq);
-    }
-
-    this.show();
-
-    this._enabled = false;
-
-    let actors = global.get_window_actors();
-    let windows = actors.map((a) => a.get_meta_window());
-    windows.forEach((w) => {
-      if (w._tracked) {
-        this._untrack(w);
-      }
-    });
-
-    console.log('autohide disabled');
-  }
-
-  _getScaleFactor() {
-    let scaleFactor = this.dashContainer._monitor.geometry_scale;
-    return scaleFactor;
-  }
-
-  _onMotionEvent() {
-    if (this.extension.pressure_sense && !this._shown) {
-      let monitor = this.dashContainer._monitor;
-      let pointer = global.get_pointer();
-      if (this.extension.simulated_pointer) {
-        pointer = [...this.extension.simulated_pointer];
-      }
-
-      let sw = monitor.width;
-      let sh = monitor.height;
-      let scale = this._getScaleFactor();
-      let area = scale * (PRESSURE_SENSE_DISTANCE * PRESSURE_SENSE_DISTANCE);
-      let dx = 0;
-      let dy = 0;
-
-      if (this.last_pointer) {
-        dx = pointer[0] - this.last_pointer[0];
-        dx = dx * dx;
-        dy = pointer[1] - this.last_pointer[1];
-        dy = dy * dy;
-      }
-
-      if (this.dashContainer.isVertical()) {
-        if (
-          // right
-          (this.dashContainer._position == DockPosition.RIGHT &&
-            dy < area &&
-            pointer[0] > monitor.x + sw - 4) ||
-          // left
-          (this.dashContainer._position == DockPosition.LEFT &&
-            dy < area &&
-            pointer[0] < monitor.x + 4)
-        ) {
-          this._dwell++;
-        } else {
-          this._dwell = 0;
-          this.last_pointer = pointer;
-        }
-      } else {
-        // bottom
-        if (dx < area && pointer[1] + 4 > monitor.y + sh) {
-          this._dwell++;
-        } else {
-          this._dwell = 0;
-          this.last_pointer = pointer;
-        }
-      }
-      if (this._dwell > DWELL_COUNT) {
-        this.show();
-      }
-    }
-  }
-
-  _onEnterEvent() {
-    if (!this.extension.pressure_sense) {
-      this.show();
-    }
-  }
-
-  _onLeaveEvent() {
-    if (this._shown) {
-      this._dwell = 0;
-      this._debounceCheckHide();
-    }
-  }
-
-  _onFocusWindow() {
-    this._debounceCheckHide();
-  }
-
-  _onFullScreen() {
-    this._debounceCheckHide();
-  }
-
-  show() {
-    this.frameDelay = 0;
-    this._shown = true;
-    this.dashContainer.slideIn();
-  }
-
-  hide() {
-    this._dwell = 0;
-    this.frameDelay = 10;
-    this._shown = false;
-    this.dashContainer.slideOut();
-  }
-
-  _track(window) {
-    if (!window._tracked) {
-      // log('tracking...');
-      window.connectObject(
-        'position-changed',
-        // this._debounceCheckHide.bind(this),
-        () => {
-          this.dashContainer.extension.checkHide();
-        },
-        'size-changed',
-        // this._debounceCheckHide.bind(this),
-        () => {
-          this.dashContainer.extension.checkHide();
-        },
-        this
-      );
-      window._tracked = true;
-    }
-  }
-
-  _untrack(window) {
-    try {
-      if (window && window._tracked) {
-        window.disconnectObject(this);
-        window._tracked = false;
-      }
-    } catch (err) {
-      // may have been destroyed already
-    }
-  }
-
-  _checkOverlap() {
-    if (this.extension._inOverview) {
-      return false;
-    }
-    let pointer = global.get_pointer();
-    if (this.extension.simulated_pointer) {
-      pointer = [...this.extension.simulated_pointer];
-    }
-
-    // inaccurate
-    let pos = this.dashContainer._get_position(this.dashContainer.struts);
-    let rect = {
-      x: pos[0],
-      y: pos[1],
-      w: this.dashContainer.struts.width,
-      h: this.dashContainer.struts.height,
-    };
-    let arect = [rect.x, rect.y, rect.w, rect.h];
-    let dash_position = [this.dashContainer.x, this.dashContainer.y];
-
-    if (!this.extension.autohide_dash) {
-      return false;
-    }
-
-    // within the dash
-    if (
-      this.dashContainer._isWithinDash(pointer) ||
-      this.dashContainer._isInRect(arect, pointer)
-    ) {
-      return false;
-    }
-
-    if (!this.extension.autohide_dodge) {
-      return true;
-    }
-
-    let monitor = this.dashContainer._monitor;
-    let actors = global.get_window_actors();
-    let windows = actors.map((a) => {
-      let w = a.get_meta_window();
-      w._parent = a;
-      return w;
-    });
-    windows = windows.filter((w) => w.can_close());
-    windows = windows.filter((w) => w.get_monitor() == monitor.index);
-    let workspace = global.workspace_manager.get_active_workspace_index();
-    windows = windows.filter(
-      (w) =>
-        workspace == w.get_workspace().index() && w.showing_on_its_workspace()
-    );
-    windows = windows.filter((w) => w.get_window_type() in handledWindowTypes);
-
-    let isOverlapped = false;
-    let dock = this.dashContainer._get_position(this.dashContainer.struts);
-    dock.push(this.dashContainer.struts.width);
-    dock.push(this.dashContainer.struts.height);
-
-    windows.forEach((w) => {
-      this._track(w);
-      if (isOverlapped) return;
-
-      let frame = w.get_frame_rect();
-      let win = [frame.x, frame.y, frame.width, frame.height];
-
-      if (this.dashContainer._isOverlapRect(dock, win)) {
-        isOverlapped = true;
-      }
-    });
-
-    this.windows = windows;
-    return isOverlapped;
-  }
-
-  _debounceCheckHide() {
-    if (this.extension._loTimer) {
-      if (!this._debounceCheckSeq) {
-        this._debounceCheckSeq = this.extension._loTimer.runDebounced(
-          () => {
-            this._checkHide();
-          },
-          DEBOUNCE_HIDE_TIMEOUT,
-          'debounceCheckHide'
-        );
-      } else {
-        this.extension._loTimer.runDebounced(this._debounceCheckSeq);
-      }
-    }
-  }
-
-  _checkHide() {
-    if (this._enabled) {
-      if (this._checkOverlap()) {
-        this.hide();
-      } else {
-        this.show();
-      }
-    }
-  }
-};
 
 //-----------------------------
 // ./services.js
@@ -2495,6 +2784,7 @@ const Services = class {
   }
 };
 
+
 //-----------------------------
 // ./utils.js
 //-----------------------------
@@ -2546,1473 +2836,6 @@ const clearInterval = (id) => {
   GLib.source_remove(id);
 };
 
-//-----------------------------
-// ./prefs.js
-//-----------------------------
-
-// loosely based on JustPerfection & Blur-My-Shell
-//'use strict';
-
-//import Gdk from 'gi://Gdk';
-//import Gtk from 'gi://Gtk';
-//import Gio from 'gi://Gio';
-//import GLib from 'gi://GLib';
-//import Adw from 'gi://Adw';
-//import GObject from 'gi://GObject';
-
-const GETTEXT_DOMAIN = 'dash2dock-light';
-
-//import { schemaId, SettingsKeys } from './preferences/keys.js';
-
-//import {
-//  ExtensionPreferences,
-//  gettext as _,
-//} from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
-
-// from Dock-to-Dock
-const MonitorsConfig = GObject.registerClass(
-  {
-    Signals: {
-      updated: {},
-    },
-  },
-  class MonitorsConfig extends GObject.Object {
-    static get XML_INTERFACE() {
-      return '<node>\
-            <interface name="org.gnome.Mutter.DisplayConfig">\
-                <method name="GetCurrentState">\
-                <arg name="serial" direction="out" type="u" />\
-                <arg name="monitors" direction="out" type="a((ssss)a(siiddada{sv})a{sv})" />\
-                <arg name="logical_monitors" direction="out" type="a(iiduba(ssss)a{sv})" />\
-                <arg name="properties" direction="out" type="a{sv}" />\
-                </method>\
-                <signal name="MonitorsChanged" />\
-            </interface>\
-        </node>';
-    }
-
-    static get ProxyWrapper() {
-      return Gio.DBusProxy.makeProxyWrapper(MonitorsConfig.XML_INTERFACE);
-    }
-
-    constructor() {
-      super();
-
-      this._monitorsConfigProxy = new MonitorsConfig.ProxyWrapper(
-        Gio.DBus.session,
-        'org.gnome.Mutter.DisplayConfig',
-        '/org/gnome/Mutter/DisplayConfig'
-      );
-
-      // Connecting to a D-Bus signal
-      this._monitorsConfigProxy.connectSignal('MonitorsChanged', () =>
-        this._updateResources()
-      );
-
-      this._primaryMonitor = null;
-      this._monitors = [];
-      this._logicalMonitors = [];
-
-      this._updateResources();
-    }
-
-    _updateResources() {
-      this._monitorsConfigProxy.GetCurrentStateRemote((resources, err) => {
-        if (err) {
-          logError(err);
-          return;
-        }
-
-        const [serial_, monitors, logicalMonitors] = resources;
-        let index = 0;
-        for (const monitor of monitors) {
-          const [monitorSpecs, modes_, props] = monitor;
-          const [connector, vendor, product, serial] = monitorSpecs;
-          this._monitors.push({
-            index: index++,
-            active: false,
-            connector,
-            vendor,
-            product,
-            serial,
-            displayName: props['display-name'].unpack(),
-          });
-        }
-
-        for (const logicalMonitor of logicalMonitors) {
-          const [x_, y_, scale_, transform_, isPrimary, monitorsSpecs] =
-            logicalMonitor;
-
-          // We only care about the first one really
-          for (const monitorSpecs of monitorsSpecs) {
-            const [connector, vendor, product, serial] = monitorSpecs;
-            const monitor = this._monitors.find(
-              (m) =>
-                m.connector === connector &&
-                m.vendor === vendor &&
-                m.product === product &&
-                m.serial === serial
-            );
-
-            if (monitor) {
-              monitor.active = true;
-              monitor.isPrimary = isPrimary;
-              if (monitor.isPrimary) this._primaryMonitor = monitor;
-              break;
-            }
-          }
-        }
-
-        const activeMonitors = this._monitors.filter((m) => m.active);
-        if (activeMonitors.length > 1 && logicalMonitors.length === 1) {
-          // We're in cloning mode, so let's just activate the primary monitor
-          this._monitors.forEach((m) => (m.active = false));
-          this._primaryMonitor.active = true;
-        }
-
-        this.emit('updated');
-      });
-    }
-
-    get primaryMonitor() {
-      return this._primaryMonitor;
-    }
-
-    get monitors() {
-      return this._monitors;
-    }
-  }
-);
-
-class Preferences extends ExtensionPreferences {
-  constructor(metadata) {
-    super(metadata);
-
-    let iconTheme = Gtk.IconTheme.get_for_display(Gdk.Display.get_default());
-    let UIFolderPath = `${this.path}/ui`;
-    iconTheme.add_search_path(`${UIFolderPath}/icons`);
-    // ExtensionUtils.initTranslations();
-  }
-
-  find(n, name) {
-    if (n.get_name() == name) {
-      return n;
-    }
-    let c = n.get_first_child();
-    while (c) {
-      let cn = this.find(c, name);
-      if (cn) {
-        return cn;
-      }
-      c = c.get_next_sibling();
-    }
-    return null;
-  }
-
-  dump(n, l) {
-    let s = '';
-    for (let i = 0; i < l; i++) {
-      s += ' ';
-    }
-    print(`${s}${n.get_name()}`);
-    let c = n.get_first_child();
-    while (c) {
-      this.dump(c, l + 1);
-      c = c.get_next_sibling();
-    }
-  }
-
-  addMenu(window, builder) {
-    // let menu_util = builder.get_object('menu_util');
-    // window.add(menu_util);
-
-    let headerbar = this.find(window, 'AdwHeaderBar');
-    if (!headerbar) {
-      return;
-    }
-    headerbar.pack_start(builder.get_object('info_menu'));
-
-    // setup menu actions
-    const actionGroup = new Gio.SimpleActionGroup();
-    window.insert_action_group('prefs', actionGroup);
-
-    // a list of actions with their associated link
-    const actions = [
-      {
-        name: 'open-bug-report',
-        link: 'https://github.com/icedman/dash2dock-lite/issues',
-      },
-      {
-        name: 'open-readme',
-        link: 'https://github.com/icedman/dash2dock-lite',
-      },
-      {
-        name: 'open-buy-coffee',
-        link: 'https://www.buymeacoffee.com/icedman',
-      },
-      {
-        name: 'open-license',
-        link: 'https://github.com/icedman/dash2dock-lite/blob/master/LICENSE',
-      },
-    ];
-
-    actions.forEach((action) => {
-      let act = new Gio.SimpleAction({ name: action.name });
-      act.connect('activate', (_) =>
-        Gtk.show_uri(window, action.link, Gdk.CURRENT_TIME)
-      );
-      actionGroup.add_action(act);
-    });
-
-    // window.remove(menu_util);
-  }
-
-  addButtonEvents(window, builder, settings) {
-    // builder.get_object('static-animation').connect('clicked', () => {
-    //   builder.get_object('animation-spread').set_value(0);
-    //   builder.get_object('animation-rise').set_value(0);
-    //   builder.get_object('animation-magnify').set_value(0);
-    // });
-
-    if (builder.get_object('self-test')) {
-      builder.get_object('self-test').connect('clicked', () => {
-        settings.set_string('msg-to-ext', 'this.runDiagnostics()');
-      });
-    }
-  }
-
-  fillPreferencesWindow(window) {
-    // console.log(`>>${window.get_content()}`);
-    let builder = new Gtk.Builder();
-    this._builder = builder;
-
-    let UIFolderPath = `${this.path}/ui`;
-
-    builder.add_from_file(`${UIFolderPath}/general.ui`);
-    builder.add_from_file(`${UIFolderPath}/appearance.ui`);
-    builder.add_from_file(`${UIFolderPath}/tweaks.ui`);
-    builder.add_from_file(`${UIFolderPath}/others.ui`);
-    builder.add_from_file(`${UIFolderPath}/menu.ui`);
-    window.add(builder.get_object('general'));
-    window.add(builder.get_object('appearance'));
-    window.add(builder.get_object('tweaks'));
-    window.add(builder.get_object('others'));
-    window.set_search_enabled(true);
-
-    // this.dump(window, 0);
-
-    this._settings = ExtensionUtils.getSettings(schemaId);
-    settings.set_string('msg-to-ext', '');
-
-    let settingsKeys = SettingsKeys();
-    settingsKeys.connectBuilder(builder);
-    settingsKeys.connectSettings(settings);
-
-    this._settings = settings;
-
-    this.addButtonEvents(window, builder, settings);
-    this.addMenu(window, builder);
-
-    builder.get_object('peek-hidden-icons-row').visible = false;
-
-    let toggle_experimental = () => {
-      let exp = false; // settingsKeys.getValue('experimental-features');
-      // builder.get_object('dock-location-row').visible = exp;
-      builder.get_object('lamp-app-animation-row').visible = exp;
-      builder.get_object('self-test-row').visible = exp;
-    };
-
-    settings.connect('changed::experimental-features', () => {
-      toggle_experimental();
-    });
-
-    toggle_experimental();
-
-    this._monitorsConfig = new MonitorsConfig();
-    this._monitorsConfig.connect('updated', () => this.updateMonitors());
-    // settings.connect('changed::preferred-monitor', () => this.updateMonitors());
-
-    this._themed_presets = [];
-    this.preloadPresets(`${this.path}/themes`);
-    this.preloadPresets(
-      Gio.File.new_for_path('.config/d2da/themes').get_path()
-    );
-    this._buildThemesMenu(window);
-    this.updateMonitors();
-
-    this.window = window;
-  }
-
-  preloadPresets(themes_path) {
-    let dir = Gio.File.new_for_path(themes_path);
-    if (!dir.query_exists(null)) {
-      return;
-    }
-    let iter = dir.enumerate_children(
-      'standard::*',
-      Gio.FileQueryInfoFlags.NONE,
-      null
-    );
-
-    let themed_presets = [];
-    let f = iter.next_file(null);
-    while (f) {
-      let fn = Gio.File.new_for_path(`${themes_path}/${f.get_name()}`);
-      if (fn.query_exists(null)) {
-        const [success, contents] = fn.load_contents(null);
-        const decoder = new TextDecoder();
-        let contentsString = decoder.decode(contents);
-        let json = JSON.parse(contentsString);
-        if (json && json['meta'] && json['meta']['title']) {
-          themed_presets.push(json);
-        }
-      }
-      f = iter.next_file(null);
-    }
-    this._themed_presets = [...this._themed_presets, ...themed_presets];
-  }
-
-  _buildThemesMenu(window) {
-    this._themed_presets.push({ meta: { title: 'Export...' } });
-
-    const actionGroup = new Gio.SimpleActionGroup();
-    window.insert_action_group('themes', actionGroup);
-
-    let theme = this._builder.get_object('theme');
-    let model = new Gio.Menu();
-    let idx = 0;
-    this._themed_presets.forEach((m) => {
-      let action_name = `set_theme-${idx}`;
-      let act = new Gio.SimpleAction({ name: action_name });
-      act.connect('activate', (_) => {
-        let index = action_name.split('-')[1];
-        this.loadPreset(parseInt(index));
-      });
-      actionGroup.add_action(act);
-      model.append(m['meta']['title'], `themes.${action_name}`);
-      idx++;
-    });
-    theme.set_menu_model(model);
-  }
-
-  loadPreset(i) {
-    let settingsKeys = SettingsKeys();
-    settingsKeys.connectSettings(this._settings);
-    if (i == this._themed_presets.length - 1) {
-      // export
-      let keys = settingsKeys.keys();
-      let json = {};
-      Object.keys(keys).forEach((n) => {
-        let k = keys[n];
-        if (k.themed) {
-          json[n] = settingsKeys.getValue(n);
-        }
-      });
-
-      json['meta'] = {
-        title: 'My Theme',
-      };
-
-      let fn = Gio.File.new_for_path(`/tmp/theme.json`);
-      let content = JSON.stringify(json, null, 4);
-      const [, etag] = fn.replace_contents(
-        content,
-        null,
-        false,
-        Gio.FileCreateFlags.REPLACE_DESTINATION,
-        null
-      );
-
-      this.window.add_toast(
-        new Adw.Toast({ title: 'Saved to /tmp/theme.json' })
-      );
-      return;
-    }
-
-    let p = this._themed_presets[i];
-    if (!p['meta'] || !p['meta']['title']) {
-      return;
-    }
-
-    Object.keys(p).forEach((k) => {
-      let v = p[k];
-      let def = settingsKeys.getKey(k);
-      if (!def) return;
-      switch (def.widget_type) {
-        case 'color':
-          this._settings.set_value(k, new GLib.Variant('(dddd)', v));
-          break;
-        case 'switch':
-          this._settings.set_boolean(k, v);
-          break;
-        case 'dropdown':
-          this._settings.set_int(k, v);
-          break;
-      }
-    });
-
-    // settingsKeys.connectBuilder(this._builder);
-    settingsKeys._builder = this._builder;
-    settingsKeys.connectSettings(this._settings);
-
-    this.window.add_toast(new Adw.Toast({ title: `${p['meta']['title']}` }));
-  }
-
-  updateMonitors() {
-    let monitors = this._monitorsConfig.monitors;
-    let count = monitors.length;
-    let list = new Gtk.StringList();
-    list.append('Primary Monitor');
-    for (let i = 0; i < count; i++) {
-      let m = monitors[i];
-      list.append(m.displayName);
-    }
-    this._builder.get_object('preferred-monitor').set_model(list);
-  }
-}
-
-//-----------------------------
-// ./timer.js
-//-----------------------------
-
-//'use strict';
-
-//import GLib from 'gi://GLib';
-
-const Timer = class {
-  constructor(name) {
-    this._name = name;
-    this._subscribers = [];
-    this._subscriberId = 0xff;
-  }
-
-  initialize(resolution) {
-    this._resolution = resolution || 1000;
-    this._autoStart = true;
-    this._autoHibernate = true;
-
-    this._hibernating = false;
-    this._hibernatCounter = 0;
-    this._hibernateWait = 250 + this._resolution * 2;
-  }
-
-  shutdown() {
-    this._autoStart = false;
-    this._hibernating = false;
-    this.stop();
-  }
-
-  start(resolution) {
-    if (this.is_running()) {
-      // print('already running');
-      return;
-    }
-    this._resolution = resolution || 1000;
-    this._time = 0;
-    this._timeoutId = GLib.timeout_add(
-      GLib.PRIORITY_DEFAULT,
-      this._resolution,
-      this.onUpdate.bind(this)
-    );
-    this._hibernating = false;
-    this.onStart();
-  }
-
-  stop() {
-    if (!this.is_running()) {
-      // print('already stopped');
-      return;
-    }
-    GLib.source_remove(this._timeoutId);
-    this._timeoutId = null;
-    this.onStop();
-  }
-
-  restart(resolution) {
-    this.stop();
-    this.start(resolution || this._resolution || 1000);
-  }
-
-  pause() {
-    if (!this.is_running()) {
-      return;
-    }
-    this._paused = true;
-    this.onPause();
-  }
-
-  resume() {
-    if (!this.is_running()) {
-      return;
-    }
-    this._paused = false;
-    this.onResume();
-  }
-
-  hibernate() {
-    if (!this.is_running()) {
-      return;
-    }
-
-    this.stop();
-    this._hibernating = true;
-    this._hibernatCounter = 0;
-  }
-
-  is_running() {
-    return this._timeoutId != null;
-  }
-
-  toggle_pause() {
-    if (!this.is_running()) {
-      return;
-    }
-    if (!this._paused) {
-      this.pause();
-    } else {
-      this.resume();
-    }
-  }
-
-  onStart() {
-    // print(`started ${this._name} [${this.subscriberNames().join(',')}]`);
-    this._subscribers.forEach((s) => {
-      if (s.onStart) {
-        s.onStart(s);
-      }
-    });
-  }
-
-  onStop() {
-    this._subscribers.forEach((s) => {
-      if (s.onStop) {
-        s.onStop(s);
-      }
-    });
-    // print(`stopped ${this._name}`);
-  }
-
-  onPause() {
-    this._subscribers.forEach((s) => {
-      if (s.onPause) {
-        s.onPause(s);
-      }
-    });
-  }
-
-  onResume() {
-    this._subscribers.forEach((s) => {
-      if (s.onResume) {
-        s.onResume(s);
-      }
-    });
-  }
-
-  onUpdate() {
-    if (!this._timeoutId || this._paused) {
-      return true;
-    }
-
-    this._subscribers.forEach((s) => {
-      if (s.onUpdate) {
-        s.onUpdate(s, this._resolution);
-      }
-    });
-
-    this._time += this._resolution;
-
-    if (this._autoHibernate) {
-      if (!this._subscribers.length) {
-        this._hibernatCounter += this._resolution;
-        if (this._hibernatCounter >= this._hibernateWait) {
-          this.hibernate();
-        }
-      } else {
-        this._hibernatCounter = 0;
-      }
-    }
-
-    // print(`${this._time/1000} subs:${this._subscribers.length}`);
-    return true;
-  }
-
-  runningTime() {
-    return this._time;
-  }
-
-  subscribe(obj) {
-    if (!obj._id) {
-      obj._id = this._subscriberId++;
-    }
-    let idx = this._subscribers.findIndex((s) => s._id == obj._id);
-    if (idx == -1) {
-      this._subscribers.push(obj);
-    } else {
-      this._subscribers[idx] = {
-        ...this._subscribers[idx],
-        ...obj,
-      };
-      obj = this._subscribers[idx];
-    }
-
-    if (
-      (this._hibernating || this._autoStart) &&
-      this._subscribers.length == 1
-    ) {
-      this.start(this._resolution);
-    }
-
-    // log(`subscribers: ${this.subscriberNames().join(',')}`);
-    return obj;
-  }
-
-  unsubscribe(obj) {
-    let idx = this._subscribers.findIndex((s) => s._id == obj._id);
-    if (idx != -1) {
-      if (this._subscribers.length == 1) {
-        this._subscribers = [];
-      } else {
-        this._subscribers = [
-          ...this._subscribers.slice(0, idx),
-          ...this._subscribers.slice(idx + 1),
-        ];
-      }
-    }
-  }
-
-  subscriberNames() {
-    return this._subscribers.map((s) => {
-      if (s._name) {
-        return s._name;
-      }
-      return `${s._id}`;
-    });
-  }
-
-  dumpSubscribers() {
-    if (this._name) {
-      print('--------');
-      print(this._name);
-    }
-    this._subscribers.forEach((s) => {
-      print('--------');
-      Object.keys(s).forEach((k) => {
-        print(`${k}: ${s[k]}`);
-      });
-    });
-  }
-
-  runLoop(func, delay, name) {
-    if (typeof func === 'object') {
-      func._time = 0;
-      return this.subscribe(func);
-    }
-    let obj = {
-      _name: name,
-      _type: 'loop',
-      _time: 0,
-      _delay: delay,
-      _func: func,
-      onUpdate: (s, dt) => {
-        s._time += dt;
-        if (s._time >= s._delay) {
-          s._func(s);
-          s._time -= s._delay;
-        }
-      },
-    };
-    return this.subscribe(obj);
-  }
-
-  runOnce(func, delay, name) {
-    if (typeof func === 'object') {
-      func._time = 0;
-      return this.subscribe(func);
-    }
-    let obj = {
-      _name: name,
-      _type: 'once',
-      _time: 0,
-      _delay: delay,
-      _func: func,
-      onUpdate: (s, dt) => {
-        s._time += dt;
-        if (s._time >= s._delay) {
-          s._func(s);
-          this.unsubscribe(s);
-        }
-      },
-    };
-    return this.subscribe(obj);
-  }
-
-  runDebounced(func, delay, name) {
-    if (typeof func === 'object') {
-      func._time = 0;
-      return this.subscribe(func);
-    }
-    let obj = {
-      _name: name,
-      _type: 'debounced',
-      _time: 0,
-      _delay: delay,
-      _func: func,
-      onUpdate: (s, dt) => {
-        s._time += dt;
-        if (s._time >= s._delay) {
-          s._func(s);
-          this.unsubscribe(s);
-        }
-      },
-    };
-    return this.subscribe(obj);
-  }
-
-  runSequence(array, settings) {
-    if (typeof array === 'object' && !array.length) {
-      array._time = 0;
-      array._currentIdx = 0;
-      return this.subscribe(array);
-    }
-    let obj = {
-      _time: 0,
-      _currentIdx: 0,
-      _sequences: [...array],
-      ...settings,
-      onUpdate: (s, dt) => {
-        let current = s._sequences[s._currentIdx];
-        if (!current) {
-          this.unsubscribe(s);
-          return;
-        }
-        s._time += dt;
-        if (s._time >= current.delay) {
-          current.func(current);
-          s._time = -current.delay;
-          s._currentIdx++;
-          if (s._currentIdx >= s._sequences.length && s._loop) {
-            s._currentIdx = 0;
-          }
-        }
-      },
-    };
-    return this.subscribe(obj);
-  }
-
-  runAnimation(array, settings) {
-    if (typeof func === 'object' && !array.length) {
-      func._time = 0;
-      return this.subscribe(func);
-    }
-
-    let duration = 0;
-    array.forEach((f) => {
-      if (!f._start) {
-        f._start = duration;
-      }
-      duration += f._duration;
-    });
-
-    let obj = {
-      _time: 0,
-      _duration: duration,
-      _loop: false,
-      _frames: [...array],
-      ...(settings || {}),
-      onUpdate: (s, dt) => {
-        s._time += dt;
-
-        let frames = [];
-        if (s._frames) {
-          frames = s._frames.filter((f) => {
-            return f._start <= s._time && s._time < f._start + f._duration;
-          });
-        }
-        s._currentFrames = frames;
-
-        if (!s._func) {
-          s._func = (s) => {
-            s._currentFrames.forEach((f) => {
-              f._time = s._time - f._start;
-              f._func(f, s);
-            });
-          };
-        }
-
-        if (s._time > s._duration) {
-          this.unsubscribe(s);
-          s._time = s._duration;
-          s._func(s);
-          return;
-        }
-        s._func(s);
-      },
-    };
-    return this.subscribe(obj);
-  }
-
-  cancel(obj) {
-    if (obj) {
-      this.unsubscribe(obj);
-    }
-  }
-};
-
-//-----------------------------
-// ./animator.js
-//-----------------------------
-
-//'use strict';
-
-//import * as Main from 'resource:///org/gnome/shell/ui/main.js';
-//import Graphene from 'gi://Graphene';
-//const Point = Graphene.Point;
-
-//import { Dot } from './apps/dot.js';
-//import { DockPosition } from './dock.js';
-
-//import {
-//  DockItemDotsOverlay,
-//  DockItemBadgeOverlay,
-//  DockItemContainer,
-//  DockBackground,
-//} from './dockItems.js';
-
-//import { Bounce, Linear } from './effects/easing.js';
-
-const ANIM_POS_COEF = 0.5;
-const ANIM_SCALE_COEF = 1.5 * 2;
-const ANIM_SPREAD_COEF = 1.25 * 1;
-const ANIM_ON_LEAVE_COEF = 2.0;
-const ANIM_ICON_RAISE = 0.6;
-const ANIM_ICON_SCALE = 1.5;
-const ANIM_ICON_HIT_AREA = 2.5;
-
-const DOT_CANVAS_SIZE = 96;
-
-let Animator = class {
-  enable() {}
-
-  disable() {}
-
-  animate() {
-    let dock = this.dashContainer;
-
-    let simulation = false;
-    // this._hidden = true;
-    dock.layout();
-
-    let m = dock.getMonitor();
-    let pointer = global.get_pointer();
-    if (dock.extension.simulated_pointer) {
-      pointer = [...dock.extension.simulated_pointer];
-      simulation = true;
-    }
-    if (dock.simulated_pointer) {
-      pointer = [...dock.simulated_pointer];
-      simulation = true;
-    }
-
-    let vertical = dock.isVertical();
-
-    let [px, py] = pointer;
-
-    let p = new Point();
-    p.x = 0.5;
-    p.y = 0.5;
-
-    let isWithin = dock._isWithinDash([px, py]);
-    let animated = isWithin;
-    dock.animated = animated;
-
-    let animateIcons = dock._icons;
-    let iconSize = dock._iconSizeScaledDown;
-    let scaleFactor = dock._scaleFactor;
-
-    let nearestIdx = -1;
-    let nearestIcon = null;
-    let nearestDistance = -1;
-
-    animateIcons.forEach((c) => {
-      c._pos = dock._get_position(c);
-      c._fixedPosition = [...c._pos];
-    });
-
-    // sort
-    // todo apps_icon_front does not work in vertical layout
-    if (
-      dock.extension.apps_icon_front &&
-      dock.extension.apps_icon &&
-      vertical
-    ) {
-      let cornerPos = dock._get_position(dock);
-      animateIcons.sort((a, b) => {
-        let dstA = dock._get_distance(cornerPos, a._pos);
-        let dstB = dock._get_distance(cornerPos, b._pos);
-        return dstA > dstB ? 1 : -1;
-      });
-    }
-
-    let idx = 0;
-    animateIcons.forEach((icon) => {
-      let pos = [...icon._pos];
-
-      icon._icon.set_icon_size(iconSize * dock.extension.icon_quality);
-
-      // get nearest
-      let bposcenter = [...pos];
-      bposcenter[0] += (iconSize * scaleFactor) / 2;
-      bposcenter[1] += (iconSize * scaleFactor) / 2;
-      let dst = dock._get_distance(pointer, bposcenter);
-
-      if (
-        isWithin &&
-        (nearestDistance == -1 || nearestDistance > dst) &&
-        dst < iconSize * ANIM_ICON_HIT_AREA * scaleFactor
-      ) {
-        nearestDistance = dst;
-        nearestIcon = icon;
-        nearestIdx = idx;
-        icon._distance = dst;
-      }
-
-      icon._target = pos;
-      icon._targetScale = 1;
-
-      idx++;
-    });
-
-    let noAnimation = !dock.extension.animate_icons_unmute;
-    if ((!simulation && !isWithin) || noAnimation) {
-      nearestIcon = null;
-    }
-
-    dock._nearestIcon = nearestIcon;
-
-    let didScale = false;
-
-    let off = (iconSize * scaleFactor) / 2;
-    animateIcons.forEach((i) => {
-      if (!i._pos) return;
-      let p = [...i._pos];
-      if (!p) return;
-      p[0] += off;
-      p[1] += off;
-      i._pos = p;
-    });
-
-    //------------------------
-    // animation behavior
-    //------------------------
-    let edge_distance = dock._edge_distance;
-    let rise = dock.extension.animation_rise * ANIM_ICON_RAISE;
-    let magnify = dock.extension.animation_magnify * ANIM_ICON_SCALE;
-    let spread = dock.extension.animation_spread;
-    if (spread < 0.2) {
-      magnify *= 0.8;
-    }
-    if (magnify > 0.5 && spread < 0.55) {
-      spread = 0.55 + spread * 0.2;
-    }
-
-    let padding = 10;
-    let threshold = (iconSize + padding) * 2.5 * scaleFactor;
-
-    if (animated && edge_distance < 0) {
-      edge_distance = 0;
-    }
-
-    // animate
-    let iconTable = [];
-    animateIcons.forEach((icon) => {
-      let original_pos = dock._get_position(icon);
-      original_pos[0] += icon.width / 2;
-      original_pos[1] += icon.height / 2;
-
-      icon._pos = [...original_pos];
-      icon._translate = 0;
-      icon._translateRise = 0;
-
-      iconTable.push(icon);
-
-      let scale = 1;
-      let dx = original_pos[0] - px;
-      if (vertical) {
-        dx = original_pos[1] - py;
-      }
-      if (dx * dx < threshold * threshold && nearestIcon) {
-        let adx = Math.abs(dx);
-        let p = 1.0 - adx / threshold;
-        let fp = p * 0.6 * (1 + magnify);
-        icon._p = p;
-
-        // affect scale;
-        if (magnify != 0) {
-          scale += fp;
-        }
-
-        // affect rise
-        let sz = iconSize * fp * scaleFactor;
-        icon._translateRise = sz * 0.1 * rise;
-
-        didScale = true;
-      }
-
-      icon._scale = scale;
-      icon._targetScale = scale * scaleFactor;
-
-      icon._icon.set_size(iconSize, iconSize);
-      if (icon._icon._img) {
-        icon._icon._img.set_icon_size(iconSize * dock.extension.icon_quality);
-      }
-
-      if (!icon._pos) {
-        return;
-      }
-
-      icon.opacity = icon == dock._dragged && dock._dragging ? 50 : 255;
-      icon._prevTranslate = icon._translate;
-    });
-
-    // spread
-    let hoveredIcon = null;
-    for (let i = 0; i < iconTable.length; i++) {
-      if (iconTable.length < 2) break;
-      let icon = iconTable[i];
-      if (icon._icon && icon._icon.hover) {
-        hoveredIcon = icon;
-      }
-      if (icon._scale > 1.1) {
-        // if (hoveredIcon == null || hoveredIcon._scale < icon._scale) {
-        //   hoveredIcon = icon;
-        // }
-        // affect spread
-        let offset =
-          1.25 * (icon._scale - 1) * iconSize * scaleFactor * spread * 0.8;
-        let o = offset;
-        // left
-        for (let j = i - 1; j >= 0; j--) {
-          let left = iconTable[j];
-          left._translate -= offset;
-          o *= 0.98;
-        }
-        // right
-        o = offset;
-        for (let j = i + 1; j < iconTable.length; j++) {
-          let right = iconTable[j];
-          right._translate += offset;
-          o *= 0.98;
-        }
-      }
-    }
-
-    dock._hoveredIcon = hoveredIcon;
-
-    // re-center to hovered icon
-    let TRANSLATE_COEF = 24;
-    if (hoveredIcon) {
-      hoveredIcon._targetScale += 0.1;
-      let adjust = hoveredIcon._translate / 2;
-      animateIcons.forEach((icon) => {
-        if (icon._scale > 1) {
-          let o = -adjust * (2 - icon._scale);
-          let nt = icon._translate - o;
-          icon._translate =
-            (icon._translate * TRANSLATE_COEF + nt) / (TRANSLATE_COEF + 1);
-        }
-      });
-    }
-
-    //-------------------
-    // interpolation / animation
-    //-------------------
-    let _scale_coef = ANIM_SCALE_COEF;
-    // let _spread_coef = ANIM_SPREAD_COEF;
-    let _pos_coef = ANIM_POS_COEF;
-    if (dock.extension.animation_fps > 0) {
-      _pos_coef /= 1 + dock.extension.animation_fps / 2;
-      _scale_coef /= 1 + dock.extension.animation_fps / 2;
-      // _spread_coef /= 1 + dock.extension.animation_fps / 2;
-    }
-    if (!nearestIcon) {
-      _scale_coef *= ANIM_ON_LEAVE_COEF;
-      _pos_coef *= ANIM_ON_LEAVE_COEF;
-      // _spread_coef *= ANIM_ON_LEAVE_COEF;
-    }
-
-    // low frame rate
-    if (dock.extension.animation_fps == 2) {
-      _pos_coef *= 4;
-      _scale_coef *= 4;
-    }
-
-    animateIcons.forEach((icon) => {
-      let scale = icon._icon.get_scale();
-
-      let newScale =
-        (icon._targetScale + scale[0] * _scale_coef) / (_scale_coef + 1);
-      icon._scale = newScale;
-
-      let flags = {
-        bottom: { x: 0.5, y: 1, lx: 0, ly: 0.5 * newScale },
-        top: { x: 0.5, y: 0, lx: 0, ly: -1.75 * newScale },
-        left: { x: 0, y: 0.5, lx: -1.25 * newScale, ly: -1.25 },
-        right: { x: 1, y: 0.5, lx: 1.5 * newScale, ly: -1.25 },
-      };
-      let pvd = flags[dock._position];
-
-      let pv = new Point();
-      pv.x = pvd.x;
-      pv.y = pvd.y;
-      icon._icon.pivot_point = pv;
-      icon._icon.set_scale(newScale, newScale);
-
-      let rdir =
-        dock._position == DockPosition.TOP ||
-        dock._position == DockPosition.LEFT
-          ? 1
-          : -1;
-
-      let oldX = icon._icon.translationX;
-      let oldY = icon._icon.translationY;
-      let translationX =
-        vertical * icon._translateRise * rdir +
-        (oldX + icon._translate * !vertical * _pos_coef) / (_pos_coef + 1);
-      let translationY =
-        !vertical * icon._translateRise * rdir +
-        (oldY + icon._translate * vertical * _pos_coef) / (_pos_coef + 1);
-
-      icon._icon.translationX = translationX;
-      icon._icon.translationY = translationY;
-
-      // todo center the appwell (scaling correction)
-      let child = icon._appwell || icon.first_child;
-      if (child && scaleFactor > 1) {
-        let correction = icon._icon.height * scaleFactor - icon._icon.height;
-        if (!icon._appwell) {
-          child.x = correction;
-        }
-        child.y = correction;
-      }
-
-      // labels
-      if (icon._label) {
-        icon._label.translationX = translationX - iconSize * pvd.lx;
-        icon._label.translationY = translationY - iconSize * pvd.ly;
-      }
-
-      // badges
-      {
-        let appNotices = icon._appwell
-          ? dock.extension.services._appNotices[icon._appwell.app.get_id()]
-          : null;
-        let noticesCount = 0;
-        if (appNotices) {
-          noticesCount = appNotices.count;
-        }
-        // noticesCount = 1;
-        let target = icon._dot?.get_parent();
-        let badge = target?._badge;
-
-        if (!badge && icon._appwell && target) {
-          badge = new DockItemBadgeOverlay(new Dot(DOT_CANVAS_SIZE));
-          target._badge = badge;
-          target.add_child(badge);
-        }
-        if (badge && noticesCount > 0) {
-          badge.update(icon, {
-            noticesCount,
-            position: dock._position,
-            vertical,
-            extension: dock.extension,
-          });
-          badge.show();
-        } else {
-          badge?.hide();
-        }
-      }
-
-      // dots
-      {
-        let appCount = icon._appwell ? icon._appwell.app.get_n_windows() : 0;
-        // appCount = 1;
-        let target = icon._dot?.get_parent();
-        let dots = target?._dots;
-        if (!dots && icon._appwell && target) {
-          dots = new DockItemDotsOverlay(new Dot(DOT_CANVAS_SIZE));
-          target._dots = dots;
-          target.add_child(dots);
-        }
-        if (dots && appCount > 0) {
-          dots.update(icon, {
-            appCount,
-            position: dock._position,
-            vertical,
-            extension: dock.extension,
-          });
-          dots.show();
-        } else {
-          dots?.hide();
-        }
-      }
-
-      // custom icons
-      if (dock.extension.services) {
-        dock.extension.services.updateIcon(icon, {
-          scaleFactor,
-          iconSize,
-          dock,
-        });
-      }
-    });
-
-    // separators
-    dock._separators.forEach((actor) => {
-      let prev = actor.get_previous_sibling() || actor._prev;
-      let next = actor.get_next_sibling();
-      if (prev && next && prev._icon && next._icon) {
-        actor.translationX =
-          (prev._icon.translationX + next._icon.translationX) / 2;
-        actor.translationY =
-          (prev._icon.translationY + next._icon.translationY) / 2;
-        let thickness = dock.extension.separator_thickness || 0;
-        actor.width = !vertical ? thickness : iconSize * 0.5 * scaleFactor;
-        actor.height = vertical ? thickness : iconSize * 0.75 * scaleFactor;
-        actor.visible = thickness > 0;
-      }
-    });
-
-    let targetX = 0;
-    let targetY = 0;
-    if (dock._hidden && dock.extension.autohide_dash) {
-      if (isWithin) {
-        dock.slideIn();
-      }
-    }
-
-    let ed =
-      dock._position == DockPosition.BOTTOM ||
-      dock._position == DockPosition.RIGHT
-        ? 1
-        : -1;
-
-    // dash hide/show
-    if (dock._hidden) {
-      if (vertical) {
-        if (dock._position == DockPosition.LEFT) {
-          targetX =
-            -(dock._background.width + edge_distance * -ed * 2) * scaleFactor;
-        } else {
-          targetX =
-            (dock._background.width - edge_distance * -ed * 2) * scaleFactor;
-        }
-      } else {
-        if (dock._position == DockPosition.BOTTOM) {
-          targetY =
-            (dock._background.height - edge_distance * -ed * 2) * scaleFactor;
-        } else {
-          targetY =
-            -(dock._background.height + edge_distance * -ed * 2) * scaleFactor;
-        }
-      }
-    }
-
-    // edge
-    targetX += vertical ? edge_distance * -ed : 0;
-    targetY += !vertical ? edge_distance * -ed : 0;
-
-    _pos_coef += 5 - 5 * dock.extension.autohide_speed;
-    dock.dash.translationY =
-      (dock.dash.translationY * _pos_coef + targetY) / (_pos_coef + 1);
-    dock.dash.translationX =
-      (dock.dash.translationX * _pos_coef + targetX) / (_pos_coef + 1);
-
-    // background
-    {
-      dock._background.style = dock.extension._backgroundStyle;
-      dock._background.update({
-        first: animateIcons[0],
-        last: animateIcons[animateIcons.length - 1],
-        iconSize,
-        scaleFactor,
-        position: dock._position,
-        vertical: vertical,
-        panel_mode: dock.extension.panel_mode,
-        dashContainer: dock,
-      });
-
-      // allied areas
-      if (vertical) {
-        dock.struts.width =
-          dock._background.width +
-          iconSize * 0.25 * scaleFactor +
-          edge_distance;
-        dock.struts.height = dock.height;
-        dock.struts.y = dock.y;
-        if (dock._position == DockPosition.RIGHT) {
-          dock.struts.x = dock.x + dock.width - dock.struts.width;
-        } else {
-          dock.struts.x = dock.x;
-        }
-      } else {
-        dock.struts.width = dock.width;
-        dock.struts.height =
-          dock._background.height +
-          iconSize * 0.25 * scaleFactor +
-          edge_distance;
-        dock.struts.x = dock.x;
-        if (dock._position == DockPosition.BOTTOM) {
-          dock.struts.y = dock.y + dock.height - dock.struts.height;
-        } else {
-          dock.struts.y = dock.y;
-        }
-      }
-
-      let dwellHeight = 4;
-      if (vertical) {
-        dock.dwell.width = dwellHeight;
-        dock.dwell.height = dock.height;
-        dock.dwell.x = m.x;
-        dock.dwell.y = dock.y;
-        if (dock._position == DockPosition.RIGHT) {
-          dock.dwell.x = m.x + m.width - dwellHeight;
-        }
-      } else {
-        dock.dwell.width = dock.width;
-        dock.dwell.height = dwellHeight;
-        dock.dwell.x = dock.x;
-        dock.dwell.y = dock.y + dock.height - dock.dwell.height;
-        if (dock._position == DockPosition.TOP) {
-          dock.dwell.y = dock.y;
-        }
-      }
-    }
-
-    if (dock.extension.debug_visual) {
-      dock.add_style_class_name('hi');
-      dock.struts.add_style_class_name('hi');
-      dock.dwell.add_style_class_name('hi');
-    }
-    dock.dash.opacity = 255;
-
-    //---------------------
-    // animate the list
-    //---------------------
-    if (dock._list && dock._list.visible && dock._list._target) {
-      let list = dock._list;
-      list.opacity = 255;
-
-      let target = list._target;
-      let list_coef = 4;
-
-      let tw = target.width * target._icon.scaleX;
-      let th = target.height * target._icon.scaleY;
-
-      list._box?.get_children().forEach((c) => {
-        c.translationX = target._icon.translationX + tw / 8;
-        c.translationY =
-          -target._icon.scaleX * target._icon.height + target._icon.height;
-        c._label.translationX = -c._label.width;
-
-        let tx = c._x;
-        let ty = c._y;
-        let tz = c._rotation_angle_z;
-        let to = 255;
-        if (list._hidden) {
-          tx = c._ox;
-          ty = c._oy;
-          tz = c._oz;
-          to = 0;
-          if (list._hiddenFrames-- == 0) {
-            list.visible = false;
-            list._hidden = false;
-          }
-        }
-
-        c._label.opacity =
-          (c._label.opacity * list_coef + to) / (list_coef + 1);
-        c.x = (c.x * list_coef + tx) / (list_coef + 1);
-        c.y = (c.y * list_coef + ty) / (list_coef + 1);
-        c.rotation_angle_z =
-          (c.rotation_angle_z * list_coef + tz) / (list_coef + 1);
-      });
-
-      target._label.hide();
-      didScale = true;
-    }
-
-    if (didScale) {
-      dock.autohider._debounceCheckHide();
-      dock._debounceEndAnimation();
-    }
-  }
-
-  bounceIcon(appwell) {
-    let dock = this.dashContainer;
-
-    let scaleFactor = dock.getMonitor().geometry_scale;
-    let travel =
-      (dock._iconSize / 3) * ((0.25 + dock.extension.animation_bounce) * 1.5);
-    // * scaleFactor;
-    appwell.translation_y = 0;
-
-    let icon = appwell.get_parent()._icon;
-
-    let t = 250;
-    let _frames = [
-      {
-        _duration: t,
-        _func: (f, s) => {
-          let res = Linear.easeNone(f._time, 0, travel, f._duration);
-          if (dock.isVertical()) {
-            appwell.translation_x =
-              dock._position == DockPosition.LEFT ? res : -res;
-            if (icon._badge) {
-              icon._badge.translation_x = appwell.translation_x;
-            }
-          } else {
-            // appwell.translation_y = -res;
-            appwell.translation_y =
-              dock._position == DockPosition.BOTTOM ? -res : res;
-          }
-        },
-      },
-      {
-        _duration: t * 3,
-        _func: (f, s) => {
-          let res = Bounce.easeOut(f._time, travel, -travel, f._duration);
-          if (dock.isVertical()) {
-            appwell.translation_x = appwell.translation_x =
-              dock._position == DockPosition.LEFT ? res : -res;
-          } else {
-            // appwell.translation_y = -res;
-            appwell.translation_y =
-              dock._position == DockPosition.BOTTOM ? -res : res;
-          }
-        },
-      },
-    ];
-
-    let frames = [];
-    for (let i = 0; i < 3; i++) {
-      _frames.forEach((b) => {
-        frames.push({
-          ...b,
-        });
-      });
-    }
-
-    dock.extension._hiTimer.runAnimation([
-      ...frames,
-      {
-        _duration: 10,
-        _func: (f, s) => {
-          appwell.translation_y = 0;
-        },
-      },
-    ]);
-  }
-};
 
 //-----------------------------
 // ./extension.js
@@ -4064,7 +2887,7 @@ const ANIM_ICON_QUALITY = 2.0;
 const ANIM_INTERVAL = 15;
 const ANIM_INTERVAL_PAD = 15;
 
-class Dash2DockLiteExt extends Extension {
+ class Dash2DockLiteExt extends Extension {
   createDock() {
     let d = new Dock({ extension: this });
     d.extension = this;
@@ -4118,7 +2941,21 @@ class Dash2DockLiteExt extends Extension {
     this.docks = [];
   }
 
+  recreateAllDocks(delay = 750) {
+    // some settings change cause glitches ... recreate all docks (workaround)
+    if (!this._recreateSeq) {
+      this._recreateSeq = this._loTimer.runDebounced(() => {
+        this.destroyDocks();
+        this.createTheDocks();
+      }, delay);
+    } else {
+      this._loTimer.runDebounced(this._recreateSeq);
+    }
+  }
+
   enable() {
+    this._enableJitterHack = true;
+
     // for debugging - set to 255
     this._dash_opacity = 0;
 
@@ -4167,18 +3004,19 @@ class Dash2DockLiteExt extends Extension {
     this.services.enable();
     this._onCheckServices();
 
-    this._updateAnimationFPS();
-    this._updateShrink();
-    this._updateIconResolution();
-    this._updateLayout();
-    this._updateAutohide();
-    this._updateWidgetStyle();
+    // this._updateAnimationFPS();
+    // this._updateShrink();
+    // this._updateIconResolution();
+    // this._updateLayout();
+    // this._updateAutohide();
+    // this._updateWidgetStyle();
+    // this._updateStyle();
 
     this._addEvents();
 
     this._queryDisplay();
 
-    this._updateStyle();
+    // this._updateStyle();
 
     this.startUp();
 
@@ -4248,10 +3086,20 @@ class Dash2DockLiteExt extends Extension {
 
   startUp() {
     this.createTheDocks();
-    this.animate({ refresh: true });
-    this.docks.forEach((dock) => {
-      dock._debounceEndAnimation();
-    });
+    this._loTimer.runOnce(() => {
+      this._updateAnimationFPS();
+      this._updateShrink();
+      this._updateIconResolution();
+      // this._updateLayout();
+      // this._updateAutohide();
+      this._updateWidgetStyle();
+      this._updateStyle();
+
+      this.animate({ refresh: true });
+      this.docks.forEach((dock) => {
+        dock._debounceEndAnimation();
+      });
+    }, 10);
   }
 
   _autohiders() {
@@ -4285,7 +3133,7 @@ class Dash2DockLiteExt extends Extension {
   }
 
   _enableSettings() {
-    this._settings = ExtensionUtils.getSettings(schemaId);
+this._settings = ExtensionUtils.getSettings(schemaId);
     this._settingsKeys = SettingsKeys();
 
     this._settingsKeys.connectSettings(this._settings, (name, value) => {
@@ -4310,6 +3158,9 @@ class Dash2DockLiteExt extends Extension {
           this._updateAnimationFPS();
           break;
         }
+        case 'debug-visual':
+          this.animate();
+          break;
         case 'mounted-icon': {
           this.services.checkMounts();
           this.services._commitMounts();
@@ -4317,6 +3168,7 @@ class Dash2DockLiteExt extends Extension {
           break;
         }
         case 'peek-hidden-icons': {
+          this.animate();
           break;
         }
         case 'animation-magnify':
@@ -4817,13 +3669,7 @@ class Dash2DockLiteExt extends Extension {
   _updateIconSpacing(disable) {
     if (!this._iconSpacingDebounceSeq) {
       this._iconSpacingDebounceSeq = this._loTimer.runDebounced(() => {
-        this.docks.forEach((dock) => {
-          dock._findIcons();
-          dock._icons?.forEach((icon) => {
-            icon.style = '';
-          });
-          dock._beginAnimation();
-        });
+        this.animate({ refresh: true });
       }, 750);
     } else {
       this._loTimer.runDebounced(this._iconSpacingDebounceSeq);
@@ -4870,6 +3716,1418 @@ class Dash2DockLiteExt extends Extension {
     }
   }
 }
+
+
+//-----------------------------
+// ./dock.js
+//-----------------------------
+
+//'use strict';
+
+//import * as Main from 'resource:///org/gnome/shell/ui/main.js';
+//import * as Fav from 'resource:///org/gnome/shell/ui/appFavorites.js';
+
+//import Meta from 'gi://Meta';
+//import Shell from 'gi://Shell';
+//import GObject from 'gi://GObject';
+//import Clutter from 'gi://Clutter';
+//import Graphene from 'gi://Graphene';
+//import St from 'gi://St';
+//import Gio from 'gi://Gio';
+
+//import { Dash } from 'resource:///org/gnome/shell/ui/dash.js';
+
+//import { TintEffect } from './effects/tint_effect.js';
+//import { MonochromeEffect } from './effects/monochrome_effect.js';
+
+//import {
+//  DockItemList,
+//  DockItemContainer,
+//  DockBackground,
+//} from './dockItems.js';
+//import { AutoHide } from './autohide.js';
+//import { Animator } from './animator.js';
+
+//const Point = Graphene.Point;
+
+const DockPosition = {
+  BOTTOM: 'bottom',
+  LEFT: 'left',
+  RIGHT: 'right',
+  TOP: 'top',
+};
+
+const DockAlignment = {
+  CENTER: 'center',
+  START: 'start',
+  END: 'end',
+};
+
+const PREVIEW_FRAMES = 64;
+const ANIM_DEBOUNCE_END_DELAY = 750;
+
+const MIN_SCROLL_RESOLUTION = 4;
+const MAX_SCROLL_RESOLUTION = 10;
+
+let Dock = GObject.registerClass(
+  {},
+  class Dock extends St.Widget {
+    _init(params) {
+      super._init({
+        name: 'd2daDock',
+        reactive: false,
+        track_hover: false,
+        width: 0,
+        height: 0,
+        clip_to_allocation: true,
+        x_align: Clutter.ActorAlign.CENTER,
+        y_align: Clutter.ActorAlign.CENTER,
+      });
+
+      this.extension = params.extension;
+
+      this._alignment = DockAlignment.CENTER;
+      this._monitorIndex = Main.layoutManager.primaryIndex;
+
+      this._background = new DockBackground({ name: 'd2dlBackground' });
+      this.add_child(this._background);
+
+      this.addDash();
+
+      this.dash.reactive = true;
+      this.dash.track_hover = true;
+      this.dash.connectObject(
+        'scroll-event',
+        this._onScrollEvent.bind(this),
+        'button-press-event',
+        this._onButtonPressEvent.bind(this),
+        'motion-event',
+        this._onMotionEvent.bind(this),
+        'enter-event',
+        this._onEnterEvent.bind(this),
+        'leave-event',
+        this._onLeaveEvent.bind(this),
+        'destroy',
+        () => {},
+        this
+      );
+
+      this.dash.opacity = 0;
+      this._scrollCounter = 0;
+
+      this.animator = new Animator();
+      this.animator.dashContainer = this;
+      this.animator.extension = this.extension;
+      this.animator.enable();
+
+      this.autohider = new AutoHide();
+      this.autohider.dashContainer = this;
+      this.autohider.extension = this.extension;
+      if (this.extension.autohide_dash) {
+        this.autohider.enable();
+      }
+
+      this.struts = new St.Widget({
+        name: 'DockStruts',
+      });
+      this.dwell = new St.Widget({
+        name: 'DockDwell',
+        reactive: true,
+        track_hover: true,
+      });
+      this.dwell.connectObject(
+        'motion-event',
+        this.autohider._onMotionEvent.bind(this.autohider),
+        'enter-event',
+        this.autohider._onEnterEvent.bind(this.autohider),
+        'leave-event',
+        this.autohider._onLeaveEvent.bind(this.autohider),
+        this
+      );
+    }
+
+    createItem(appinfo_filename) {
+      let item = new DockItemContainer({
+        appinfo_filename,
+      });
+      item.dock = this;
+      item._menu._onActivate = () => {
+        this._maybeBounce(item);
+      };
+      this._extraIcons.add_child(item);
+      return item;
+    }
+
+    dock() {
+      this.addToChrome();
+      this.layout();
+      this._beginAnimation();
+    }
+
+    undock() {
+      if (this._list) {
+        // todo Main.uiGroup no longer available in gnome 46
+        Main.uiGroup.remove_child(this._list);
+        this._list = null;
+      }
+      this._endAnimation();
+      this.dash._box.remove_effect_by_name('icon-effect');
+      this.autohider.disable();
+      this.removeFromChrome();
+
+      this.restorePanel();
+    }
+
+    _onButtonPressEvent(evt) {
+      return Clutter.EVENT_PROPAGATE;
+    }
+    _onMotionEvent(evt) {
+      this._beginAnimation();
+      this.autohider._debounceCheckHide();
+      return Clutter.EVENT_PROPAGATE;
+    }
+    _onEnterEvent(evt) {
+      this._beginAnimation();
+      return Clutter.EVENT_PROPAGATE;
+    }
+    _onLeaveEvent(evt) {
+      this.autohider._debounceCheckHide();
+      this._debounceEndAnimation();
+      return Clutter.EVENT_PROPAGATE;
+    }
+    _onFocusWindow(evt) {
+      this._beginAnimation();
+      this.autohider._debounceCheckHide();
+      return Clutter.EVENT_PROPAGATE;
+    }
+    _onFullScreen() {
+      this._beginAnimation();
+      this.autohider._debounceCheckHide();
+      return Clutter.EVENT_PROPAGATE;
+    }
+    _onAppsChanged(evt) {
+      this._icons = null;
+      this._beginAnimation();
+      this.autohider._debounceCheckHide();
+      return Clutter.EVENT_PROPAGATE;
+    }
+    _onClock() {
+      this._clock?.redraw();
+    }
+    _onCalendar() {
+      this._calendar?.redraw();
+    }
+
+    _createEffect(idx) {
+      let effect = null;
+      switch (idx) {
+        case 1: {
+          effect = new TintEffect({
+            name: 'color',
+            color: this.extension.icon_effect_color,
+          });
+          effect.preload(this.extension.path);
+          break;
+        }
+        case 2: {
+          effect = new MonochromeEffect({
+            name: 'color',
+            color: this.extension.icon_effect_color,
+          });
+          effect.preload(this.extension.path);
+          break;
+        }
+      }
+      return effect;
+    }
+
+    _updateIconEffect() {
+      this.dash._box.get_parent().remove_effect_by_name('icon-effect');
+      let effect = this._createEffect(this.extension.icon_effect);
+      if (effect) {
+        this.dash._box.get_parent().add_effect_with_name('icon-effect', effect);
+      }
+      this.iconEffect = effect;
+    }
+
+    slideIn() {
+      if (this._hidden) {
+        this._hidden = false;
+        this._beginAnimation();
+      }
+    }
+
+    slideOut() {
+      if (this._list && this._list.visible) {
+        return;
+      }
+      if (!this._hidden) {
+        this._hidden = true;
+        this._beginAnimation();
+      }
+    }
+
+    getMonitor() {
+      this._monitorIndex = this.extension._queryDisplay(this._monitorIndex);
+      let m =
+        Main.layoutManager.monitors[this._monitorIndex] ||
+        Main.layoutManager.primaryMonitor;
+      this._monitor = m;
+      return m;
+    }
+
+    addDash() {
+      let dash = new Dash();
+      dash._adjustIconSize = () => {};
+      this.dash = dash;
+      this.dash._background.visible = false;
+      this.dash._box.clip_to_allocation = false;
+
+      this._extraIcons = new St.BoxLayout();
+      this.dash._box.add_child(this._extraIcons);
+
+      this._separator = new St.Widget({
+        style_class: 'dash-separator',
+        y_align: Clutter.ActorAlign.CENTER,
+        height: 48,
+      });
+      this._separator.name = 'separator';
+      this._extraIcons.add_child(this._separator);
+
+      this.add_child(dash);
+      return dash;
+    }
+
+    addToChrome() {
+      if (this._onChrome) {
+        return;
+      }
+
+      this._updateIconEffect();
+
+      Main.layoutManager.addChrome(this.struts, {
+        affectsStruts: !this.extension.autohide_dash,
+        affectsInputRegion: false,
+        trackFullscreen: true,
+      });
+
+      Main.layoutManager.addChrome(this, {
+        affectsStruts: false,
+        affectsInputRegion: false,
+        trackFullscreen: true,
+      });
+
+      Main.layoutManager.addChrome(this.dwell, {
+        affectsStruts: false,
+        affectsInputRegion: false,
+        trackFullscreen: true,
+      });
+
+      this._onChrome = true;
+    }
+
+    removeFromChrome() {
+      if (!this._onChrome) {
+        return;
+      }
+      Main.layoutManager.removeChrome(this.struts);
+      Main.layoutManager.removeChrome(this);
+      Main.layoutManager.removeChrome(this.dwell);
+      this._onChrome = false;
+      this.dash._box.get_parent().remove_effect_by_name('icon-effect');
+    }
+
+    isVertical() {
+      return (
+        this._position == DockPosition.LEFT ||
+        this._position == DockPosition.RIGHT
+      );
+    }
+
+    _preferredIconSize() {
+      let preferredIconSizes = this._preferredIconSizes;
+      let iconSize = 64;
+      if (!preferredIconSizes) {
+        preferredIconSizes = [32];
+        for (let i = 16; i < 128; i += 4) {
+          preferredIconSizes.push(i);
+        }
+        this._preferredIconSizes = preferredIconSizes;
+      }
+
+      iconSize =
+        2 *
+        (preferredIconSizes[
+          Math.floor(this.extension.icon_size * preferredIconSizes.length)
+        ] || 64);
+      iconSize *= this.extension.scale;
+
+      this._iconSize = iconSize;
+      return iconSize;
+    }
+
+    /**
+     *  DashItemContainer
+     *    > child (DashIcon[appwell])
+     *      > .icon (IconGrid)
+     *        > .icon (StIcon)
+     *      > ._dot
+     *    > .label
+     *
+     *  ShowAppsIcon extends DashItemContainer
+     *    > .icon (IconGrid)
+     *      > .icon
+     *    > ._iconActor
+     */
+
+    _inspectIcon(c) {
+      if (!c.visible) return false;
+
+      /* separator */
+      c._cls = c._cls || c.get_style_class_name();
+      if (c._cls === 'dash-separator') {
+        this._separators.push(c);
+        this._lastSeparator = c;
+        c.visible = true;
+        c.style = 'margin-left: 8px; margin-right: 8px;';
+        return false;
+      }
+
+      /* ShowAppsIcon */
+      if (c.icon /* IconGrid */ && c.icon.icon /* StIcon */) {
+        c._icon = c.icon.icon;
+        c._button = c.child;
+        c.icon.style = 'background-color: transparent !important;';
+      }
+
+      /* DashItemContainer */
+      if (
+        c.child /* DashIcon */ &&
+        c.child.icon /* IconGrid */ &&
+        c.child.icon.icon /* StIcon */
+      ) {
+        c._grid = c.child.icon;
+        c._icon = c.child.icon.icon;
+        c._appwell = c.child;
+        if (c._appwell) {
+          c._appwell.visible = true;
+          c._dot = c._appwell._dot;
+          // hide icons if favorites only
+          if (this.extension.favorites_only) {
+            let app = c._appwell.app;
+            let appId = app ? app.get_id() : '';
+            if (!this._favorite_ids.includes(appId)) {
+              c._appwell.visible = false;
+              c.width = -1;
+              c.height = -1;
+              return false;
+            }
+          }
+        }
+        if (c._dot) {
+          c._dot.opacity = 0;
+        }
+      }
+
+      if (c._icon) {
+        c._label = c.label;
+        if (
+          c == this.dash._showAppsIcon &&
+          this.extension.apps_icon_front &&
+          !this.isVertical()
+        ) {
+          this._icons.unshift(c);
+        } else {
+          this._icons.push(c);
+        }
+        return true;
+      }
+
+      return false;
+    }
+
+    _findIcons() {
+      if (this._icons) {
+        let iconsLength = this.dash._box.get_children().length;
+        if (this._extraIcons) {
+          iconsLength += this._extraIcons.get_children().length;
+        }
+        if (this._icons.length + 2 >= iconsLength) {
+          // use icons cache
+          return this._icons;
+        }
+      }
+
+      this._separators = [];
+      this._icons = [];
+
+      if (!this.dash) return [];
+
+      if (this.extension.favorites_only) {
+        this._favorite_ids = Fav.getAppFavorites()._getIds();
+      }
+
+      this.dash._box.get_children().forEach((icon) => {
+        this._inspectIcon(icon);
+      });
+
+      if (this.extension.favorites_only) {
+        if (this._separators.length) {
+          this._separators[0].visible = false;
+          this._separators = [];
+        }
+      }
+
+      let lastFavIcon = this._icons[this._icons.length - 1] ?? null;
+
+      if (this._extraIcons) {
+        this._lastSeparator = null;
+        this._extraIcons.get_children().forEach((icon) => {
+          this._inspectIcon(icon);
+        });
+        if (this._lastSeparator && lastFavIcon) {
+          this._lastSeparator._prev = lastFavIcon;
+        }
+        this._extraIcons.visible = this._extraIcons.get_children().length > 1;
+      }
+      if (this.dash._showAppsIcon) {
+        this.dash._showAppsIcon.visible = this.extension.apps_icon;
+        if (this._inspectIcon(this.dash._showAppsIcon)) {
+          let icon = this.dash._showAppsIcon._icon;
+          if (!icon._connected) {
+            icon._connected = true;
+            icon.connectObject(
+              'button-press-event',
+              () => {
+                let overview = Main.uiGroup
+                  .get_children()
+                  .find((c) => c.name == 'overviewGroup')
+                  .get_children()
+                  .find((c) => c.name == 'overview');
+                if (overview._delegate.visible) {
+                  overview._delegate.toggle();
+                } else {
+                  overview._delegate.showApps();
+                }
+                return Clutter.EVENT_PROPAGATE;
+              },
+              'enter-event',
+              () => {
+                this.dash._showAppsIcon.showLabel();
+              },
+              'leave-event',
+              () => {
+                this.dash._showAppsIcon.hideLabel();
+              },
+              this
+            );
+          }
+        }
+      }
+
+      let noAnimation = !this.extension.animate_icons_unmute;
+
+      let pv = new Point();
+      pv.x = 0.5;
+      pv.y = 0.5;
+      this._icons.forEach((c) => {
+        c._icon.track_hover = true;
+        c._icon.reactive = true;
+        c._icon.pivot_point = pv;
+        if (c._button) {
+          c._button.reactive = noAnimation;
+          c._button.track_hover = noAnimation;
+          c.toggle_mode = false;
+        }
+        if (c._grid) {
+          c._grid.style = noAnimation ? '' : 'background: none !important;';
+        }
+        if (c._appwell && !c._appwell._activate) {
+          c._appwell._activate = c._appwell.activate;
+          c._appwell.activate = () => {
+            this._maybeBounce(c);
+            this._maybeMinimizeOrMaximize(c._appwell.app);
+            c._appwell._activate();
+          };
+        }
+        let icon = c._icon;
+        if (!icon._destroyConnectId) {
+          icon._destroyConnectId = icon.connect('destroy', () => {
+            this._icons = null;
+          });
+        }
+        let { _draggable } = icon;
+        if (_draggable && !_draggable._dragBeginId) {
+          _draggable._dragBeginId = _draggable.connect('drag-begin', () => {
+            this._dragging = true;
+            this._dragged = icon;
+          });
+          _draggable._dragEndId = _draggable.connect('drag-end', () => {
+            this._dragging = false;
+            this._icons = null;
+          });
+        }
+
+        // icon image quality
+        if (this._iconSizeScaledDown) {
+          icon.set_icon_size(
+            this._iconSizeScaledDown * this.extension.icon_quality
+          );
+        }
+      });
+
+      return this._icons;
+    }
+
+    _updateExtraIcons() {
+      if (!this._extraIcons) {
+        return;
+      }
+
+      // check these intermittently!
+      //---------------
+      // the mount icons
+      //---------------
+      {
+        let extras = [...this._extraIcons.get_children()];
+        let extraNames = extras.map((e) => e.name);
+        let mounted = Object.keys(this.extension.services._mounts);
+
+        extras.forEach((extra) => {
+          if (!extra._mountType) {
+            return;
+          }
+          if (!mounted.includes(extra.name)) {
+            this._extraIcons.remove_child(extra);
+            this._icons = null;
+          }
+        });
+
+        mounted.forEach((mount) => {
+          if (!extraNames.includes(mount)) {
+            let mountedIcon = this.createItem(mount);
+            mountedIcon._mountType = true;
+            this._icons = null;
+          }
+        });
+      }
+
+      //---------------
+      // the folder icons
+      //---------------
+      let folders = [
+        {
+          icon: '_downloadsIcon',
+          path: '/tmp/downloads-dash2dock-lite.desktop',
+          show: this.extension.downloads_icon, // && this._position == DockPosition.BOTTOM
+        },
+        // {
+        //   icon: '_documentsIcon',
+        //   path: '/tmp/documents-dash2dock-lite.desktop',
+        //   show: this.extension.documents_icon // && this._position == DockPosition.BOTTOM
+        // }
+      ];
+      folders.forEach((f) => {
+        if (!this[f.icon] && f.show) {
+          // pin downloads icon
+          this[f.icon] = this.createItem(f.path);
+
+          let target = this[f.icon];
+
+          target._onClick = () => {
+            if (this._position != DockPosition.BOTTOM) {
+              target.activateNewWindow();
+              return;
+            }
+            if (!this.extension.services._downloadFiles) {
+              this.extension.services.checkDownloads();
+            }
+            let files = [...this.extension.services._downloadFiles];
+            if (files.length < this.extension.services._downloadFilesLength) {
+              files = [
+                {
+                  index: -1,
+                  name: 'More...',
+                  path: 'Downloads',
+                  icon: target._icon.icon_name,
+                  type: 'directory',
+                },
+                ...files,
+              ];
+            }
+            files = files.sort(function (a, b) {
+              return a.index > b.index ? 1 : -1;
+            });
+
+            if (!this._list) {
+              this._list = new DockItemList();
+              this._list.dock = this;
+              Main.uiGroup.add_child(this._list);
+            } else if (this._list.visible) {
+              this._list.slideOut();
+            } else {
+              // remove and re-add so that it is repositioned to topmost
+              Main.uiGroup.remove_child(this._list);
+              Main.uiGroup.add_child(this._list);
+              this._list.visible = true;
+            }
+
+            if (this._list.visible && !this._list._hidden) {
+              this._list.slideIn(target, files);
+              let pv = new Point();
+              pv.x = 0.5;
+              pv.y = 1;
+            }
+          };
+
+          this._icons = null;
+        } else if (this[f.icon] && !f.show) {
+          // unpin downloads icon
+          this._extraIcons.remove_child(this[f.icon]);
+          this._downloadsIcon = null;
+          this._icons = null;
+        }
+      });
+
+      //---------------
+      // the trash icon
+      //---------------
+      if (!this._trashIcon && this.extension.trash_icon) {
+        // pin trash icon
+        this._trashIcon = this.createItem(`/tmp/trash-dash2dock-lite.desktop`);
+        this._icons = null;
+      } else if (this._trashIcon && !this.extension.trash_icon) {
+        // unpin trash icon
+        this._extraIcons.remove_child(this._trashIcon);
+        this._trashIcon = null;
+        this._icons = null;
+      } else if (this._trashIcon && this.extension.trash_icon) {
+        // move trash icon to the end
+        if (this._extraIcons.last_child != this._trashIcon) {
+          this._extraIcons.remove_child(this._trashIcon);
+          this._extraIcons.add_child(this._trashIcon);
+        }
+      }
+    }
+
+    layout() {
+      if (this.extension.apps_icon_front) {
+        this.dash.last_child.text_direction = 2; // RTL
+        this.dash._box.text_direction = 1; // LTR
+      } else {
+        this.dash.last_child.text_direction = 1; // LTR
+        this.dash._box.text_direction = 1; // LTR
+      }
+
+      const locations = [
+        DockPosition.BOTTOM,
+        DockPosition.LEFT,
+        DockPosition.RIGHT,
+        DockPosition.TOP,
+      ];
+      this._position =
+        locations[this.extension.dock_location] || DockPosition.BOTTOM;
+
+      this._updateExtraIcons();
+
+      this._icons = this._findIcons();
+
+      let m = this.getMonitor();
+      let scaleFactor = m.geometry_scale;
+      let vertical = this.isVertical();
+
+      this._scaleFactor = scaleFactor;
+
+      let flags = {
+        top: {
+          edgeX: 0,
+          edgeY: 0,
+          offsetX: 0,
+          offsetY: 0,
+          centerX: 1,
+          centerY: 0,
+        },
+        bottom: {
+          edgeX: 0,
+          edgeY: 1,
+          offsetX: 0,
+          offsetY: -1,
+          centerX: 1,
+          centerY: 0,
+        },
+        left: {
+          edgeX: 0,
+          edgeY: 0,
+          offsetX: 0,
+          offsetY: 0,
+          centerX: 0,
+          centerY: 1,
+        },
+        right: {
+          edgeX: 1,
+          edgeY: 0,
+          offsetX: -1,
+          offsetY: 0,
+          centerX: 0,
+          centerY: 1,
+        },
+      };
+      let f = flags[this._position];
+
+      let width = 1200;
+      let height = 140;
+      let dock_size_limit = 1;
+      let animation_spread = this.extension.animation_spread;
+      let animation_magnify = this.extension.animation_magnify;
+
+      let iconMargins = 0;
+      let iconStyle = '';
+      if (this.extension.icon_spacing > 0) {
+        let margin = 8 * this.extension.icon_spacing;
+        if (vertical) {
+          iconStyle = `margin-top: ${margin}px; margin-bottom: ${margin}px;`;
+        } else {
+          iconStyle = `margin-left: ${margin}px; margin-right: ${margin}px;`;
+        }
+        iconMargins = margin * 2 * this._icons.length;
+      }
+
+      let iconSize = this._preferredIconSize();
+      let iconSizeSpaced = iconSize + 2 + 8 * animation_spread;
+
+      let projectedWidth =
+        iconSize +
+        iconSizeSpaced * (this._icons.length > 3 ? this._icons.length : 3);
+      projectedWidth += iconMargins;
+
+      let scaleDown = 1.0;
+      let limit = vertical ? 0.96 : 0.98;
+
+      let maxWidth = (vertical ? m.height : m.width) * limit;
+
+      if (projectedWidth * scaleFactor > maxWidth * 0.98) {
+        scaleDown = (maxWidth - iconSize / 2) / (projectedWidth * scaleFactor);
+      }
+
+      iconSize *= scaleDown;
+      iconSizeSpaced *= scaleDown;
+      projectedWidth *= scaleDown;
+      this._projectedWidth = projectedWidth;
+
+      this._edge_distance =
+        (this.extension.edge_distance || 0) * 20 * scaleFactor;
+
+      if (this.extension.panel_mode) {
+        this._edge_distance = 0;
+      }
+
+      this._icons.forEach((icon) => {
+        icon.width = Math.floor(iconSizeSpaced * scaleFactor);
+        icon.height = Math.floor(iconSizeSpaced * scaleFactor);
+        if (icon.style != iconStyle) {
+          icon.style = iconStyle;
+        }
+      });
+
+      width = this._projectedWidth * scaleFactor;
+      height = iconSizeSpaced * 1.5 * scaleFactor;
+
+      this.width = vertical ? height : width;
+      this.height = vertical ? width : height;
+
+      if (this.animated) {
+        let adjust = 3.0;
+        this.width *= vertical ? adjust : 1;
+        this.height *= !vertical ? adjust : 1;
+        this.width += !vertical * iconSizeSpaced * adjust * scaleFactor;
+        this.height += vertical * iconSizeSpaced * adjust * scaleFactor;
+
+        if (this.width > m.width) {
+          this.width = m.width;
+        }
+        if (this.height > m.height) {
+          this.height = m.height;
+        }
+      }
+
+      // console.log(`${width} ${height}`);
+
+      // reposition the dash
+      this.dash.last_child.layout_manager.orientation = vertical;
+      this.dash._box.layout_manager.orientation = vertical;
+      if (this._extraIcons) {
+        this._extraIcons.layout_manager.orientation = vertical;
+      }
+
+      this.x =
+        m.x +
+        m.width * f.edgeX +
+        this.width * f.offsetX +
+        (m.width / 2 - this.width / 2) * f.centerX;
+
+      this.y =
+        m.y +
+        m.height * f.edgeY +
+        this.height * f.offsetY +
+        (m.height / 2 - this.height / 2) * f.centerY;
+
+      // todo vertical
+      if (this.extension.panel_mode) {
+        if (vertical) {
+          this.y = m.y;
+          this.height = m.height;
+        } else {
+          this.x = m.x;
+          this.width = m.width;
+        }
+      }
+
+      // center the dash
+      this.dash.x = this.width / 2 - this.dash.width / 2;
+      this.dash.y = this.height / 2 - this.dash.height / 2;
+
+      // hug the edge
+      if (vertical) {
+        this.dash.x = this.width * f.edgeX + this.dash.width * f.offsetX;
+      } else {
+        this.dash.y = this.height * f.edgeY + this.dash.height * f.offsetY;
+      }
+
+      this._iconSizeScaledDown = iconSize;
+      this._scaledDown = scaleDown;
+
+      // resize dash icons
+      // console.log(this.dash.height);
+      // console.log('---------------');
+
+      // this.acquirePanel();
+    }
+
+    acquirePanel() {
+      // panel
+      if (!this.panel && Main.panel) {
+        this.panel = Main.panel;
+        this.panelLeft = this.panel._leftBox;
+        this.panelRight = this.panel._rightBox;
+        this.panelCenter = this.panel._centerBox;
+      }
+
+      if (!this.panel) return;
+
+      // W: breakable
+      let reparent = [this.panelLeft, this.panelRight, this.panelCenter];
+      reparent.forEach((c) => {
+        if (c.get_parent()) {
+          c._parent = c.get_parent();
+          c.get_parent().remove_child(c);
+        }
+        this._background.add_child(c);
+      });
+      this.panel.visible = false;
+
+      this.panelLeft.height = this.panel.height - 8;
+      this.panelLeft.x = 20;
+      this.panelLeft.y =
+        this.height - this.struts.height + this.panelLeft.height / 2;
+      this.panelRight.track_hover = false;
+
+      this.panelRight.height = this.panel.height - 8;
+      this.panelRight.x = this.struts.width - this.panelRight.width - 20;
+      this.panelRight.y = this.panelRight.height / 2;
+
+      this.panelCenter.height = this.panel.height - 8;
+      this.panelCenter.x = this.struts.width - this.panelCenter.width - 20;
+      this.panelCenter.y = this.panelRight.y + this.panelRight.height;
+    }
+
+    restorePanel() {
+      if (!this.panel) return;
+
+      // W: breakable
+      let reparent = [this.panelLeft, this.panelRight, this.panelCenter];
+      reparent.forEach((c) => {
+        if (c.get_parent()) {
+          c.get_parent().remove_child(c);
+        }
+        c._parent.add_child(c);
+      });
+      this.panel.visible = true;
+    }
+
+    preview() {
+      this._preview = PREVIEW_FRAMES;
+    }
+
+    animate() {
+      if (this._preview) {
+        let p = this._get_position(this.dash);
+        p[0] += this.dash.width / 2;
+        p[1] += this.dash.height / 2;
+        this.simulated_pointer = p;
+        this._preview--;
+      }
+      this.animator.animate();
+      this.simulated_pointer = null;
+    }
+
+    _get_position(obj) {
+      return [...obj.get_transformed_position()];
+    }
+
+    _get_distance_sqr(pos1, pos2) {
+      let a = pos1[0] - pos2[0];
+      let b = pos1[1] - pos2[1];
+      return a * a + b * b;
+    }
+
+    _get_distance(pos1, pos2) {
+      return Math.sqrt(this._get_distance_sqr(pos1, pos2));
+    }
+
+    _isOverlapRect(r1, r2) {
+      let [r1x, r1y, r1w, r1h] = r1;
+      let [r2x, r2y, r2w, r2h] = r2;
+      // are the sides of one rectangle touching the other?
+      if (
+        r1x + r1w >= r2x && // r1 right edge past r2 left
+        r1x <= r2x + r2w && // r1 left edge past r2 right
+        r1y + r1h >= r2y && // r1 top edge past r2 bottom
+        r1y <= r2y + r2h
+      ) {
+        // r1 bottom edge past r2 top
+        return true;
+      }
+      return false;
+    }
+
+    _isInRect(r, p, pad) {
+      let [x1, y1, w, h] = r;
+      let x2 = x1 + w;
+      let y2 = y1 + h;
+      let [px, py] = p;
+      return px + pad >= x1 && px - pad < x2 && py + pad >= y1 && py - pad < y2;
+    }
+
+    _isWithinDash(p) {
+      if (this._hidden) {
+        return false;
+      }
+      if (this._hoveredIcon) return true;
+      let xy = this._get_position(this.struts);
+      let wh = [this.struts.width, this.struts.height];
+      if (this._isInRect([xy[0], xy[1], wh[0], wh[1]], p, 20)) {
+        return true;
+      }
+      return false;
+    }
+
+    _beginAnimation(caller) {
+      if (this.extension.debug_visual) {
+        this.add_style_class_name('hi');
+        this.struts.add_style_class_name('hi');
+        this.dwell.add_style_class_name('hi');
+      }
+      // if (caller) {
+      //   console.log(`animation triggered by ${caller}`);
+      // }
+      if (this.extension._hiTimer && this.debounceEndSeq) {
+        this.extension._loTimer.runDebounced(this.debounceEndSeq);
+        // this.extension._loTimer.cancel(this.debounceEndSeq);
+      }
+
+      this.animationInterval = this.extension.animationInterval;
+      if (this.extension._hiTimer) {
+        if (!this._animationSeq) {
+          this._animationSeq = this.extension._hiTimer.runLoop(
+            () => {
+              this.animate();
+            },
+            this.animationInterval,
+            'animationTimer'
+          );
+        } else {
+          this.extension._hiTimer.runLoop(this._animationSeq);
+        }
+      }
+    }
+
+    _endAnimation() {
+      if (this.extension.debug_visual) {
+        this.remove_style_class_name('hi');
+        this.struts.remove_style_class_name('hi');
+        this.dwell.remove_style_class_name('hi');
+      }
+      if (this.extension._hiTimer) {
+        this.extension._hiTimer.cancel(this._animationSeq);
+        this.extension._loTimer.cancel(this.debounceEndSeq);
+      }
+      this.autohider._debounceCheckHide();
+      this._icons = null;
+    }
+
+    _debounceEndAnimation() {
+      if (this.extension._loTimer) {
+        if (!this.debounceEndSeq) {
+          this.debounceEndSeq = this.extension._loTimer.runDebounced(
+            () => {
+              this._endAnimation();
+            },
+            ANIM_DEBOUNCE_END_DELAY + this.animationInterval,
+            'debounceEndAnimation'
+          );
+        } else {
+          this.extension._loTimer.runDebounced(this.debounceEndSeq);
+        }
+      }
+    }
+
+    cancelAnimations() {
+      this.extension._hiTimer.cancel(this._animationSeq);
+      this._animationSeq = null;
+      this.extension._hiTimer.cancel(this.autohider._animationSeq);
+      this.autohider._animationSeq = null;
+    }
+
+    _maybeMinimizeOrMaximize(app) {
+      let windows = app.get_windows();
+      if (!windows.length) return;
+
+      let event = Clutter.get_current_event();
+      let modifiers = event ? event.get_state() : 0;
+      let pressed = event.type() == Clutter.EventType.BUTTON_PRESS;
+      let button1 = (modifiers & Clutter.ModifierType.BUTTON1_MASK) != 0;
+      let button2 = (modifiers & Clutter.ModifierType.BUTTON2_MASK) != 0;
+      let button3 = (modifiers & Clutter.ModifierType.BUTTON3_MASK) != 0;
+      let shift = (modifiers & Clutter.ModifierType.SHIFT_MASK) != 0;
+      let isMiddleButton = button3; // middle?
+      let isCtrlPressed = (modifiers & Clutter.ModifierType.CONTROL_MASK) != 0;
+      let openNewWindow =
+        app.can_open_new_window() &&
+        app.state == Shell.AppState.RUNNING &&
+        (isCtrlPressed || isMiddleButton);
+      if (openNewWindow) return;
+
+      let workspaceManager = global.workspace_manager;
+      let activeWs = workspaceManager.get_active_workspace();
+      let focusedWindow = null;
+
+      windows.forEach((w) => {
+        if (w.has_focus()) {
+          focusedWindow = w;
+        }
+      });
+
+      // delay - allow dash to actually call 'activate' first
+      if (focusedWindow) {
+        this.extension._hiTimer.runOnce(() => {
+          if (shift) {
+            if (focusedWindow.get_maximized() == 3) {
+              focusedWindow.unmaximize(3);
+            } else {
+              focusedWindow.maximize(3);
+            }
+          } else {
+            windows.forEach((w) => {
+              w.minimize();
+            });
+          }
+        }, 50);
+      } else {
+        this.extension._hiTimer.runOnce(() => {
+          windows.forEach((w) => {
+            if (w.is_hidden()) {
+              w.unminimize();
+              if (w.has_focus()) {
+                w.raise();
+              }
+            }
+          });
+        }, 50);
+      }
+    }
+
+    _maybeBounce(container) {
+      if (!this.extension.open_app_animation) {
+        return;
+      }
+      if (
+        !container.child.app ||
+        (container.child.app && !container.child.app.get_n_windows())
+      ) {
+        if (container.child) {
+          this.animator.bounceIcon(container.child);
+        }
+      }
+    }
+
+    _onScrollEvent(obj, evt) {
+      this._lastScrollEvent = evt;
+      let pointer = global.get_pointer();
+      if (this._nearestIcon) {
+        if (this._scrollCounter < -2 || this._scrollCounter > 2)
+          this._scrollCounter = 0;
+
+        let icon = this._nearestIcon;
+
+        // add scrollwheel vs touchpad differentiation
+        let multiplier = 1;
+        if (
+          evt.get_source_device().get_device_type() == 5 ||
+          evt.get_source_device().get_device_name().includes('Touch')
+        ) {
+          multiplier = 1;
+        } else {
+          multiplier = 5;
+        }
+
+        // console.log(this._scrollCounter);
+
+        let SCROLL_RESOLUTION =
+          MIN_SCROLL_RESOLUTION +
+          MAX_SCROLL_RESOLUTION -
+          (MAX_SCROLL_RESOLUTION * this.extension.scroll_sensitivity || 0);
+        if (icon._appwell && icon._appwell.app) {
+          this._lastScrollObject = icon;
+          let direction = evt.get_scroll_direction();
+          switch (direction) {
+            case Clutter.ScrollDirection.UP:
+            case Clutter.ScrollDirection.LEFT:
+              this._scrollCounter += (1 / SCROLL_RESOLUTION) * multiplier;
+              break;
+            case Clutter.ScrollDirection.DOWN:
+            case Clutter.ScrollDirection.RIGHT:
+              this._scrollCounter -= (1 / SCROLL_RESOLUTION) * multiplier;
+              break;
+          }
+          this._cycleWindows(icon._appwell.app, evt);
+        }
+      }
+    }
+
+    _lockCycle() {
+      if (this._lockedCycle) return;
+      this._lockedCycle = true;
+      this.extension._hiTimer.runOnce(() => {
+        this._lockedCycle = false;
+      }, 500);
+    }
+
+    _cycleWindows(app, evt) {
+      if (this._lockedCycle) {
+        this._scrollCounter = 0;
+        return false;
+      }
+
+      let focusId = 0;
+      let workspaceManager = global.workspace_manager;
+      let activeWs = workspaceManager.get_active_workspace();
+
+      let windows = app.get_windows();
+
+      if (evt.modifier_state & Clutter.ModifierType.CONTROL_MASK) {
+        windows = windows.filter((w) => {
+          return activeWs == w.get_workspace();
+        });
+      }
+
+      let nw = windows.length;
+      windows.sort((w1, w2) => {
+        return w1.get_id() > w2.get_id() ? -1 : 1;
+      });
+
+      if (nw > 1) {
+        for (let i = 0; i < nw; i++) {
+          if (windows[i].has_focus()) {
+            focusId = i;
+          }
+          if (windows[i].is_hidden()) {
+            windows[i].unminimize();
+            windows[i].raise();
+          }
+        }
+
+        let current_focus = focusId;
+
+        if (this._scrollCounter < -1 || this._scrollCounter > 1) {
+          focusId += Math.round(this._scrollCounter);
+          if (focusId < 0) {
+            focusId = nw - 1;
+          }
+          if (focusId >= nw) {
+            focusId = 0;
+          }
+          this._scrollCounter = 0;
+        }
+
+        if (current_focus == focusId) return;
+      } else if (nw == 1) {
+        if (windows[0].is_hidden()) {
+          windows[0].unminimize();
+          windows[0].raise();
+        }
+      }
+
+      let window = windows[focusId];
+      if (window) {
+        this._lockCycle();
+        if (activeWs == window.get_workspace()) {
+          window.raise();
+          window.focus(0);
+        } else {
+          activeWs.activate_with_focus(window, global.get_current_time());
+        }
+      }
+    }
+  }
+);
+
+
+//-----------------------------
+// ./drawing.js
+//-----------------------------
+
+//'use strict';
+
+//import PangoCairo from 'gi://PangoCairo';
+//import Pango from 'gi://Pango';
+//import Clutter from 'gi://Clutter';
+
+function draw_rotated_line(ctx, color, width, angle, len, offset) {
+  offset = offset || 0;
+  ctx.save();
+  ctx.rotate(angle);
+  set_color(ctx, color, 1);
+  ctx.setLineWidth(width);
+  ctx.moveTo(0, offset);
+  ctx.lineTo(0, len);
+  ctx.stroke();
+  ctx.restore();
+}
+
+function draw_line(ctx, color, width, x, y, x2, y2) {
+  ctx.save();
+  set_color(ctx, color, 1);
+  ctx.setLineWidth(width);
+  ctx.moveTo(x, y);
+  ctx.lineTo(x2, y2);
+  ctx.stroke();
+  ctx.restore();
+}
+
+function draw_circle(ctx, color, x, y, diameter, line_width) {
+  ctx.save();
+  set_color(ctx, color, 1);
+  ctx.arc(x, y, diameter / 2 - diameter / 20, 0, 2 * Math.PI);
+  ctx.setLineWidth(line_width || 0);
+  if (line_width > 0) {
+    ctx.stroke();
+  } else {
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
+function draw_rounded_rect(
+  ctx,
+  color,
+  x,
+  y,
+  h_size,
+  v_size,
+  line_width,
+  border_radius
+) {
+  ctx.save();
+  set_color(ctx, color, 1);
+  ctx.translate(x, y);
+  ctx.setLineWidth(line_width || 0);
+  ctx.moveTo(border_radius, 0);
+  ctx.lineTo(h_size - border_radius, 0);
+  // ctx.lineTo(h_size, border_radius);
+  ctx.curveTo(h_size - border_radius, 0, h_size, 0, h_size, border_radius);
+  ctx.lineTo(h_size, v_size - border_radius);
+  // ctx.lineTo(h_size - border_radius, h_size);
+  ctx.curveTo(
+    h_size,
+    v_size - border_radius,
+    h_size,
+    v_size,
+    h_size - border_radius,
+    v_size
+  );
+  ctx.lineTo(border_radius, v_size);
+  // ctx.lineTo(0, h_size - border_radius);
+  ctx.curveTo(border_radius, v_size, 0, v_size, 0, v_size - border_radius);
+  ctx.lineTo(0, border_radius);
+  ctx.curveTo(0, border_radius, 0, 0, border_radius, 0);
+  if (line_width == 0) {
+    ctx.fill();
+  } else {
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function draw_rect(ctx, color, x, y, h_size, v_size, line_width) {
+  ctx.save();
+  set_color(ctx, color, 1);
+  ctx.translate(x, y);
+  ctx.setLineWidth(line_width || 0);
+  ctx.moveTo(0, 0);
+  ctx.lineTo(h_size, 0);
+  ctx.lineTo(h_size, v_size);
+  ctx.lineTo(0, v_size);
+  ctx.lineTo(0, 0);
+  if (line_width == 0) {
+    ctx.fill();
+  } else {
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function draw_text(ctx, showtext, font = 'DejaVuSans 42') {
+  ctx.save();
+  let pl = PangoCairo.create_layout(ctx);
+  pl.set_text(showtext, -1);
+  pl.set_font_description(Pango.FontDescription.from_string(font));
+  PangoCairo.update_layout(ctx, pl);
+  let [w, h] = pl.get_pixel_size();
+  ctx.relMoveTo(-w / 2, -h / 2);
+  PangoCairo.show_layout(ctx, pl);
+  ctx.relMoveTo(w / 2, 0);
+  ctx.restore();
+  return [w, h];
+}
+
+function set_color(ctx, clr, alpha) {
+  if (typeof clr === 'string') {
+    const [, cc] = Clutter.Color.from_string(clr);
+    ctx.setSourceRGBA(cc.red, cc.green, cc.blue, alpha);
+  } else {
+    if (clr.red) {
+      ctx.setSourceRGBA(clr.red, clr.green, clr.blue, alpha);
+    } else {
+      ctx.setSourceRGBA(clr[0], clr[1], clr[2], alpha);
+    }
+  }
+}
+
+function set_color_rgba(ctx, red, green, blue, alpha) {
+  ctx.setSourceRGBA(red, green, blue, alpha);
+}
+
+const Drawing = {
+  set_color,
+  set_color_rgba,
+  draw_rotated_line,
+  draw_line,
+  draw_circle,
+  draw_rect,
+  draw_rounded_rect,
+  draw_text,
+};
+
 
 //-----------------------------
 // ./style.js
@@ -4941,772 +5199,6 @@ const Style = class {
   }
 };
 
-//-----------------------------
-// ./dockItems.js
-//-----------------------------
-
-//'use strict';
-
-//import * as Main from 'resource:///org/gnome/shell/ui/main.js';
-//import * as BoxPointer from 'resource:///org/gnome/shell/ui/boxpointer.js';
-//import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
-//import { trySpawnCommandLine } from 'resource:///org/gnome/shell/misc/util.js';
-//import { BaseIcon } from 'resource:///org/gnome/shell/ui/iconGrid.js';
-
-//import Gio from 'gi://Gio';
-//import GObject from 'gi://GObject';
-//import Clutter from 'gi://Clutter';
-//import Graphene from 'gi://Graphene';
-//import St from 'gi://St';
-
-//import { ShowAppsIcon } from 'resource:///org/gnome/shell/ui/dash.js';
-
-//import { Dot } from './apps/dot.js';
-//import { DockPosition } from './dock.js';
-
-//const Point = Graphene.Point;
-
-const DockItemOverlay = GObject.registerClass(
-  {},
-  class DockItemOverlay extends St.Widget {
-    _init(renderer, params) {
-      super._init({
-        name: 'DockItemContainer',
-        ...params,
-      });
-
-      this.renderer = renderer;
-      if (renderer) {
-        this.add_child(renderer);
-      }
-    }
-  }
-);
-
-const DockItemDotsOverlay = GObject.registerClass(
-  {},
-  class DockItemDotsOverlay extends DockItemOverlay {
-    update(icon, data) {
-      let renderer = this.renderer;
-      let { appCount, position, vertical, extension } = data;
-
-      renderer.width = icon._icon.width;
-      renderer.height = icon._icon.height;
-      renderer.pivot_point = icon._icon.pivot_point;
-
-      let canvasScale = renderer.width / renderer._canvas.width;
-      renderer._canvas.set_scale(canvasScale, canvasScale);
-
-      if (vertical) {
-        renderer.translationX =
-          icon._icon.translationX + (position == DockPosition.LEFT ? -6 : 6);
-        renderer.translationY = icon._icon.translationY;
-      } else {
-        renderer.translationX = icon._icon.translationX;
-        renderer.translationY =
-          icon._icon.translationY + (position == DockPosition.BOTTOM ? 8 : -8);
-      }
-
-      let options = extension.running_indicator_style_options;
-      let running_indicator_style = options[extension.running_indicator_style];
-      let running_indicator_color = extension.running_indicator_color;
-
-      renderer.set_state({
-        count: appCount,
-        color: running_indicator_color || [1, 1, 1, 1],
-        style: running_indicator_style || 'default',
-        rotate: vertical
-          ? position == DockPosition.RIGHT
-            ? -90
-            : 90
-          : position == DockPosition.TOP
-          ? 180
-          : 0,
-      });
-    }
-  }
-);
-
-const DockItemBadgeOverlay = GObject.registerClass(
-  {},
-  class DockItemBadgeOverlay extends DockItemOverlay {
-    update(icon, data) {
-      let renderer = this.renderer;
-      let { noticesCount, position, vertical, extension } = data;
-
-      renderer.width = icon._icon.width;
-      renderer.height = icon._icon.height;
-      renderer.set_scale(icon._icon.scaleX, icon._icon.scaleY);
-      renderer.pivot_point = icon._icon.pivot_point;
-      renderer.translationX = icon._icon.translationX + 4;
-      renderer.translationY = icon._icon.translationY - 4;
-
-      let canvasScale = renderer.width / renderer._canvas.width;
-      renderer._canvas.set_scale(canvasScale, canvasScale);
-
-      let options = extension.notification_badge_style_options;
-      let notification_badge_style =
-        options[extension.notification_badge_style];
-      let notification_badge_color = extension.notification_badge_color;
-
-      renderer.set_state({
-        count: noticesCount,
-        color: notification_badge_color || [1, 1, 1, 1],
-        style: notification_badge_style || 'default',
-        rotate: position == DockPosition.BOTTOM ? 180 : 0,
-        translate: [0.4, 0],
-      });
-    }
-  }
-);
-
-class DockItemMenu extends PopupMenu.PopupMenu {
-  constructor(sourceActor, side = St.Side.TOP, params = {}) {
-    if (Clutter.get_default_text_direction() === Clutter.TextDirection.RTL) {
-      if (side === St.Side.LEFT) side = St.Side.RIGHT;
-      else if (side === St.Side.RIGHT) side = St.Side.LEFT;
-    }
-
-    super(sourceActor, 0.5, side);
-
-    let { desktopApp } = params;
-    if (!desktopApp) return;
-
-    this.desktopApp = desktopApp;
-
-    this._newWindowItem = this.addAction('Open Window', () => {
-      let workspaceManager = global.workspace_manager;
-      let workspace = workspaceManager.get_active_workspace();
-      let ctx = global.create_app_launch_context(0, workspace);
-      desktopApp.launch([], ctx);
-      this._onActivate();
-    });
-
-    desktopApp.list_actions().forEach((action) => {
-      let name = desktopApp.get_action_name(action);
-      this.addAction(name, () => {
-        let workspaceManager = global.workspace_manager;
-        let workspace = workspaceManager.get_active_workspace();
-        let ctx = global.create_app_launch_context(0, workspace);
-        desktopApp.launch_action(action, ctx);
-        this.item.dock.extension.animate({ refresh: true });
-      });
-    });
-  }
-
-  _onActivate() {}
-
-  popup() {
-    this.open(BoxPointer.PopupAnimation.FULL);
-    this._menuManager.ignoreRelease();
-  }
-}
-
-const DockItemList = GObject.registerClass(
-  {},
-  class DockItemList extends St.Widget {
-    _init(renderer, params) {
-      super._init({
-        name: 'DockItemList',
-        reactive: true,
-        // style_class: 'hi',
-        ...params,
-      });
-
-      this.connect('button-press-event', (obj, evt) => {
-        // this.visible = false;
-        this.slideOut();
-        return Clutter.EVENT_PROPAGATE;
-      });
-    }
-
-    slideIn(target, list) {
-      if (this._box) {
-        this.remove_child(this._box);
-        this._box = null;
-      }
-
-      if (!list.length) return;
-
-      this.opacity = 0;
-
-      let dock = this.dock;
-      this.x = dock._monitor.x;
-      this.y = dock._monitor.y;
-      this.width = dock._monitor.width;
-      this.height = dock._monitor.height;
-
-      this._target = target;
-      let tp = dock._get_position(target);
-
-      this._box = new St.Widget({ style_class: '-hi' });
-      list.forEach((l) => {
-        let w = new St.Widget({});
-        let icon = new St.Icon({
-          icon_name: l.icon,
-          reactive: true,
-          track_hover: true,
-        });
-        icon.set_icon_size(
-          this.dock._iconSizeScaledDown * this.dock._scaleFactor
-        );
-        this._box.add_child(w);
-        let label = new St.Label({ style_class: 'dash-label' });
-        let short = (l.name ?? '').replace(/(.{32})..+/, '$1...');
-        label.text = short;
-        w.add_child(icon);
-        w.add_child(label);
-        w._icon = icon;
-        w._label = label;
-
-        icon.connect('button-press-event', () => {
-          let path = Gio.File.new_for_path(`Downloads/${l.name}`).get_path();
-          let cmd = `xdg-open "${path}"`;
-          if (l.type.includes('directory')) {
-            cmd = `nautilus --select "${path}"`;
-          }
-          this.visible = false;
-          this.dock._maybeBounce(this._target);
-
-          try {
-            console.log(cmd);
-            trySpawnCommandLine(cmd);
-          } catch (err) {
-            console.log(err);
-          }
-        });
-      });
-
-      let ox = 0;
-      let oy = 0;
-      let angleInc = 2;
-      let startAngle = 268;
-      let angle = startAngle;
-      let rad = dock._iconSize * 1.1 * dock._scaleFactor;
-
-      let children = this._box.get_children();
-      children.reverse();
-      children.forEach((l) => {
-        let hX = Math.cos(angle * 0.0174533);
-        let hY = Math.sin(angle * 0.0174533);
-        let hl = Math.sqrt(hX * hX + hY * hY);
-        hX /= hl;
-        hY /= hl;
-        hX *= rad;
-        hY *= rad;
-
-        l.x = tp[0] - this.x + ox;
-        l.y = tp[1] - this.y + oy;
-
-        ox += hX * 0.85;
-        oy += hY;
-        angle += angleInc;
-
-        l.rotation_angle_z = angle - startAngle;
-      });
-
-      this.add_child(this._box);
-
-      let first = children[0];
-      children.forEach((l) => {
-        l._ox = first.x;
-        l._oy = first.y;
-        l._oz = 0;
-        l._label.opacity = 0;
-        l._x = l.x;
-        l._y = l.y - rad * 0.8;
-        l._rotation_angle_z = l.rotation_angle_z;
-        l.x = first.x;
-        l.y = first.y;
-        l.rotation_angle_z = 0;
-      });
-
-      this._hidden = false;
-      this._hiddenFrames = 0;
-    }
-
-    slideOut() {
-      this._hidden = true;
-      this._hiddenFrames = 80;
-    }
-  }
-);
-
-const DockItemContainer = GObject.registerClass(
-  {},
-  class DockItemContainer extends ShowAppsIcon {
-    _init(params) {
-      super._init({
-        name: 'DockItemContainer',
-        style_class: 'dash-item-container',
-        ...(params || {}),
-      });
-
-      this.name = params.appinfo_filename;
-      this.show(false);
-
-      let desktopApp = Gio.DesktopAppInfo.new_from_filename(
-        params.appinfo_filename
-      );
-
-      this._label = this.label;
-
-      try {
-        this._labelText = desktopApp.get_name();
-        this._default_icon_name = desktopApp.get_icon().get_names()[0];
-      } catch (err) {
-        console.log(err);
-        console.log(params);
-      }
-
-      // menu
-      this._menu = new DockItemMenu(this, St.Side.TOP, {
-        desktopApp,
-      });
-      this._menu.item = this;
-      this._menuManager = new PopupMenu.PopupMenuManager(this);
-      this._menu._menuManager = this._menuManager;
-      Main.uiGroup.add_child(this._menu.actor);
-      this._menuManager.addMenu(this._menu);
-      this._menu.close();
-    }
-
-    activateNewWindow() {
-      if (this._menu && this._menu._newWindowItem) {
-        this._menu._newWindowItem.emit('activate', null);
-      }
-    }
-
-    _onClick() {
-      this.activateNewWindow();
-    }
-
-    _createIcon(size) {
-      this._iconActor = new St.Icon({
-        icon_name: this._default_icon_name,
-        icon_size: size,
-        style_class: 'show-apps-icon',
-        track_hover: true,
-      });
-
-      // attach event
-      let button = this.first_child;
-      button.reactive = false;
-      let icon = this._iconActor;
-
-      icon.reactive = true;
-      icon.track_hover = true;
-      [icon].forEach((btn) => {
-        if (btn._connected) return;
-        btn._connected = true;
-        btn.button_mask = St.ButtonMask.ONE | St.ButtonMask.TWO;
-        btn.connectObject(
-          'enter-event',
-          () => {
-            this.showLabel();
-          },
-          'leave-event',
-          () => {
-            this.hideLabel();
-          },
-          'button-press-event',
-          (actor, evt) => {
-            if (evt.get_button() != 1) {
-              if (this._menu) {
-                this._menu.popup();
-              }
-            } else {
-              this._onClick();
-            }
-          },
-          this
-        );
-      });
-
-      return this._iconActor;
-    }
-  }
-);
-
-const DockBackground = GObject.registerClass(
-  {},
-  class DockBackground extends St.Widget {
-    _init(params) {
-      super._init({
-        name: 'DockBackground',
-        ...(params || {}),
-      });
-    }
-
-    update(params) {
-      let {
-        first,
-        last,
-        iconSize,
-        scaleFactor,
-        vertical,
-        position,
-        panel_mode,
-        dashContainer,
-      } = params;
-
-      if (!first || !last) return;
-
-      let p1 = first.get_transformed_position();
-      let p2 = last.get_transformed_position();
-
-      if (!isNaN(p1[0]) && !isNaN(p1[1])) {
-        let tx = first._icon.translationX;
-        let ty = first._icon.translationY;
-        let tx2 = last._icon.translationX;
-        let ty2 = last._icon.translationY;
-
-        // bottom
-        this.x = p1[0] + tx;
-        this.y = first._fixedPosition[1];
-        let width = dashContainer.dash.width + Math.abs(tx) + tx2;
-        let height = dashContainer.dash.height;
-
-        if (dashContainer.isVertical()) {
-          this.x = first._fixedPosition[0];
-          this.y = first._fixedPosition[1] + ty;
-          width = dashContainer.dash.width;
-          height = dashContainer.dash.height + Math.abs(ty) + ty2;
-        }
-
-        if (!isNaN(width)) {
-          this.width = width;
-        }
-        if (!isNaN(height)) {
-          this.height = height;
-        }
-
-        this.x -= dashContainer.x;
-        this.y -= dashContainer.y;
-
-        // adjust padding
-        let az =
-          ((dashContainer.isVertical() ? this.width : this.height) -
-            iconSize * scaleFactor) *
-          (0.6 - 0.8 * dashContainer.extension.dock_padding);
-        this.x += az / 2;
-        this.width -= az;
-        this.y += az / 2;
-        this.height -= az;
-
-        if (panel_mode) {
-          if (vertical) {
-            this.y = dashContainer.y;
-            this.height = dashContainer.height;
-          } else {
-            this.x = dashContainer.x;
-            this.width = dashContainer.width;
-          }
-        }
-      }
-
-      let dx =
-        this.x - (dashContainer.dash.x + dashContainer.dash.translationX);
-      let dy =
-        this.y - (dashContainer.dash.y + dashContainer.dash.translationY);
-      let dst = vertical ? dx * dx : dy * dy;
-      this.opacity = dst > 50 ? 0 : 255;
-      dashContainer.dash.opacity = dst > 50 ? 0 : 255;
-    }
-  }
-);
-
-//-----------------------------
-// ./preferences/prefKeys.js
-//-----------------------------
-
-// const Gdk = imports.gi.Gdk;
-// const GLib = imports.gi.GLib;
-
-//import Gdk from 'gi://Gdk';
-//import GLib from 'gi://GLib';
-
-let PrefKeys = class {
-  constructor() {
-    this._keys = {};
-  }
-
-  setKeys(keys) {
-    Object.keys(keys).forEach((name) => {
-      let key = keys[name];
-      this.setKey(
-        name,
-        key.default_value,
-        key.widget_type,
-        key.key_maps,
-        key.test,
-        key.callback,
-        key.options,
-        key.themed
-      );
-    });
-  }
-
-  setKey(
-    name,
-    default_value,
-    widget_type,
-    maps,
-    test,
-    callback,
-    options,
-    themed
-  ) {
-    this._keys[name] = {
-      name,
-      default_value,
-      widget_type,
-      value: default_value,
-      maps: maps,
-      test: test,
-      callback,
-      options,
-      object: null,
-      themed: themed || false,
-    };
-  }
-
-  setValue(name, value) {
-    this._keys[name].value = value;
-
-    let settings = this._settings;
-    let keys = this._keys;
-    if (settings) {
-      let key = keys[name];
-      switch (key.widget_type) {
-        case 'switch': {
-          settings.set_boolean(name, value);
-          break;
-        }
-        case 'dropdown': {
-          settings.set_int(name, value);
-          break;
-        }
-        case 'scale': {
-          settings.set_double(name, value);
-          break;
-        }
-        case 'color': {
-          settings.set_value(name, new GLib.Variant('(dddd)', value));
-          break;
-        }
-      }
-    }
-
-    if (this._keys[name].callback) {
-      this._keys[name].callback(this._keys[name].value);
-    }
-  }
-
-  getKey(name) {
-    return this._keys[name];
-  }
-
-  getValue(name) {
-    let value = this._keys[name].value;
-    return value;
-  }
-
-  reset(name) {
-    this.setValue(name, this._keys[name].default_value);
-  }
-
-  resetAll() {
-    Object.keys(this._keys).forEach((k) => {
-      this.reset(k);
-    });
-  }
-
-  keys() {
-    return this._keys;
-  }
-
-  connectSettings(settings, callback) {
-    this._settingsListeners = [];
-
-    this._settings = settings;
-    let builder = this._builder;
-    let self = this;
-    let keys = this._keys;
-
-    Object.keys(keys).forEach((name) => {
-      let key = keys[name];
-      key.object = builder ? builder.get_object(key.name) : null;
-      switch (key.widget_type) {
-        case 'json_array': {
-          key.value = [];
-          try {
-            key.value = JSON.parse(settings.get_string(name));
-          } catch (err) {
-            // fail silently
-          }
-          break;
-        }
-        case 'switch': {
-          key.value = settings.get_boolean(name);
-          if (key.object) key.object.set_active(key.value);
-          break;
-        }
-        case 'dropdown': {
-          key.value = settings.get_int(name);
-          try {
-            if (key.object) key.object.set_selected(key.value);
-          } catch (err) {
-            //
-          }
-          break;
-        }
-        case 'scale': {
-          key.value = settings.get_double(name);
-          if (key.object) key.object.set_value(key.value);
-          break;
-        }
-        case 'color': {
-          key.value = settings.get_value(name).deepUnpack();
-          try {
-            if (key.object) {
-              key.object.set_rgba(
-                new Gdk.RGBA({
-                  red: key.value[0],
-                  green: key.value[1],
-                  blue: key.value[2],
-                  alpha: key.value[3],
-                })
-              );
-            }
-          } catch (err) {
-            //
-          }
-          break;
-        }
-      }
-
-      this._settingsListeners.push(
-        settings.connect(`changed::${name}`, () => {
-          let key = keys[name];
-          switch (key.widget_type) {
-            case 'json_array': {
-              key.value = [];
-              try {
-                key.value = JSON.parse(settings.get_string(name));
-              } catch (err) {
-                // fail silently
-              }
-              break;
-            }
-            case 'switch': {
-              key.value = settings.get_boolean(name);
-              break;
-            }
-            case 'dropdown': {
-              key.value = settings.get_int(name);
-              break;
-            }
-            case 'scale': {
-              key.value = settings.get_double(name);
-              break;
-            }
-            case 'color': {
-              key.value = settings.get_value(name).deepUnpack();
-              if (key.value.length != 4) {
-                key.value = [1, 1, 1, 0];
-              }
-              break;
-            }
-            case 'string': {
-              key.value = settings.get_string(name);
-              break;
-            }
-          }
-          if (callback) callback(name, key.value);
-        })
-      );
-    });
-  }
-
-  disconnectSettings() {
-    this._settingsListeners.forEach((id) => {
-      this._settings.disconnect(id);
-    });
-    this._settingsListeners = [];
-  }
-
-  connectBuilder(builder) {
-    this._builderListeners = [];
-
-    this._builder = builder;
-    let self = this;
-    let keys = this._keys;
-    Object.keys(keys).forEach((name) => {
-      let key = keys[name];
-      let signal_id = null;
-      key.object = builder.get_object(key.name);
-      if (!key.object) {
-        return;
-      }
-
-      switch (key.widget_type) {
-        case 'json_array': {
-          // unimplemented
-          break;
-        }
-        case 'switch': {
-          key.object.set_active(key.default_value);
-          signal_id = key.object.connect('state-set', (w) => {
-            let value = w.get_active();
-            self.setValue(name, value);
-            if (key.callback) {
-              key.callback(value);
-            }
-          });
-          break;
-        }
-        case 'dropdown': {
-          signal_id = key.object.connect('notify::selected-item', (w) => {
-            let index = w.get_selected();
-            let value = key.maps && index in key.maps ? key.maps[index] : index;
-            self.setValue(name, value);
-          });
-          break;
-        }
-        case 'scale': {
-          signal_id = key.object.connect('value-changed', (w) => {
-            let value = w.get_value();
-            self.setValue(name, value);
-          });
-          break;
-        }
-        case 'color': {
-          signal_id = key.object.connect('color-set', (w) => {
-            let rgba = w.get_rgba();
-            let value = [rgba.red, rgba.green, rgba.blue, rgba.alpha];
-            self.setValue(name, value);
-          });
-          break;
-        }
-        case 'button': {
-          signal_id = key.object.connect('clicked', (w) => {
-            if (key.callback) {
-              key.callback();
-            }
-          });
-          break;
-        }
-      }
-
-      // when do we clean this up?
-      this._builderListeners.push({
-        source: key.object,
-        signal_id: signal_id,
-      });
-    });
-  }
-};
 
 //-----------------------------
 // ./preferences/keys.js
@@ -6062,6 +5554,10 @@ const SettingsKeys = () => {
       widget_type: 'dropdown',
       test: { values: [0, 1, 2] },
     },
+    'pressure-sense-sensitivity': {
+      default_value: 0.4,
+      widget_type: 'scale',
+    },
     'scroll-sensitivity': {
       default_value: 0.4,
       widget_type: 'scale',
@@ -6094,6 +5590,831 @@ const SettingsKeys = () => {
 
   return settingsKeys;
 };
+
+
+//-----------------------------
+// ./preferences/prefKeys.js
+//-----------------------------
+
+// const Gdk = imports.gi.Gdk;
+// const GLib = imports.gi.GLib;
+
+//import Gdk from 'gi://Gdk';
+//import GLib from 'gi://GLib';
+
+let PrefKeys = class {
+  constructor() {
+    this._keys = {};
+  }
+
+  setKeys(keys) {
+    Object.keys(keys).forEach((name) => {
+      let key = keys[name];
+      this.setKey(
+        name,
+        key.default_value,
+        key.widget_type,
+        key.key_maps,
+        key.test,
+        key.callback,
+        key.options,
+        key.themed
+      );
+    });
+  }
+
+  setKey(
+    name,
+    default_value,
+    widget_type,
+    maps,
+    test,
+    callback,
+    options,
+    themed
+  ) {
+    this._keys[name] = {
+      name,
+      default_value,
+      widget_type,
+      value: default_value,
+      maps: maps,
+      test: test,
+      callback,
+      options,
+      object: null,
+      themed: themed || false,
+    };
+  }
+
+  setValue(name, value) {
+    this._keys[name].value = value;
+
+    let settings = this._settings;
+    let keys = this._keys;
+    if (settings) {
+      let key = keys[name];
+      switch (key.widget_type) {
+        case 'switch': {
+          settings.set_boolean(name, value);
+          break;
+        }
+        case 'dropdown': {
+          settings.set_int(name, value);
+          break;
+        }
+        case 'scale': {
+          settings.set_double(name, value);
+          break;
+        }
+        case 'color': {
+          settings.set_value(name, new GLib.Variant('(dddd)', value));
+          break;
+        }
+      }
+    }
+
+    if (this._keys[name].callback) {
+      this._keys[name].callback(this._keys[name].value);
+    }
+  }
+
+  getKey(name) {
+    return this._keys[name];
+  }
+
+  getValue(name) {
+    let value = this._keys[name].value;
+    return value;
+  }
+
+  reset(name) {
+    this.setValue(name, this._keys[name].default_value);
+  }
+
+  resetAll() {
+    Object.keys(this._keys).forEach((k) => {
+      this.reset(k);
+    });
+  }
+
+  keys() {
+    return this._keys;
+  }
+
+  connectSettings(settings, callback) {
+    this._settingsListeners = [];
+
+    this._settings = settings;
+    let builder = this._builder;
+    let self = this;
+    let keys = this._keys;
+
+    Object.keys(keys).forEach((name) => {
+      let key = keys[name];
+      key.object = builder ? builder.get_object(key.name) : null;
+      switch (key.widget_type) {
+        case 'json_array': {
+          key.value = [];
+          try {
+            key.value = JSON.parse(settings.get_string(name));
+          } catch (err) {
+            // fail silently
+          }
+          break;
+        }
+        case 'switch': {
+          key.value = settings.get_boolean(name);
+          if (key.object) key.object.set_active(key.value);
+          break;
+        }
+        case 'dropdown': {
+          key.value = settings.get_int(name);
+          try {
+            if (key.object) key.object.set_selected(key.value);
+          } catch (err) {
+            //
+          }
+          break;
+        }
+        case 'scale': {
+          key.value = settings.get_double(name);
+          if (key.object) key.object.set_value(key.value);
+          break;
+        }
+        case 'color': {
+          key.value = settings.get_value(name).deepUnpack();
+          try {
+            if (key.object) {
+              key.object.set_rgba(
+                new Gdk.RGBA({
+                  red: key.value[0],
+                  green: key.value[1],
+                  blue: key.value[2],
+                  alpha: key.value[3],
+                })
+              );
+            }
+          } catch (err) {
+            //
+          }
+          break;
+        }
+      }
+
+      this._settingsListeners.push(
+        settings.connect(`changed::${name}`, () => {
+          let key = keys[name];
+          switch (key.widget_type) {
+            case 'json_array': {
+              key.value = [];
+              try {
+                key.value = JSON.parse(settings.get_string(name));
+              } catch (err) {
+                // fail silently
+              }
+              break;
+            }
+            case 'switch': {
+              key.value = settings.get_boolean(name);
+              break;
+            }
+            case 'dropdown': {
+              key.value = settings.get_int(name);
+              break;
+            }
+            case 'scale': {
+              key.value = settings.get_double(name);
+              break;
+            }
+            case 'color': {
+              key.value = settings.get_value(name).deepUnpack();
+              if (key.value.length != 4) {
+                key.value = [1, 1, 1, 0];
+              }
+              break;
+            }
+            case 'string': {
+              key.value = settings.get_string(name);
+              break;
+            }
+          }
+          if (callback) callback(name, key.value);
+        })
+      );
+    });
+  }
+
+  disconnectSettings() {
+    this._settingsListeners.forEach((id) => {
+      this._settings.disconnect(id);
+    });
+    this._settingsListeners = [];
+  }
+
+  connectBuilder(builder) {
+    this._builderListeners = [];
+
+    this._builder = builder;
+    let self = this;
+    let keys = this._keys;
+    Object.keys(keys).forEach((name) => {
+      let key = keys[name];
+      let signal_id = null;
+      key.object = builder.get_object(key.name);
+      if (!key.object) {
+        return;
+      }
+
+      switch (key.widget_type) {
+        case 'json_array': {
+          // unimplemented
+          break;
+        }
+        case 'switch': {
+          key.object.set_active(key.default_value);
+          signal_id = key.object.connect('state-set', (w) => {
+            let value = w.get_active();
+            self.setValue(name, value);
+            if (key.callback) {
+              key.callback(value);
+            }
+          });
+          break;
+        }
+        case 'dropdown': {
+          signal_id = key.object.connect('notify::selected-item', (w) => {
+            let index = w.get_selected();
+            let value = key.maps && index in key.maps ? key.maps[index] : index;
+            self.setValue(name, value);
+          });
+          break;
+        }
+        case 'scale': {
+          signal_id = key.object.connect('value-changed', (w) => {
+            let value = w.get_value();
+            self.setValue(name, value);
+          });
+          break;
+        }
+        case 'color': {
+          signal_id = key.object.connect('color-set', (w) => {
+            let rgba = w.get_rgba();
+            let value = [rgba.red, rgba.green, rgba.blue, rgba.alpha];
+            self.setValue(name, value);
+          });
+          break;
+        }
+        case 'button': {
+          signal_id = key.object.connect('clicked', (w) => {
+            if (key.callback) {
+              key.callback();
+            }
+          });
+          break;
+        }
+      }
+
+      // when do we clean this up?
+      this._builderListeners.push({
+        source: key.object,
+        signal_id: signal_id,
+      });
+    });
+  }
+};
+
+
+//-----------------------------
+// ./effects/tint_effect.js
+//-----------------------------
+
+// Adapted from from Blur-My-Shell
+
+//'use strict';
+
+//import Shell from 'gi://Shell';
+//import GLib from 'gi://GLib';
+//import GObject from 'gi://GObject';
+//import Clutter from 'gi://Clutter';
+
+const getTintShaderSource = (extensionDir) => {
+  const SHADER_PATH = GLib.build_filenamev([
+    extensionDir,
+    'effects',
+    'tint_effect.glsl',
+  ]);
+
+  try {
+    return Shell.get_file_contents_utf8_sync(SHADER_PATH);
+  } catch (e) {
+    log(`[d2dl] error loading shader from ${SHADER_PATH}: ${e}`);
+    return null;
+  }
+};
+
+/// New Clutter Shader Effect that simply mixes a color in, the class applies
+/// the GLSL shader programmed into vfunc_get_static_shader_source and applies
+/// it to an Actor.
+///
+/// Clutter Shader Source Code:
+/// https://github.com/GNOME/clutter/blob/master/clutter/clutter-shader-effect.c
+///
+/// GJS Doc:
+/// https://gjs-docs.gnome.org/clutter10~10_api/clutter.shadereffect
+const TintEffect = GObject.registerClass(
+  {},
+  class TintEffect extends Clutter.ShaderEffect {
+    _init(params) {
+      this._red = null;
+      this._green = null;
+      this._blue = null;
+      this._blend = null;
+
+      this._static = true;
+
+      // initialize without color as a parameter
+
+      let _color = params.color;
+      delete params.color;
+
+      super._init(params);
+
+      // set shader color
+
+      if (_color) this.color = _color;
+    }
+
+    preload(path) {
+      // set shader source
+      this._source = getTintShaderSource(path);
+      if (this._source) this.set_shader_source(this._source);
+
+      this.update_enabled();
+    }
+
+    get red() {
+      return this._red;
+    }
+
+    set red(value) {
+      if (this._red !== value) {
+        this._red = value;
+
+        this.set_uniform_value('red', parseFloat(this._red - 1e-6));
+      }
+    }
+
+    get green() {
+      return this._green;
+    }
+
+    set green(value) {
+      if (this._green !== value) {
+        this._green = value;
+
+        this.set_uniform_value('green', parseFloat(this._green - 1e-6));
+      }
+    }
+
+    get blue() {
+      return this._blue;
+    }
+
+    set blue(value) {
+      if (this._blue !== value) {
+        this._blue = value;
+
+        this.set_uniform_value('blue', parseFloat(this._blue - 1e-6));
+      }
+    }
+
+    get blend() {
+      return this._blend;
+    }
+
+    set blend(value) {
+      if (value > 0.5) {
+        value *= 0.75;
+        if (value < 0.5) {
+          value = 0.5;
+        }
+      }
+      if (this._blend !== value) {
+        this._blend = value;
+
+        this.set_uniform_value('blend', parseFloat(this._blend - 1e-6));
+      }
+      this.update_enabled();
+    }
+
+    set color(rgba) {
+      let [r, g, b, a] = rgba;
+      this.red = r;
+      this.green = g;
+      this.blue = b;
+      this.blend = a;
+    }
+
+    get color() {
+      return [this.red, this.green, this.blue, this.blend];
+    }
+
+    /// False set function, only cares about the color. Too hard to change.
+    set(params) {
+      this.color = params.color;
+    }
+
+    update_enabled() {
+      this.set_enabled(this.blend > 0 && this._static);
+    }
+
+    vfunc_paint_target(paint_node = null, paint_context = null) {
+      this.set_uniform_value('tex', 0);
+
+      if (paint_node && paint_context)
+        super.vfunc_paint_target(paint_node, paint_context);
+      else if (paint_node) super.vfunc_paint_target(paint_node);
+      else super.vfunc_paint_target();
+    }
+  }
+);
+
+
+//-----------------------------
+// ./effects/color_effect.js
+//-----------------------------
+
+// Adapted from from Blur-My-Shell
+
+//'use strict';
+
+//import Shell from 'gi://Shell';
+//import GLib from 'gi://GLib';
+//import GObject from 'gi://GObject';
+//import Clutter from 'gi://Clutter';
+
+const getColorEffectShaderSource = (extensionDir) => {
+  const SHADER_PATH = GLib.build_filenamev([
+    extensionDir,
+    'effects',
+    'color_effect.glsl',
+  ]);
+
+  try {
+    return Shell.get_file_contents_utf8_sync(SHADER_PATH);
+  } catch (e) {
+    log(`[d2dl] error loading shader from ${SHADER_PATH}: ${e}`);
+    return null;
+  }
+};
+
+/// New Clutter Shader Effect that simply mixes a color in, the class applies
+/// the GLSL shader programmed into vfunc_get_static_shader_source and applies
+/// it to an Actor.
+///
+/// Clutter Shader Source Code:
+/// https://github.com/GNOME/clutter/blob/master/clutter/clutter-shader-effect.c
+///
+/// GJS Doc:
+/// https://gjs-docs.gnome.org/clutter10~10_api/clutter.shadereffect
+const ColorEffect = GObject.registerClass(
+  {},
+  class ColorShader extends Clutter.ShaderEffect {
+    _init(params) {
+      this._red = null;
+      this._green = null;
+      this._blue = null;
+      this._blend = null;
+
+      this._static = true;
+
+      // initialize without color as a parameter
+
+      let _color = params.color;
+      delete params.color;
+
+      super._init(params);
+
+      // set shader color
+      if (_color) this.color = _color;
+    }
+
+    preload(path) {
+      // set shader source
+      this._source = getColorEffectShaderSource(path);
+      if (this._source) this.set_shader_source(this._source);
+
+      this.update_enabled();
+    }
+
+    get red() {
+      return this._red;
+    }
+
+    set red(value) {
+      if (this._red !== value) {
+        this._red = value;
+
+        this.set_uniform_value('red', parseFloat(this._red - 1e-6));
+      }
+    }
+
+    get green() {
+      return this._green;
+    }
+
+    set green(value) {
+      if (this._green !== value) {
+        this._green = value;
+
+        this.set_uniform_value('green', parseFloat(this._green - 1e-6));
+      }
+    }
+
+    get blue() {
+      return this._blue;
+    }
+
+    set blue(value) {
+      if (this._blue !== value) {
+        this._blue = value;
+
+        this.set_uniform_value('blue', parseFloat(this._blue - 1e-6));
+      }
+    }
+
+    get blend() {
+      return this._blend;
+    }
+
+    set blend(value) {
+      if (this._blend !== value) {
+        this._blend = value;
+
+        this.set_uniform_value('blend', parseFloat(this._blend - 1e-6));
+      }
+      this.update_enabled();
+    }
+
+    set color(rgba) {
+      let [r, g, b, a] = rgba;
+      this.red = r;
+      this.green = g;
+      this.blue = b;
+      this.blend = a;
+    }
+
+    get color() {
+      return [this.red, this.green, this.blue, this.blend];
+    }
+
+    /// False set function, only cares about the color. Too hard to change.
+    set(params) {
+      this.color = params.color;
+    }
+
+    update_enabled() {
+      this.set_enabled(this.blend > 0 && this._static);
+    }
+
+    vfunc_paint_target(paint_node = null, paint_context = null) {
+      this.set_uniform_value('tex', 0);
+
+      if (paint_node && paint_context)
+        super.vfunc_paint_target(paint_node, paint_context);
+      else if (paint_node) super.vfunc_paint_target(paint_node);
+      else super.vfunc_paint_target();
+    }
+  }
+);
+
+
+//-----------------------------
+// ./effects/easing.js
+//-----------------------------
+
+//'use strict';
+
+/* PennerEasing */
+const Linear = {
+  easeNone: (t, b, c, d) => {
+    return (c * t) / d + b;
+  },
+  easeIn: (t, b, c, d) => {
+    return (c * t) / d + b;
+  },
+  easeOut: (t, b, c, d) => {
+    return (c * t) / d + b;
+  },
+  easeInOut: (t, b, c, d) => {
+    return (c * t) / d + b;
+  },
+};
+
+const Bounce = {
+  easeIn: (t, b, c, d) => {
+    return c - Bounce.easeOut(d - t, 0, c, d) + b;
+  },
+
+  easeOut: (t, b, c, d) => {
+    if ((t /= d) < 1 / 2.75) {
+      return c * (7.5625 * t * t) + b;
+    } else if (t < 2 / 2.75) {
+      let postFix = (t -= 1.5 / 2.75);
+      return c * (7.5625 * postFix * t + 0.75) + b;
+    } else if (t < 2.5 / 2.75) {
+      let postFix = (t -= 2.25 / 2.75);
+      return c * (7.5625 * postFix * t + 0.9375) + b;
+    } else {
+      let postFix = (t -= 2.625 / 2.75);
+      return c * (7.5625 * postFix * t + 0.984375) + b;
+    }
+  },
+
+  easeInOut: (t, b, c, d) => {
+    if (t < d / 2) return Bounce.easeIn(t * 2, 0, c, d) * 0.5 + b;
+    else return Bounce.easeOut(t * 2 - d, 0, c, d) * 0.5 + c * 0.5 + b;
+  },
+};
+
+var Back = {
+  easeIn: (t, b, c, d) => {
+    let s = 1.70158;
+    let postFix = (t /= d);
+    return c * postFix * t * ((s + 1) * t - s) + b;
+  },
+
+  easeOut: (t, b, c, d) => {
+    let s = 1.70158;
+    return c * ((t = t / d - 1) * t * ((s + 1) * t + s) + 1) + b;
+  },
+
+  easeInOut: (t, b, c, d) => {
+    let s = 1.70158;
+    if ((t /= d / 2) < 1)
+      return (c / 2) * (t * t * (((s *= 1.525) + 1) * t - s)) + b;
+    let postFix = (t -= 2);
+    return (c / 2) * (postFix * t * (((s *= 1.525) + 1) * t + s) + 2) + b;
+  },
+};
+
+
+//-----------------------------
+// ./effects/monochrome_effect.js
+//-----------------------------
+
+// Adapted from from Blur-My-Shell
+// Adapted from https://gist.github.com/yiwenl/1c2ce935e66b82c7df5f
+
+//'use strict';
+
+//import Shell from 'gi://Shell';
+//import GLib from 'gi://GLib';
+//import GObject from 'gi://GObject';
+//import Clutter from 'gi://Clutter';
+
+const getMonochromeShaderSource = (extensionDir) => {
+  const SHADER_PATH = GLib.build_filenamev([
+    extensionDir,
+    'effects',
+    'monochrome_effect.glsl',
+  ]);
+
+  try {
+    return Shell.get_file_contents_utf8_sync(SHADER_PATH);
+  } catch (e) {
+    log(`[d2dl] error loading shader from ${SHADER_PATH}: ${e}`);
+    return null;
+  }
+};
+
+/// New Clutter Shader Effect that simply mixes a color in, the class applies
+/// the GLSL shader programmed into vfunc_get_static_shader_source and applies
+/// it to an Actor.
+///
+/// Clutter Shader Source Code:
+/// https://github.com/GNOME/clutter/blob/master/clutter/clutter-shader-effect.c
+///
+/// GJS Doc:
+/// https://gjs-docs.gnome.org/clutter10~10_api/clutter.shadereffect
+const MonochromeEffect = GObject.registerClass(
+  {},
+  class MonochromeEffect extends Clutter.ShaderEffect {
+    _init(params) {
+      this._red = null;
+      this._green = null;
+      this._blue = null;
+      this._blend = null;
+
+      this._static = true;
+
+      // initialize without color as a parameter
+
+      let _color = params.color;
+      delete params.color;
+
+      super._init(params);
+
+      // set shader color
+      if (_color) this.color = _color;
+    }
+
+    preload(path) {
+      // set shader source
+      this._source = getMonochromeShaderSource(path);
+      if (this._source) this.set_shader_source(this._source);
+
+      this.update_enabled();
+    }
+
+    get red() {
+      return this._red;
+    }
+
+    set red(value) {
+      if (this._red !== value) {
+        this._red = value;
+
+        this.set_uniform_value('red', parseFloat(this._red - 1e-6));
+      }
+    }
+
+    get green() {
+      return this._green;
+    }
+
+    set green(value) {
+      if (this._green !== value) {
+        this._green = value;
+
+        this.set_uniform_value('green', parseFloat(this._green - 1e-6));
+      }
+    }
+
+    get blue() {
+      return this._blue;
+    }
+
+    set blue(value) {
+      if (this._blue !== value) {
+        this._blue = value;
+
+        this.set_uniform_value('blue', parseFloat(this._blue - 1e-6));
+      }
+    }
+
+    get blend() {
+      return this._blend;
+    }
+
+    set blend(value) {
+      if (value > 0.5) {
+        value *= 0.75;
+        if (value < 0.5) {
+          value = 0.5;
+        }
+      }
+      if (this._blend !== value) {
+        this._blend = value;
+
+        this.set_uniform_value('blend', parseFloat(this._blend - 1e-6));
+      }
+      this.update_enabled();
+    }
+
+    set color(rgba) {
+      let [r, g, b, a] = rgba;
+      this.red = r;
+      this.green = g;
+      this.blue = b;
+      this.blend = a;
+    }
+
+    get color() {
+      return [this.red, this.green, this.blue, this.blend];
+    }
+
+    /// False set function, only cares about the color. Too hard to change.
+    set(params) {
+      this.color = params.color;
+    }
+
+    update_enabled() {
+      this.set_enabled(this.blend > 0 && this._static);
+    }
+
+    vfunc_paint_target(paint_node = null, paint_context = null) {
+      this.set_uniform_value('tex', 0);
+
+      if (paint_node && paint_context)
+        super.vfunc_paint_target(paint_node, paint_context);
+      else if (paint_node) super.vfunc_paint_target(paint_node);
+      else super.vfunc_paint_target();
+    }
+  }
+);
+
 
 //-----------------------------
 // ./apps/dot.js
@@ -6442,6 +6763,214 @@ const DotCanvas = GObject.registerClass(
   }
 );
 
+
+//-----------------------------
+// ./apps/calendar.js
+//-----------------------------
+
+//import GObject from 'gi://GObject';
+//import Clutter from 'gi://Clutter';
+//import Cairo from 'gi://cairo';
+//import St from 'gi://St';
+
+//import { Drawing } from '../drawing.js';
+
+const Calendar = GObject.registerClass(
+  {},
+  class Calendar extends St.Widget {
+    _init(x, settings = {}) {
+      super._init();
+
+      let size = x || 400;
+
+      this._canvas = new CalendarCanvas(settings);
+      this._canvas.width = size;
+      this._canvas.height = size;
+      this.add_child(this._canvas);
+    }
+
+    redraw() {
+      this.visible = true;
+      this._canvas.redraw();
+    }
+  }
+);
+
+const CalendarCanvas = GObject.registerClass(
+  {},
+  class CalendarCanvas extends St.DrawingArea {
+    _init(settings = {}) {
+      super._init();
+
+      this.settings = {
+        dark_color: [0.2, 0.2, 0.2, 1.0],
+        light_color: [1.0, 1.0, 1.0, 1.0],
+        accent_color: [1.0, 0.0, 0.0, 1.0],
+        ...settings,
+      };
+    }
+
+    redraw() {
+      this.queue_repaint();
+    }
+
+    vfunc_repaint() {
+      let ctx = this.get_context();
+      let [width, height] = this.get_surface_size();
+
+      let size = width;
+
+      const hd_color = 'red';
+      const bg_color = 'white';
+      const day_color = 'black';
+      const date_color = 'red';
+
+      ctx.setOperator(Cairo.Operator.CLEAR);
+      ctx.paint();
+
+      ctx.translate(size / 2, size / 2);
+      ctx.setLineWidth(1);
+      ctx.setLineCap(Cairo.LineCap.ROUND);
+      ctx.setOperator(Cairo.Operator.SOURCE);
+
+      let bgSize = size * 0.7;
+      let offset = size - bgSize;
+
+      const d0 = new Date();
+
+      Drawing.draw_rounded_rect(
+        ctx,
+        bg_color,
+        -size / 2 + offset / 2,
+        -size / 2 + offset / 2,
+        bgSize,
+        bgSize,
+        0,
+        8
+      );
+      Drawing.set_color(ctx, date_color, 1.0);
+      ctx.moveTo(0, 12);
+      Drawing.draw_text(ctx, `${d0.getDate()}`, 'DejaVuSans 36');
+
+      let dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+      Drawing.set_color(ctx, day_color, 1.0);
+      ctx.moveTo(0, -22);
+      Drawing.draw_text(ctx, `${dayNames[d0.getDay()]}`, 'DejaVuSans 16');
+
+      ctx.$dispose();
+    }
+  }
+);
+
+
+//-----------------------------
+// ./apps/overlay.js
+//-----------------------------
+
+// adapted from https://github.com/jderose9/dash-to-panel
+// adapted from https://github.com/micheleg/dash-to-dock
+
+//import GObject from 'gi://GObject';
+//import Clutter from 'gi://Clutter';
+//import Cairo from 'gi://cairo';
+
+//import { Drawing } from '../drawing.js';
+
+const DebugOverlay = GObject.registerClass(
+  {},
+  class D2DLDebugOverlay extends Clutter.Actor {
+    _init(x, y) {
+      super._init();
+
+      this._width = x ? x : 400;
+      this._height = y ? y : 400;
+
+      this.state = {
+        color: [0.8, 0.25, 0.15, 1],
+        monitor: { x: 0, y: 0, width: 0, height: 0 },
+      };
+      this.objects = [];
+
+      this._canvas = new Clutter.Canvas();
+      this._canvas.connect('draw', this.on_draw.bind(this));
+      this._canvas.invalidate();
+      this._canvas.set_size(this._width, this._height);
+      this.set_size(this._width, this._height);
+      this.set_content(this._canvas);
+      this.reactive = false;
+    }
+
+    resize(width, height) {
+      if (this._width != width || this._height != height) {
+        this._width = width;
+        this._height = height;
+        this.set_size(this._width, this._height);
+        this._canvas.set_size(this._width, this._height);
+        this._canvas.invalidate();
+      }
+    }
+
+    redraw() {
+      this._canvas.invalidate();
+    }
+
+    set_state(s) {
+      this.state = s;
+      this.redraw();
+    }
+
+    on_draw(canvas, ctx, width, height) {
+      ctx.setOperator(Cairo.Operator.CLEAR);
+      ctx.paint();
+
+      ctx.setLineWidth(1);
+      ctx.setLineCap(Cairo.LineCap.ROUND);
+      ctx.setOperator(Cairo.Operator.SOURCE);
+
+      ctx.save();
+
+      this.onDraw(ctx);
+
+      ctx.restore();
+      ctx.$dispose();
+    }
+
+    onDraw(ctx) {
+      let monitor = this.state.monitor;
+      this.objects.forEach((d) => {
+        // log(`${d.t} ${d.x} ${d.y}`);
+        switch (d.t) {
+          case 'line':
+            Drawing.draw_line(
+              ctx,
+              d.c,
+              d.w || 1,
+              d.x - monitor.x,
+              d.y - monitor.y,
+              d.x2,
+              d.y2,
+              true
+            );
+            break;
+          case 'circle':
+            Drawing.draw_circle(
+              ctx,
+              d.c,
+              d.x - monitor.x,
+              d.y - monitor.y,
+              d.d,
+              true
+            );
+            break;
+        }
+      });
+    }
+
+    destroy() {}
+  }
+);
+
+
 //-----------------------------
 // ./apps/clock.js
 //-----------------------------
@@ -6789,734 +7318,4 @@ const ClockCanvas = GObject.registerClass(
   }
 );
 
-//-----------------------------
-// ./apps/calendar.js
-//-----------------------------
 
-//import GObject from 'gi://GObject';
-//import Clutter from 'gi://Clutter';
-//import Cairo from 'gi://cairo';
-//import St from 'gi://St';
-
-//import { Drawing } from '../drawing.js';
-
-const Calendar = GObject.registerClass(
-  {},
-  class Calendar extends St.Widget {
-    _init(x, settings = {}) {
-      super._init();
-
-      let size = x || 400;
-
-      this._canvas = new CalendarCanvas(settings);
-      this._canvas.width = size;
-      this._canvas.height = size;
-      this.add_child(this._canvas);
-    }
-
-    redraw() {
-      this.visible = true;
-      this._canvas.redraw();
-    }
-  }
-);
-
-const CalendarCanvas = GObject.registerClass(
-  {},
-  class CalendarCanvas extends St.DrawingArea {
-    _init(settings = {}) {
-      super._init();
-
-      this.settings = {
-        dark_color: [0.2, 0.2, 0.2, 1.0],
-        light_color: [1.0, 1.0, 1.0, 1.0],
-        accent_color: [1.0, 0.0, 0.0, 1.0],
-        ...settings,
-      };
-    }
-
-    redraw() {
-      this.queue_repaint();
-    }
-
-    vfunc_repaint() {
-      let ctx = this.get_context();
-      let [width, height] = this.get_surface_size();
-
-      let size = width;
-
-      const hd_color = 'red';
-      const bg_color = 'white';
-      const day_color = 'black';
-      const date_color = 'red';
-
-      ctx.setOperator(Cairo.Operator.CLEAR);
-      ctx.paint();
-
-      ctx.translate(size / 2, size / 2);
-      ctx.setLineWidth(1);
-      ctx.setLineCap(Cairo.LineCap.ROUND);
-      ctx.setOperator(Cairo.Operator.SOURCE);
-
-      let bgSize = size * 0.7;
-      let offset = size - bgSize;
-
-      const d0 = new Date();
-
-      Drawing.draw_rounded_rect(
-        ctx,
-        bg_color,
-        -size / 2 + offset / 2,
-        -size / 2 + offset / 2,
-        bgSize,
-        bgSize,
-        0,
-        8
-      );
-      Drawing.set_color(ctx, date_color, 1.0);
-      ctx.moveTo(0, 12);
-      Drawing.draw_text(ctx, `${d0.getDate()}`, 'DejaVuSans 36');
-
-      let dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-      Drawing.set_color(ctx, day_color, 1.0);
-      ctx.moveTo(0, -22);
-      Drawing.draw_text(ctx, `${dayNames[d0.getDay()]}`, 'DejaVuSans 16');
-
-      ctx.$dispose();
-    }
-  }
-);
-
-//-----------------------------
-// ./apps/overlay.js
-//-----------------------------
-
-// adapted from https://github.com/jderose9/dash-to-panel
-// adapted from https://github.com/micheleg/dash-to-dock
-
-//import GObject from 'gi://GObject';
-//import Clutter from 'gi://Clutter';
-//import Cairo from 'gi://cairo';
-
-//import { Drawing } from '../drawing.js';
-
-const DebugOverlay = GObject.registerClass(
-  {},
-  class D2DLDebugOverlay extends Clutter.Actor {
-    _init(x, y) {
-      super._init();
-
-      this._width = x ? x : 400;
-      this._height = y ? y : 400;
-
-      this.state = {
-        color: [0.8, 0.25, 0.15, 1],
-        monitor: { x: 0, y: 0, width: 0, height: 0 },
-      };
-      this.objects = [];
-
-      this._canvas = new Clutter.Canvas();
-      this._canvas.connect('draw', this.on_draw.bind(this));
-      this._canvas.invalidate();
-      this._canvas.set_size(this._width, this._height);
-      this.set_size(this._width, this._height);
-      this.set_content(this._canvas);
-      this.reactive = false;
-    }
-
-    resize(width, height) {
-      if (this._width != width || this._height != height) {
-        this._width = width;
-        this._height = height;
-        this.set_size(this._width, this._height);
-        this._canvas.set_size(this._width, this._height);
-        this._canvas.invalidate();
-      }
-    }
-
-    redraw() {
-      this._canvas.invalidate();
-    }
-
-    set_state(s) {
-      this.state = s;
-      this.redraw();
-    }
-
-    on_draw(canvas, ctx, width, height) {
-      ctx.setOperator(Cairo.Operator.CLEAR);
-      ctx.paint();
-
-      ctx.setLineWidth(1);
-      ctx.setLineCap(Cairo.LineCap.ROUND);
-      ctx.setOperator(Cairo.Operator.SOURCE);
-
-      ctx.save();
-
-      this.onDraw(ctx);
-
-      ctx.restore();
-      ctx.$dispose();
-    }
-
-    onDraw(ctx) {
-      let monitor = this.state.monitor;
-      this.objects.forEach((d) => {
-        // log(`${d.t} ${d.x} ${d.y}`);
-        switch (d.t) {
-          case 'line':
-            Drawing.draw_line(
-              ctx,
-              d.c,
-              d.w || 1,
-              d.x - monitor.x,
-              d.y - monitor.y,
-              d.x2,
-              d.y2,
-              true
-            );
-            break;
-          case 'circle':
-            Drawing.draw_circle(
-              ctx,
-              d.c,
-              d.x - monitor.x,
-              d.y - monitor.y,
-              d.d,
-              true
-            );
-            break;
-        }
-      });
-    }
-
-    destroy() {}
-  }
-);
-
-//-----------------------------
-// ./effects/color_effect.js
-//-----------------------------
-
-// Adapted from from Blur-My-Shell
-
-//'use strict';
-
-//import Shell from 'gi://Shell';
-//import GLib from 'gi://GLib';
-//import GObject from 'gi://GObject';
-//import Clutter from 'gi://Clutter';
-
-const getColorEffectShaderSource = (extensionDir) => {
-  const SHADER_PATH = GLib.build_filenamev([
-    extensionDir,
-    'effects',
-    'color_effect.glsl',
-  ]);
-
-  try {
-    return Shell.get_file_contents_utf8_sync(SHADER_PATH);
-  } catch (e) {
-    log(`[d2dl] error loading shader from ${SHADER_PATH}: ${e}`);
-    return null;
-  }
-};
-
-/// New Clutter Shader Effect that simply mixes a color in, the class applies
-/// the GLSL shader programmed into vfunc_get_static_shader_source and applies
-/// it to an Actor.
-///
-/// Clutter Shader Source Code:
-/// https://github.com/GNOME/clutter/blob/master/clutter/clutter-shader-effect.c
-///
-/// GJS Doc:
-/// https://gjs-docs.gnome.org/clutter10~10_api/clutter.shadereffect
-const ColorEffect = GObject.registerClass(
-  {},
-  class ColorShader extends Clutter.ShaderEffect {
-    _init(params) {
-      this._red = null;
-      this._green = null;
-      this._blue = null;
-      this._blend = null;
-
-      this._static = true;
-
-      // initialize without color as a parameter
-
-      let _color = params.color;
-      delete params.color;
-
-      super._init(params);
-
-      // set shader color
-      if (_color) this.color = _color;
-    }
-
-    preload(path) {
-      // set shader source
-      this._source = getColorEffectShaderSource(path);
-      if (this._source) this.set_shader_source(this._source);
-
-      this.update_enabled();
-    }
-
-    get red() {
-      return this._red;
-    }
-
-    set red(value) {
-      if (this._red !== value) {
-        this._red = value;
-
-        this.set_uniform_value('red', parseFloat(this._red - 1e-6));
-      }
-    }
-
-    get green() {
-      return this._green;
-    }
-
-    set green(value) {
-      if (this._green !== value) {
-        this._green = value;
-
-        this.set_uniform_value('green', parseFloat(this._green - 1e-6));
-      }
-    }
-
-    get blue() {
-      return this._blue;
-    }
-
-    set blue(value) {
-      if (this._blue !== value) {
-        this._blue = value;
-
-        this.set_uniform_value('blue', parseFloat(this._blue - 1e-6));
-      }
-    }
-
-    get blend() {
-      return this._blend;
-    }
-
-    set blend(value) {
-      if (this._blend !== value) {
-        this._blend = value;
-
-        this.set_uniform_value('blend', parseFloat(this._blend - 1e-6));
-      }
-      this.update_enabled();
-    }
-
-    set color(rgba) {
-      let [r, g, b, a] = rgba;
-      this.red = r;
-      this.green = g;
-      this.blue = b;
-      this.blend = a;
-    }
-
-    get color() {
-      return [this.red, this.green, this.blue, this.blend];
-    }
-
-    /// False set function, only cares about the color. Too hard to change.
-    set(params) {
-      this.color = params.color;
-    }
-
-    update_enabled() {
-      this.set_enabled(this.blend > 0 && this._static);
-    }
-
-    vfunc_paint_target(paint_node = null, paint_context = null) {
-      this.set_uniform_value('tex', 0);
-
-      if (paint_node && paint_context)
-        super.vfunc_paint_target(paint_node, paint_context);
-      else if (paint_node) super.vfunc_paint_target(paint_node);
-      else super.vfunc_paint_target();
-    }
-  }
-);
-
-//-----------------------------
-// ./effects/easing.js
-//-----------------------------
-
-//'use strict';
-
-/* PennerEasing */
-const Linear = {
-  easeNone: (t, b, c, d) => {
-    return (c * t) / d + b;
-  },
-  easeIn: (t, b, c, d) => {
-    return (c * t) / d + b;
-  },
-  easeOut: (t, b, c, d) => {
-    return (c * t) / d + b;
-  },
-  easeInOut: (t, b, c, d) => {
-    return (c * t) / d + b;
-  },
-};
-
-const Bounce = {
-  easeIn: (t, b, c, d) => {
-    return c - Bounce.easeOut(d - t, 0, c, d) + b;
-  },
-
-  easeOut: (t, b, c, d) => {
-    if ((t /= d) < 1 / 2.75) {
-      return c * (7.5625 * t * t) + b;
-    } else if (t < 2 / 2.75) {
-      let postFix = (t -= 1.5 / 2.75);
-      return c * (7.5625 * postFix * t + 0.75) + b;
-    } else if (t < 2.5 / 2.75) {
-      let postFix = (t -= 2.25 / 2.75);
-      return c * (7.5625 * postFix * t + 0.9375) + b;
-    } else {
-      let postFix = (t -= 2.625 / 2.75);
-      return c * (7.5625 * postFix * t + 0.984375) + b;
-    }
-  },
-
-  easeInOut: (t, b, c, d) => {
-    if (t < d / 2) return Bounce.easeIn(t * 2, 0, c, d) * 0.5 + b;
-    else return Bounce.easeOut(t * 2 - d, 0, c, d) * 0.5 + c * 0.5 + b;
-  },
-};
-
-var Back = {
-  easeIn: (t, b, c, d) => {
-    let s = 1.70158;
-    let postFix = (t /= d);
-    return c * postFix * t * ((s + 1) * t - s) + b;
-  },
-
-  easeOut: (t, b, c, d) => {
-    let s = 1.70158;
-    return c * ((t = t / d - 1) * t * ((s + 1) * t + s) + 1) + b;
-  },
-
-  easeInOut: (t, b, c, d) => {
-    let s = 1.70158;
-    if ((t /= d / 2) < 1)
-      return (c / 2) * (t * t * (((s *= 1.525) + 1) * t - s)) + b;
-    let postFix = (t -= 2);
-    return (c / 2) * (postFix * t * (((s *= 1.525) + 1) * t + s) + 2) + b;
-  },
-};
-
-//-----------------------------
-// ./effects/tint_effect.js
-//-----------------------------
-
-// Adapted from from Blur-My-Shell
-
-//'use strict';
-
-//import Shell from 'gi://Shell';
-//import GLib from 'gi://GLib';
-//import GObject from 'gi://GObject';
-//import Clutter from 'gi://Clutter';
-
-const getTintShaderSource = (extensionDir) => {
-  const SHADER_PATH = GLib.build_filenamev([
-    extensionDir,
-    'effects',
-    'tint_effect.glsl',
-  ]);
-
-  try {
-    return Shell.get_file_contents_utf8_sync(SHADER_PATH);
-  } catch (e) {
-    log(`[d2dl] error loading shader from ${SHADER_PATH}: ${e}`);
-    return null;
-  }
-};
-
-/// New Clutter Shader Effect that simply mixes a color in, the class applies
-/// the GLSL shader programmed into vfunc_get_static_shader_source and applies
-/// it to an Actor.
-///
-/// Clutter Shader Source Code:
-/// https://github.com/GNOME/clutter/blob/master/clutter/clutter-shader-effect.c
-///
-/// GJS Doc:
-/// https://gjs-docs.gnome.org/clutter10~10_api/clutter.shadereffect
-const TintEffect = GObject.registerClass(
-  {},
-  class TintEffect extends Clutter.ShaderEffect {
-    _init(params) {
-      this._red = null;
-      this._green = null;
-      this._blue = null;
-      this._blend = null;
-
-      this._static = true;
-
-      // initialize without color as a parameter
-
-      let _color = params.color;
-      delete params.color;
-
-      super._init(params);
-
-      // set shader color
-
-      if (_color) this.color = _color;
-    }
-
-    preload(path) {
-      // set shader source
-      this._source = getTintShaderSource(path);
-      if (this._source) this.set_shader_source(this._source);
-
-      this.update_enabled();
-    }
-
-    get red() {
-      return this._red;
-    }
-
-    set red(value) {
-      if (this._red !== value) {
-        this._red = value;
-
-        this.set_uniform_value('red', parseFloat(this._red - 1e-6));
-      }
-    }
-
-    get green() {
-      return this._green;
-    }
-
-    set green(value) {
-      if (this._green !== value) {
-        this._green = value;
-
-        this.set_uniform_value('green', parseFloat(this._green - 1e-6));
-      }
-    }
-
-    get blue() {
-      return this._blue;
-    }
-
-    set blue(value) {
-      if (this._blue !== value) {
-        this._blue = value;
-
-        this.set_uniform_value('blue', parseFloat(this._blue - 1e-6));
-      }
-    }
-
-    get blend() {
-      return this._blend;
-    }
-
-    set blend(value) {
-      if (value > 0.5) {
-        value *= 0.75;
-        if (value < 0.5) {
-          value = 0.5;
-        }
-      }
-      if (this._blend !== value) {
-        this._blend = value;
-
-        this.set_uniform_value('blend', parseFloat(this._blend - 1e-6));
-      }
-      this.update_enabled();
-    }
-
-    set color(rgba) {
-      let [r, g, b, a] = rgba;
-      this.red = r;
-      this.green = g;
-      this.blue = b;
-      this.blend = a;
-    }
-
-    get color() {
-      return [this.red, this.green, this.blue, this.blend];
-    }
-
-    /// False set function, only cares about the color. Too hard to change.
-    set(params) {
-      this.color = params.color;
-    }
-
-    update_enabled() {
-      this.set_enabled(this.blend > 0 && this._static);
-    }
-
-    vfunc_paint_target(paint_node = null, paint_context = null) {
-      this.set_uniform_value('tex', 0);
-
-      if (paint_node && paint_context)
-        super.vfunc_paint_target(paint_node, paint_context);
-      else if (paint_node) super.vfunc_paint_target(paint_node);
-      else super.vfunc_paint_target();
-    }
-  }
-);
-
-//-----------------------------
-// ./effects/monochrome_effect.js
-//-----------------------------
-
-// Adapted from from Blur-My-Shell
-// Adapted from https://gist.github.com/yiwenl/1c2ce935e66b82c7df5f
-
-//'use strict';
-
-//import Shell from 'gi://Shell';
-//import GLib from 'gi://GLib';
-//import GObject from 'gi://GObject';
-//import Clutter from 'gi://Clutter';
-
-const getMonochromeShaderSource = (extensionDir) => {
-  const SHADER_PATH = GLib.build_filenamev([
-    extensionDir,
-    'effects',
-    'monochrome_effect.glsl',
-  ]);
-
-  try {
-    return Shell.get_file_contents_utf8_sync(SHADER_PATH);
-  } catch (e) {
-    log(`[d2dl] error loading shader from ${SHADER_PATH}: ${e}`);
-    return null;
-  }
-};
-
-/// New Clutter Shader Effect that simply mixes a color in, the class applies
-/// the GLSL shader programmed into vfunc_get_static_shader_source and applies
-/// it to an Actor.
-///
-/// Clutter Shader Source Code:
-/// https://github.com/GNOME/clutter/blob/master/clutter/clutter-shader-effect.c
-///
-/// GJS Doc:
-/// https://gjs-docs.gnome.org/clutter10~10_api/clutter.shadereffect
-const MonochromeEffect = GObject.registerClass(
-  {},
-  class MonochromeEffect extends Clutter.ShaderEffect {
-    _init(params) {
-      this._red = null;
-      this._green = null;
-      this._blue = null;
-      this._blend = null;
-
-      this._static = true;
-
-      // initialize without color as a parameter
-
-      let _color = params.color;
-      delete params.color;
-
-      super._init(params);
-
-      // set shader color
-      if (_color) this.color = _color;
-    }
-
-    preload(path) {
-      // set shader source
-      this._source = getMonochromeShaderSource(path);
-      if (this._source) this.set_shader_source(this._source);
-
-      this.update_enabled();
-    }
-
-    get red() {
-      return this._red;
-    }
-
-    set red(value) {
-      if (this._red !== value) {
-        this._red = value;
-
-        this.set_uniform_value('red', parseFloat(this._red - 1e-6));
-      }
-    }
-
-    get green() {
-      return this._green;
-    }
-
-    set green(value) {
-      if (this._green !== value) {
-        this._green = value;
-
-        this.set_uniform_value('green', parseFloat(this._green - 1e-6));
-      }
-    }
-
-    get blue() {
-      return this._blue;
-    }
-
-    set blue(value) {
-      if (this._blue !== value) {
-        this._blue = value;
-
-        this.set_uniform_value('blue', parseFloat(this._blue - 1e-6));
-      }
-    }
-
-    get blend() {
-      return this._blend;
-    }
-
-    set blend(value) {
-      if (value > 0.5) {
-        value *= 0.75;
-        if (value < 0.5) {
-          value = 0.5;
-        }
-      }
-      if (this._blend !== value) {
-        this._blend = value;
-
-        this.set_uniform_value('blend', parseFloat(this._blend - 1e-6));
-      }
-      this.update_enabled();
-    }
-
-    set color(rgba) {
-      let [r, g, b, a] = rgba;
-      this.red = r;
-      this.green = g;
-      this.blue = b;
-      this.blend = a;
-    }
-
-    get color() {
-      return [this.red, this.green, this.blue, this.blend];
-    }
-
-    /// False set function, only cares about the color. Too hard to change.
-    set(params) {
-      this.color = params.color;
-    }
-
-    update_enabled() {
-      this.set_enabled(this.blend > 0 && this._static);
-    }
-
-    vfunc_paint_target(paint_node = null, paint_context = null) {
-      this.set_uniform_value('tex', 0);
-
-      if (paint_node && paint_context)
-        super.vfunc_paint_target(paint_node, paint_context);
-      else if (paint_node) super.vfunc_paint_target(paint_node);
-      else super.vfunc_paint_target();
-    }
-  }
-);

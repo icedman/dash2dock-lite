@@ -76,9 +76,6 @@ export let Animator = class {
       icon._pos = [...pos];
       icon._fixedPosition = [...pos];
 
-      // moved to findIcons
-      // icon._icon.set_icon_size(iconSize * dock.extension.icon_quality);
-
       // get nearest
       let bposcenter = [...pos];
       bposcenter[0] += (iconSize * scaleFactor) / 2;
@@ -175,6 +172,16 @@ export let Animator = class {
       icon._scale = scale;
       icon._targetScale = scale * scaleFactor;
       icon._icon.set_size(iconSize, iconSize);
+
+      if (icon._scale > 1.25) {
+        icon._icon.set_icon_size(
+          dock._iconSizeScaledDown * this.extension.icon_quality
+        );
+      } else {
+        icon._icon.set_icon_size(
+          dock._iconSizeScaledDown
+        );
+      }
       // icon._icon.set_icon_size(iconSize * dock.extension.icon_quality);
 
       if (!icon._pos) {

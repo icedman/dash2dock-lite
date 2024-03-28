@@ -48,8 +48,12 @@ install-zip: publish
 g44: install
 	mkdir -p ./dist
 	python3 ./rolldown.py
+	cp ./dist/prefs.js ~/.local/share/gnome-shell/extensions/dash2dock-lite@icedman.github.com/
 	cp ./dist/extension.js ~/.local/share/gnome-shell/extensions/dash2dock-lite@icedman.github.com/
 	cp ./dist/metadata.json ~/.local/share/gnome-shell/extensions/dash2dock-lite@icedman.github.com/
+
+test-prefs-g44: g44
+	gnome-extensions prefs dash2dock-lite@icedman.github.com
 
 test-prefs:
 	gnome-extensions prefs dash2dock-lite@icedman.github.com

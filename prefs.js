@@ -222,11 +222,13 @@ export default class Preferences extends ExtensionPreferences {
     //   builder.get_object('animation-magnify').set_value(0);
     // });
 
-    builder.get_object('reset').connect('clicked', () => {
-      settings.list_keys().forEach((k) => {
-        settings.reset(k);
+    if (builder.get_object('reset')) {
+      builder.get_object('reset').connect('clicked', () => {
+        settings.list_keys().forEach((k) => {
+          settings.reset(k);
+        });
       });
-    });
+    }
 
     if (builder.get_object('self-test')) {
       builder.get_object('self-test').connect('clicked', () => {
@@ -267,13 +269,19 @@ export default class Preferences extends ExtensionPreferences {
     this.addButtonEvents(window, builder, settings);
     this.addMenu(window, builder);
 
-    builder.get_object('peek-hidden-icons-row').visible = false;
+    if (builder.get_object('peek-hidden-icons-row')) {
+      builder.get_object('peek-hidden-icons-row').visible = false;
+    }
 
     let toggle_experimental = () => {
       let exp = false; // settingsKeys.getValue('experimental-features');
       // builder.get_object('dock-location-row').visible = exp;
-      builder.get_object('lamp-app-animation-row').visible = exp;
-      builder.get_object('self-test-row').visible = exp;
+      if (builder.get_object('lamp-app-animation-row')) {
+        builder.get_object('lamp-app-animation-row').visible = exp;
+      }
+      if (builder.get_object('self-test-row')) {
+        builder.get_object('self-test-row').visible = exp;
+      }
     };
 
     settings.connect('changed::experimental-features', () => {
@@ -295,6 +303,7 @@ export default class Preferences extends ExtensionPreferences {
     this.updateMonitors();
 
     this.window = window;
+    
   }
 
   preloadPresets(themes_path) {
@@ -333,6 +342,7 @@ export default class Preferences extends ExtensionPreferences {
     window.insert_action_group('themes', actionGroup);
 
     let theme = this._builder.get_object('theme');
+    if (!theme) return;
     let model = new Gio.Menu();
     let idx = 0;
     this._themed_presets.forEach((m) => {

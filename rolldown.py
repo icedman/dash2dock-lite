@@ -14,7 +14,7 @@ def modifyMetadata():
     o = open("./dist/metadata.json", "w")
     for l in open("./metadata.json", "r"):
         if '"45"' in l:
-            l = '"42", "43", "44"\n'
+            l = '"43", "44"\n'
         o.write(l)
 
 def dump(f):

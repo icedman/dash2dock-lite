@@ -31,13 +31,32 @@ publish:
 	cp -R apps ./build
 	cp -R preferences ./build
 	cp -R effects ./build
-	rm -rf ./*.py
 	rm -rf ./*.zip
 	rm -rf build/apps/*.desktop
 	rm -rf build/*_.js
-	rm ./imports.txt
+	rm -rf build/imports*.js
 	cd build ; \
 	zip -qr ../dash2dock-lite@icedman.github.com.zip .
+
+publish-g44:
+	echo "publishing..."
+	rm -rf build
+	mkdir build
+	rm -R ./dist
+	mkdir -p ./dist
+	python3 ./rolldown.py
+	cp LICENSE ./build
+	cp ./dist/*.js ./build
+	cp metadata.json ./build
+	cp stylesheet.css ./build
+	cp CHANGELOG.md ./build
+	cp README.md ./build
+	cp -R schemas ./build
+	rm -rf ./*.zip
+	rm -rf build/apps/*.desktop
+	rm -rf build/*_.js
+	cd build ; \
+	zip -qr ../dash2dock-lite@icedman.github.com-g44.zip .
 
 install-zip: publish
 	echo "installing zip..."
@@ -48,6 +67,9 @@ install-zip: publish
 g44: install
 	mkdir -p ./dist
 	python3 ./rolldown.py
+	rm -rf ~/.local/share/gnome-shell/extensions/dash2dock-lite@icedman.github.com/*.js
+	rm -rf ~/.local/share/gnome-shell/extensions/dash2dock-lite@icedman.github.com/apps
+	rm -rf ~/.local/share/gnome-shell/extensions/dash2dock-lite@icedman.github.com/effects
 	cp ./dist/prefs.js ~/.local/share/gnome-shell/extensions/dash2dock-lite@icedman.github.com/
 	cp ./dist/extension.js ~/.local/share/gnome-shell/extensions/dash2dock-lite@icedman.github.com/
 	cp ./dist/metadata.json ~/.local/share/gnome-shell/extensions/dash2dock-lite@icedman.github.com/

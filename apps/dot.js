@@ -1,30 +1,41 @@
 // adapted from https://github.com/jderose9/dash-to-panel
 // adapted from https://github.com/micheleg/dash-to-dock
 
-const { Clutter, GObject, GLib, PangoCairo, Pango } = imports.gi;
-const Cairo = imports.cairo;
+import GObject from 'gi://GObject';
+import Clutter from 'gi://Clutter';
+import Cairo from 'gi://cairo';
+import St from 'gi://St';
 
-const ExtensionUtils = imports.misc.extensionUtils;
-const Me = ExtensionUtils.getCurrentExtension();
-const Drawing = Me.imports.drawing.Drawing;
+import { Drawing } from '../drawing.js';
 
-let size = 400;
-
-var Dot = GObject.registerClass(
+export const Dot = GObject.registerClass(
   {},
-  class Dot extends Clutter.Actor {
-    _init(x) {
+  class Dot extends St.Widget {
+    _init(x, settings = {}) {
       super._init();
 
-      if (x) size = x;
+      let size = x || 400;
 
-      this._canvas = new Clutter.Canvas();
-      this._canvas.connect('draw', this.on_draw.bind(this));
-      this._canvas.invalidate();
-      this._canvas.set_size(size, size);
-      this.set_size(size, size);
-      this.set_content(this._canvas);
-      this.reactive = false;
+      this._canvas = new DotCanvas(settings);
+      this._canvas.width = size;
+      this._canvas.height = size;
+      this.add_child(this._canvas);
+
+      this.set_state = this._canvas.set_state.bind(this._canvas);
+    }
+
+    redraw() {
+      this.visible = true;
+      this._canvas.redraw();
+    }
+  }
+);
+
+const DotCanvas = GObject.registerClass(
+  {},
+  class DotCanvas extends St.DrawingArea {
+    _init(settings = {}) {
+      super._init();
 
       this.state = {};
 
@@ -33,7 +44,7 @@ var Dot = GObject.registerClass(
     }
 
     redraw() {
-      this._canvas.invalidate();
+      this.queue_repaint();
     }
 
     set_state(s) {
@@ -50,7 +61,12 @@ var Dot = GObject.registerClass(
       }
     }
 
-    on_draw(canvas, ctx, width, height) {
+    vfunc_repaint() {
+      let ctx = this.get_context();
+      let [width, height] = this.get_surface_size();
+
+      let size = width;
+
       if (!this.state || !this.state.color || !this.state.count) return;
 
       const dot_color = this.state.color;
@@ -87,9 +103,9 @@ var Dot = GObject.registerClass(
       ctx.$dispose();
     }
 
-    destroy() {}
-
     _draw_segmented(ctx, state) {
+      let [size, _] = this.get_surface_size();
+
       let count = state.count;
       if (count > 4) count = 4;
       let height = this._barHeight;
@@ -116,6 +132,8 @@ var Dot = GObject.registerClass(
     }
 
     _draw_dashes(ctx, state) {
+      let [size, _] = this.get_surface_size();
+
       let count = state.count;
       if (count > 4) count = 4;
       let height = this._barHeight + 2;
@@ -145,6 +163,8 @@ var Dot = GObject.registerClass(
     }
 
     _draw_squares(ctx, state) {
+      let [size, _] = this.get_surface_size();
+
       let count = state.count;
       if (count > 4) count = 4;
       let height = this._barHeight + 5;
@@ -173,6 +193,8 @@ var Dot = GObject.registerClass(
     }
 
     _draw_triangles(ctx, state) {
+      let [size, _] = this.get_surface_size();
+
       let count = state.count;
       if (count > 4) count = 4;
       let height = this._barHeight + 6;
@@ -203,6 +225,8 @@ var Dot = GObject.registerClass(
     }
 
     _draw_diamonds(ctx, state) {
+      let [size, _] = this.get_surface_size();
+
       let count = state.count;
       if (count > 4) count = 4;
       let height = this._barHeight + 10;
@@ -234,6 +258,8 @@ var Dot = GObject.registerClass(
     }
 
     _draw_dots(ctx, state) {
+      let [size, _] = this.get_surface_size();
+
       let count = state.count;
       if (count > 4) count = 4;
       let height = this._barHeight;
@@ -266,6 +292,8 @@ var Dot = GObject.registerClass(
     }
 
     _draw_binary(ctx, state) {
+      let [size, _] = this.get_surface_size();
+
       let count = 4;
       let n = Math.min(15, state.count);
       let binaryValue = String('0000' + (n >>> 0).toString(2)).slice(-4);

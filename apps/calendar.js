@@ -1,36 +1,55 @@
-const { Clutter, GObject, GLib, PangoCairo, Pango } = imports.gi;
-const Cairo = imports.cairo;
+import GObject from 'gi://GObject';
+import Clutter from 'gi://Clutter';
+import Cairo from 'gi://cairo';
+import St from 'gi://St';
 
-const ExtensionUtils = imports.misc.extensionUtils;
-const Me = ExtensionUtils.getCurrentExtension();
-const Drawing = Me.imports.drawing.Drawing;
+import { Drawing } from '../drawing.js';
 
-let size = 400;
-
-var Calendar = GObject.registerClass(
+export const Calendar = GObject.registerClass(
   {},
-
-  // todo St.DrawingArea
-  class Calendar extends Clutter.Actor {
-    _init(x) {
+  class Calendar extends St.Widget {
+    _init(x, settings = {}) {
       super._init();
 
-      if (x) size = x;
+      let size = x || 400;
 
-      this._canvas = new Clutter.Canvas();
-      this._canvas.connect('draw', this.on_draw.bind(this));
-      this._canvas.invalidate();
-      this._canvas.set_size(size, size);
-      this.set_size(size, size);
-      this.set_content(this._canvas);
-      this.reactive = false;
+      this._canvas = new CalendarCanvas(settings);
+      this._canvas.width = size;
+      this._canvas.height = size;
+      this.add_child(this._canvas);
     }
 
     redraw() {
-      this._canvas.invalidate();
+      this.visible = true;
+      this._canvas.redraw();
+    }
+  }
+);
+
+const CalendarCanvas = GObject.registerClass(
+  {},
+  class CalendarCanvas extends St.DrawingArea {
+    _init(settings = {}) {
+      super._init();
+
+      this.settings = {
+        dark_color: [0.2, 0.2, 0.2, 1.0],
+        light_color: [1.0, 1.0, 1.0, 1.0],
+        accent_color: [1.0, 0.0, 0.0, 1.0],
+        ...settings,
+      };
     }
 
-    on_draw(canvas, ctx, width, height) {
+    redraw() {
+      this.queue_repaint();
+    }
+
+    vfunc_repaint() {
+      let ctx = this.get_context();
+      let [width, height] = this.get_surface_size();
+
+      let size = width;
+
       const hd_color = 'red';
       const bg_color = 'white';
       const day_color = 'black';
@@ -70,7 +89,5 @@ var Calendar = GObject.registerClass(
 
       ctx.$dispose();
     }
-
-    destroy() {}
   }
 );

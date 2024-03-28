@@ -1,8 +1,5 @@
-'use strict';
-
-import PangoCairo from 'gi://PangoCairo';
-import Pango from 'gi://Pango';
-import Clutter from 'gi://Clutter';
+const { Clutter, GObject, GLib, PangoCairo, Pango } = imports.gi;
+const Cairo = imports.cairo;
 
 function draw_rotated_line(ctx, color, width, angle, len, offset) {
   offset = offset || 0;
@@ -129,7 +126,7 @@ function set_color_rgba(ctx, red, green, blue, alpha) {
   ctx.setSourceRGBA(red, green, blue, alpha);
 }
 
-export const Drawing = {
+var Drawing = {
   set_color,
   set_color_rgba,
   draw_rotated_line,

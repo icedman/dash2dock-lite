@@ -1,20 +1,11 @@
 'use strict';
 
-const { St, Shell, Gio, GLib, Gtk, Meta, Clutter } = imports.gi;
+import * as Main from 'resource:///org/gnome/shell/ui/main.js';
+import Graphene from 'gi://Graphene';
 
-const Main = imports.ui.main;
-const Dash = imports.ui.dash.Dash;
-const Fav = imports.ui.appFavorites;
-const Layout = imports.ui.layout;
-const Point = imports.gi.Graphene.Point;
+const Point = Graphene.Point;
 
-const ExtensionUtils = imports.misc.extensionUtils;
-const Me = ExtensionUtils.getCurrentExtension();
-
-const getPointer = Me.imports.utils.getPointer;
-const warpPointer = Me.imports.utils.warpPointer;
-
-const { schemaId, settingsKeys, SettingsKeys } = Me.imports.preferences.keys;
+import { getPointer, warpPointer } from './utils.js';
 
 var print = (msg) => {
   log(msg);
@@ -31,20 +22,29 @@ function add_message(seqs, msg, delay) {
   });
 }
 
-function add_move_pointer(seqs, x, y, delay) {
+function add_move_pointer(seqs, x, y, delay, ext) {
   seqs.push({
     x: x,
     y: y,
     func: (t) => {
       let p = getPointer();
       // print(`move ${t.x} ${t.y}`);
-      warpPointer(p, t.x, t.y);
+      warpPointer(p, t.x, t.y, ext);
     },
     delay,
   });
+
+  seqs.push({
+    x: x,
+    y: y,
+    func: (t) => {
+      ext.simulated_pointer = null;
+    },
+    delay: 5,
+  });
 }
 
-function add_slide_pointer(seqs, x, y, x2, y2, intervals, delay) {
+function add_slide_pointer(seqs, x, y, x2, y2, intervals, delay, ext) {
   let dd = delay / intervals;
   let dx = (x2 - x) / intervals;
   let dy = (y2 - y) / intervals;
@@ -57,13 +57,22 @@ function add_slide_pointer(seqs, x, y, x2, y2, intervals, delay) {
       func: (t) => {
         let p = getPointer();
         // print(`warp ${t.x} ${t.y}`);
-        warpPointer(p, t.x, t.y);
+        warpPointer(p, t.x, t.y, ext);
       },
       delay: dd,
     });
     x += dx;
     y += dy;
   }
+
+  seqs.push({
+    x: x,
+    y: y,
+    func: (t) => {
+      ext.simulated_pointer = null;
+    },
+    delay: 5,
+  });
 }
 
 function add_test_values(seqs, extension, settings, name, value, values) {
@@ -80,14 +89,23 @@ function add_test_values(seqs, extension, settings, name, value, values) {
     });
 
     if (k.test) {
-      let x = extension.dashContainer.position.x;
-      let y = extension.dashContainer.position.y;
-      let w = extension.dashContainer.width;
-      let h = extension.dashContainer.height;
+      let x = extension.dock.position.x;
+      let y = extension.dock.position.y;
+      let w = extension.dock.width;
+      let h = extension.dock.height;
       switch (k.test.pointer) {
         case 'slide-through':
-          add_slide_pointer(seqs, x, y + h / 2, x + w, y + h / 2, 20, 1.0);
-          add_move_pointer(seqs, 0, 0, 0.5);
+          add_slide_pointer(
+            seqs,
+            x,
+            y + h / 2,
+            x + w,
+            y + h / 2,
+            20,
+            1.0,
+            extension
+          );
+          add_move_pointer(seqs, 0, 0, 0.5, extension);
           break;
       }
     }
@@ -149,16 +167,16 @@ function addMotionTests(_seqs, extension, settings) {
     delay: 500,
   });
 
-  add_move_pointer(_seqs, 0, 0, 0.5);
+  add_move_pointer(_seqs, 0, 0, 0.5, extension);
 
   // animation
-  let x = extension.dashContainer.position.x;
-  let y = extension.dashContainer.position.y;
-  let w = extension.dashContainer.width;
-  let h = extension.dashContainer.height;
-  add_slide_pointer(_seqs, x, y + h / 2, x + w, y + h / 2, 40, 1.8);
-  add_slide_pointer(_seqs, x + w, y + h / 2, x, y + h / 2, 40, 1.8);
-  add_move_pointer(_seqs, 0, 0, 0.5);
+  let x = extension.dock.position.x;
+  let y = extension.dock.position.y;
+  let w = extension.dock.width;
+  let h = extension.dock.height;
+  add_slide_pointer(_seqs, x, y + h / 2, x + w, y + h / 2, 40, 1.8, extension);
+  add_slide_pointer(_seqs, x + w, y + h / 2, x, y + h / 2, 40, 1.8, extension);
+  add_move_pointer(_seqs, 0, 0, 0.5, extension);
 
   // autohide
 
@@ -170,25 +188,37 @@ function addMotionTests(_seqs, extension, settings) {
     delay: 1000,
   });
 
-  _seqs.push({
-    func: () => {
-      extension.autohider.preview();
-    },
-    delay: 500,
-  });
-  add_move_pointer(_seqs, 0, 0, 1);
+  // _seqs.push({
+  //   func: () => {
+  //     extension._autohiders().forEach((autohider) => {
+  //       autohider.preview();
+  //     });
+  //   },
+  //   delay: 500,
+  // });
+  add_move_pointer(_seqs, 0, 0, 1, extension);
 
-  add_slide_pointer(_seqs, x, y + h / 2, x + w, y + h / 2, 40, 1.8);
-  add_slide_pointer(_seqs, x + w, y + h, x, y + h, 40, 1.8);
-  add_move_pointer(_seqs, 0, 0, 0.5);
+  add_slide_pointer(_seqs, x, y + h / 2, x + w, y + h / 2, 40, 1.8, extension);
+  add_slide_pointer(_seqs, x + w, y + h, x, y + h, 40, 1.8, extension);
+  add_move_pointer(_seqs, 0, 0, 0.5, extension);
 
   // reset
 
   _seqs.push({
     func: () => {
-      extension.autohider.preview(false);
+      // extension._autohiders().forEach((autohider) => {
+      //   autohider.preview(false);
+      // });
       settings.setValue('animate-icons', anim);
       settings.setValue('autohide-dash', hide);
+    },
+    delay: 500,
+  });
+
+  // cleanup
+  _seqs.push({
+    func: () => {
+      extension.simulated_pointer = null;
     },
     delay: 500,
   });
@@ -226,7 +256,7 @@ function addPreferenceTests(_seqs, extension, settings) {
   add_message(_seqs, 'done', 0);
 }
 
-var runTests = (extension, settings) => {
+export const runTests = (extension, settings) => {
   let _seqs = [];
   addMotionTests(_seqs, extension, settings);
   addPreferenceTests(_seqs, extension, settings);

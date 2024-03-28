@@ -1,13 +1,11 @@
 'use strict';
 
-const { St, Shell, GObject, Gio, GLib, Gtk, Meta, Clutter } = imports.gi;
+import Gio from 'gi://Gio';
+import St from 'gi://St';
 
-const ExtensionUtils = imports.misc.extensionUtils;
-const Me = ExtensionUtils.getCurrentExtension();
-// const CustomStylesPath = Me.dir.get_child('./').get_path();
 const CustomStylesPath = '/tmp';
 
-var Style = class {
+export const Style = class {
   constructor() {
     this.styles = {};
     this.style_contents = {};

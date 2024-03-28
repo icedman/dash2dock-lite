@@ -1,6 +1,6 @@
 <br/>
 <p align="center">
-  <h3 align="center">Dash2Dock Lite</h3>
+  <h3 align="center">Dash2Dock Animated</h3>
 
   <p align="center">
     A GNOME Shell 40+ Extension
@@ -9,18 +9,25 @@
   </p>
 </p>
 
+[!["Buy Me A Coffee"](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://www.buymeacoffee.com/icedman)
+
 ![Contributors](https://img.shields.io/github/contributors/icedman/dash2dock-lite?color=dark-green) ![Forks](https://img.shields.io/github/forks/icedman/dash2dock-lite?style=social) ![Stargazers](https://img.shields.io/github/stars/icedman/dash2dock-lite?style=social) ![Issues](https://img.shields.io/github/issues/icedman/dash2dock-lite) ![License](https://img.shields.io/github/license/icedman/dash2dock-lite) 
 
+![Screen Shot](https://raw.githubusercontent.com/icedman/dash2dock-lite/main/screenshots/Screenshot%20from%202024-03-19%2015-31-27.png)
 
-![Screen Shot](https://raw.githubusercontent.com/icedman/dash2dock-lite/main/screenshots/Screenshot%20from%202022-10-17%2021-33-29.png)
+### Notice
+
+* Gnome 45 port is ready for testing
+* Gnome 44 and prior will be under g44 branch - and will largely be unsupported.
 
 ### Features
 
+* Multi-monitor support (new!)
 * Dash docked at the desktop
 * Animated dock icons
 * Resize icons
 * Autohide/intellihide
-* Dock position - left, right layout
+* Dock positions: bottom, top, left, right
 * Scrollwheel to cycle windows
 * Click to maximize/minimize windows
 * Style top panel
@@ -30,6 +37,7 @@
 * Dynamic calendar
 * Dynamic trash icon
 * Mounted devices
+* Downloads icon with fan animation (new!)
 * Icon color effects(Tint, Monochrome)
 
 ### Prerequisites
@@ -62,13 +70,11 @@ From Gnome Extensions Repository
 
 Visit [https://extensions.gnome.org/extension/4994/dash2dock-lite/](https://extensions.gnome.org/extension/4994/dash2dock-lite/)
 
-## Alternative
+## Theme Support
 
-Checkout Dash Animator. It adds animation to Dash-to-Dock.
+Export your settings under Style > Themes Button > "Export"...
 
-```bash
-$ git clone https://github.com/icedman/dash-animator.git
-```
+This will be saved to ```/tmp/theme.json```. Edit this json file and save under ```~/.config/d2da/themes``` or at ```{extension_path}/dash2dock-animated/themes``` so that it becomes available at the extension settings app.
 
 ## Dynamic Icons
 
@@ -86,6 +92,40 @@ Modify the script to match your system if necessary. And make sure that the scri
 ```sh
 chmod +x {EXTENSION_PATH}/apps/empty-trash.sh
 ```
+
+## Bug Reporting
+
+When reporting bugs. Please indicate the following:
+
+* Linux Flavor/Distribution and version
+* Gnome version (45.xx)
+* Dash2Dock Animated release number
+
+Check for any exceptions in the logs by running the following at the terminal:
+
+```sh
+journalctl /usr/bin/gnome-shell -f -o cat
+```
+
+To check incompatibilities with other extensions, try running Dash2Dock Animated with other extensions disabled.
+
+To check for lag or inefficiency. Run the following in the terminal and observer gnome-shell CPU usage.
+
+```sh
+top -d 0.5
+```
+
+On my old Dell XPS13 i5-6200U. CPU usage is about 50% with icons quality high, frame rate high, shadows on.
+
+Please be specific on the errors encountered. Add screenshots whenever possible.
+
+## Testing Rig
+
+* Arch Linux (Primary development machine)
+* Ubuntu 23.10 (Gnome 45)
+* Debian 12.x (Gnome 43.9)
+* Gnome OS Nightly (virtual, Gnome 46)
+* Fedora 39 (virtual)
 
 ## License
 

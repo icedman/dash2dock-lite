@@ -51,3 +51,7 @@ theme.unload_stylesheet(file);
 ## coolest animation
 
 https://github.com/PuruVJ/macos-web-svelte-dock
+
+## Preferences improvement
+
+AdwExpanderRow

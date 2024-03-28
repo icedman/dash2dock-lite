@@ -2,12 +2,12 @@
 <interface>
   <object class="AdwPreferencesPage" id="others">
     <property name="name">others</property>
-    <property name="title" translatable="yes">Others</property>
+    <property name="title" translatable="yes">More</property>
     <property name="icon-name">other-symbolic</property>
     <child>
       <object class="AdwPreferencesGroup">
-        <property name="title" translatable="yes">Special Icons</property>
-        <property name="description" translatable="yes">Add dynamic effects or animationts to the dash icons.</property>
+        <property name="title" translatable="yes">Icon Visiblity and Location</property>
+        <property name="description" translatable="yes">Show or hide certain icons.</property>
         <child>
           <object class="AdwActionRow">
             <property name="title" translatable="yes">Favorite Apps Only</property>
@@ -34,6 +34,24 @@
         </child>
         <child>
           <object class="AdwActionRow">
+            <property name="title" translatable="yes">Apps Icon at Front</property>
+            <property name="subtitle" translatable="yes">Position the Overview Apps icon at the front.</property>
+            <property name="activatable-widget">apps-icon-front</property>
+            <child>
+              <object class="GtkSwitch" id="apps-icon-front">
+                <property name="valign">center</property>
+              </object>
+            </child>
+          </object>
+        </child>
+      </object>
+    </child>
+    <child>
+      <object class="AdwPreferencesGroup">
+        <property name="title" translatable="yes">Dynamic Icons</property>
+        <property name="description" translatable="yes">Add icons that change according to system state.</property>
+        <child>
+          <object class="AdwActionRow">
             <property name="title" translatable="yes">Trash</property>
             <property name="subtitle" translatable="yes">Add a dynamic Trash icon which changes with its state and which has access to Empty Trash action.</property>
             <property name="activatable-widget">trash-icon</property>
@@ -58,12 +76,70 @@
         </child>
         <child>
           <object class="AdwActionRow">
+            <property name="title" translatable="yes">Downloads</property>
+            <property name="subtitle" translatable="yes">Show downloads folder to access recent download.</property>
+            <property name="activatable-widget">downloads-icon</property>
+            <child>
+              <object class="GtkSwitch" id="downloads-icon">
+                <property name="valign">center</property>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="AdwActionRow">
+            <property name="visible">false</property>
+            <property name="title" translatable="yes">Documents</property>
+            <property name="subtitle" translatable="yes">Show documents folder to access recently edit documents.</property>
+            <property name="activatable-widget">documents-icon</property>
+            <child>
+              <object class="GtkSwitch" id="documents-icon">
+                <property name="valign">center</property>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="AdwActionRow">
+            <property name="title" translatable="yes">Maximum Recent Items</property>
+            <property name="subtitle" translatable="yes">Set maximum recent items to show.</property>
+            <property name="activatable-widget">max-recent-items</property>
+            <child>
+              <object class="GtkDropDown" id="max-recent-items">
+                <property name="valign">center</property>
+                <property name="model">max-recent-items-model</property>
+              </object>
+            </child>
+          </object>
+        </child>
+      </object>
+    </child>
+    <child>
+      <object class="AdwPreferencesGroup">
+        <property name="title" translatable="yes">Custom Drawn Icons</property>
+        <property name="description" translatable="yes">Override icon look with custom drawing and animation.</property>
+        <child>
+          <object class="AdwActionRow">
             <property name="title" translatable="yes">Clock</property>
             <property name="subtitle" translatable="yes">Show an analog clock widget. Requires Clocks app (gnome-clocks) pinned to the dash.</property>
             <property name="activatable-widget">clock-icon</property>
             <child>
               <object class="GtkSwitch" id="clock-icon">
                 <property name="valign">center</property>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="AdwActionRow" id="clock-style-row">
+            <property name="visible">true</property>
+            <property name="title" translatable="yes">Clock Style</property>
+            <property name="subtitle" translatable="yes">Set clock style.</property>
+            <property name="activatable-widget">clock-style</property>
+            <child>
+              <object class="GtkDropDown" id="clock-style">
+                <property name="valign">center</property>
+                <property name="model">clock-style-model</property>
               </object>
             </child>
           </object>
@@ -80,7 +156,52 @@
             </child>
           </object>
         </child>
+        <child>
+          <object class="AdwActionRow" id="calendar-style-row">
+            <property name="visible">false</property>
+            <property name="title" translatable="yes">Calendar Style</property>
+            <property name="subtitle" translatable="yes">Set calendar style.</property>
+            <property name="activatable-widget">calendar-style</property>
+            <child>
+              <object class="GtkDropDown" id="calendar-style">
+                <property name="valign">center</property>
+                <property name="model">calendar-style-model</property>
+              </object>
+            </child>
+          </object>
+        </child>
       </object>
     </child>
+  </object>
+  <object class="GtkStringList" id="clock-style-model">
+    <items>
+      <item>Overlay 1</item>
+      <item>Overlay 2</item>
+      <item>Round 1</item>
+      <item>Round 2</item>
+      <item>Round 3</item>
+      <item>Round 4</item>
+      <item>Framed 1</item>
+      <item>Framed 2</item>
+      <item>Framed 3</item>
+      <item>Framed 4</item>
+    </items>
+  </object>
+  <object class="GtkStringList" id="calendar-style-model">
+    <items>
+      <item>Overlay 1</item>
+      <item>Overlay 2</item>
+      <item>Framed 1</item>
+      <item>Framed 2</item>
+    </items>
+  </object>
+  <object class="GtkStringList" id="max-recent-items-model">
+    <items>
+      <item>5</item>
+      <item>10</item>
+      <item>15</item>
+      <item>20</item>
+      <item>25</item>
+    </items>
   </object>
 </interface>

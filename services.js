@@ -1,16 +1,16 @@
 'use strict';
 
-const Main = imports.ui.main;
-const Gio = imports.gi.Gio;
-const St = imports.gi.St;
-const Fav = imports.ui.appFavorites;
-const Weather = imports.misc.weather;
-const ExtensionUtils = imports.misc.extensionUtils;
-const Me = ExtensionUtils.getCurrentExtension();
-const AppsFolderPath = Me.dir.get_child('apps').get_path();
+import * as Main from 'resource:///org/gnome/shell/ui/main.js';
+import { trySpawnCommandLine } from 'resource:///org/gnome/shell/misc/util.js';
 
-const Clock = Me.imports.apps.clock.Clock;
-const Calendar = Me.imports.apps.calendar.Calendar;
+import Gio from 'gi://Gio';
+import St from 'gi://St';
+import Graphene from 'gi://Graphene';
+
+const Point = Graphene.Point;
+
+import { Clock } from './apps/clock.js';
+import { Calendar } from './apps/calendar.js';
 
 // sync with animator
 const CANVAS_SIZE = 120;
@@ -37,17 +37,19 @@ class ServiceCounter {
   }
 }
 
-var Services = class {
+export const Services = class {
   enable() {
+    this._mounts = {};
     this._services = [
       new ServiceCounter('trash', 1000 * 15, this.checkTrash.bind(this)),
       new ServiceCounter(
         'clock',
-        1000 * 60,
+        1000 * 60, // every minute
+        // 1000 * 1, // every second
         () => {
-          if (this.clock) {
-            this.clock.redraw();
-          }
+          this.extension.docks.forEach((d) => {
+            d._onClock();
+          });
         },
         -1
       ),
@@ -55,9 +57,9 @@ var Services = class {
         'calendar',
         1000 * 60 * 15,
         () => {
-          if (this.calendar) {
-            this.calendar.redraw();
-          }
+          this.extension.docks.forEach((d) => {
+            d._onCalendar();
+          });
         },
         -1
       ),
@@ -67,22 +69,7 @@ var Services = class {
         () => {
           // deferred stuff is required when .desktop entry if first created
           // check for deferred mounts
-          if (this._deferredMounts && this._deferredMounts.length) {
-            let mounts = [...this._deferredMounts];
-            this._deferredMounts = [];
-            mounts.forEach((m) => {
-              this._onMountAdded(null, m);
-            });
-          }
-
-          // check for deferred trash
-          if (!this._trashIconSetup) {
-            this.setupTrashIcon();
-          }
-          if (this._deferredTrash) {
-            this.updateTrashIcon(true);
-            this._deferredTrash = false;
-          }
+          this._commitMounts();
 
           // notifications
           this.checkNotifications();
@@ -94,7 +81,6 @@ var Services = class {
     this._disableNotifications = 0;
 
     this._deferredMounts = [];
-    this._deferredTrash = false;
     this._volumeMonitor = Gio.VolumeMonitor.get();
     this._volumeMonitor.connectObject(
       'mount-added',
@@ -123,14 +109,35 @@ var Services = class {
       this
     );
 
-    this.checkMounts();
+    this._downloadsDir = Gio.File.new_for_path('Downloads');
+    this._downloadsMonitor = this._downloadsDir.monitor(
+      Gio.FileMonitorFlags.WATCH_MOVES,
+      null
+    );
+    this._downloadsMonitor.connectObject(
+      'changed',
+      (fileMonitor, file, otherFile, eventType) => {
+        switch (eventType) {
+          case Gio.FileMonitorEvent.CHANGED:
+          case Gio.FileMonitorEvent.CREATED:
+          case Gio.FileMonitorEvent.MOVED_IN:
+            return;
+        }
+        this.checkDownloads();
+      },
+      this
+    );
+
     this.checkTrash();
+    this.checkDownloads();
     this.checkNotifications();
+
+    this.checkMounts();
+    this._commitMounts();
   }
 
   disable() {
     this._services = [];
-
     this._volumeMonitor.disconnectObject(this);
     this._volumeMonitor = null;
     this._trashMonitor.disconnectObject(this);
@@ -138,15 +145,14 @@ var Services = class {
     this._trashDir = null;
   }
 
-  temporarilyMuteOverview() {
-    if (!Main.overview._setMessage) {
-      Main.overview._setMessage = Main.overview.setMessage;
+  _commitMounts() {
+    if (this._deferredMounts && this._deferredMounts.length) {
+      let mounts = [...this._deferredMounts];
+      this._deferredMounts = [];
+      mounts.forEach((m) => {
+        this._onMountAdded(null, m);
+      });
     }
-    Main.overview.setMessage = (msg, obj) => {};
-
-    this.extension._loTimer.runOnce(() => {
-      Main.overview.setMessage = Main.overview._setMessage;
-    }, 750);
   }
 
   _onMountAdded(monitor, mount) {
@@ -158,33 +164,81 @@ var Services = class {
     let basename = mount.get_default_location().get_basename();
     let appname = `mount-${basename}-dash2dock-lite.desktop`;
     this.setupMountIcon(mount);
-    let favorites = Fav.getAppFavorites();
-    let favorite_ids = favorites._getIds();
-
-    this.temporarilyMuteOverview();
-    favorites.addFavoriteAtPos(
-      appname,
-      this.extension.trash_icon ? favorite_ids.length - 1 : -1
-    );
     this.extension.animate();
-
-    // re-try later
-    if (!favorite_ids.includes(appname)) {
-      this._deferredMounts.push(mount);
-    }
     return true;
   }
 
   _onMountRemoved(monitor, mount) {
     let basename = mount.get_default_location().get_basename();
     let appname = `mount-${basename}-dash2dock-lite.desktop`;
-    this._unpin(appname);
+    let mount_id = `/tmp/${appname}`;
+    delete this._mounts[mount_id];
+    this.extension.animate();
   }
 
   update(elapsed) {
     this._services.forEach((s) => {
       s.update(elapsed);
     });
+  }
+
+  setupTrashIcon() {
+    let extension_path = this.extension.path;
+    let appname = `trash-dash2dock-lite.desktop`;
+    let app_id = `/tmp/${appname}`;
+    let fn = Gio.File.new_for_path(app_id);
+    let open_app = 'nautilus --select';
+
+    let trash_action = `${extension_path}/apps/empty-trash.sh`;
+    {
+      let fn = Gio.File.new_for_path('.local/share/Trash');
+      trash_action = `rm -rf "${fn.get_path()}"`;
+    }
+
+    let content = `[Desktop Entry]\nVersion=1.0\nTerminal=false\nType=Application\nName=Trash\nExec=${open_app} trash:///\nIcon=user-trash\nStartupWMClass=trash-dash2dock-lite\nActions=trash\n\n[Desktop Action trash]\nName=Empty Trash\nExec=${trash_action}\nTerminal=true\n`;
+    const [, etag] = fn.replace_contents(
+      content,
+      null,
+      false,
+      Gio.FileCreateFlags.REPLACE_DESTINATION,
+      null
+    );
+  }
+
+  setupFolderIcon(name, title, icon, path) {
+    // expand
+    let full_path = Gio.file_new_for_path(path).get_path();
+    let extension_path = this.extension.path;
+    let appname = `${name}-dash2dock-lite.desktop`;
+    let app_id = `/tmp/${appname}`;
+    let fn = Gio.File.new_for_path(app_id);
+    // let open_app = 'xdg-open';
+    let open_app = 'nautilus --select';
+
+    let content = `[Desktop Entry]\nVersion=1.0\nTerminal=false\nType=Application\nName=${title}\nExec=${open_app} ${full_path}\nIcon=${icon}\nStartupWMClass=${name}-dash2dock-lite\n`;
+    const [, etag] = fn.replace_contents(
+      content,
+      null,
+      false,
+      Gio.FileCreateFlags.REPLACE_DESTINATION,
+      null
+    );
+  }
+
+  setupFolderIcons() {
+    this.setupTrashIcon();
+    this.setupFolderIcon(
+      'downloads',
+      'Downloads',
+      'folder-downloads',
+      'Downloads'
+    );
+    this.setupFolderIcon(
+      'documents',
+      'Documents',
+      'folder-documents',
+      'Documents'
+    );
   }
 
   setupMountIcon(mount) {
@@ -195,7 +249,8 @@ var Services = class {
     let icon = mount.get_icon().names[0] || 'drive-harddisk-solidstate';
     let mount_exec = 'echo "not implemented"';
     let unmount_exec = `umount ${fullpath}`;
-    let fn = Gio.File.new_for_path(`.local/share/applications/${appname}`);
+    let mount_id = `/tmp/${appname}`;
+    let fn = Gio.File.new_for_path(mount_id);
 
     if (!fn.query_exists(null)) {
       let content = `[Desktop Entry]\nVersion=1.0\nTerminal=false\nType=Application\nName=${label}\nExec=xdg-open ${fullpath}\nIcon=${icon}\nStartupWMClass=mount-${basename}-dash2dock-lite\nActions=unmount;\n\n[Desktop Action mount]\nName=Mount\nExec=${mount_exec}\n\n[Desktop Action unmount]\nName=Unmount\nExec=${unmount_exec}\n`;
@@ -206,9 +261,9 @@ var Services = class {
         Gio.FileCreateFlags.REPLACE_DESTINATION,
         null
       );
-      Main.notify('Preparing the mounted device icon...');
-      this._deferredMounts.push(mount);
     }
+
+    this._mounts[mount_id] = mount;
   }
 
   checkNotifications() {
@@ -240,7 +295,7 @@ var Services = class {
       }
     } catch (err) {
       // fail silently - don't crash
-      log(err);
+      console.log(err);
       this._disableNotifications++;
     }
 
@@ -329,13 +384,88 @@ var Services = class {
       Gio.FileQueryInfoFlags.NONE,
       null
     );
+    let prev = this.trashFull;
     this.trashFull = iter.next_file(null) != null;
-    iter = null;
+    if (prev != this.trashFull) {
+      this.extension.animate({ refresh: true });
+    }
     return this.trashFull;
+  }
+
+  async checkDownloads() {
+    this._trySpawnCommandLine = trySpawnCommandLine;
+    if (!this.extension.downloads_icon) return;
+    try {
+      let path = this._downloadsDir.get_path();
+      let cmd = `${this.extension.path}/apps/list-downloads.sh`;
+      await trySpawnCommandLine(cmd);
+    } catch (err) {
+      console.log(err);
+    }
+
+    let fileStat = {};
+    let fn = Gio.File.new_for_path('/tmp/downloads.txt');
+    if (fn.query_exists(null)) {
+      try {
+        const [success, contents] = fn.load_contents(null);
+        const decoder = new TextDecoder();
+        let contentsString = decoder.decode(contents);
+        let idx = 0;
+        let lines = contentsString.split('\n');
+        lines.forEach((l) => {
+          let res =
+            /\s([a-zA-Z]{3})\s{1,3}([0-9]{1,3})\s{1,3}([0-9:]{4,8})\s{1,3}(.*)/.exec(
+              l
+            );
+          if (res) {
+            fileStat[res[4]] = {
+              index: idx,
+              name: res[4],
+              date: `${res[1]}. ${res[2]}, ${res[3]}`,
+            };
+            idx++;
+          }
+        });
+      } catch (err) {
+        console.log(err);
+      }
+    }
+
+    let iter = this._downloadsDir.enumerate_children(
+      'standard::*',
+      Gio.FileQueryInfoFlags.NONE,
+      null
+    );
+
+    // console.log(fileStat);
+
+    this._downloadFilesLength = Object.keys(fileStat).length;
+    let maxs = [5, 10, 15, 20, 25];
+    let max_recent_items = maxs[this.extension.max_recent_items];
+
+    this._downloadFiles = [];
+    let f = iter.next_file(null);
+    while (f) {
+      if (!f.get_is_hidden()) {
+        let name = f.get_name();
+        if (fileStat[name]?.index <= max_recent_items + 1) {
+          this._downloadFiles.push({
+            index: fileStat[name]?.index,
+            name,
+            display: f.get_display_name(),
+            icon: f.get_icon().get_names()[0] ?? 'folder',
+            type: f.get_content_type(),
+            date: fileStat[name]?.date ?? '',
+          });
+        }
+      }
+      f = iter.next_file(null);
+    }
   }
 
   checkMounts() {
     if (!this.extension.mounted_icon) {
+      this._mounts = {};
       return;
     }
 
@@ -351,108 +481,27 @@ var Services = class {
     }
 
     this.mounts = mounts;
-    let favs = Fav.getAppFavorites()._getIds();
-    favs.forEach((fav) => {
-      if (fav.startsWith('mount-') && fav.endsWith('dash2dock-lite.desktop')) {
-        if (!mount_ids.includes(fav)) {
-          this._unpin(fav);
-        }
-      }
-    });
-
     mounts.forEach((mount) => {
       let basename = mount.get_default_location().get_basename();
       let appname = `mount-${basename}-dash2dock-lite.desktop`;
-      if (!favs.includes(appname)) {
-        this._deferredMounts.push(mount);
-      }
+      this._deferredMounts.push(mount);
     });
 
     // added devices will subsequently be on mounted events
   }
 
-  setupTrashIcon() {
-    if (!this.extension.trash_icon) {
+  updateIcon(item, settings) {
+    if (!item) {
       return;
     }
-    let fn = Gio.File.new_for_path(
-      '.local/share/applications/trash-dash2dock-lite.desktop'
-    );
-
-    if (!fn.query_exists(null)) {
-      let content = `[Desktop Entry]\nVersion=1.0\nTerminal=false\nType=Application\nName=Trash\nExec=xdg-open trash:///\nIcon=user-trash\nStartupWMClass=trash-dash2dock-lite\nActions=trash\n\n[Desktop Action trash]\nName=Empty Trash\nExec=${AppsFolderPath}/empty-trash.sh\nTerminal=true\n`;
-      const [, etag] = fn.replace_contents(
-        content,
-        null,
-        false,
-        Gio.FileCreateFlags.REPLACE_DESTINATION,
-        null
-      );
-      Main.notify('Preparing the trash icon...');
-      this._deferredTrash = true;
-      this._trashIconSetup = true;
-    }
-    fn = null;
-  }
-
-  _pin(app) {
-    let favorites = Fav.getAppFavorites();
-    if (!favorites._getIds().includes(app)) {
-      this.temporarilyMuteOverview();
-      favorites.addFavorite(app);
-      this.extension.animate();
-    }
-  }
-
-  _unpin(app) {
-    let favorites = Fav.getAppFavorites();
-    if (favorites._getIds().includes(app)) {
-      // thread safety hack
-      this.extension.animator._endAnimation();
-      this.extension.animator._previousFind = null;
-      this.extension.animator._throttleDown = 19;
-
-      this.temporarilyMuteOverview();
-      favorites.removeFavorite(app);
-
-      this.extension.animate();
-    }
-  }
-
-  updateTrashIcon(show) {
-    if (show) {
-      this._pin('trash-dash2dock-lite.desktop');
-    } else {
-      this._unpin('trash-dash2dock-lite.desktop');
-    }
-  }
-
-  redraw() {
-    let widgets = [this.clock, this.calendar];
-    widgets.forEach((w) => {
-      if (w) {
-        w.settings = {
-          dark_color: this.extension.drawing_dark_color,
-          light_color: this.extension.drawing_light_color,
-          accent_color: this.extension.drawing_accent_color,
-          dark_foreground: this.extension.drawing_dark_foreground,
-          light_foreground: this.extension.drawing_light_foreground,
-          secondary_color: this.extension.drawing_secondary_color,
-          clock_style: this.extension.clock_style,
-        };
-        w.redraw();
-      }
-    });
-  }
-
-  updateIcon(icon, settings) {
+    let icon = item._icon;
     if (!icon || !icon.icon_name) {
       return;
     }
 
-    let { scaleFactor } = settings;
-    // monitor scale
-    // this.scaleFactor = St.ThemeContext.get_for_stage(global.stage).scale_factor;
+    let { scaleFactor, iconSize, dock } = settings;
+
+    // todo move dots and badges here?
 
     // the trash
     if (this.extension.trash_icon && icon.icon_name.startsWith('user-trash')) {
@@ -462,76 +511,63 @@ var Services = class {
       }
     }
 
-    let didCreate = false;
-
     // clock
     if (icon.icon_name == 'org.gnome.clocks') {
-      let p = icon.get_parent();
       if (this.extension.clock_icon) {
-        if (!p.clock) {
-          let clock = new Clock(CANVAS_SIZE);
-          clock.visible = false;
-          clock.reactive = false;
-          this.clock = clock;
-          p.clock = this.clock;
-          didCreate = true;
+        let clock = item._clock;
+        if (!clock) {
+          clock = new Clock(CANVAS_SIZE, dock.extension._widgetStyle);
+          dock._clock = clock;
+          item._clock = clock;
+          item._appwell.first_child.add_child(clock);
         }
-        if (p.clock) {
-          p.clock._icon = icon;
-          let scale =
-            icon.icon_size / this.extension.icon_quality / CANVAS_SIZE;
-          scale *= scaleFactor;
-          p.clock.set_scale(scale, scale);
-          p.clock.show();
-          p.clock.reactive = false;
-
-          let pp = this.clock.get_parent();
-          if (pp != p) {
-            pp?.remove_child(p);
-            p.add_child(this.clock);
-          }
+        if (clock) {
+          clock._icon = icon;
+          clock.width = item._icon.width;
+          clock.height = item._icon.height;
+          clock.set_scale(item._icon.scaleX, item._icon.scaleY);
+          let canvasScale = clock.width / (clock._canvas.width + 2);
+          clock._canvas.set_scale(canvasScale, canvasScale);
+          clock.pivot_point = item._icon.pivot_point;
+          clock.translationX = item._icon.translationX;
+          clock.translationY = item._icon.translationY;
+          clock.show();
+          item._icon.visible = !clock._hideIcon;
         }
       } else {
-        if (p.clock) {
-          p.clock.hide();
-        }
+        let clock = item._clock;
+        item._icon.visible = true;
+        clock?.hide();
       }
     }
 
-    // calendar
+    // calender
     if (icon.icon_name == 'org.gnome.Calendar') {
-      let p = icon.get_parent();
       if (this.extension.calendar_icon) {
-        if (!p.calendar) {
-          let calendar = new Calendar(CANVAS_SIZE);
-          calendar.visible = false;
-          calendar.reactive = false;
-          this.calendar = calendar;
-          p.calendar = this.calendar;
-          didCreate = true;
+        let calender = item._calender;
+        if (!calender) {
+          calender = new Calendar(CANVAS_SIZE, dock.extension._widgetStyle);
+          dock._calender = calender;
+          item._calender = calender;
+          item._appwell.first_child.add_child(calender);
         }
-        if (p.calendar) {
-          let scale =
-            icon.icon_size / this.extension.icon_quality / CANVAS_SIZE;
-          scale *= scaleFactor;
-          p.calendar.set_scale(scale, scale);
-          p.calendar.show();
-          p.calendar.reactive = false;
-          let pp = this.calendar.get_parent();
-          if (pp != p) {
-            pp?.remove_child(p);
-            p.add_child(this.calendar);
-          }
+        if (calender) {
+          calender.width = item._icon.width;
+          calender.height = item._icon.height;
+          calender.set_scale(item._icon.scaleX, item._icon.scaleY);
+          let canvasScale = calender.width / (calender._canvas.width + 2);
+          calender._canvas.set_scale(canvasScale, canvasScale);
+          calender.pivot_point = item._icon.pivot_point;
+          calender.translationX = item._icon.translationX;
+          calender.translationY = item._icon.translationY;
+          calender.show();
+          item._icon.visible = !calender._hideIcon;
         }
       } else {
-        if (p.calendar) {
-          p.calendar.hide();
-        }
+        let calender = item._calender;
+        item._icon.visible = true;
+        calender?.hide();
       }
-    }
-
-    if (didCreate) {
-      this.redraw();
     }
   }
 };

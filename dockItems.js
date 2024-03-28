@@ -1,368 +1,387 @@
 'use strict';
 
-const { St, Shell, GObject, Gio, GLib, Gtk, Meta, Clutter } = imports.gi;
-const Main = imports.ui.main;
-const Dash = imports.ui.dash.Dash;
-const Point = imports.gi.Graphene.Point;
+import * as Main from 'resource:///org/gnome/shell/ui/main.js';
+import * as BoxPointer from 'resource:///org/gnome/shell/ui/boxpointer.js';
+import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
+import { trySpawnCommandLine } from 'resource:///org/gnome/shell/misc/util.js';
+import { BaseIcon } from 'resource:///org/gnome/shell/ui/iconGrid.js';
 
-const ExtensionUtils = imports.misc.extensionUtils;
-const Me = ExtensionUtils.getCurrentExtension();
-const Dot = Me.imports.apps.dot.Dot;
+import Gio from 'gi://Gio';
+import GObject from 'gi://GObject';
+import Clutter from 'gi://Clutter';
+import Graphene from 'gi://Graphene';
+import St from 'gi://St';
 
-const DOT_CANVAS_SIZE = 96;
+import { ShowAppsIcon } from 'resource:///org/gnome/shell/ui/dash.js';
 
-var DockIcon = GObject.registerClass(
+import { Dot } from './apps/dot.js';
+import { DockPosition } from './dock.js';
+
+const Point = Graphene.Point;
+
+const DockItemOverlay = GObject.registerClass(
   {},
-  class DockIcon extends St.Widget {
-    _init() {
-      super._init({ name: 'DockIcon', reactive: false });
-
-      let pivot = new Point();
-      pivot.x = 0.5;
-      pivot.y = 0.5;
-      this.pivot_point = pivot;
-    }
-
-    update(params) {
-      let gicon = null;
-      let icon_gfx = params.icon?.icon_name;
-      if (params.icon?.gicon) {
-        let name = params.icon.gicon.name;
-        if (!name && params.icon.gicon.names) {
-          name = params.icon.gicon.names[0];
-        }
-        if (!name) {
-          // hijack
-          gicon = params.icon.gicon;
-          icon_gfx = params.app;
-        }
-        if (name) {
-          icon_gfx = name;
-        }
-      }
-
-      // log(`--${icon_gfx}`);
-
-      if (this._icon && this._gfx != icon_gfx) {
-        this._gfx = icon_gfx;
-        this.remove_child(this._icon);
-        this._icon = null;
-      }
-      if (!this._icon && icon_gfx) {
-        if (!gicon) {
-          gicon = new Gio.ThemedIcon({ name: icon_gfx });
-        }
-        this._icon = new St.Icon({
-          gicon,
-        });
-
-        // remove overlay added by services
-        if (this.first_child) {
-          this.remove_child(this.first_child);
-        }
-
-        this.add_child(this._icon);
-      }
-      this.visible = true;
-    }
-  }
-);
-
-var IconsContainer = GObject.registerClass(
-  {},
-  class IconsContainer extends St.Widget {
-    _init(params) {
+  class DockItemOverlay extends St.Widget {
+    _init(renderer, params) {
       super._init({
-        name: 'IconsContainer',
-        ...(params || {}),
-      });
-      this._icons = [];
-    }
-
-    _precreate_icons(length) {
-      while (this._icons.length < length) {
-        let icon = new DockIcon();
-        this._icons.push(icon);
-        this.add_child(icon);
-      }
-      this._icons.forEach((icon) => {
-        icon.visible = false;
-      });
-
-      return this._icons;
-    }
-
-    clear() {
-      this._icons.forEach((i) => {
-        this.remove_child(i);
-      });
-      this._icons = [];
-    }
-
-    update(params) {
-      let { icons, pivot, iconSize, quality, scaleFactor } = params;
-      if (!icons) {
-        icons = [];
-      }
-      this._precreate_icons(icons.length);
-      let idx = 0;
-
-      icons.forEach((container) => {
-        const { _appwell, _bin, _label, _showApps } = container;
-
-        let _icon = this._icons[idx++];
-        _icon.update({
-          icon: container._icon,
-          app: _appwell?.app?.get_id(),
-        });
-
-        container._renderedIcon = _icon;
-
-        _icon._appwell = _appwell;
-        _icon._showApps = _showApps;
-        _icon._bin = _bin;
-        _icon._label = _label;
-        _icon._img = _icon._icon;
-        _icon._container = container;
-
-        if (_icon._img) {
-          _icon._img.set_size(iconSize * quality, iconSize * quality);
-          _icon._img.set_scale(1 / quality, 1 / quality);
-        }
-
-        _icon.set_size(iconSize, iconSize);
-        _icon.pivot_point = pivot;
-      });
-    }
-
-    // move animation here!
-    animate() {}
-  }
-);
-
-var DotsContainer = GObject.registerClass(
-  {},
-  class DotsContainer extends St.Widget {
-    _init(params) {
-      super._init({
-        name: 'IconsContainer',
-        ...(params || {}),
-      });
-      this._dots = [];
-    }
-
-    _precreate_dots(params) {
-      const { count, show } = params;
-      if (show) {
-        for (let i = 0; i < count - this._dots.length; i++) {
-          let dot = new Dot(DOT_CANVAS_SIZE);
-          let pdot = new St.Widget();
-          pdot.add_child(dot);
-          this._dots.push(dot);
-          this.add_child(pdot);
-          dot.set_position(0, 0);
-        }
-      }
-      this._dots.forEach((d) => {
-        d.get_parent().width = 1;
-        d.get_parent().height = 1;
-        d.set_scale(1, 1);
-        d.visible = false;
-      });
-      return this._dots;
-    }
-
-    update(params) {
-      let {
-        icons,
-        iconSize,
-        vertical,
-        position,
-        scaleFactor,
-        pivot,
-        dotsCount,
-        running_indicator_color,
-        running_indicator_style_options,
-        running_indicator_style,
-        appNotices,
-        notification_badge_color,
-        notification_badge_style_options,
-        notification_badge_style,
-      } = params;
-
-      this._precreate_dots({
-        count: dotsCount + icons.length,
-        show: true, // showDots || showBadges,
-      });
-
-      let dotIndex = 0;
-      icons.forEach((icon) => {
-        let pos = [...icon._pos];
-        let scale = icon._scale;
-
-        if (isNaN(pos[0]) || isNaN(pos[1])) {
-          return;
-        }
-
-        // update the notification badge
-        // todo ... move dots and badges to service?
-
-        let has_badge = false;
-        if (
-          icon._appwell &&
-          icon._appwell.app &&
-          appNotices &&
-          appNotices[icon._appwell.app.get_id()] &&
-          appNotices[icon._appwell.app.get_id()].count > 0
-        ) {
-          // log(icon._appwell?.app.get_id());
-
-          icon._badge = this._dots[dotIndex++];
-          let count = appNotices[icon._appwell.app.get_id()].count;
-
-          let badgeParent = icon._badge.get_parent();
-          badgeParent.set_position(
-            pos[0] + 4 * scaleFactor,
-            pos[1] - 4 * scaleFactor
-          );
-          badgeParent.width = iconSize;
-          badgeParent.height = iconSize;
-          badgeParent.pivot_point = pivot;
-          badgeParent.set_scale(scale, scale);
-
-          let style =
-            notification_badge_style_options[notification_badge_style];
-
-          icon._badge.visible = true;
-          icon._badge.set_state({
-            count: count,
-            color: notification_badge_color || [1, 1, 1, 1],
-            rotate: 180,
-            translate: [0.4, 0],
-            style: style || 'default',
-          });
-
-          icon._badge.set_scale(
-            (iconSize * scaleFactor) / DOT_CANVAS_SIZE,
-            (iconSize * scaleFactor) / DOT_CANVAS_SIZE
-          );
-          has_badge = true;
-        }
-
-        if (icon._badge && !has_badge) {
-          icon._badge.visible = false;
-        }
-
-        // update the dot
-        if (icon._appwell && icon._appwell.app.get_n_windows() > 0) {
-          let dot = this._dots[dotIndex++];
-          icon._dot = dot;
-          if (dot) {
-            let dotParent = icon._dot.get_parent();
-            dot.visible = true;
-            dotParent.width = iconSize;
-            dotParent.height = iconSize;
-            dotParent.set_scale(1, 1);
-
-            if (vertical) {
-              if (position == 'right') {
-                dotParent.set_position(pos[0] + 8 * scaleFactor, pos[1]);
-              } else {
-                dotParent.set_position(pos[0] - 8 * scaleFactor, pos[1]);
-              }
-            } else {
-              dotParent.set_position(pos[0], pos[1] + 8 * scaleFactor);
-            }
-            dot.set_scale(
-              (iconSize * scaleFactor) / DOT_CANVAS_SIZE,
-              (iconSize * scaleFactor) / DOT_CANVAS_SIZE
-            );
-
-            let style =
-              running_indicator_style_options[running_indicator_style];
-
-            dot.set_state({
-              count: icon._appwell.app.get_n_windows(),
-              color: running_indicator_color || [1, 1, 1, 1],
-              style: style || 'default',
-              rotate: vertical ? (position == 'right' ? -90 : 90) : 0,
-            });
-          }
-        }
-      });
-    }
-  }
-);
-
-var DockExtension = GObject.registerClass(
-  {},
-  class DockExtension extends St.Widget {
-    _init(params) {
-      super._init({
-        reactive: true,
+        name: 'DockItemContainer',
         ...params,
       });
 
-      this.listeners = [];
-      this.connectObject(
-        'button-press-event',
-        this._onButtonEvent.bind(this),
-        'motion-event',
-        this._onMotionEvent.bind(this),
-        'leave-event',
-        this._onLeaveEvent.bind(this),
-        this
-      );
-    }
-
-    vfunc_scroll_event(scrollEvent) {
-      this._onScrollEvent({}, scrollEvent);
-      return Clutter.EVENT_PROPAGATE;
-    }
-
-    _onScrollEvent(obj, evt) {
-      this.listeners
-        .filter((l) => {
-          return l._enabled;
-        })
-        .forEach((l) => {
-          if (l._onScrollEvent) l._onScrollEvent(obj, evt);
-        });
-    }
-
-    _onButtonEvent(obj, evt) {
-      this.listeners
-        .filter((l) => {
-          return l._enabled;
-        })
-        .forEach((l) => {
-          if (l._onButtonEvent) l._onButtonEvent(obj, evt);
-        });
-    }
-
-    _onMotionEvent() {
-      this.listeners
-        .filter((l) => {
-          return l._enabled;
-        })
-        .forEach((l) => {
-          if (l._onMotionEvent) l._onMotionEvent();
-        });
-    }
-
-    _onLeaveEvent() {
-      this.listeners
-        .filter((l) => {
-          return l._enabled;
-        })
-        .forEach((l) => {
-          if (l._onLeaveEvent) l._onLeaveEvent();
-        });
+      this.renderer = renderer;
+      if (renderer) {
+        this.add_child(renderer);
+      }
     }
   }
 );
 
-var DockBackground = GObject.registerClass(
+export const DockItemDotsOverlay = GObject.registerClass(
+  {},
+  class DockItemDotsOverlay extends DockItemOverlay {
+    update(icon, data) {
+      let renderer = this.renderer;
+      let { appCount, position, vertical, extension } = data;
+
+      renderer.width = icon._icon.width;
+      renderer.height = icon._icon.height;
+      renderer.pivot_point = icon._icon.pivot_point;
+
+      let canvasScale = renderer.width / renderer._canvas.width;
+      renderer._canvas.set_scale(canvasScale, canvasScale);
+
+      if (vertical) {
+        renderer.translationX =
+          icon._icon.translationX + (position == DockPosition.LEFT ? -6 : 6);
+        renderer.translationY = icon._icon.translationY;
+      } else {
+        renderer.translationX = icon._icon.translationX;
+        renderer.translationY =
+          icon._icon.translationY + (position == DockPosition.BOTTOM ? 8 : -8);
+      }
+
+      let options = extension.running_indicator_style_options;
+      let running_indicator_style = options[extension.running_indicator_style];
+      let running_indicator_color = extension.running_indicator_color;
+
+      renderer.set_state({
+        count: appCount,
+        color: running_indicator_color || [1, 1, 1, 1],
+        style: running_indicator_style || 'default',
+        rotate: vertical
+          ? position == DockPosition.RIGHT
+            ? -90
+            : 90
+          : position == DockPosition.TOP
+          ? 180
+          : 0,
+      });
+    }
+  }
+);
+
+export const DockItemBadgeOverlay = GObject.registerClass(
+  {},
+  class DockItemBadgeOverlay extends DockItemOverlay {
+    update(icon, data) {
+      let renderer = this.renderer;
+      let { noticesCount, position, vertical, extension } = data;
+
+      renderer.width = icon._icon.width;
+      renderer.height = icon._icon.height;
+      renderer.set_scale(icon._icon.scaleX, icon._icon.scaleY);
+      renderer.pivot_point = icon._icon.pivot_point;
+      renderer.translationX = icon._icon.translationX + 4;
+      renderer.translationY = icon._icon.translationY - 4;
+
+      let canvasScale = renderer.width / renderer._canvas.width;
+      renderer._canvas.set_scale(canvasScale, canvasScale);
+
+      let options = extension.notification_badge_style_options;
+      let notification_badge_style =
+        options[extension.notification_badge_style];
+      let notification_badge_color = extension.notification_badge_color;
+
+      renderer.set_state({
+        count: noticesCount,
+        color: notification_badge_color || [1, 1, 1, 1],
+        style: notification_badge_style || 'default',
+        rotate: position == DockPosition.BOTTOM ? 180 : 0,
+        translate: [0.4, 0],
+      });
+    }
+  }
+);
+
+export class DockItemMenu extends PopupMenu.PopupMenu {
+  constructor(sourceActor, side = St.Side.TOP, params = {}) {
+    if (Clutter.get_default_text_direction() === Clutter.TextDirection.RTL) {
+      if (side === St.Side.LEFT) side = St.Side.RIGHT;
+      else if (side === St.Side.RIGHT) side = St.Side.LEFT;
+    }
+
+    super(sourceActor, 0.5, side);
+
+    let { desktopApp } = params;
+    if (!desktopApp) return;
+
+    this.desktopApp = desktopApp;
+
+    this._newWindowItem = this.addAction('Open Window', () => {
+      let workspaceManager = global.workspace_manager;
+      let workspace = workspaceManager.get_active_workspace();
+      let ctx = global.create_app_launch_context(0, workspace);
+      desktopApp.launch([], ctx);
+      this._onActivate();
+    });
+
+    desktopApp.list_actions().forEach((action) => {
+      let name = desktopApp.get_action_name(action);
+      this.addAction(name, () => {
+        let workspaceManager = global.workspace_manager;
+        let workspace = workspaceManager.get_active_workspace();
+        let ctx = global.create_app_launch_context(0, workspace);
+        desktopApp.launch_action(action, ctx);
+        this.item.dock.extension.animate({ refresh: true });
+      });
+    });
+  }
+
+  _onActivate() {}
+
+  popup() {
+    this.open(BoxPointer.PopupAnimation.FULL);
+    this._menuManager.ignoreRelease();
+  }
+}
+
+export const DockItemList = GObject.registerClass(
+  {},
+  class DockItemList extends St.Widget {
+    _init(renderer, params) {
+      super._init({
+        name: 'DockItemList',
+        reactive: true,
+        // style_class: 'hi',
+        ...params,
+      });
+
+      this.connect('button-press-event', (obj, evt) => {
+        // this.visible = false;
+        this.slideOut();
+        return Clutter.EVENT_PROPAGATE;
+      });
+    }
+
+    slideIn(target, list) {
+      if (this._box) {
+        this.remove_child(this._box);
+        this._box = null;
+      }
+
+      if (!list.length) return;
+
+      this.opacity = 0;
+
+      let dock = this.dock;
+      this.x = dock._monitor.x;
+      this.y = dock._monitor.y;
+      this.width = dock._monitor.width;
+      this.height = dock._monitor.height;
+
+      this._target = target;
+      let tp = dock._get_position(target);
+
+      this._box = new St.Widget({ style_class: '-hi' });
+      list.forEach((l) => {
+        let w = new St.Widget({});
+        let icon = new St.Icon({
+          icon_name: l.icon,
+          reactive: true,
+          track_hover: true,
+        });
+        icon.set_icon_size(
+          this.dock._iconSizeScaledDown * this.dock._scaleFactor
+        );
+        this._box.add_child(w);
+        let label = new St.Label({ style_class: 'dash-label' });
+        let short = (l.name ?? '').replace(/(.{32})..+/, '$1...');
+        label.text = short;
+        w.add_child(icon);
+        w.add_child(label);
+        w._icon = icon;
+        w._label = label;
+
+        icon.connect('button-press-event', () => {
+          let path = Gio.File.new_for_path(`Downloads/${l.name}`).get_path();
+          let cmd = `xdg-open "${path}"`;
+          if (l.type.includes('directory')) {
+            cmd = `nautilus --select "${path}"`;
+          }
+          this.visible = false;
+          this.dock._maybeBounce(this._target);
+
+          try {
+            console.log(cmd);
+            trySpawnCommandLine(cmd);
+          } catch (err) {
+            console.log(err);
+          }
+        });
+      });
+
+      let ox = 0;
+      let oy = 0;
+      let angleInc = 2;
+      let startAngle = 268;
+      let angle = startAngle;
+      let rad = dock._iconSize * 1.1 * dock._scaleFactor;
+
+      let children = this._box.get_children();
+      children.reverse();
+      children.forEach((l) => {
+        let hX = Math.cos(angle * 0.0174533);
+        let hY = Math.sin(angle * 0.0174533);
+        let hl = Math.sqrt(hX * hX + hY * hY);
+        hX /= hl;
+        hY /= hl;
+        hX *= rad;
+        hY *= rad;
+
+        l.x = tp[0] - this.x + ox;
+        l.y = tp[1] - this.y + oy;
+
+        ox += hX * 0.85;
+        oy += hY;
+        angle += angleInc;
+
+        l.rotation_angle_z = angle - startAngle;
+      });
+
+      this.add_child(this._box);
+
+      let first = children[0];
+      children.forEach((l) => {
+        l._ox = first.x;
+        l._oy = first.y;
+        l._oz = 0;
+        l._label.opacity = 0;
+        l._x = l.x;
+        l._y = l.y - rad * 0.8;
+        l._rotation_angle_z = l.rotation_angle_z;
+        l.x = first.x;
+        l.y = first.y;
+        l.rotation_angle_z = 0;
+      });
+
+      this._hidden = false;
+      this._hiddenFrames = 0;
+    }
+
+    slideOut() {
+      this._hidden = true;
+      this._hiddenFrames = 80;
+    }
+  }
+);
+
+export const DockItemContainer = GObject.registerClass(
+  {},
+  class DockItemContainer extends ShowAppsIcon {
+    _init(params) {
+      super._init({
+        name: 'DockItemContainer',
+        style_class: 'dash-item-container',
+        ...(params || {}),
+      });
+
+      this.name = params.appinfo_filename;
+      this.show(false);
+
+      let desktopApp = Gio.DesktopAppInfo.new_from_filename(
+        params.appinfo_filename
+      );
+
+      this._label = this.label;
+
+      try {
+        this._labelText = desktopApp.get_name();
+        this._default_icon_name = desktopApp.get_icon().get_names()[0];
+      } catch (err) {
+        console.log(err);
+        console.log(params);
+      }
+
+      // menu
+      this._menu = new DockItemMenu(this, St.Side.TOP, {
+        desktopApp,
+      });
+      this._menu.item = this;
+      this._menuManager = new PopupMenu.PopupMenuManager(this);
+      this._menu._menuManager = this._menuManager;
+      Main.uiGroup.add_child(this._menu.actor);
+      this._menuManager.addMenu(this._menu);
+      this._menu.close();
+    }
+
+    activateNewWindow() {
+      if (this._menu && this._menu._newWindowItem) {
+        this._menu._newWindowItem.emit('activate', null);
+      }
+    }
+
+    _onClick() {
+      this.activateNewWindow();
+    }
+
+    _createIcon(size) {
+      this._iconActor = new St.Icon({
+        icon_name: this._default_icon_name,
+        icon_size: size,
+        style_class: 'show-apps-icon',
+        track_hover: true,
+      });
+
+      // attach event
+      let button = this.first_child;
+      button.reactive = false;
+      let icon = this._iconActor;
+
+      icon.reactive = true;
+      icon.track_hover = true;
+      [icon].forEach((btn) => {
+        if (btn._connected) return;
+        btn._connected = true;
+        btn.button_mask = St.ButtonMask.ONE | St.ButtonMask.TWO;
+        btn.connectObject(
+          'enter-event',
+          () => {
+            this.showLabel();
+          },
+          'leave-event',
+          () => {
+            this.hideLabel();
+          },
+          'button-press-event',
+          (actor, evt) => {
+            if (evt.get_button() != 1) {
+              if (this._menu) {
+                this._menu.popup();
+              }
+            } else {
+              this._onClick();
+            }
+          },
+          this
+        );
+      });
+
+      return this._iconActor;
+    }
+  }
+);
+
+export const DockBackground = GObject.registerClass(
   {},
   class DockBackground extends St.Widget {
     _init(params) {
@@ -376,7 +395,6 @@ var DockBackground = GObject.registerClass(
       let {
         first,
         last,
-        padding,
         iconSize,
         scaleFactor,
         vertical,
@@ -385,65 +403,141 @@ var DockBackground = GObject.registerClass(
         dashContainer,
       } = params;
 
-      padding *= 0.5;
+      if (!first || !last) return;
 
       let p1 = first.get_transformed_position();
       let p2 = last.get_transformed_position();
-      if (!isNaN(p1[0]) && !isNaN(p1[1])) {
-        // bottom
-        this.x = p1[0] - padding;
-        this.y = first._fixedPosition[1] - padding; // p1[1] - padding
 
-        if (p2[1] > p1[1]) {
-          this.y = p2[1] - padding;
+      let padding =
+        4 +
+        iconSize *
+          scaleFactor *
+          0.15 *
+          (dashContainer.extension.dock_padding || 0);
+
+      if (!isNaN(p1[0]) && !isNaN(p1[1])) {
+        let tx = first._icon.translationX;
+        let ty = first._icon.translationY;
+        let tx2 = last._icon.translationX;
+        let ty2 = last._icon.translationY;
+
+        // bottom
+        this.x = p1[0] + tx;
+        this.y = first._fixedPosition[1];
+        let width = dashContainer.dash.width + Math.abs(tx) + tx2 - padding;
+        let height = dashContainer.dash.height;
+
+        if (dashContainer.isVertical()) {
+          this.x = first._fixedPosition[0];
+          this.y = first._fixedPosition[1] + ty;
+          width = dashContainer.dash.width;
+          height = dashContainer.dash.height + Math.abs(ty) + ty2 - padding;
         }
-        let width =
-          p2[0] -
-          p1[0] +
-          iconSize * scaleFactor * last._targetScale +
-          padding * 2;
-        let height = iconSize * scaleFactor + padding * 2;
 
         if (!isNaN(width)) {
           this.width = width;
         }
-        if (!isNaN(width)) {
+        if (!isNaN(height)) {
           this.height = height;
         }
 
-        // vertical
-        if (vertical) {
-          this.x = p1[0] - padding;
-          this.y = first._fixedPosition[1] - padding; // p1[1] - padding
+        this.x -= dashContainer.x;
+        this.y -= dashContainer.y;
+        this._padding = padding;
 
-          if (position == 'right' && p2[0] > p1[0]) {
-            this.x = p2[0] - padding;
-          }
-          if (position == 'left' && p2[0] < p1[0]) {
-            this.x = p2[0] - padding;
-          }
-
-          this.width = iconSize * scaleFactor + padding * 2;
-          this.height =
-            p2[1] -
-            p1[1] +
-            iconSize * scaleFactor * last._targetScale +
-            padding * 2;
-
-          // log(`${width} ${height}`);
-        }
+        // adjust padding
+        let az = -padding;
+        this.x += az / 2;
+        this.width -= az * (1 + !vertical);
+        this.y += az / 2;
+        this.height -= az * (1 + vertical);
 
         if (panel_mode) {
           if (vertical) {
             this.y = dashContainer.y;
             this.height = dashContainer.height;
           } else {
-            let pad = 0; //dashContainer.cornerPad || 0;
-            this.x = dashContainer.x - pad;
-            this.width = dashContainer.width + pad * 2;
-            this.height++;
+            this.x = dashContainer.x;
+            this.width = dashContainer.width;
           }
         }
+      }
+    }
+  }
+);
+
+export const DockPanelOverlay = GObject.registerClass(
+  {},
+  class DockPanelOverlay extends St.Widget {
+    _init(params) {
+      super._init({
+        name: 'DockOverlay',
+        ...(params || {}),
+      });
+    }
+
+    update(params) {
+      let {
+        background,
+        left,
+        right,
+        center,
+        panel_mode,
+        vertical,
+        dashContainer,
+        combine_top_bar,
+      } = params;
+
+      if (!combine_top_bar || !panel_mode || vertical) {
+        if (this.visible) {
+          dashContainer.restorePanel();
+        }
+        this.visible = false;
+        return;
+      }
+
+      this.visible = true;
+      dashContainer.panel.visible = false;
+
+      // this.style = 'border: 2px solid red;';
+      this.x = background.x;
+      this.y = background.y;
+      this.width = background.width;
+      this.height = background.height;
+
+      let margin = 20;
+
+      // left
+      if (left.get_parent() != this) {
+        left.get_parent().remove_child(left);
+        this.add_child(left);
+      }
+      left.x = margin;
+      left.y = this.height / 2 - left.height / 2;
+
+      // center
+      if (center.get_parent() != this) {
+        center.get_parent().remove_child(center);
+        this.add_child(center);
+      }
+      center.x = this.width - margin / 2 - center.width;
+      center.y = this.height / 2 - center.height / 2;
+
+      // right
+      if (right.get_parent() != this) {
+        right.get_parent().remove_child(right);
+        this.add_child(right);
+      }
+      right.height = center.height;
+      right.x = this.width - margin - right.width;
+      right.y = this.height / 2 - right.height / 2;
+
+      // align
+      if (center.height * 3 < this.height) {
+        right.y -= right.height / 1.5;
+        center.y += center.height / 1.5;
+      } else {
+        right.x -= center.width;
       }
     }
   }

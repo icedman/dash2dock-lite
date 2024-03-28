@@ -10,4 +10,5 @@ Actions=trash
 
 [Desktop Action trash]
 Name=Empty Trash
-Exec=/usr/local/bin/empty-trash.sh
+Exec={extension_path}/dash2dock-lite@icedman.github.com/apps/empty-trash.sh
+Terminal=true

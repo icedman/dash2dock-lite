@@ -4,15 +4,23 @@
      border: 2px solid magenta !important;
 }
 
-#d2dldotsContainer {
-/*  border: 2px solid red;*/
+#d2daDock.hi {
+  border: 2px solid red; 
 }
 
-#d2dldotsContainer #dash * {
-  margin: 0px !important;
-  padding: 0px !important;
+#DockStruts.hi {
+  border: 2px solid yellow; 
 }
 
-#d2dldotsContainer #dash .dash-item-container {
-/*  border: 2px solid red;*/
+#DockDwell.hi {
+  border: 2px solid yellow; 
+}
+
+#d2daDock * {
+ margin: 0px !important;
+ padding: 0px !important;
+}
+
+#d2daDock #dash .dash-item-container {
+/* border: 2px solid magenta;*/
 }

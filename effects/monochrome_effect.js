@@ -3,18 +3,18 @@
 
 'use strict';
 
-const { GLib, GObject, Gio, Clutter, Shell } = imports.gi;
-const ExtensionUtils = imports.misc.extensionUtils;
+import Shell from 'gi://Shell';
+import GLib from 'gi://GLib';
+import GObject from 'gi://GObject';
+import Clutter from 'gi://Clutter';
 
-const Me = ExtensionUtils.getCurrentExtension();
+const getMonochromeShaderSource = (extensionDir) => {
+  const SHADER_PATH = GLib.build_filenamev([
+    extensionDir,
+    'effects',
+    'monochrome_effect.glsl',
+  ]);
 
-const SHADER_PATH = GLib.build_filenamev([
-  Me.path,
-  'effects',
-  'monochrome_effect.glsl',
-]);
-
-const get_shader_source = (_) => {
   try {
     return Shell.get_file_contents_utf8_sync(SHADER_PATH);
   } catch (e) {
@@ -32,9 +32,9 @@ const get_shader_source = (_) => {
 ///
 /// GJS Doc:
 /// https://gjs-docs.gnome.org/clutter10~10_api/clutter.shadereffect
-var MonochromeEffect = new GObject.registerClass(
+export const MonochromeEffect = GObject.registerClass(
   {},
-  class ColorShader extends Clutter.ShaderEffect {
+  class MonochromeEffect extends Clutter.ShaderEffect {
     _init(params) {
       this._red = null;
       this._green = null;
@@ -50,15 +50,14 @@ var MonochromeEffect = new GObject.registerClass(
 
       super._init(params);
 
-      // set shader source
-
-      this._source = get_shader_source();
-
-      if (this._source) this.set_shader_source(this._source);
-
       // set shader color
-
       if (_color) this.color = _color;
+    }
+
+    preload(path) {
+      // set shader source
+      this._source = getMonochromeShaderSource(path);
+      if (this._source) this.set_shader_source(this._source);
 
       this.update_enabled();
     }
@@ -104,6 +103,12 @@ var MonochromeEffect = new GObject.registerClass(
     }
 
     set blend(value) {
+      if (value > 0.5) {
+        value *= 0.75;
+        if (value < 0.5) {
+          value = 0.5;
+        }
+      }
       if (this._blend !== value) {
         this._blend = value;
 

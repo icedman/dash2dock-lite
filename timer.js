@@ -1,8 +1,8 @@
 'use strict';
 
-const { GLib } = imports.gi;
+import GLib from 'gi://GLib';
 
-var Timer = class {
+export const Timer = class {
   constructor(name) {
     this._name = name;
     this._subscribers = [];

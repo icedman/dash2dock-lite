@@ -1,22 +1,21 @@
 'use strict';
 
-const Main = imports.ui.main;
-const Dash = imports.ui.dash.Dash;
-const Layout = imports.ui.layout;
-const Shell = imports.gi.Shell;
-const Meta = imports.gi.Meta;
-const St = imports.gi.St;
-const GLib = imports.gi.GLib;
-const Point = imports.gi.Graphene.Point;
+import * as Main from 'resource:///org/gnome/shell/ui/main.js';
+import Meta from 'gi://Meta';
+import Shell from 'gi://Shell';
+import GObject from 'gi://GObject';
+import Clutter from 'gi://Clutter';
+import Graphene from 'gi://Graphene';
+import St from 'gi://St';
 
-const ExtensionUtils = imports.misc.extensionUtils;
-const Me = ExtensionUtils.getCurrentExtension();
+import { DockPosition } from './dock.js';
+
+const Point = Graphene.Point;
 
 const HIDE_ANIMATION_INTERVAL = 15;
 const HIDE_ANIMATION_INTERVAL_PAD = 15;
 const DEBOUNCE_HIDE_TIMEOUT = 120;
-const PRESSURE_SENSE_DISTANCE = 20;
-const HIDE_PREVIEW_DURATION = 750;
+const PRESSURE_SENSE_DISTANCE = 40;
 
 // some codes lifted from dash-to-dock intellihide
 const handledWindowTypes = [
@@ -30,37 +29,18 @@ const handledWindowTypes = [
   // Meta.WindowType.SPLASHSCREEN
 ];
 
-var AutoHide = class {
+export let AutoHide = class {
   enable() {
-    // log('enable autohide');
+    if (this._enabled) return;
+    // console.log('enable autohide');
     this._enabled = true;
     this._shown = true;
     this._dwell = 0;
-
-    this._debounceCheckHide();
-
-    this.extension._loTimer.runSequence([
-      {
-        func: () => {
-          if (isNaN(this.dashContainer._fixedPosition)) {
-            this._checkHide();
-            this.dashContainer.layout();
-          }
-        },
-        delay: 500,
-      },
-      {
-        func: () => {
-          this._checkHide();
-        },
-        delay: 500,
-      },
-    ]);
-
-    log('autohide enabled');
+    console.log('autohide enabled');
   }
 
   disable() {
+    if (!this._enabled) return;
     if (this.extension._hiTimer) {
       this.extension._hiTimer.cancel(this._animationSeq);
     }
@@ -77,48 +57,10 @@ var AutoHide = class {
       }
     });
 
-    log('autohide disabled');
-  }
-
-  _beginAnimation(t) {
-    if (this.extension.animator._dragging) {
-      return;
-    }
-
-    if (t) {
-      this.target = this.dashContainer._fixedPosition;
-    } else {
-      this.target = this.dashContainer._hidePosition;
-    }
-
-    this.animationInterval = this.extension.animationInterval;
-    if (this.extension._hiTimer && this._animate()) {
-      if (!this._animationSeq) {
-        this._animationSeq = this.extension._hiTimer.runLoop(
-          () => {
-            this._animate();
-          },
-          this.animationInterval,
-          'autohideTimer'
-        );
-      } else {
-        this.extension._hiTimer.runLoop(this._animationSeq);
-      }
-    }
-  }
-
-  _endAnimation() {
-    if (this.extension._hiTimer) {
-      this.extension._hiTimer.cancel(this._animationSeq);
-    }
-
-    if (this.dashContainer) {
-      this.dashContainer.remove_style_class_name('hi');
-    }
+    console.log('autohide disabled');
   }
 
   _getScaleFactor() {
-    // let scaleFactor = St.ThemeContext.get_for_stage(global.stage).scale_factor;
     let scaleFactor = this.dashContainer._monitor.geometry_scale;
     return scaleFactor;
   }
@@ -127,6 +69,9 @@ var AutoHide = class {
     if (this.extension.pressure_sense && !this._shown) {
       let monitor = this.dashContainer._monitor;
       let pointer = global.get_pointer();
+      if (this.extension.simulated_pointer) {
+        pointer = [...this.extension.simulated_pointer];
+      }
 
       let sw = monitor.width;
       let sh = monitor.height;
@@ -142,20 +87,24 @@ var AutoHide = class {
         dy = dy * dy;
       }
 
-      if (this.extension._vertical) {
+      let dwell_count =
+        80 - 60 * (this.extension.pressure_sense_sensitivity || 0);
+
+      if (this.dashContainer.isVertical()) {
         if (
           // right
-          (this.extension._position == 'right' &&
+          (this.dashContainer._position == DockPosition.RIGHT &&
             dy < area &&
             pointer[0] > monitor.x + sw - 4) ||
           // left
-          (this.extension._position == 'left' &&
+          (this.dashContainer._position == DockPosition.LEFT &&
             dy < area &&
             pointer[0] < monitor.x + 4)
         ) {
           this._dwell++;
         } else {
           this._dwell = 0;
+          this.last_pointer = pointer;
         }
       } else {
         // bottom
@@ -163,14 +112,15 @@ var AutoHide = class {
           this._dwell++;
         } else {
           this._dwell = 0;
+          this.last_pointer = pointer;
         }
       }
 
-      if (this._dwell > 12) {
+      // console.log(`${this._dwell} ${dwell_count} ${this.extension.pressure_sense_sensitivity}`);
+
+      if (this._dwell > dwell_count) {
         this.show();
       }
-
-      this.last_pointer = pointer;
     }
   }
 
@@ -196,81 +146,17 @@ var AutoHide = class {
   }
 
   show() {
+    this._dwell = 0;
     this.frameDelay = 0;
     this._shown = true;
-    this._beginAnimation(true);
+    this.dashContainer.slideIn();
   }
 
   hide() {
+    this._dwell = 0;
     this.frameDelay = 10;
     this._shown = false;
-    this._beginAnimation(false);
-  }
-
-  _animate() {
-    // log('.');
-    if (!this.dashContainer) return false;
-
-    if (this.extension.animator && this.extension.animator._dragging) {
-      return false;
-    }
-
-    if (this._preview && this._preview > 0) {
-      this._preview -= this.animationInterval;
-    }
-
-    let x = this.dashContainer.position.x;
-    let y = this.dashContainer.position.y;
-
-    // temporarily disable autohide
-    if (this.animator && this.animator._enabled && this.animator._dragging) {
-      x = this.dashContainer._fixedPosition.x;
-      y = this.dashContainer._fixedPosition.y;
-
-      this.dashContainer.set_position(x, y);
-      this._endAnimation();
-      this.animator._endAnimation();
-      return true;
-    }
-
-    if (this.frameDelay && this.frameDelay-- > 0) {
-      return true;
-    }
-
-    if (this.extension.debug_visual) {
-      this.dashContainer.add_style_class_name('hi');
-    }
-
-    this._animating = false;
-    let travel = this.dashContainer._dockHeight;
-    let speed = travel / 150;
-    let dx = this.target[0] - x;
-    let dy = this.target[1] - y;
-    if (
-      (Math.sqrt(dx * dx) <= speed * this.animationInterval &&
-        Math.sqrt(dy * dy) <= speed * this.animationInterval) ||
-      this.animator._dragging
-    ) {
-      x = this.target[0];
-      y = this.target[1];
-      this._endAnimation();
-    } else {
-      x += speed * (dx < 0 ? -1 : 1) * this.animationInterval;
-      y += speed * (dy < 0 ? -1 : 1) * this.animationInterval;
-      this._animating = true;
-
-      // animate the icons if needed
-      if (this.animator && this.animator._enabled) {
-        this.animator._beginAnimation('autohider');
-      }
-    }
-
-    if (this.extension._vertical) {
-      this.dashContainer.set_position(x, this.target[1]);
-    } else {
-      this.dashContainer.set_position(this.target[0], y);
-    }
-    return this._animating;
+    this.dashContainer.slideOut();
   }
 
   _track(window) {
@@ -278,9 +164,15 @@ var AutoHide = class {
       // log('tracking...');
       window.connectObject(
         'position-changed',
-        this._debounceCheckHide.bind(this),
+        // this._debounceCheckHide.bind(this),
+        () => {
+          this.dashContainer.extension.checkHide();
+        },
         'size-changed',
-        this._debounceCheckHide.bind(this),
+        // this._debounceCheckHide.bind(this),
+        () => {
+          this.dashContainer.extension.checkHide();
+        },
         this
       );
       window._tracked = true;
@@ -298,44 +190,40 @@ var AutoHide = class {
     }
   }
 
-  preview(do_preview) {
-    if (do_preview === false) {
-      this._preview = null;
-    } else {
-      this._preview = HIDE_PREVIEW_DURATION;
-    }
-    this._checkHide();
-  }
-
   _checkOverlap() {
     if (this.extension._inOverview) {
       return false;
     }
     let pointer = global.get_pointer();
-    let dash_position = this.dashContainer._fixedPosition;
+    if (this.extension.simulated_pointer) {
+      pointer = [...this.extension.simulated_pointer];
+    }
 
-    if (this.dashContainer._disableAutohide) {
+    // inaccurate
+    let pos = this.dashContainer._get_position(this.dashContainer.struts);
+    let rect = {
+      x: pos[0],
+      y: pos[1],
+      w: this.dashContainer.struts.width,
+      h: this.dashContainer.struts.height,
+    };
+    let arect = [rect.x, rect.y, rect.w, rect.h];
+    let dash_position = [this.dashContainer.x, this.dashContainer.y];
+
+    if (!this.extension.autohide_dash) {
       return false;
     }
 
-    // log('---');
-    // log(pointer[1]);
-    // log(dash_position[1]);
+    // within the dash
+    if (
+      this.dashContainer._isWithinDash(pointer) ||
+      this.dashContainer._isInRect(arect, pointer)
+    ) {
+      return false;
+    }
 
-    if (this.extension._vertical) {
-      if (this.extension._position == 'right') {
-        // right
-        if (pointer[0] > dash_position[0]) {
-          return false;
-        }
-      } else {
-        //left
-        if (pointer[0] < dash_position[0] + this.dashContainer.width) {
-          return false;
-        }
-      }
-    } else {
-      if (pointer[1] > dash_position[1]) return false;
+    if (!this.extension.autohide_dodge) {
+      return true;
     }
 
     let monitor = this.dashContainer._monitor;
@@ -347,7 +235,6 @@ var AutoHide = class {
     });
     windows = windows.filter((w) => w.can_close());
     windows = windows.filter((w) => w.get_monitor() == monitor.index);
-
     let workspace = global.workspace_manager.get_active_workspace_index();
     windows = windows.filter(
       (w) =>
@@ -355,39 +242,24 @@ var AutoHide = class {
     );
     windows = windows.filter((w) => w.get_window_type() in handledWindowTypes);
 
-    windows.forEach((w) => this._track(w));
-
     let isOverlapped = false;
+    let dock = this.dashContainer._get_position(this.dashContainer.struts);
+    dock.push(this.dashContainer.struts.width);
+    dock.push(this.dashContainer.struts.height);
+
     windows.forEach((w) => {
+      this._track(w);
+      if (isOverlapped) return;
+
       let frame = w.get_frame_rect();
-      // log (`${frame.y} + ${frame.height}`);
-      if (this.extension._vertical) {
-        if (this.extension._position == 'right') {
-          if (frame.x + frame.width >= dash_position[0]) {
-            isOverlapped = true;
-          }
-        } else {
-          // left
-          if (frame.x <= dash_position[0] + this.dashContainer.width) {
-            isOverlapped = true;
-          }
-        }
-      } else {
-        if (frame.y + frame.height >= dash_position[1]) {
-          isOverlapped = true;
-        }
+      let win = [frame.x, frame.y, frame.width, frame.height];
+
+      if (this.dashContainer._isOverlapRect(dock, win)) {
+        isOverlapped = true;
       }
     });
 
     this.windows = windows;
-
-    // log(dash_position[1]);
-    // log(isOverlapped);
-    // log(windows);
-
-    if (this._preview && this._preview > 0) {
-      return true;
-    }
     return isOverlapped;
   }
 

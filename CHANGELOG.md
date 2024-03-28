@@ -1,10 +1,62 @@
 # Roadmap
 
-* Features frozen - Please migrate to Anino Dock
+* Panel mode features
+* Support for Gnome 42-44 (test with Debian)
+* Support for Gnome 40-42 (test with OpenSuse)
 
 # Current Issues
 
-* Autohide disabled at certain monitor layouts
+* check overlap with multi-monitor 
+* vertical layout does not support rearranging icons (as this is dependent on Gnome's own Dash which doesn't support this properly)
+* vertical layout does not support Apps Icon at front
+
+# Next Release
+
+* Gnome 46
+* Minor bug fixes
+
+# Release 50
+
+* Major bug fixes
+
+# Release 47
+
+* Add Downloads folder with fan pullout
+* Add separator with styles
+* Clock styles
+
+# Release 46
+
+* Minor bug fixes
+
+# Release 45
+
+* Multi-Monitor support
+* Major overhaul
+* Dynamic icons improvement
+
+# Release 43
+
+* Fix lag. Revamped animation for faster and more resource efficient animation.
+* Add bounce animation setting
+
+# Release 40
+
+* Fix hit areas outside of dock region
+
+# Release 37,38,39
+
+* Fix unresponsive Apps Button when animation is disabled
+* Other bug fixes
+
+# Release 36
+
+* Fix tint & monochrome settings
+* Improve animtion icon positions
+
+# Release 35
+
+* Gnome 45
 
 # Release 27
 

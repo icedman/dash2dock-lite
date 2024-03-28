@@ -1,27 +1,42 @@
+/* extension.js
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ *
+ */
+
 'use strict';
 
-const { St, Shell, GObject, Gio, GLib, Gtk, Meta, Clutter } = imports.gi;
+import * as Main from 'resource:///org/gnome/shell/ui/main.js';
+import * as Fav from 'resource:///org/gnome/shell/ui/appFavorites.js';
 
-const Main = imports.ui.main;
-const Dash = imports.ui.dash.Dash;
-const Fav = imports.ui.appFavorites;
-const Layout = imports.ui.layout;
-const Point = imports.gi.Graphene.Point;
+import St from 'gi://St';
+import Shell from 'gi://Shell';
 
-const ExtensionUtils = imports.misc.extensionUtils;
-const Me = ExtensionUtils.getCurrentExtension();
+import { Timer } from './timer.js';
+import { Style } from './style.js';
+import { Dock } from './dock.js';
+import { Services } from './services.js';
+import { runTests } from './diagnostics.js';
 
-const { schemaId, settingsKeys, SettingsKeys } = Me.imports.preferences.keys;
+import {
+  Extension,
+  gettext as _,
+} from 'resource:///org/gnome/shell/extensions/extension.js';
 
-const LampAnimation = Me.imports.effects.lamp_animation.LampAnimation;
-const Animator = Me.imports.animator.Animator;
-const AutoHide = Me.imports.autohide.AutoHide;
-const Services = Me.imports.services.Services;
-const Style = Me.imports.style.Style;
-const Timer = Me.imports.timer.Timer;
-const Dock = Me.imports.dock.Dock;
-
-const runTests = Me.imports.diagnostics.runTests;
+import { schemaId, SettingsKeys } from './preferences/keys.js';
 
 const SERVICES_UPDATE_INTERVAL = 2500;
 
@@ -29,12 +44,77 @@ const ANIM_ICON_QUALITY = 2.0;
 const ANIM_INTERVAL = 15;
 const ANIM_INTERVAL_PAD = 15;
 
-class Extension {
+export default class Dash2DockLiteExt extends Extension {
+  createDock() {
+    let d = new Dock({ extension: this });
+    d.extension = this;
+    d.dock();
+    this.dock = d;
+    this.docks.push(this.dock);
+    this.listeners = [this.services, ...this.docks];
+    this._monitorIndex = 0;
+    return d;
+  }
+
+  createTheDocks() {
+    this.docks = this.docks ?? [];
+
+    // only one dock
+    if (
+      Main.layoutManager.monitors.length == 1 ||
+      this.multi_monitor_preference == 0
+    ) {
+      if (this.docks.length > 1) {
+        this.destroyDocks();
+      }
+      if (this.docks.length == 0) {
+        this.createDock();
+      }
+      return;
+    }
+
+    if (
+      Main.layoutManager.monitors.length > 0 &&
+      this.multi_monitor_preference == 1
+    ) {
+      let count = Main.layoutManager.monitors.length;
+      if (count != this.docks.length) {
+        this.destroyDocks();
+      }
+
+      for (let i = 0; i < count; i++) {
+        let d = this.createDock();
+        d._monitorIndex = i;
+      }
+    }
+  }
+
+  destroyDocks() {
+    (this.docks || []).forEach((dock) => {
+      dock.undock();
+      dock.cancelAnimations();
+      this.dock = null;
+    });
+    this.docks = [];
+  }
+
+  recreateAllDocks(delay = 750) {
+    // some settings change cause glitches ... recreate all docks (workaround)
+    if (!this._recreateSeq) {
+      this._recreateSeq = this._loTimer.runDebounced(() => {
+        this.destroyDocks();
+        this.createTheDocks();
+      }, delay);
+    } else {
+      this._loTimer.runDebounced(this._recreateSeq);
+    }
+  }
+
   enable() {
+    this._enableJitterHack = true;
+
     // for debugging - set to 255
     this._dash_opacity = 0;
-
-    this._imports = Me.imports;
 
     // three available timers
     // for persistent runs
@@ -55,60 +135,51 @@ class Extension {
     this.icon_size = 0;
     this.icon_quality = ANIM_ICON_QUALITY;
 
-    Main._d2dl = this;
-
     this._style = new Style();
 
     this._enableSettings();
 
-    this._disable_borders = this.border_radius > 0;
+    // no longer needed
+    // this._disable_borders = this.border_radius > 0;
+
     // animations are always on - but may be muted
-    if (!SettingsKeys.getValue('animate-icons')) {
-      SettingsKeys.setValue('animate-icons', true);
+    if (!this._settingsKeys.getValue('animate-icons')) {
+      this._settingsKeys.setValue('animate-icons', true);
     }
 
-    this.dashContainer = new Dock();
-    this.dashContainer.extension = this;
+    Main.overview.dash.last_child.reactive = false;
+    Main.overview.dash.opacity = 0;
 
-    Main.overview.dash.visible = false;
+    this.docks = [];
 
     // service
     this.services = new Services();
     this.services.extension = this;
-
-    // animator
-    this.animator = this.dashContainer.animator;
-    this.animator.extension = this;
-
-    // autohider
-    this.autohider = this.dashContainer.autohider;
-    this.autohider.extension = this;
-    this.autohider.animator = this.animator;
-
-    this._queryDisplay();
-    this.dashContainer.dock();
+    this.services.setupFolderIcons();
 
     // todo follow animator and autohider protocol
     this.services.enable();
-
-    this.listeners = [this.services, this.autohider, this.animator];
-
     this._onCheckServices();
 
-    this._updateLampAnimation();
-    this._updateAnimationFPS();
-    this._updateShrink();
-    this._updateIconResolution();
-    this._updateLayout();
-    this._updateAutohide();
-    this._updateTrashIcon();
-    this._updateStyle();
+    // this._updateAnimationFPS();
+    // this._updateShrink();
+    // this._updateIconResolution();
+    // this._updateLayout();
+    // this._updateAutohide();
+    // this._updateWidgetStyle();
+    // this._updateStyle();
 
     this._addEvents();
+
+    this._queryDisplay();
+
+    // this._updateStyle();
 
     this.startUp();
 
     log('dash2dock-lite enabled');
+
+    Main.overview.d2dl = this;
   }
 
   disable() {
@@ -121,20 +192,21 @@ class Extension {
     this._removeEvents();
     this._disableSettings();
 
-    this._updateLampAnimation(true);
     this._updateShrink(true);
     this._updateLayout(true);
     this._updateAutohide(true);
 
-    Main.overview.dash.visible = true;
-    this.dashContainer.undock();
+    Main.overview.dash.last_child.visible = true;
+    Main.overview.dash.opacity = 255;
 
-    Main.layoutManager.removeChrome(this.dashContainer);
-    delete this.dashContainer;
-    this.dashContainer = null;
+    this.docks.forEach((container) => {
+      container.undock();
+    });
+    this.docks = [];
+
+    this.destroyDocks();
 
     this.services.disable();
-    delete this.services;
     this.services = null;
 
     this._timer = null;
@@ -148,78 +220,80 @@ class Extension {
     log('dash2dock-lite disabled');
   }
 
-  animate() {
-    this.dashContainer._onEnterEvent();
+  animate(settings = {}) {
+    this.docks.forEach((dock) => {
+      if (settings && settings.preview) {
+        dock.preview();
+      }
+      if (settings.refresh) {
+        dock._icons = null;
+        dock.layout();
+      }
+      dock._beginAnimation();
+    });
+  }
+
+  checkHide() {
+    this.docks.forEach((dock) => {
+      if (dock.autohider) {
+        dock.autohider._debounceCheckHide();
+      }
+    });
   }
 
   startUp() {
-    this.dashContainer.animator._invisible(true, true);
+    this.createTheDocks();
+    this._loTimer.runOnce(() => {
+      this._updateAnimationFPS();
+      this._updateShrink();
+      this._updateIconResolution();
+      // this._updateLayout();
+      // this._updateAutohide();
+      this._updateWidgetStyle();
+      this._updateStyle();
 
-    // todo... refactor this
-    if (!this._startupSeq) {
-      let func = () => {
-        this._updateLayout();
-        this.animate();
-        if (!this._vertical) {
-          this.dashContainer.animator._invisible(false, false);
-        }
-      };
-      this._startupSeq = this._hiTimer.runSequence([
-        { func, delay: 50 },
-        { func, delay: 500 },
-        {
-          func: () => {
-            this.dashContainer.animator._invisible(false, false);
-          },
-          delay: 50,
-        },
-        {
-          func: () => {
-            this.dashContainer.animator._invisible(false, false);
-          },
-          delay: 250,
-        },
-      ]);
-    } else {
-      this._hiTimer.runSequence(this._startupSeq);
-    }
+      this.animate({ refresh: true });
+      this.docks.forEach((dock) => {
+        dock._debounceEndAnimation();
+      });
+    }, 10);
   }
 
-  _queryDisplay() {
+  _autohiders() {
+    return this.docks.map((d) => {
+      return d.autohider;
+    });
+  }
+
+  // to be called by docks
+  _queryDisplay(currentMonitorIndex) {
+    if (
+      Main.layoutManager.monitors.length > 0 &&
+      this.multi_monitor_preference > 0
+    ) {
+      // if multi-monitor ... left _updateLayout take care of updating the docks
+      return currentMonitorIndex;
+    }
+
     let idx = this.preferred_monitor || 0;
     if (idx == 0) {
       idx = Main.layoutManager.primaryIndex;
     } else if (idx == Main.layoutManager.primaryIndex) {
       idx = 0;
     }
-    this.monitor = Main.layoutManager.monitors[idx];
 
-    if (!this.monitor) {
-      this.monitor = Main.layoutManager.primaryMonitor;
+    if (!Main.layoutManager.monitors[idx]) {
       idx = Main.layoutManager.primaryIndex;
     }
 
-    if (this.dashContainer) {
-      this.dashContainer._monitorIndex = idx;
-      this.dashContainer._monitor = this.monitor;
-      this.dashContainer._monitorIsPrimary =
-        this.monitor == Main.layoutManager.primaryMonitor;
-    }
-
-    if (this._last_monitor_count != Main.layoutManager.monitors.length) {
-      this._settings.set_int(
-        'monitor-count',
-        Main.layoutManager.monitors.length
-      );
-      this._last_monitor_count = Main.layoutManager.monitors.length;
-    }
+    return idx;
   }
 
   _enableSettings() {
-    this._settings = ExtensionUtils.getSettings(schemaId);
-    this._settingsKeys = SettingsKeys;
+    this._settings = this.getSettings(schemaId);
+    this._settingsKeys = SettingsKeys();
 
-    SettingsKeys.connectSettings(this._settings, (name, value) => {
+    this._settingsKeys.connectSettings(this._settings, (name, value) => {
       let n = name.replace(/-/g, '_');
       this[n] = value;
 
@@ -241,16 +315,25 @@ class Extension {
           this._updateAnimationFPS();
           break;
         }
-        case 'mounted-icon':
+        case 'debug-visual':
+          this.animate();
+          break;
+        case 'mounted-icon': {
+          this.services.checkMounts();
+          this.services._commitMounts();
+          this.animate({ refresh: true });
+          break;
+        }
         case 'peek-hidden-icons': {
+          this.animate();
           break;
         }
         case 'animation-magnify':
         case 'animation-spread':
-        case 'animation-rise': {
+        case 'animation-rise':
+        case 'animation-bounce': {
           if (this.animate_icons) {
-            this.animator.preview();
-            this.animate();
+            this.animate({ preview: true });
           }
           break;
         }
@@ -261,60 +344,65 @@ class Extension {
           this.animate();
           break;
         }
-        case 'apps-icon':
-        case 'calendar-icon':
-        case 'clock-icon': {
-          this.animate();
+        case 'clock-style':
+        case 'calendar-style':
+          this._updateWidgetStyle();
           break;
-        }
+        case 'max-recent-items':
+          this.services.checkDownloads();
+          break;
+        case 'apps-icon':
+        case 'apps-icon-front':
+        case 'calendar-icon':
+        case 'clock-icon':
         case 'favorites-only': {
-          this.animator.relayout();
-          this._updateLayout();
-          this.animate();
+          this.animate({ refresh: true });
           break;
         }
         // problematic settings needing animator restart
         case 'dock-location':
         case 'icon-resolution': {
-          this._disable_borders = this.border_radius > 0;
           this._updateIconResolution();
-          this.animator._previousFind = null;
-          this.animator._iconsContainer.clear();
-          if (this.autohide_dash) {
-            this.autohider.disable();
-            this.autohider.enable();
-          }
-          this.animator._background.visible = false;
           this._updateStyle();
           this._updateLayout();
+          this._updateIconSpacing();
           this.animate();
           break;
         }
         case 'icon-effect': {
-          if (this.animate_icons) {
-            this.animator._updateIconEffect();
-            this._updateLayout();
-            this.animate();
-          }
+          this.docks.forEach((dock) => {
+            dock._updateIconEffect();
+          });
           break;
         }
         case 'icon-effect-color': {
-          if (this.animate_icons && this.animator.iconEffect) {
-            this.animator.iconEffect.color = this.icon_effect_color;
-            this.animate();
-          }
+          this.docks.forEach((dock) => {
+            if (dock.iconEffect) {
+              dock.iconEffect.color = this.icon_effect_color;
+            }
+          });
+          this.animate();
           break;
         }
+        case 'icon-spacing': {
+          this._updateIconSpacing();
+          break;
+        }
+        case 'multi-monitor-preference':
+          this._updateMultiMonitorPreference();
+          break;
         case 'icon-size':
         case 'preferred-monitor': {
           this._updateLayout();
           this.animate();
           break;
         }
+        case 'autohide-dodge':
         case 'autohide-dash': {
           this._updateAutohide();
           break;
         }
+        case 'dock-padding':
         case 'edge-distance': {
           this.animate();
           break;
@@ -325,20 +413,25 @@ class Extension {
           this.animate();
           break;
         }
-        case 'lamp-app-animation': {
-          this._updateLampAnimation();
-          break;
-        }
         case 'border-radius':
           this._debouncedUpdateStyle();
           break;
+        case 'separator-color':
+        case 'separator-thickness':
         case 'border-color':
         case 'border-thickness':
         case 'customize-topbar':
+        case 'icon-shadow':
         case 'topbar-border-color':
         case 'topbar-border-thickness':
         case 'topbar-background-color':
         case 'topbar-foreground-color':
+        case 'customize-label':
+        case 'label-border-radius':
+        case 'label-border-color':
+        case 'label-border-thickness':
+        case 'label-background-color':
+        case 'label-foreground-color':
         case 'background-color':
         case 'panel-mode': {
           this._updateStyle();
@@ -349,23 +442,18 @@ class Extension {
         case 'pressure-sense': {
           break;
         }
+        case 'downloads-icon':
+        case 'documents-icon':
         case 'trash-icon': {
-          this._updateTrashIcon();
           this._updateLayout();
           this.animate();
-
-          this._loTimer.runOnce(() => {
-            this._updateLayout();
-            this.animate();
-          }, 250);
-
           break;
         }
       }
     });
 
-    Object.keys(SettingsKeys._keys).forEach((k) => {
-      let key = SettingsKeys.getKey(k);
+    Object.keys(this._settingsKeys._keys).forEach((k) => {
+      let key = this._settingsKeys.getKey(k);
       let name = k.replace(/-/g, '_');
       this[name] = key.value;
       if (key.options) {
@@ -375,23 +463,46 @@ class Extension {
   }
 
   _disableSettings() {
-    SettingsKeys.disconnectSettings();
+    this._settingsKeys.disconnectSettings();
+    this._settingsKeys = null;
   }
 
   _addEvents() {
-    // Main.sessionMode.connectObject(
-    //   'updated',
-    //   () => this._onSessionUpdated(),
-    //   this
-    // );
+    this._appSystem = Shell.AppSystem.get_default();
+
+    this._appSystem.connectObject(
+      'installed-changed',
+      () => {
+        this._onAppsChanged();
+      },
+      'app-state-changed',
+      () => {
+        this._onAppsChanged();
+      },
+      this
+    );
+
+    this._appFavorites = Fav.getAppFavorites();
+    this._appFavorites.connectObject(
+      'changed',
+      () => {
+        this._onAppsChanged();
+      },
+      this
+    );
+
+    Main.sessionMode.connectObject(
+      'updated',
+      this._onSessionUpdated.bind(this),
+      this
+    );
 
     Main.layoutManager.connectObject(
       // 'startup-complete',
       // this.startUp.bind(this),
       'monitors-changed',
       () => {
-        this._updateLayout();
-        this.animate();
+        this._updateMultiMonitorPreference();
       },
       this
     );
@@ -406,10 +517,6 @@ class Extension {
     );
 
     global.display.connectObject(
-      // 'window-demands-attention',
-      // () => { log('window-demands-attention') },
-      // 'window-marked-urgent',
-      // () => { log('window-marked-urgent') },
       'notify::focus-window',
       this._onFocusWindow.bind(this),
       'in-fullscreen-changed',
@@ -420,9 +527,6 @@ class Extension {
     Main.overview.connectObject(
       'showing',
       this._onOverviewShowing.bind(this),
-      this
-    );
-    Main.overview.connectObject(
       'hidden',
       this._onOverviewHidden.bind(this),
       this
@@ -445,7 +549,8 @@ class Extension {
   }
 
   _removeEvents() {
-    // Main.sessionMode.disconnectObject(this);
+    this._appSystem.disconnectObject(this);
+    this._appFavorites.disconnectObject(this);
     Main.messageTray.disconnectObject(this);
     Main.overview.disconnectObject(this);
     Main.layoutManager.disconnectObject(this);
@@ -459,51 +564,88 @@ class Extension {
       this.services.disable();
       this.services.enable();
     }
-    this.animator._previousFind = null;
-    this.animator._iconsContainer.clear();
     this._updateStyle();
     this.animate();
   }
 
   _onFocusWindow() {
-    this.listeners
-      .filter((l) => {
-        return l._enabled;
-      })
-      .forEach((l) => {
-        if (l._onFocusWindow) l._onFocusWindow();
-      });
+    let listeners = [...this.listeners];
+    listeners.forEach((l) => {
+      if (l._onFocusWindow) l._onFocusWindow();
+    });
+  }
+
+  _onAppsChanged() {
+    let listeners = [...this.listeners];
+    listeners.forEach((l) => {
+      if (l._onAppsChanged) l._onAppsChanged();
+    });
   }
 
   _onFullScreen() {
-    this.listeners
-      .filter((l) => {
-        return l._enabled;
-      })
-      .forEach((l) => {
-        if (l._onFullScreen) l._onFullScreen();
+    let listeners = [...this.listeners];
+    listeners.forEach((l) => {
+      if (l._onFullScreen) l._onFullScreen();
+    });
+  }
+
+  _onOverviewShowing() {
+    this._inOverview = true;
+    this._autohiders().forEach((autohider) => {
+      autohider._debounceCheckHide();
+    });
+  }
+
+  _onOverviewHidden() {
+    this._inOverview = false;
+    this._autohiders().forEach((autohider) => {
+      autohider._debounceCheckHide();
+    });
+  }
+
+  _onSessionUpdated() {
+    this.animate();
+  }
+
+  _onCheckServices() {
+    if (!this.services) return; // todo why does this happen?
+    // todo convert services time in seconds
+    this.services.update(SERVICES_UPDATE_INTERVAL);
+  }
+
+  _updateWidgetStyle() {
+    this._widgetStyle = {
+      dark_color: this.drawing_dark_color,
+      light_color: this.drawing_light_color,
+      accent_color: this.drawing_accent_color,
+      dark_foreground: this.drawing_dark_foreground,
+      light_foreground: this.drawing_light_foreground,
+      secondary_color: this.drawing_secondary_color,
+      clock_style: this.clock_style,
+    };
+    this.docks.forEach((dock) => {
+      let widgets = [dock._clock, dock._calendar];
+      widgets.forEach((w) => {
+        if (w) {
+          w.settings = this._widgetStyle;
+          w.redraw();
+        }
       });
+    });
+    this.animate();
   }
 
   _updateAnimationFPS() {
-    this.dashContainer.cancelAnimations();
+    this.docks.forEach((dock) => {
+      dock.cancelAnimations();
+    });
     this.animationInterval =
       ANIM_INTERVAL + (this.animation_fps || 0) * ANIM_INTERVAL_PAD;
     this._hiTimer.shutdown();
     this._hiTimer.initialize(this.animationInterval);
   }
 
-  _updateLampAnimation(disable) {
-    if (this.lamp_app_animation && !disable) {
-      LampAnimation.enable();
-    } else {
-      LampAnimation.disable();
-    }
-  }
-
   _updateShrink(disable) {
-    if (!this.dashContainer) return;
-
     if (this.shrink_icons && !disable) {
       this.scale = 0.8; // * rescale_modifier;
     } else {
@@ -511,8 +653,16 @@ class Extension {
     }
 
     if (this.animate_icons) {
-      this.animator.relayout();
+      // this._animators().forEach((animator) => {
+      //   animator.relayout();
+      // });
     }
+  }
+
+  _updateMultiMonitorPreference() {
+    this.createTheDocks();
+    this._updateLayout();
+    this.animate();
   }
 
   _updateIconResolution(disable) {
@@ -539,6 +689,16 @@ class Extension {
 
     let rads = [0, 8, 16, 20, 24, 28, 32];
 
+    // icons-shadow
+    if (this.icon_shadow) {
+      styles.push(
+        '#dash StIcon, #DockItemList StIcon {icon-shadow: rgba(0, 0, 0, 0.24) 0 2px 6px;}'
+      );
+      styles.push(
+        '#dash StIcon:hover, #DockItemList StIcon:hover {icon-shadow: rgba(0, 0, 0, 0.24) 0 2px 8px;}'
+      );
+    }
+
     // dash
     {
       let r = rads[Math.floor(this.border_radius)];
@@ -554,6 +714,32 @@ class Extension {
       }
 
       styles.push(`#d2dlBackground { ${ss.join(' ')}}`);
+    }
+
+    // dash label
+    if (this.customize_label) {
+      let rads = [0, 2, 6, 10, 12, 16, 20];
+      let r = rads[Math.floor(this.label_border_radius)];
+      let ss = [];
+      ss.push(`border-radius: ${r}px;`);
+
+      {
+        let rgba = this._style.rgba(this.label_background_color);
+        ss.push(`background: rgba(${rgba});`);
+      }
+
+      {
+        let rgba = this._style.rgba(this.label_border_color);
+        let t = this.label_border_thickness;
+        ss.push(`border: ${t}px rgba(${rgba});`);
+      }
+
+      {
+        let rgba = this._style.rgba(this.label_foreground_color);
+        ss.push(`color: rgba(${rgba});`);
+      }
+
+      styles.push(`.dash-label { ${ss.join(' ')}}`);
     }
 
     // topbar
@@ -589,49 +775,80 @@ class Extension {
       }
     }
 
-    this._style.build('custom', styles);
+    if (this.separator_thickness) {
+      let rgba = this._style.rgba(this.separator_color);
+      styles.push(`.dash-separator { background-color: rgba(${rgba}); }`);
+    }
+
+    this._style.build('custom-d2dl', styles);
+
     this._updateBorderStyle();
   }
 
   _updateBorderStyle() {
+    this._backgroundStyle = '';
+
     // apply border as inline style... otherwise buggy and won't show at startup
     // also add deferred bordering... otherwise rounder borders show with artifacts
-    if (this.border_thickness && !this._disable_borders) {
+    // no longer necessary<<<?
+
+    let border_style = '';
+    if (this.border_thickness /* && !this._disable_borders */) {
       let rgba = this._style.rgba(this.border_color);
-      let disable_borders = '';
-      if (this.panel_mode) {
-        disable_borders =
-          'border-left: 0px; border-right: 0px; border-bottom: 0px;';
-        // vertical border-left/right doesn;t seem to work
-        if (this._position == 'left') {
-          disable_borders =
-            'border-left: 0px; border-top: 0px; border-bottom: 0px;';
-        }
-        if (this._position == 'right') {
-          disable_borders =
-            'border-top: 0px; border-right: 0px; border-bottom: 0px;';
-        }
-      }
-      this.animator._background.style = `border: ${this.border_thickness}px solid rgba(${rgba}) !important; ${disable_borders}`;
-    } else {
-      this.animator._background.style = '';
+      border_style = `border: ${this.border_thickness}px solid rgba(${rgba}) !important;`;
     }
+
+    let panel_borders = '';
+    if (this.panel_mode) {
+      panel_borders =
+        'border-left: 0px; border-right: 0px; border-bottom: 0px;';
+      // vertical border-left/right doesn;t seem to work
+      if (this._position == 'left') {
+        panel_borders =
+          'border-left: 0px; border-top: 0px; border-bottom: 0px;';
+      }
+      if (this._position == 'right') {
+        panel_borders =
+          'border-top: 0px; border-right: 0px; border-bottom: 0px;';
+      }
+    }
+
+    this._backgroundStyle = `${border_style} ${panel_borders}`;
   }
 
   _updateLayout(disable) {
-    this.dashContainer.layout(disable);
+    // console.log(this.multi_monitor_preference);
+    this.docks.forEach((dock) => {
+      dock.layout();
+    });
+  }
+
+  _updateIconSpacing(disable) {
+    if (!this._iconSpacingDebounceSeq) {
+      this._iconSpacingDebounceSeq = this._loTimer.runDebounced(() => {
+        this.animate({ refresh: true });
+      }, 750);
+    } else {
+      this._loTimer.runDebounced(this._iconSpacingDebounceSeq);
+    }
   }
 
   _updateAutohide(disable) {
     if (this.autohide_dash && !disable) {
-      this.autohider.enable();
+      this._autohiders().forEach((autohider) => {
+        autohider.enable();
+      });
     } else {
-      this.autohider.disable();
+      this._autohiders().forEach((autohider) => {
+        autohider.disable();
+      });
     }
 
     if (!disable) {
-      this.dashContainer.removeFromChrome();
-      this.dashContainer.addToChrome();
+      this.docks.forEach((dock) => {
+        dock.removeFromChrome();
+        dock.addToChrome();
+      });
     }
 
     if (this.animate_icons && !disable) {
@@ -639,45 +856,12 @@ class Extension {
     }
   }
 
-  _updateTrashIcon() {
-    this.services.updateTrashIcon(this.trash_icon);
-  }
-
-  _onOverviewShowing() {
-    this._inOverview = true;
-    if (this.autohider._enabled) {
-      this.autohider._debounceCheckHide();
-    }
-    // log('_onOverviewShowing');
-  }
-
-  _onOverviewHidden() {
-    this._inOverview = false;
-    if (this.autohider._enabled) {
-      this.autohider._debounceCheckHide();
-    }
-    // log('_onOverviewHidden');
-  }
-
-  _onSessionUpdated() {
-    if (this.animator) {
-      this.animator.relayout();
-    }
-  }
-
-  _onCheckServices() {
-    if (!this.services) return; // todo why does this happen?
-    // todo convert services time in seconds
-    this.services.update(SERVICES_UPDATE_INTERVAL);
-    this._updateTrashIcon();
-  }
-
   runDiagnostics() {
     if (!this._diagnosticTimer) {
       this._diagnosticTimer = new Timer('diagnostics');
       this._diagnosticTimer.initialize(50);
     }
-    runTests(this, SettingsKeys);
+    runTests(this, this._settingsKeys);
   }
 
   dumpTimers() {
@@ -688,8 +872,4 @@ class Extension {
       this._diagnosticTimer.dumpSubscribers();
     }
   }
-}
-
-function init() {
-  return new Extension();
 }

@@ -18,9 +18,13 @@ def modifyMetadata():
         o.write(l)
 
 def dump(f):
-    if f.startswith("./tests/"):
+    if "imports_" in f:
         return
-    if f.startswith("./dist/"):
+    if "tests/" in f:
+        return
+    if "dist/" in f:
+        return
+    if "build/" in f:
         return
     if not buildPrefs and "prefs.js" in f:
         return

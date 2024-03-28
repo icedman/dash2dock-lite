@@ -72,7 +72,7 @@ export let Animator = class {
 
     let idx = 0;
     animateIcons.forEach((icon) => {
-      let pos = dock._get_position(icon);
+      let pos = icon.get_transformed_position();
       icon._pos = [...pos];
       icon._fixedPosition = [...pos];
 
@@ -135,7 +135,7 @@ export let Animator = class {
     // animate
     let iconTable = [];
     animateIcons.forEach((icon) => {
-      let original_pos = dock._get_position(icon);
+      let original_pos = icon.get_transformed_position();
 
       // used by background resizing and repositioning
       icon._fixedPosition = [...original_pos];

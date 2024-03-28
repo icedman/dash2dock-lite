@@ -190,7 +190,7 @@ export const DockItemList = GObject.registerClass(
       this.height = dock._monitor.height;
 
       this._target = target;
-      let tp = dock._get_position(target);
+      let tp = target.get_transformed_position();
 
       this._box = new St.Widget({ style_class: '-hi' });
       list.forEach((l) => {
@@ -403,7 +403,10 @@ export const DockBackground = GObject.registerClass(
         dashContainer,
       } = params;
 
-      if (!first || !last) return;
+      if (!first || !last || first == last) {
+        this.opacity = 0;
+        return;
+      }
 
       let p1 = first.get_transformed_position();
       let p2 = last.get_transformed_position();
@@ -461,6 +464,8 @@ export const DockBackground = GObject.registerClass(
             this.width = dashContainer.width;
           }
         }
+
+        this.opacity = 255;
       }
     }
   }

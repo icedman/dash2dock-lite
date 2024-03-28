@@ -200,7 +200,7 @@ export let AutoHide = class {
     }
 
     // inaccurate
-    let pos = this.dashContainer._get_position(this.dashContainer.struts);
+    let pos = this.dashContainer.struts.get_transformed_position();
     let rect = {
       x: pos[0],
       y: pos[1],
@@ -243,7 +243,7 @@ export let AutoHide = class {
     windows = windows.filter((w) => w.get_window_type() in handledWindowTypes);
 
     let isOverlapped = false;
-    let dock = this.dashContainer._get_position(this.dashContainer.struts);
+    let dock = this.dashContainer.struts.get_transformed_position();
     dock.push(this.dashContainer.struts.width);
     dock.push(this.dashContainer.struts.height);
 

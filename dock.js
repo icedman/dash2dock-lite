@@ -936,7 +936,7 @@ export let Dock = GObject.registerClass(
 
     animate() {
       if (this._preview) {
-        let p = this._get_position(this.dash);
+        let p = this.dash.get_transformed_position();
         p[0] += this.dash.width / 2;
         p[1] += this.dash.height / 2;
         this.simulated_pointer = p;
@@ -944,10 +944,6 @@ export let Dock = GObject.registerClass(
       }
       this.animator.animate();
       this.simulated_pointer = null;
-    }
-
-    _get_position(obj) {
-      return [...obj.get_transformed_position()];
     }
 
     _get_distance_sqr(pos1, pos2) {
@@ -989,7 +985,7 @@ export let Dock = GObject.registerClass(
         return false;
       }
       if (this._hoveredIcon) return true;
-      let xy = this._get_position(this.struts);
+      let xy = this.struts.get_transformed_position();
       let wh = [this.struts.width, this.struts.height];
       if (this._isInRect([xy[0], xy[1], wh[0], wh[1]], p, 20)) {
         return true;

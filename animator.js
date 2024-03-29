@@ -219,6 +219,14 @@ export let Animator = class {
 
     dock._hoveredIcon = hoveredIcon;
 
+    // compiz alike lamp animation compatibility
+    if (hoveredIcon) {
+      if (!Main.overview.dash.__box) {
+        Main.overview.dash.__box = Main.overview.dash._box;
+      }
+      Main.overview.dash._box = dock.dash._box;
+    }
+
     // re-center to hovered icon
     let TRANSLATE_COEF = 24;
     if (hoveredIcon) {

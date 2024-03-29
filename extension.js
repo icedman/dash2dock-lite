@@ -199,6 +199,9 @@ export default class Dash2DockLiteExt extends Extension {
 
     Main.overview.dash.last_child.visible = true;
     Main.overview.dash.opacity = 255;
+    if (Main.overview.dash.__box) {
+      Main.overview.dash._box = Main.overview.dash.__box;
+    }
 
     this.docks.forEach((container) => {
       container.undock();

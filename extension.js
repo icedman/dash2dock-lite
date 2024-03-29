@@ -48,6 +48,7 @@ export default class Dash2DockLiteExt extends Extension {
   createDock() {
     let d = new Dock({ extension: this });
     d.extension = this;
+    d.opacity = 0; // animate
     d.dock();
     this.dock = d;
     this.docks.push(this.dock);
@@ -251,7 +252,6 @@ export default class Dash2DockLiteExt extends Extension {
       this._updateStyle();
       this.animate({ refresh: true });
       this.docks.forEach((dock) => {
-        dock.opacity = 0;;
         dock._debounceEndAnimation();
       });
     }, 10);

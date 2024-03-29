@@ -873,3 +873,11 @@ export default class Dash2DockLiteExt extends Extension {
     }
   }
 }
+
+//-------------------
+// needed by Gnome 44
+//-------------------
+
+function init() {
+  return new Dash2DockLiteExt();
+}

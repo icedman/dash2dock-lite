@@ -40,12 +40,12 @@ publish:
 publish-g44:
 	echo "publishing..."
 	rm -rf build
-	rm -rf ./dist
+	rm -rf ./build
 	mkdir ./build
-	mkdir ./dist
+	mkdir ./build
 	python3 ./rolldown.py
 	cp LICENSE ./build
-	cp ./dist/*.js ./build
+	cp ./build/*.js ./build
 	cp metadata.json ./build
 	cp stylesheet.css ./build
 	cp CHANGELOG.md ./build
@@ -63,15 +63,32 @@ install-zip: publish
 	mkdir -p ~/.local/share/gnome-shell/extensions/dash2dock-lite@icedman.github.com/
 	unzip -q dash2dock-lite@icedman.github.com.zip -d ~/.local/share/gnome-shell/extensions/dash2dock-lite@icedman.github.com/
 
+# g44: install
+# 	mkdir -p ./build
+# 	python3 ./rolldown.py
+# 	rm -rf ~/.local/share/gnome-shell/extensions/dash2dock-lite@icedman.github.com/*.js
+# 	rm -rf ~/.local/share/gnome-shell/extensions/dash2dock-lite@icedman.github.com/apps
+# 	rm -rf ~/.local/share/gnome-shell/extensions/dash2dock-lite@icedman.github.com/effects
+# 	cp ./build/prefs.js ~/.local/share/gnome-shell/extensions/dash2dock-lite@icedman.github.com/
+# 	cp ./build/extension.js ~/.local/share/gnome-shell/extensions/dash2dock-lite@icedman.github.com/
+# 	cp ./build/metadata.json ~/.local/share/gnome-shell/extensions/dash2dock-lite@icedman.github.com/
+
 g44: install
-	mkdir -p ./dist
-	python3 ./rolldown.py
-	rm -rf ~/.local/share/gnome-shell/extensions/dash2dock-lite@icedman.github.com/*.js
-	rm -rf ~/.local/share/gnome-shell/extensions/dash2dock-lite@icedman.github.com/apps
-	rm -rf ~/.local/share/gnome-shell/extensions/dash2dock-lite@icedman.github.com/effects
-	cp ./dist/prefs.js ~/.local/share/gnome-shell/extensions/dash2dock-lite@icedman.github.com/
-	cp ./dist/extension.js ~/.local/share/gnome-shell/extensions/dash2dock-lite@icedman.github.com/
-	cp ./dist/metadata.json ~/.local/share/gnome-shell/extensions/dash2dock-lite@icedman.github.com/
+	rm -rf ./build
+	mkdir -p ./build
+	mkdir -p ./build/apps
+	mkdir -p ./build/effects
+	mkdir -p ./build/preferences
+	python3 ./transpile.py
+	rm -rf ~/.local/share/gnome-shell/extensions/dash2dock-lite@icedman.github.com/
+	mkdir -p ~/.local/share/gnome-shell/extensions/dash2dock-lite@icedman.github.com/
+	cp -R ./schemas ./build
+	cp -R ./themes ./build
+	cp -R ./ui ./build
+	cp ./LICENSE* ./build
+	cp ./CHANGELOG* ./build
+	cp ./README* ./build
+	cp -r ./build/* ~/.local/share/gnome-shell/extensions/dash2dock-lite@icedman.github.com/
 
 test-prefs-g44: g44
 	gnome-extensions prefs dash2dock-lite@icedman.github.com
@@ -80,6 +97,13 @@ test-prefs:
 	gnome-extensions prefs dash2dock-lite@icedman.github.com
 
 test-shell: install
+	env GNOME_SHELL_SLOWDOWN_FACTOR=2 \
+		MUTTER_DEBUG_DUMMY_MODE_SPECS=1200x800 \
+	 	MUTTER_DEBUG_DUMMY_MONITOR_SCALES=1 \
+		dbus-run-session -- gnome-shell --nested --wayland
+	rm /run/user/1000/gnome-shell-disable-extensions
+
+test-shell-g44: g44
 	env GNOME_SHELL_SLOWDOWN_FACTOR=2 \
 		MUTTER_DEBUG_DUMMY_MODE_SPECS=1200x800 \
 	 	MUTTER_DEBUG_DUMMY_MONITOR_SCALES=1 \

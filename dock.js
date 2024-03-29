@@ -545,11 +545,11 @@ export let Dock = GObject.registerClass(
         }
 
         // icon image quality
-        // if (this._iconSizeScaledDown) {
-        //   icon.set_icon_size(
-        //     this._iconSizeScaledDown * this.extension.icon_quality
-        //   );
-        // }
+        if (this._iconSizeScaledDown) {
+          icon.set_icon_size(
+            this._iconSizeScaledDown * this.extension.icon_quality
+          );
+        }
       });
 
       return this._icons;

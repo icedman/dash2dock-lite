@@ -173,7 +173,7 @@ export let Animator = class {
       icon._targetScale = scale * scaleFactor;
       icon._icon.set_size(iconSize, iconSize);
 
-      // if (icon._scale > 1.25) {
+      // if (icon._scale > 1.2 && animated) {
       //   icon._icon.set_icon_size(
       //     dock._iconSizeScaledDown * this.extension.icon_quality
       //   );

@@ -65,7 +65,7 @@ export let Dock = GObject.registerClass(
       this._alignment = DockAlignment.CENTER;
       this._monitorIndex = Main.layoutManager.primaryIndex;
 
-      this._background = new DockBackground({ name: 'd2dlBackground' });
+      this._background = new DockBackground({ name: 'd2daBackground' });
       this.add_child(this._background);
 
       this.addDash();
@@ -546,7 +546,7 @@ export let Dock = GObject.registerClass(
 
         // icon image quality
         if (this._iconSizeScaledDown) {
-          icon.set_icon_size(
+          c._icon.set_icon_size(
             this._iconSizeScaledDown * this.extension.icon_quality
           );
         }
@@ -808,11 +808,11 @@ export let Dock = GObject.registerClass(
       width = this._projectedWidth * scaleFactor;
       height = iconSizeSpaced * 1.5 * scaleFactor;
 
-      this.width = vertical ? height : width;
-      this.height = vertical ? width : height;
+      this.width = (vertical ? height : width) + iconSize * scaleFactor;
+      this.height = (vertical ? width : height) + iconSize * scaleFactor;
 
       if (this.animated) {
-        let adjust = 3.0;
+        let adjust = 1.25;
         this.width *= vertical ? adjust : 1;
         this.height *= !vertical ? adjust : 1;
         this.width += !vertical * iconSizeSpaced * adjust * scaleFactor;

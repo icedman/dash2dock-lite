@@ -42,7 +42,6 @@ publish-g44:
 	rm -rf build
 	rm -rf ./build
 	mkdir ./build
-	mkdir ./build
 	python3 ./rolldown.py
 	cp LICENSE ./build
 	cp ./build/*.js ./build
@@ -78,6 +77,7 @@ g44: install
 	cp ./LICENSE* ./build
 	cp ./CHANGELOG* ./build
 	cp ./README* ./build
+	cp ./stylesheet.css ./build
 	cp -r ./build/* ~/.local/share/gnome-shell/extensions/dash2dock-lite@icedman.github.com/
 
 test-prefs-g44: g44

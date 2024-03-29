@@ -713,7 +713,7 @@ export default class Dash2DockLiteExt extends Extension {
         ss.push(`background: rgba(${rgba});`);
       }
 
-      styles.push(`#d2dlBackground { ${ss.join(' ')}}`);
+      styles.push(`#d2daBackground { ${ss.join(' ')}}`);
     }
 
     // dash label

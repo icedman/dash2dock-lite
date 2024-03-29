@@ -66,6 +66,7 @@ g44: build
 	cp -R ./themes ./build
 	cp -R ./ui ./build
 	cp ./apps/*.sh ./build/apps
+	cp ./effects/*.glsl ./build/effects
 	cp ./LICENSE* ./build
 	cp ./CHANGELOG* ./build
 	cp ./README* ./build

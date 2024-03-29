@@ -247,13 +247,11 @@ export default class Dash2DockLiteExt extends Extension {
       this._updateAnimationFPS();
       this._updateShrink();
       this._updateIconResolution();
-      // this._updateLayout();
-      // this._updateAutohide();
       this._updateWidgetStyle();
       this._updateStyle();
-
       this.animate({ refresh: true });
       this.docks.forEach((dock) => {
+        dock.opacity = 0;;
         dock._debounceEndAnimation();
       });
     }, 10);
@@ -879,5 +877,7 @@ export default class Dash2DockLiteExt extends Extension {
 //-------------------
 
 function init() {
-  return new Dash2DockLiteExt();
+  let ext = new Dash2DockLiteExt();
+  ext.path = Me.path;
+  return ext;
 }

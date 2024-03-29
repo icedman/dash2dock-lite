@@ -466,6 +466,7 @@ export const DockBackground = GObject.registerClass(
         }
 
         this.opacity = 255;
+        dashContainer.dash.opacity = this.opacity;
       }
     }
   }

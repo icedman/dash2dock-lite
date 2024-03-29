@@ -39,6 +39,10 @@ export let Animator = class {
 
     dock.layout();
 
+    if (dock.opacity < 255) {
+      dock.opacity += 5;
+    }
+
     let m = dock.getMonitor();
     let pointer = global.get_pointer();
     if (dock.extension.simulated_pointer) {

@@ -35,3 +35,32 @@ function fillPreferencesWindow(window) {
   p.path = Me.dir.get_path();
   p.fillPreferencesWindow(window);
 }
+
+
+
+
+//-------------------
+// needed by Gnome 44
+//-------------------
+
+function init() {
+  let ext = new Dash2DockLiteExt();
+  ext.path = Me.path;
+  return ext;
+}
+
+//-------------------
+// needed by Gnome 44
+//-------------------
+
+function init() {
+  ExtensionUtils.initTranslations();
+  let iconTheme = Gtk.IconTheme.get_for_display(Gdk.Display.get_default());
+  iconTheme.add_search_path(`${Me.dir.get_path()}/ui/icons`);
+}
+
+function fillPreferencesWindow(window) {
+  let p = new Preferences();
+  p.path = Me.dir.get_path();
+  p.fillPreferencesWindow(window);
+}

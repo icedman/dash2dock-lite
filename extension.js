@@ -872,12 +872,3 @@ export default class Dash2DockLiteExt extends Extension {
   }
 }
 
-//-------------------
-// needed by Gnome 44
-//-------------------
-
-function init() {
-  let ext = new Dash2DockLiteExt();
-  ext.path = Me.path;
-  return ext;
-}

@@ -1136,11 +1136,13 @@ export let Dock = GObject.registerClass(
     _onScrollEvent(obj, evt) {
       this._lastScrollEvent = evt;
       let pointer = global.get_pointer();
-      if (this._nearestIcon) {
+      let target = this._nearestIcon; // this._hoveredIcon;
+      // console.log(`${target == this._hoveredIcon}`);
+      if (target) {
         if (this._scrollCounter < -2 || this._scrollCounter > 2)
           this._scrollCounter = 0;
 
-        let icon = this._nearestIcon;
+        let icon = target;
 
         // add scrollwheel vs touchpad differentiation
         let multiplier = 1;

@@ -140,6 +140,12 @@ def dump(f):
             inImport = False
             importLine = ""
 
+    if "prefs.js" in f:
+        for l in open("./imports_prefs.js", "r"):
+            output.write(l)
+    if "extension.js" in f:
+        for l in open("./imports_extension.js", "r"):
+            output.write(l)
 
     output.write("\n\n")
 

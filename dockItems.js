@@ -415,7 +415,7 @@ export const DockBackground = GObject.registerClass(
         4 +
         iconSize *
           scaleFactor *
-          0.15 *
+          0.2 *
           (dashContainer.extension.dock_padding || 0);
 
       if (!isNaN(p1[0]) && !isNaN(p1[1])) {

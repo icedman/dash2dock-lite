@@ -17,8 +17,9 @@
 
 ### Notice
 
+* Gnome 46 update is ready for testing
 * Gnome 45 port is ready for testing
-* Gnome 44 and prior will be under g44 branch - and will largely be unsupported.
+* Gnome 44 and prior will be under g44 branch
 
 ### Features
 
@@ -122,11 +123,12 @@ Please be specific on the errors encountered. Add screenshots whenever possible.
 ## Testing Rig
 
 * Arch Linux (Gnome 45.5)
-* Ubuntu 23.10 (Gnome 45)
-* Debian 12.x (Gnome 43.9)
+* Ubuntu 23 (Gnome 45.0)
+* Debian 12 (Gnome 43.9)
 * Manjaro Linux (Gnome 45.3)
+* Fedora 39 (Gnome 45.0)
+* Fedora 40 Beta (Gnome 46.0)
 * Gnome OS Nightly (virtual, Gnome 46)
-* Fedora 39 (virtual, Gnome 45)
 
 ## License
 

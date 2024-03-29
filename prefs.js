@@ -433,3 +433,4 @@ export default class Preferences extends ExtensionPreferences {
     this._builder.get_object('preferred-monitor').set_model(list);
   }
 }
+

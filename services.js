@@ -398,7 +398,8 @@ export const Services = class {
   }
 
   async checkDownloads() {
-    this._trySpawnCommandLine = trySpawnCommandLine;
+    // this._trySpawnCommandLine = trySpawnCommandLine;
+    console.log('checking downloads');
     if (!this.extension.downloads_icon) return;
     try {
       let path = this._downloadsDir.get_path();

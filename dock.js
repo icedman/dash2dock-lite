@@ -610,15 +610,16 @@ export let Dock = GObject.registerClass(
 
           let target = this[f.icon];
 
-          target._onClick = () => {
+          target._onClick = async () => {
             if (this._position != DockPosition.BOTTOM) {
               target.activateNewWindow();
               return;
             }
             if (!this.extension.services._downloadFiles) {
-              this.extension.services.checkDownloads();
+              await this.extension.services.checkDownloads();
             }
-            let files = [...this.extension.services._downloadFiles];
+            let files = [...(this.extension.services._downloadFiles || [])];
+            if (!files.length) return;
             if (files.length < this.extension.services._downloadFilesLength) {
               files = [
                 {

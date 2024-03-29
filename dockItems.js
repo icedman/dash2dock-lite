@@ -168,6 +168,9 @@ export const DockItemList = GObject.registerClass(
 
       this.connect('button-press-event', (obj, evt) => {
         // this.visible = false;
+        if (!this._box || !this._box.get_children().length) {
+          return Clutter.EVENT_PROPAGATE;
+        }
         this.slideOut();
         return Clutter.EVENT_PROPAGATE;
       });

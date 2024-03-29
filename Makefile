@@ -63,16 +63,6 @@ install-zip: publish
 	mkdir -p ~/.local/share/gnome-shell/extensions/dash2dock-lite@icedman.github.com/
 	unzip -q dash2dock-lite@icedman.github.com.zip -d ~/.local/share/gnome-shell/extensions/dash2dock-lite@icedman.github.com/
 
-# g44: install
-# 	mkdir -p ./build
-# 	python3 ./rolldown.py
-# 	rm -rf ~/.local/share/gnome-shell/extensions/dash2dock-lite@icedman.github.com/*.js
-# 	rm -rf ~/.local/share/gnome-shell/extensions/dash2dock-lite@icedman.github.com/apps
-# 	rm -rf ~/.local/share/gnome-shell/extensions/dash2dock-lite@icedman.github.com/effects
-# 	cp ./build/prefs.js ~/.local/share/gnome-shell/extensions/dash2dock-lite@icedman.github.com/
-# 	cp ./build/extension.js ~/.local/share/gnome-shell/extensions/dash2dock-lite@icedman.github.com/
-# 	cp ./build/metadata.json ~/.local/share/gnome-shell/extensions/dash2dock-lite@icedman.github.com/
-
 g44: install
 	rm -rf ./build
 	mkdir -p ./build

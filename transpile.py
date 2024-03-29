@@ -59,10 +59,11 @@ importMap = [
     [ "import { PrefKeys }", "let { PrefKeys } = Me.imports.preferences.prefKeys;" ],
     [ "import { getPointer, warpPointer }", "const { getPointer, warpPointer } = Me.imports.utils;" ],
     [ "from '../drawing.js'", "const Drawing = Me.imports.drawing.Drawing;" ],
-    [ "from './dockItems.js'", "const { DockItemDotsOverlay, DockItemBadgeOverlay, DockItemContainer, DockBackground } = Me.imports.dockItems;" ],
+    [ "from './dockItems.js'", "const { DockItemDotsOverlay, DockItemList, DockItemBadgeOverlay, DockItemContainer, DockBackground } = Me.imports.dockItems;" ],
     [ "import {ExtensionPreferences", "class ExtensionPreferences {}" ],
     [ "import {Extension", "class Extension {}" ],
-    [ "import { trySpawnCommandLine }", "const trySpawnCommandLine = () => {}" ],
+    # [ "import { trySpawnCommandLine }", "const trySpawnCommandLine = () => {};" ],
+    [ "import { trySpawnCommandLine }", "const { trySpawnCommandLine } = imports.misc.util;" ],
 ]
 
 def dump(f):

@@ -37,32 +37,23 @@ publish:
 	cd build ; \
 	zip -qr ../dash2dock-lite@icedman.github.com.zip .
 
-publish-g44:
-	echo "publishing..."
-	rm -rf build
-	rm -rf ./build
-	mkdir ./build
-	python3 ./rolldown.py
-	cp LICENSE ./build
-	cp ./build/*.js ./build
-	cp metadata.json ./build
-	cp stylesheet.css ./build
-	cp CHANGELOG.md ./build
-	cp README.md ./build
-	cp -R schemas ./build
-	rm -rf ./*.zip
-	rm -rf build/apps/*.desktop
-	rm -rf build/*_.js
-	cd build ; \
-	zip -qr ../dash2dock-lite@icedman.github.com-g44.zip .
-
-install-zip: publish
+install-zip:
 	echo "installing zip..."
 	rm -rf ~/.local/share/gnome-shell/extensions/dash2dock-lite@icedman.github.com
 	mkdir -p ~/.local/share/gnome-shell/extensions/dash2dock-lite@icedman.github.com/
 	unzip -q dash2dock-lite@icedman.github.com.zip -d ~/.local/share/gnome-shell/extensions/dash2dock-lite@icedman.github.com/
 
-g44: install
+test-prefs:
+	gnome-extensions prefs dash2dock-lite@icedman.github.com
+
+test-shell: install
+	env GNOME_SHELL_SLOWDOWN_FACTOR=2 \
+		MUTTER_DEBUG_DUMMY_MODE_SPECS=1200x800 \
+	 	MUTTER_DEBUG_DUMMY_MONITOR_SCALES=1.5 \
+		dbus-run-session -- gnome-shell --nested --wayland
+	rm /run/user/1000/gnome-shell-disable-extensions
+
+g44: build
 	rm -rf ./build
 	mkdir -p ./build
 	mkdir -p ./build/apps
@@ -74,24 +65,20 @@ g44: install
 	cp -R ./schemas ./build
 	cp -R ./themes ./build
 	cp -R ./ui ./build
+	cp ./apps/*.sh ./build/apps
 	cp ./LICENSE* ./build
 	cp ./CHANGELOG* ./build
 	cp ./README* ./build
 	cp ./stylesheet.css ./build
 	cp -r ./build/* ~/.local/share/gnome-shell/extensions/dash2dock-lite@icedman.github.com/
 
+publish-g44: g44
+	echo "publishing..."
+	cd build ; \
+	zip -qr ../dash2dock-lite@icedman.github.com.zip .
+
 test-prefs-g44: g44
 	gnome-extensions prefs dash2dock-lite@icedman.github.com
-
-test-prefs:
-	gnome-extensions prefs dash2dock-lite@icedman.github.com
-
-test-shell: install
-	env GNOME_SHELL_SLOWDOWN_FACTOR=2 \
-		MUTTER_DEBUG_DUMMY_MODE_SPECS=1200x800 \
-	 	MUTTER_DEBUG_DUMMY_MONITOR_SCALES=1.5 \
-		dbus-run-session -- gnome-shell --nested --wayland
-	rm /run/user/1000/gnome-shell-disable-extensions
 
 test-shell-g44: g44
 	env GNOME_SHELL_SLOWDOWN_FACTOR=2 \

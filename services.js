@@ -284,6 +284,9 @@ export const Services = class {
           if (media && messages) {
             return;
           }
+          if (!c.child._delegate || !c.child._delegate._messageList) {
+            return;
+          }
           media =
             c.child._delegate._messageList._scrollView.last_child.get_children()[0];
           messages =
@@ -300,6 +303,8 @@ export const Services = class {
     }
 
     if (!media || !messages) {
+      this._notifications = [];
+      this._appNotices = [];
       return;
     }
 

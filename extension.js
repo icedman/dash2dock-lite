@@ -446,7 +446,7 @@ export default class Dash2DockLiteExt extends Extension {
         case 'documents-icon':
         case 'trash-icon': {
           this._updateLayout();
-          this.animate();
+          this.animate({refresh: true});
           break;
         }
       }

@@ -525,6 +525,12 @@ export default class Dash2DockLiteExt extends Extension {
       this
     );
 
+    // global.stage.connectObject(
+    //   'key-press-event',
+    //   this._onKeyPressed.bind(this),
+    //   this
+    // );
+
     Main.overview.connectObject(
       'showing',
       this._onOverviewShowing.bind(this),
@@ -558,6 +564,15 @@ export default class Dash2DockLiteExt extends Extension {
     global.display.disconnectObject(this);
     global.stage.disconnectObject(this);
     St.TextureCache.get_default().disconnectObject(this);
+  }
+
+  _onKeyPressed(evt) {
+    this.docks.forEach((d) => {
+      if (d._list && d._list.visible) {
+        d._list.slideOut();
+      }
+    })
+    return Clutter.EVENT_PROPAGATE;
   }
 
   _onIconThemeChanged() {

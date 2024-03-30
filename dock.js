@@ -774,6 +774,7 @@ export let Dock = GObject.registerClass(
 
       let projectedWidth =
         iconSize +
+        (this.animate ? iconSizeSpaced : 0) +
         iconSizeSpaced * (this._icons.length > 3 ? this._icons.length : 3);
       projectedWidth += iconMargins;
 

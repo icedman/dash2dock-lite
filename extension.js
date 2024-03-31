@@ -561,6 +561,7 @@ export default class Dash2DockLiteExt extends Extension {
     Main.messageTray.disconnectObject(this);
     Main.overview.disconnectObject(this);
     Main.layoutManager.disconnectObject(this);
+    Main.sessionMode.disconnectObject(this);
     global.display.disconnectObject(this);
     global.stage.disconnectObject(this);
     St.TextureCache.get_default().disconnectObject(this);

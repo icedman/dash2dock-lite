@@ -454,6 +454,15 @@ export let Dock = GObject.registerClass(
         }
       }
 
+      // hack - sometimes the Dash creates more than one separator
+      // workaround - remove all separators in such situation
+      if (this._separators.length > 1) {
+        this._separators.forEach((s) => {
+          this.dash._box.remove_child(s);
+        });
+        this._separators = [];
+      }
+
       let lastFavIcon = this._icons[this._icons.length - 1] ?? null;
 
       if (this._extraIcons) {

@@ -4,10 +4,6 @@ import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import { trySpawnCommandLine } from 'resource:///org/gnome/shell/misc/util.js';
 
 import Gio from 'gi://Gio';
-import St from 'gi://St';
-import Graphene from 'gi://Graphene';
-
-const Point = Graphene.Point;
 
 import { Clock } from './apps/clock.js';
 import { Calendar } from './apps/calendar.js';

@@ -4,20 +4,15 @@ import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as BoxPointer from 'resource:///org/gnome/shell/ui/boxpointer.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 import { trySpawnCommandLine } from 'resource:///org/gnome/shell/misc/util.js';
-import { BaseIcon } from 'resource:///org/gnome/shell/ui/iconGrid.js';
 
 import Gio from 'gi://Gio';
 import GObject from 'gi://GObject';
 import Clutter from 'gi://Clutter';
-import Graphene from 'gi://Graphene';
 import St from 'gi://St';
 
 import { ShowAppsIcon } from 'resource:///org/gnome/shell/ui/dash.js';
 
-import { Dot } from './apps/dot.js';
 import { DockPosition } from './dock.js';
-
-const Point = Graphene.Point;
 
 const DockItemOverlay = GObject.registerClass(
   {},

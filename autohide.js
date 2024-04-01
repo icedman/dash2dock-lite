@@ -1,19 +1,9 @@
 'use strict';
 
-import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import Meta from 'gi://Meta';
-import Shell from 'gi://Shell';
-import GObject from 'gi://GObject';
-import Clutter from 'gi://Clutter';
-import Graphene from 'gi://Graphene';
-import St from 'gi://St';
 
 import { DockPosition } from './dock.js';
 
-const Point = Graphene.Point;
-
-const HIDE_ANIMATION_INTERVAL = 15;
-const HIDE_ANIMATION_INTERVAL_PAD = 15;
 const DEBOUNCE_HIDE_TIMEOUT = 120;
 const PRESSURE_SENSE_DISTANCE = 40;
 

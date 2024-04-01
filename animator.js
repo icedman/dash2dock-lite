@@ -9,9 +9,7 @@ import { DockPosition } from './dock.js';
 
 import {
   DockItemDotsOverlay,
-  DockItemBadgeOverlay,
-  DockItemContainer,
-  DockBackground,
+  DockItemBadgeOverlay
 } from './dockItems.js';
 
 import { Bounce, Linear } from './effects/easing.js';

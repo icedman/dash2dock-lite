@@ -3,13 +3,11 @@
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as Fav from 'resource:///org/gnome/shell/ui/appFavorites.js';
 
-import Meta from 'gi://Meta';
 import Shell from 'gi://Shell';
 import GObject from 'gi://GObject';
 import Clutter from 'gi://Clutter';
 import Graphene from 'gi://Graphene';
 import St from 'gi://St';
-import Gio from 'gi://Gio';
 
 import { Dash } from 'resource:///org/gnome/shell/ui/dash.js';
 

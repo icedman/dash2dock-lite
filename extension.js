@@ -101,15 +101,21 @@ export default class Dash2DockLiteExt extends Extension {
   }
 
   recreateAllDocks(delay = 750) {
+    console.log('recreate all docks');
     // some settings change cause glitches ... recreate all docks (workaround)
-    if (!this._recreateSeq) {
-      this._recreateSeq = this._loTimer.runDebounced(() => {
-        this.destroyDocks();
-        this.createTheDocks();
-      }, delay);
-    } else {
-      this._loTimer.runDebounced(this._recreateSeq);
-    }
+    // if (!this._recreateSeq) {
+    //   this._recreateSeq = this._loTimer.runDebounced(() => {
+    //     this.destroyDocks();
+    //     this.createTheDocks();
+    //   }, delay);
+    // } else {
+    //   this._loTimer.runDebounced(this._recreateSeq);
+    // }
+
+    // recreate only the dash
+    this.docks.forEach((d) => {
+      d.recreateDash();
+    });
   }
 
   enable() {
@@ -364,6 +370,8 @@ export default class Dash2DockLiteExt extends Extension {
         }
         // problematic settings needing animator restart
         case 'dock-location':
+          this.recreateAllDocks();
+          break;
         case 'icon-resolution': {
           this._updateIconResolution();
           this._updateStyle();
@@ -544,6 +552,8 @@ export default class Dash2DockLiteExt extends Extension {
     St.TextureCache.get_default().connectObject(
       'icon-theme-changed',
       this._onIconThemeChanged.bind(this),
+      'notify::scale-factor',
+      this.recreateAllDocks.bind(this),
       this
     );
 

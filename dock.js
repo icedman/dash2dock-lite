@@ -66,27 +66,7 @@ export let Dock = GObject.registerClass(
       this._background = new DockBackground({ name: 'd2daBackground' });
       this.add_child(this._background);
 
-      this.addDash();
-
-      this.dash.reactive = true;
-      this.dash.track_hover = true;
-      this.dash.connectObject(
-        'scroll-event',
-        this._onScrollEvent.bind(this),
-        'button-press-event',
-        this._onButtonPressEvent.bind(this),
-        'motion-event',
-        this._onMotionEvent.bind(this),
-        'enter-event',
-        this._onEnterEvent.bind(this),
-        'leave-event',
-        this._onLeaveEvent.bind(this),
-        'destroy',
-        () => {},
-        this
-      );
-
-      this.dash.opacity = 0;
+      this.add_child(this.createDash());
       this._scrollCounter = 0;
 
       this.animator = new Animator();
@@ -118,6 +98,13 @@ export let Dock = GObject.registerClass(
         this.autohider._onLeaveEvent.bind(this.autohider),
         this
       );
+    }
+
+    recreateDash() {
+      this.remove_child(this.dash);
+      this.add_child(this.createDash());
+      this._icons = null;
+      this._beginAnimation();
     }
 
     createItem(appinfo_filename) {
@@ -250,7 +237,7 @@ export let Dock = GObject.registerClass(
       return m;
     }
 
-    addDash() {
+    createDash() {
       let dash = new Dash();
       dash._adjustIconSize = () => {};
       this.dash = dash;
@@ -268,7 +255,26 @@ export let Dock = GObject.registerClass(
       this._separator.name = 'separator';
       this._extraIcons.add_child(this._separator);
 
-      this.add_child(dash);
+      this.dash.reactive = true;
+      this.dash.track_hover = true;
+      this.dash.connectObject(
+        'scroll-event',
+        this._onScrollEvent.bind(this),
+        'button-press-event',
+        this._onButtonPressEvent.bind(this),
+        'motion-event',
+        this._onMotionEvent.bind(this),
+        'enter-event',
+        this._onEnterEvent.bind(this),
+        'leave-event',
+        this._onLeaveEvent.bind(this),
+        'destroy',
+        () => {},
+        this
+      );
+
+      this.dash.opacity = 0;
+
       return dash;
     }
 

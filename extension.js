@@ -24,6 +24,7 @@ import * as Fav from 'resource:///org/gnome/shell/ui/appFavorites.js';
 
 import St from 'gi://St';
 import Shell from 'gi://Shell';
+import Graphene from 'gi://Graphene';
 
 import { Timer } from './timer.js';
 import { Style } from './style.js';
@@ -181,6 +182,7 @@ export default class Dash2DockLiteExt extends Extension {
     log('dash2dock-lite enabled');
 
     Main.overview.d2dl = this;
+    Main.overview.Graphene = Graphene;
   }
 
   disable() {

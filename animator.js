@@ -1,16 +1,14 @@
 'use strict';
 
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
+// import Clutter from 'gi://Clutter';
 import Graphene from 'gi://Graphene';
 const Point = Graphene.Point;
 
 import { Dot } from './apps/dot.js';
 import { DockPosition } from './dock.js';
 
-import {
-  DockItemDotsOverlay,
-  DockItemBadgeOverlay
-} from './dockItems.js';
+import { DockItemDotsOverlay, DockItemBadgeOverlay } from './dockItems.js';
 
 import { Bounce, Linear } from './effects/easing.js';
 
@@ -153,6 +151,8 @@ export let Animator = class {
       if (vertical) {
         dx = original_pos[1] - py;
       }
+
+      icon._p = 0;
       if (dx * dx < threshold * threshold && nearestIcon) {
         let adx = Math.abs(dx);
         let p = 1.0 - adx / threshold;
@@ -275,15 +275,26 @@ export let Animator = class {
 
       let flags = {
         bottom: { x: 0.5, y: 1, lx: 0, ly: 0.5 * newScale },
-        top: { x: 0.5, y: 0, lx: 0, ly: -1.75 * newScale },
+        top: { x: 0.5, y: 0, lx: 0, ly: -1.25 * newScale },
         left: { x: 0, y: 0.5, lx: -1.25 * newScale, ly: -1.25 },
         right: { x: 1, y: 0.5, lx: 1.5 * newScale, ly: -1.25 },
       };
+
       let pvd = flags[dock._position];
 
       let pv = new Point();
       pv.x = pvd.x;
       pv.y = pvd.y;
+
+      // hack for 2x scale
+      if (scaleFactor > 1 && dock._position != DockPosition.BOTTOM) {
+        pv.x = 0.5;
+        pv.y = 0.5;
+        if (dock._position == DockPosition.TOP) {
+          pv.y = 1;
+        }
+      }
+
       icon._icon.pivot_point = pv;
       icon._icon.set_scale(newScale, newScale);
 
@@ -301,6 +312,15 @@ export let Animator = class {
       let translationY =
         !vertical * icon._translateRise * rdir +
         (oldY + icon._translate * vertical * _pos_coef) / (_pos_coef + 1);
+
+      // hack for 2x scale
+      if (scaleFactor > 1 && dock._position != DockPosition.BOTTOM) {
+        if (vertical) {
+          translationX += icon._p * iconSize * 0.1 * scaleFactor * rdir;
+        } else {
+          translationY += icon._p * iconSize * 0.1 * scaleFactor * rdir * 2.5;
+        }
+      }
 
       icon._icon.translationX = Math.floor(translationX);
       icon._icon.translationY = Math.floor(translationY);

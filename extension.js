@@ -447,7 +447,7 @@ export default class Dash2DockLiteExt extends Extension {
         case 'documents-icon':
         case 'trash-icon': {
           this._updateLayout();
-          this.animate({refresh: true});
+          this.animate({ refresh: true });
           break;
         }
       }
@@ -572,7 +572,7 @@ export default class Dash2DockLiteExt extends Extension {
       if (d._list && d._list.visible) {
         d._list.slideOut();
       }
-    })
+    });
     return Clutter.EVENT_PROPAGATE;
   }
 
@@ -890,4 +890,3 @@ export default class Dash2DockLiteExt extends Extension {
     }
   }
 }
-

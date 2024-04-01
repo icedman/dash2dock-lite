@@ -238,9 +238,9 @@ export const DockItemList = GObject.registerClass(
       let angleInc = 2;
       let startAngle = 268;
       let angle = startAngle;
-      let rad = dock._iconSize + (dock._iconSize * 0.05 * dock._scaleFactor);
+      let rad = dock._iconSize + dock._iconSize * 0.05 * dock._scaleFactor;
       if (dock._scaleFactor >= 2) {
-        rad += (dock._iconSize * 0.1 * dock._scaleFactor);
+        rad += dock._iconSize * 0.1 * dock._scaleFactor;
       }
 
       let children = this._box.get_children();
@@ -416,13 +416,11 @@ export const DockBackground = GObject.registerClass(
 
       let p1 = first.get_transformed_position();
       let p2 = last.get_transformed_position();
+      let iconWidth = iconSize * scaleFactor;
 
       let padding =
-        4 +
-        iconSize *
-          scaleFactor *
-          0.2 *
-          (dashContainer.extension.dock_padding || 0);
+        (4 + iconSize * 0.2 * (dashContainer.extension.dock_padding || 0)) *
+        scaleFactor;
 
       if (!isNaN(p1[0]) && !isNaN(p1[1])) {
         let tx = first._icon.translationX;
@@ -431,16 +429,16 @@ export const DockBackground = GObject.registerClass(
         let ty2 = last._icon.translationY;
 
         // bottom
-        this.x = p1[0] + tx;
+        this.x = p1[0] + tx - padding;
         this.y = first._fixedPosition[1];
-        let width = dashContainer.dash.width + Math.abs(tx) + tx2 - padding;
+        let width = p2[0] + tx2 - (p1[0] + tx) + iconWidth + padding * 2;
         let height = dashContainer.dash.height;
 
         if (dashContainer.isVertical()) {
           this.x = first._fixedPosition[0];
-          this.y = first._fixedPosition[1] + ty;
+          this.y = first._fixedPosition[1] + ty - padding;
           width = dashContainer.dash.width;
-          height = dashContainer.dash.height + Math.abs(ty) + ty2 - padding;
+          height = p2[1] + ty2 - (p1[1] + ty) + iconWidth + padding * 2;
         }
 
         if (!isNaN(width)) {
@@ -473,83 +471,6 @@ export const DockBackground = GObject.registerClass(
 
         this.opacity = 255;
         dashContainer.dash.opacity = this.opacity;
-      }
-    }
-  }
-);
-
-export const DockPanelOverlay = GObject.registerClass(
-  {},
-  class DockPanelOverlay extends St.Widget {
-    _init(params) {
-      super._init({
-        name: 'DockOverlay',
-        ...(params || {}),
-      });
-    }
-
-    update(params) {
-      let {
-        background,
-        left,
-        right,
-        center,
-        panel_mode,
-        vertical,
-        dashContainer,
-        combine_top_bar,
-      } = params;
-
-      if (!combine_top_bar || !panel_mode || vertical) {
-        if (this.visible) {
-          dashContainer.restorePanel();
-        }
-        this.visible = false;
-        return;
-      }
-
-      this.visible = true;
-      dashContainer.panel.visible = false;
-
-      // this.style = 'border: 2px solid red;';
-      this.x = background.x;
-      this.y = background.y;
-      this.width = background.width;
-      this.height = background.height;
-
-      let margin = 20;
-
-      // left
-      if (left.get_parent() != this) {
-        left.get_parent().remove_child(left);
-        this.add_child(left);
-      }
-      left.x = margin;
-      left.y = this.height / 2 - left.height / 2;
-
-      // center
-      if (center.get_parent() != this) {
-        center.get_parent().remove_child(center);
-        this.add_child(center);
-      }
-      center.x = this.width - margin / 2 - center.width;
-      center.y = this.height / 2 - center.height / 2;
-
-      // right
-      if (right.get_parent() != this) {
-        right.get_parent().remove_child(right);
-        this.add_child(right);
-      }
-      right.height = center.height;
-      right.x = this.width - margin - right.width;
-      right.y = this.height / 2 - right.height / 2;
-
-      // align
-      if (center.height * 3 < this.height) {
-        right.y -= right.height / 1.5;
-        center.y += center.height / 1.5;
-      } else {
-        right.x -= center.width;
       }
     }
   }

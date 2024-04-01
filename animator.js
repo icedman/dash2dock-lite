@@ -290,9 +290,18 @@ export let Animator = class {
       if (scaleFactor > 1 && dock._position != DockPosition.BOTTOM) {
         pv.x = 0.5;
         pv.y = 0.5;
+        if (vertical) {
+          pv.y = 1;
+        }
         if (dock._position == DockPosition.TOP) {
           pv.y = 1;
         }
+      }
+
+      // hack for 2x scale for showAppsIcon
+      if (icon._button) {
+        icon.first_child.translationX =
+          scaleFactor > 1 ? -iconSize * 0.15 * scaleFactor : 1;
       }
 
       icon._icon.pivot_point = pv;

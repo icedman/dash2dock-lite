@@ -714,13 +714,12 @@ export let Dock = GObject.registerClass(
 
       this._updateExtraIcons();
 
-      this._icons = this._findIcons();
-
       let m = this.getMonitor();
       let scaleFactor = m.geometry_scale;
       let vertical = this.isVertical();
-
       this._scaleFactor = scaleFactor;
+
+      this._icons = this._findIcons();
 
       let flags = {
         top: {

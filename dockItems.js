@@ -409,32 +409,34 @@ export const DockBackground = GObject.registerClass(
         return;
       }
 
-      let p1 = first.get_transformed_position();
-      let p2 = last.get_transformed_position();
-      let iconWidth = iconSize * scaleFactor;
+      let dp = dashContainer.dash.get_transformed_position();
+      let padding = (iconSize * 0.1) * (dashContainer.extension.dock_padding || 0) * scaleFactor;
 
-      let padding =
-        (4 + iconSize * 0.2 * (dashContainer.extension.dock_padding || 0)) *
-        scaleFactor;
-
-      if (!isNaN(p1[0]) && !isNaN(p1[1])) {
+      if (first && last) {
         let tx = first._icon.translationX;
         let ty = first._icon.translationY;
         let tx2 = last._icon.translationX;
         let ty2 = last._icon.translationY;
 
         // bottom
-        this.x = p1[0] + tx - padding;
-        this.y = first._fixedPosition[1];
-        let width = p2[0] + tx2 - (p1[0] + tx) + iconWidth + padding * 2;
+        this.x = dp[0];
+        this.y = dp[1];
+        let width = dashContainer.dash.width;
         let height = dashContainer.dash.height;
 
         if (dashContainer.isVertical()) {
-          this.x = first._fixedPosition[0];
-          this.y = first._fixedPosition[1] + ty - padding;
-          width = dashContainer.dash.width;
-          height = p2[1] + ty2 - (p1[1] + ty) + iconWidth + padding * 2;
+          this.y += ty;
+          height += (ty2 - ty);
+        } else {
+          this.x += tx;
+          width += (tx2 - tx);
         }
+
+        // padding
+        this.x -= padding;
+        width += padding * 2;
+        this.y -= padding;
+        height += padding * 2;
 
         if (!isNaN(width)) {
           this.width = width;

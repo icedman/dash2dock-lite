@@ -486,7 +486,7 @@ export let Animator = class {
       dock._background.update({
         first,
         last,
-        iconSize,
+        iconSize: dock._iconSizeScaledDown,
         scaleFactor,
         position: dock._position,
         vertical: vertical,

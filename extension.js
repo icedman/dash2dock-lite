@@ -552,6 +552,10 @@ export default class Dash2DockLiteExt extends Extension {
     St.TextureCache.get_default().connectObject(
       'icon-theme-changed',
       this._onIconThemeChanged.bind(this),
+      this
+    );
+
+    St.ThemeContext.get_for_stage(global.stage).connectObject(
       'notify::scale-factor',
       this.recreateAllDocks.bind(this),
       this
@@ -577,6 +581,7 @@ export default class Dash2DockLiteExt extends Extension {
     global.display.disconnectObject(this);
     global.stage.disconnectObject(this);
     St.TextureCache.get_default().disconnectObject(this);
+    St.ThemeContext.get_for_stage(global.stage).disconnectObject(this);
   }
 
   _onKeyPressed(evt) {

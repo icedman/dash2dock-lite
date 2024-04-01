@@ -247,6 +247,10 @@ export let Dock = GObject.registerClass(
       this._extraIcons = new St.BoxLayout();
       this.dash._box.add_child(this._extraIcons);
 
+      // null these - needed when call recreateDash
+      this._trashIcon = null;
+      this._downloadsIcon = null;
+
       this._separator = new St.Widget({
         style_class: 'dash-separator',
         y_align: Clutter.ActorAlign.CENTER,

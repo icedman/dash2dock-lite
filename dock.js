@@ -339,7 +339,11 @@ export let Dock = GObject.registerClass(
         this._preferredIconSizes = preferredIconSizes;
       }
 
-      let upscale = (1 + (1 - this._scaleFactor)) || 1;
+      let upscale = (1 + (2 - this._scaleFactor)) || 1;
+      if (upscale < 1) {
+        upscale = 1; // does scaleFactor go beyond 2x?
+      }
+      // console.log(`scaleFactor:${this._scaleFactor} upscale:${upscale}`);
       iconSize =
         upscale *
         (preferredIconSizes[

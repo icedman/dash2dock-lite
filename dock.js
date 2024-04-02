@@ -339,8 +339,9 @@ export let Dock = GObject.registerClass(
         this._preferredIconSizes = preferredIconSizes;
       }
 
+      let upscale = (1 + (1 - this._scaleFactor)) || 1;
       iconSize =
-        2 *
+        upscale *
         (preferredIconSizes[
           Math.floor(this.extension.icon_size * preferredIconSizes.length)
         ] || 64);

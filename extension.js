@@ -405,7 +405,7 @@ export default class Dash2DockLiteExt extends Extension {
         case 'icon-size':
         case 'preferred-monitor': {
           this._updateLayout();
-          this.animate();
+          this.animate({ refresh: true });
           break;
         }
         case 'autohide-dodge':

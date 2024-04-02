@@ -43,6 +43,7 @@ importMap = [
     # [ "", "const Point = Graphene.Point;" ],
     [ "from './animator.js", "const Animator = Me.imports.animator.Animator;" ],
     [ "from './autohide.js", "const AutoHide = Me.imports.autohide.AutoHide;" ],
+    [ "import { MonitorsConfig }", "const MonitorsConfig = Me.imports.monitors.MonitorsConfig;" ],
     [ "import { Timer }", "const Timer = Me.imports.timer.Timer;" ],
     [ "import { Style }", "const Style = Me.imports.style.Style;" ],
     [ "import { Dock }", "const Dock = Me.imports.dock.Dock;" ],

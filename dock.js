@@ -333,7 +333,7 @@ export let Dock = GObject.registerClass(
       let iconSize = 64;
       if (!preferredIconSizes) {
         preferredIconSizes = [32];
-        for (let i = 16; i < 128; i += 4) {
+        for (let i = 8; i < 128; i += 4) {
           preferredIconSizes.push(i);
         }
         this._preferredIconSizes = preferredIconSizes;

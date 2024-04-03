@@ -386,5 +386,10 @@
         <summary>Theme</summary>
         <description>Select a theme.</description>
     </key>
+    <key type="b" name="blur-background">
+        <default>false</default>
+        <summary>Enable background blur</summary>
+        <description></description>
+    </key>
   </schema>
 </schemalist>

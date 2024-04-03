@@ -62,4 +62,16 @@ export const Style = class {
     res[3] = clr[3].toFixed(1);
     return res.join(',');
   }
+
+  hex(color) {
+    let r = Math.floor(color[0] * 255).toString(16);
+    let g = Math.floor(color[1] * 255).toString(16);
+    let b = Math.floor(color[2] * 255).toString(16);
+    if (r.length == 1) r += r;
+    if (g.length == 1) g += g;
+    if (b.length == 1) b += b;
+    let res = `#${r}${g}${b}`;
+    console.log(`${color} ${res}`);
+    return res;
+  }
 };

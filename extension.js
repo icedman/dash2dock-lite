@@ -25,6 +25,8 @@ import * as Fav from 'resource:///org/gnome/shell/ui/appFavorites.js';
 import St from 'gi://St';
 import Shell from 'gi://Shell';
 import Graphene from 'gi://Graphene';
+import Gio from 'gi://Gio';
+import { trySpawnCommandLine } from 'resource:///org/gnome/shell/misc/util.js';
 
 import { Timer } from './timer.js';
 import { Style } from './style.js';
@@ -38,6 +40,8 @@ import {
 } from 'resource:///org/gnome/shell/extensions/extension.js';
 
 import { schemaId, SettingsKeys } from './preferences/keys.js';
+
+const BLURRED_BG_PATH = '/tmp/d2da-bg-blurred.jpg';
 
 const SERVICES_UPDATE_INTERVAL = 2500;
 
@@ -176,13 +180,10 @@ export default class Dash2DockLiteExt extends Extension {
     // this._updateAutohide();
     // this._updateWidgetStyle();
     // this._updateStyle();
+    this._updateBlurredBackground();
 
     this._addEvents();
-
     this._queryDisplay();
-
-    // this._updateStyle();
-
     this.startUp();
 
     log('dash2dock-lite enabled');
@@ -299,6 +300,17 @@ export default class Dash2DockLiteExt extends Extension {
   }
 
   _enableSettings() {
+    this._desktopSettings = new Gio.Settings({
+      schema_id: 'org.gnome.desktop.background',
+    });
+    this._desktopSettings.connectObject(
+      'changed::picture-uri',
+      () => {
+        this._updateBlurredBackground();
+      },
+      this
+    );
+
     this._settings = this.getSettings(schemaId);
     this._settingsKeys = SettingsKeys();
 
@@ -443,13 +455,19 @@ export default class Dash2DockLiteExt extends Extension {
         case 'label-border-thickness':
         case 'label-background-color':
         case 'label-foreground-color':
-        case 'background-color':
         case 'panel-mode': {
           this._updateStyle();
           this._updateLayout();
           this.animate();
           break;
         }
+        case 'background-color':
+        case 'blur-background':
+          this._updateBlurredBackground();
+          this._updateStyle();
+          this._updateLayout();
+          this.animate();
+          break;
         case 'pressure-sense': {
           break;
         }
@@ -476,6 +494,9 @@ export default class Dash2DockLiteExt extends Extension {
   _disableSettings() {
     this._settingsKeys.disconnectSettings();
     this._settingsKeys = null;
+
+    this._desktopSettings.disconnectObject();
+    this._desktopSettings = null;
   }
 
   _addEvents() {
@@ -669,6 +690,20 @@ export default class Dash2DockLiteExt extends Extension {
     this.animate();
   }
 
+  _updateBlurredBackground() {
+    // if (this.blur_background) {
+    //   let color = this.background_color || [0, 0, 0, 0.5];
+    //   let bg = this._desktopSettings.get_string('picture-uri');
+    //   let a = Math.floor(100 - color[3] * 100);
+    //   let rgb = this._style.hex(color);
+    //   // let cmd = `convert -scale 10% -blur 0x2.5 -resize 1000% -fill "${rgb}" -tint ${a} "${bg}" ${BLURRED_BG_PATH}`;
+    //   let cmd = `convert -scale 10% -blur 0x2.5 -resize 1000% "${bg}" ${BLURRED_BG_PATH}`;
+    //   // let cmd = `convert -crop 800x40+0+200 -scale 10% -blur 0x2.5 -resize 1000% "${bg}" ${BLURRED_BG_PATH}`;
+    //   console.log(cmd);
+    //   trySpawnCommandLine(cmd);
+    // }
+  }
+
   _updateAnimationFPS() {
     this.docks.forEach((dock) => {
       dock.cancelAnimations();
@@ -741,14 +776,20 @@ export default class Dash2DockLiteExt extends Extension {
         r = 0;
       }
       ss.push(`border-radius: ${r}px;`);
-
       {
         let rgba = this._style.rgba(this.background_color);
         ss.push(`background: rgba(${rgba});`);
       }
-
       styles.push(`#d2daBackground { ${ss.join(' ')}}`);
     }
+
+    // if (this.blur_background) {
+    //   let ss = [];
+    //   ss.push(`\n background-image: url("${BLURRED_BG_PATH}");`);
+    //   // ss.push(`\n background-position: top center;`);
+    //   ss.push(`\n background-position: center;`);
+    //   styles.push(`#d2daBackground { ${ss.join(' ')}}`);
+    // }
 
     // dash label
     if (this.customize_label) {

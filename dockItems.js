@@ -194,7 +194,7 @@ export const DockItemList = GObject.registerClass(
       let iconSize = dock.dash._box.first_child._icon.width;
       // scaling hack - temporary
       let iconAdjust = 1;
-      if (dock._scaleFactor !=1 && dock._scaleFactor != 2) {
+      if (dock._scaleFactor != 1 && dock._scaleFactor != 2) {
         iconAdjust += 0.5;
       }
 
@@ -239,7 +239,7 @@ export const DockItemList = GObject.registerClass(
       let startAngle = 268;
       let angle = startAngle;
       let rad = iconSize * dock._scaleFactor;
-      
+
       let children = this._box.get_children();
       children.reverse();
       children.forEach((l) => {

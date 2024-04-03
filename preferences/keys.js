@@ -380,6 +380,10 @@ export const SettingsKeys = () => {
       default_value: [0.3, 0.3, 0.3, 1.0],
       widget_type: 'color',
     },
+    'blur-background': {
+      default_value: false,
+      widget_type: 'switch',
+    },
   });
 
   return settingsKeys;

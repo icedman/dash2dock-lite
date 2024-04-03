@@ -272,6 +272,7 @@
         </child>
         <child>
           <object class="AdwActionRow">
+            <property name="visible">false</property>
             <property name="title" translatable="yes">Background Blur</property>
             <property name="subtitle" translatable="yes">Add background blur with current wallpaper. Requires imagemagick installed.</property>
             <property name="activatable-widget">blur-background</property>

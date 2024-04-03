@@ -8,7 +8,7 @@
 
 * vertical layout does not support rearranging icons (as this is dependent on Gnome's own Dash which doesn't support this properly)
 * vertical layout does not support Apps Icon at front
-* clock and calendar not working well in g44
+* icons pixelated when idle
 
 # Next Release
 

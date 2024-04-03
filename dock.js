@@ -206,6 +206,7 @@ export let Dock = GObject.registerClass(
       this.dash._box.get_parent().remove_effect_by_name('icon-effect');
       let effect = this._createEffect(this.extension.icon_effect);
       if (effect) {
+        effect.color = this.extension.icon_effect_color;
         this.dash._box.get_parent().add_effect_with_name('icon-effect', effect);
       }
       this.iconEffect = effect;
@@ -333,7 +334,7 @@ export let Dock = GObject.registerClass(
       let iconSize = 64;
       if (!preferredIconSizes) {
         preferredIconSizes = [32];
-        for (let i = 8; i < 128; i += 4) {
+        for (let i = 16; i < 128; i += 4) {
           preferredIconSizes.push(i);
         }
         this._preferredIconSizes = preferredIconSizes;

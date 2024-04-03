@@ -191,6 +191,13 @@ export const DockItemList = GObject.registerClass(
       let tp = target.get_transformed_position();
 
       this._box = new St.Widget({ style_class: '-hi' });
+      let iconSize = dock.dash._box.first_child._icon.width;
+      // scaling hack - temporary
+      let iconAdjust = 1;
+      if (dock._scaleFactor !=1 && dock._scaleFactor != 2) {
+        iconAdjust += 0.5;
+      }
+
       list.forEach((l) => {
         let w = new St.Widget({});
         let icon = new St.Icon({
@@ -198,9 +205,7 @@ export const DockItemList = GObject.registerClass(
           reactive: true,
           track_hover: true,
         });
-        icon.set_icon_size(
-          this.dock._iconSizeScaledDown * this.dock._scaleFactor
-        );
+        icon.set_icon_size(iconSize * iconAdjust);
         this._box.add_child(w);
         let label = new St.Label({ style_class: 'dash-label' });
         let short = (l.name ?? '').replace(/(.{32})..+/, '$1...');
@@ -233,11 +238,8 @@ export const DockItemList = GObject.registerClass(
       let angleInc = 2;
       let startAngle = 268;
       let angle = startAngle;
-      let rad = dock._iconSize + dock._iconSize * 0.05 * dock._scaleFactor;
-      if (dock._scaleFactor >= 2) {
-        rad += dock._iconSize * 0.1 * dock._scaleFactor;
-      }
-
+      let rad = iconSize * dock._scaleFactor;
+      
       let children = this._box.get_children();
       children.reverse();
       children.forEach((l) => {

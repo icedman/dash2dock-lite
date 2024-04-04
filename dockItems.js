@@ -187,8 +187,10 @@ export const DockItemList = GObject.registerClass(
       this.width = dock._monitor.width;
       this.height = dock._monitor.height;
 
+      this._hidden = false;
+      this._hiddenFrames = 0;
+
       this._target = target;
-      let tp = target.get_transformed_position();
 
       this._box = new St.Widget({ style_class: '-hi' });
       let iconSize = dock.dash._box.first_child._icon.width;
@@ -233,10 +235,13 @@ export const DockItemList = GObject.registerClass(
         });
       });
 
+      this.add_child(this._box);
+
+      let tp = this._target.get_transformed_position();
       let ox = 0;
       let oy = 0;
-      let angleInc = 2;
-      let startAngle = 268;
+      let angleInc = 0 + (2 * dock.extension.items_pullout_angle);
+      let startAngle = 270 - angleInc;
       let angle = startAngle;
       let rad = iconSize * dock._scaleFactor;
 
@@ -254,14 +259,12 @@ export const DockItemList = GObject.registerClass(
         l.x = tp[0] - this.x + ox;
         l.y = tp[1] - this.y + oy;
 
-        ox += hX * 0.85;
+        ox += hX;// * 0.85;
         oy += hY;
         angle += angleInc;
 
         l.rotation_angle_z = angle - startAngle;
       });
-
-      this.add_child(this._box);
 
       let first = children[0];
       children.forEach((l) => {
@@ -276,9 +279,6 @@ export const DockItemList = GObject.registerClass(
         l.y = first.y;
         l.rotation_angle_z = 0;
       });
-
-      this._hidden = false;
-      this._hiddenFrames = 0;
     }
 
     slideOut() {

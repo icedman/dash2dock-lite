@@ -241,6 +241,11 @@
         <summary>Icons bounce</summary>
         <description>Icon bounce when clicked.</description>
     </key>
+    <key type="d" name="items-pullout-angle">
+        <default>0.5</default>
+        <summary>Items angle</summary>
+        <description>Folder items pullout angle.</description>
+    </key>
     <key type="d" name="edge-distance">
         <default>0</default>
         <summary>Edge distance</summary>

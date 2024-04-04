@@ -406,6 +406,8 @@ export const DockBackground = GObject.registerClass(
         dashContainer,
       } = params;
 
+      this._padding = 0;
+
       if (!first || !last || first == last) {
         this.opacity = 0;
         return;

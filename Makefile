@@ -48,8 +48,8 @@ test-prefs:
 
 test-shell: install
 	env GNOME_SHELL_SLOWDOWN_FACTOR=2 \
-		MUTTER_DEBUG_DUMMY_MODE_SPECS=1200x800 \
-	 	MUTTER_DEBUG_DUMMY_MONITOR_SCALES=2 \
+		MUTTER_DEBUG_DUMMY_MODE_SPECS=1400x800 \
+	 	MUTTER_DEBUG_DUMMY_MONITOR_SCALES=1 \
 		dbus-run-session -- gnome-shell --nested --wayland
 	rm /run/user/1000/gnome-shell-disable-extensions
 

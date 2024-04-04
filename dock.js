@@ -135,8 +135,6 @@ export let Dock = GObject.registerClass(
       this.dash._box.remove_effect_by_name('icon-effect');
       this.autohider.disable();
       this.removeFromChrome();
-
-      this.restorePanel();
     }
 
     _onButtonPressEvent(evt) {
@@ -775,38 +773,28 @@ export let Dock = GObject.registerClass(
           edgeY: 0,
           offsetX: 0,
           offsetY: 0,
-          centerX: 1,
-          centerY: 0,
         },
         bottom: {
           edgeX: 0,
           edgeY: 1,
           offsetX: 0,
           offsetY: -1,
-          centerX: 1,
-          centerY: 0,
         },
         left: {
           edgeX: 0,
           edgeY: 0,
           offsetX: 0,
           offsetY: 0,
-          centerX: 0,
-          centerY: 1,
         },
         right: {
           edgeX: 1,
           edgeY: 0,
           offsetX: -1,
           offsetY: 0,
-          centerX: 0,
-          centerY: 1,
         },
       };
       let f = flags[this._position];
 
-      let width = 1200;
-      let height = 140;
       //! use dock size limit - add preferences
       let dock_size_limit = 1;
       let animation_spread = this.extension.animation_spread;
@@ -861,30 +849,12 @@ export let Dock = GObject.registerClass(
         }
       });
 
-      width = this._projectedWidth * scaleFactor;
-      height = iconSizeSpaced * 1.5 * scaleFactor;
-
       //! make dock area equal the monitor area - speed consideration?
-      this.width = (vertical ? height : width) + iconSize * scaleFactor;
-      this.height = (vertical ? width : height) + iconSize * scaleFactor;
-
-      if (this.animated) {
-        let adjust = 1.25;
-        //! avoid !vertical ? use ifs for readability
-        this.width *= vertical ? adjust : 1;
-        this.height *= !vertical ? adjust : 1;
-        this.width += !vertical * iconSizeSpaced * adjust * scaleFactor;
-        this.height += vertical * iconSizeSpaced * adjust * scaleFactor;
-
-        if (this.width > m.width) {
-          this.width = m.width;
-        }
-        if (this.height > m.height) {
-          this.height = m.height;
-        }
-      }
-
-      // console.log(`${width} ${height}`);
+      //! check with multi-monitor and scaled displays
+      this.x = m.x;
+      this.y = m.y;
+      this.width = m.width;
+      this.height = m.height;
 
       // reorient and reposition the dash
       this.dash.last_child.layout_manager.orientation = vertical;
@@ -893,99 +863,17 @@ export let Dock = GObject.registerClass(
         this._extraIcons.layout_manager.orientation = vertical;
       }
 
-      this.x =
-        m.x +
-        m.width * f.edgeX +
-        this.width * f.offsetX +
-        (m.width / 2 - this.width / 2) * f.centerX;
-
-      this.y =
-        m.y +
-        m.height * f.edgeY +
-        this.height * f.offsetY +
-        (m.height / 2 - this.height / 2) * f.centerY;
-
-      if (this.extension.panel_mode) {
-        if (vertical) {
-          this.y = m.y;
-          this.height = m.height;
-        } else {
-          this.x = m.x;
-          this.width = m.width;
-        }
-      }
-
-      // center the dash
-      //! move to hug the edge
-      this.dash.x = this.width / 2 - this.dash.width / 2;
-      this.dash.y = this.height / 2 - this.dash.height / 2;
-
       // hug the edge
       if (vertical) {
         this.dash.x = this.width * f.edgeX + this.dash.width * f.offsetX;
+        this.dash.y = this.height / 2 - this.dash.height / 2;
       } else {
+        this.dash.x = this.width / 2 - this.dash.width / 2;
         this.dash.y = this.height * f.edgeY + this.dash.height * f.offsetY;
       }
 
       this._iconSizeScaledDown = iconSize;
       this._scaledDown = scaleDown;
-
-      // resize dash icons
-      // console.log(this.dash.height);
-      // console.log('---------------');
-      // this.acquirePanel();
-    }
-
-    //! remove, panel widget has changed and may be different between gnome versions
-    acquirePanel() {
-      // panel
-      if (!this.panel && Main.panel) {
-        this.panel = Main.panel;
-        this.panelLeft = this.panel._leftBox;
-        this.panelRight = this.panel._rightBox;
-        this.panelCenter = this.panel._centerBox;
-      }
-
-      if (!this.panel) return;
-
-      // W: breakable
-      let reparent = [this.panelLeft, this.panelRight, this.panelCenter];
-      reparent.forEach((c) => {
-        if (c.get_parent()) {
-          c._parent = c.get_parent();
-          c.get_parent().remove_child(c);
-        }
-        this._background.add_child(c);
-      });
-      this.panel.visible = false;
-
-      this.panelLeft.height = this.panel.height - 8;
-      this.panelLeft.x = 20;
-      this.panelLeft.y =
-        this.height - this.struts.height + this.panelLeft.height / 2;
-      this.panelRight.track_hover = false;
-
-      this.panelRight.height = this.panel.height - 8;
-      this.panelRight.x = this.struts.width - this.panelRight.width - 20;
-      this.panelRight.y = this.panelRight.height / 2;
-
-      this.panelCenter.height = this.panel.height - 8;
-      this.panelCenter.x = this.struts.width - this.panelCenter.width - 20;
-      this.panelCenter.y = this.panelRight.y + this.panelRight.height;
-    }
-
-    restorePanel() {
-      if (!this.panel) return;
-
-      // W: breakable
-      let reparent = [this.panelLeft, this.panelRight, this.panelCenter];
-      reparent.forEach((c) => {
-        if (c.get_parent()) {
-          c.get_parent().remove_child(c);
-        }
-        c._parent.add_child(c);
-      });
-      this.panel.visible = true;
     }
 
     preview() {
@@ -1000,7 +888,7 @@ export let Dock = GObject.registerClass(
         this.simulated_pointer = p;
         this._preview--;
       }
-      //! add layout here instead of at the 
+      //! add layout here instead of at the
       this.animator.animate();
       this.simulated_pointer = null;
     }

@@ -68,6 +68,8 @@ export let Animator = class {
     let nearestIcon = null;
     let nearestDistance = -1;
 
+    let iconCenterOffset = (iconSize * scaleFactor) / 2;
+
     let idx = 0;
     animateIcons.forEach((icon) => {
       let pos = icon.get_transformed_position();
@@ -76,9 +78,8 @@ export let Animator = class {
 
       // get nearest
       let bposcenter = [...pos];
-      //! compute scaled iconSize once 
-      bposcenter[0] += (iconSize * scaleFactor) / 2;
-      bposcenter[1] += (iconSize * scaleFactor) / 2;
+      bposcenter[0] += iconCenterOffset;
+      bposcenter[1] += iconCenterOffset;
       let dst = dock._get_distance(pointer, bposcenter);
 
       if (

@@ -25,7 +25,7 @@
     <child>
       <object class="AdwPreferencesGroup" id="theme-export-notice">
         <property name="visible">false</property>
-        <property name="title" translatable="yes"></property>
+        <property name="title" translatable="yes"/>
         <property name="description" translatable="yes"/>
         <child>
           <object class="AdwActionRow">

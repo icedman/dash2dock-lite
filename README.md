@@ -128,7 +128,7 @@ Please be specific on the errors encountered. Add screenshots whenever possible.
 * Manjaro Linux (Gnome 45.3)
 * Fedora 39 (Gnome 45.0)
 * Fedora 40 Beta (Gnome 46.0)
-* Gnome OS Nightly (virtual, Gnome 46)
+* Opensuse Tumbleweed (Gnome 46.0)
 
 ## License
 

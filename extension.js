@@ -523,7 +523,11 @@ export default class Dash2DockLiteExt extends Extension {
     );
 
     Main.layoutManager.connectObject(
-      // 'startup-complete',
+      'startup-complete',
+      () => {
+        Main.overview.dash.last_child.visible = true;
+        Main.overview.dash.opacity = 255;
+      },
       // this.startUp.bind(this),
       'monitors-changed',
       () => {

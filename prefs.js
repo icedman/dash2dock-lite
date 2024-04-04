@@ -274,6 +274,8 @@ export default class Preferences extends ExtensionPreferences {
       this.window.add_toast(
         new Adw.Toast({ title: 'Saved to /tmp/theme.json' })
       );
+
+      this._builder.get_object('theme-export-notice').visible = true;
       return;
     }
 

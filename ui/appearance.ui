@@ -9,7 +9,7 @@
         <child>
           <object class="AdwActionRow">
             <property name="title" translatable="yes">Theme</property>
-            <property name="subtitle" translatable="yes">Select or Export a theme (/tmp/theme.json'). </property>
+            <property name="subtitle" translatable="yes">Select a theme or Export current settings.</property>
             <property name="activatable-widget">theme</property>
             <child>
               <object class="GtkMenuButton" id="theme">
@@ -18,6 +18,19 @@
                 <!-- <property name="model">theme-model</property> -->
               </object>
             </child>
+          </object>
+        </child>
+      </object>
+    </child>
+    <child>
+      <object class="AdwPreferencesGroup" id="theme-export-notice">
+        <property name="visible">false</property>
+        <property name="title" translatable="yes"></property>
+        <property name="description" translatable="yes"/>
+        <child>
+          <object class="AdwActionRow">
+            <property name="title" translatable="yes">Notice</property>
+            <property name="subtitle" translatable="yes">Edit your exported style at /tmp/theme.json and copy them to {HOME}/.config/d2da/themes/.</property>
           </object>
         </child>
       </object>

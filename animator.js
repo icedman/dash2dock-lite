@@ -459,8 +459,8 @@ export let Animator = class {
 
     // separators
     dock._separators.forEach((actor) => {
-      let prev = actor.get_previous_sibling() || actor._prev;
-      let next = actor.get_next_sibling();
+      let prev = actor._prev; // get_previous_sibling() || actor._prev;
+      let next = actor._next; // get_next_sibling();
       if (prev && next && prev._icon && next._icon) {
         actor.translationX =
           (prev._icon.translationX + next._icon.translationX) / 2;

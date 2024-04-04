@@ -379,7 +379,13 @@ export let Dock = GObject.registerClass(
       c._cls = c._cls || c.get_style_class_name();
       if (c._cls === 'dash-separator') {
         this._separators.push(c);
-        this._lastSeparator = c;
+        this._dashItems.push(c);
+        if (!c._destroyConnectId) {
+          c._destroyConnectId = c.connect('destroy', () => {
+            this._icons = null;
+            console.log('separator destroyed');
+          });
+        }
         c.visible = true;
         c.style = 'margin-left: 8px; margin-right: 8px;';
         return false;
@@ -430,8 +436,10 @@ export let Dock = GObject.registerClass(
           !this.isVertical()
         ) {
           this._icons.unshift(c);
+          this._dashItems.unshift(c);
         } else {
           this._icons.push(c);
+          this._dashItems.push(c);
         }
         return true;
       }
@@ -451,6 +459,7 @@ export let Dock = GObject.registerClass(
         }
       }
 
+      this._dashItems = [];
       this._separators = [];
       this._icons = [];
 
@@ -483,19 +492,14 @@ export let Dock = GObject.registerClass(
         });
         this._separators = [];
       }
-      let lastFavIcon = this._icons[this._icons.length - 1] ?? null;
 
       //--------------------
       // find custom icons (trash, mounts, downloads, etc...)
       //--------------------
       if (this._extraIcons) {
-        this._lastSeparator = null;
         this._extraIcons.get_children().forEach((icon) => {
           this._inspectIcon(icon);
         });
-        if (this._lastSeparator && lastFavIcon) {
-          this._lastSeparator._prev = lastFavIcon;
-        }
         this._extraIcons.visible = this._extraIcons.get_children().length > 1;
       }
 
@@ -587,6 +591,17 @@ export let Dock = GObject.registerClass(
             this._iconSizeScaledDown * this.extension.icon_quality
           );
         }
+      });
+
+      // link list the dash items
+      //! optimize this. there has to be a better way to get the separators _prev and _next
+      let prev = null;
+      this._dashItems.forEach((c) => {
+        if (prev) {
+          prev._next = c;
+        }
+        c._prev = prev;
+        prev = c;
       });
 
       return this._icons;

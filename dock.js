@@ -108,6 +108,7 @@ export let Dock = GObject.registerClass(
     }
 
     createItem(appinfo_filename) {
+      //! avoid creating app_info & /tmp/*.desktop files
       let item = new DockItemContainer({
         appinfo_filename,
       });
@@ -127,7 +128,6 @@ export let Dock = GObject.registerClass(
 
     undock() {
       if (this._list) {
-        // todo Main.uiGroup no longer available in gnome 46
         Main.uiGroup.remove_child(this._list);
         this._list = null;
       }
@@ -248,7 +248,7 @@ export let Dock = GObject.registerClass(
       this._extraIcons = new St.BoxLayout();
       this.dash._box.add_child(this._extraIcons);
 
-      // null these - needed when call recreateDash
+      // null these - needed when calling recreateDash
       this._trashIcon = null;
       this._downloadsIcon = null;
 
@@ -340,6 +340,7 @@ export let Dock = GObject.registerClass(
         this._preferredIconSizes = preferredIconSizes;
       }
 
+      //! why the need for upscaling
       let upscale = 1 + (2 - this._scaleFactor) || 1;
       if (upscale < 1) {
         upscale = 1; // does scaleFactor go beyond 2x?
@@ -356,6 +357,7 @@ export let Dock = GObject.registerClass(
       return iconSize;
     }
 
+    // Structure for dash icon container widgets - g42,g43,g44,g45,g46
     /**
      *  DashItemContainer
      *    > child (DashIcon[appwell])
@@ -421,6 +423,7 @@ export let Dock = GObject.registerClass(
 
       if (c._icon) {
         c._label = c.label;
+        // limitation: vertical layout cannot do apps_icon_front
         if (
           c == this.dash._showAppsIcon &&
           this.extension.apps_icon_front &&
@@ -453,14 +456,17 @@ export let Dock = GObject.registerClass(
 
       if (!this.dash) return [];
 
+      //--------------------
+      // find favorites and running apps icons
+      //--------------------
       if (this.extension.favorites_only) {
         this._favorite_ids = Fav.getAppFavorites()._getIds();
       }
-
       this.dash._box.get_children().forEach((icon) => {
         this._inspectIcon(icon);
       });
 
+      // hide separator betweeing running apps and favorites - if not needed
       if (this.extension.favorites_only) {
         if (this._separators.length) {
           this._separators[0].visible = false;
@@ -468,17 +474,20 @@ export let Dock = GObject.registerClass(
         }
       }
 
-      // hack - sometimes the Dash creates more than one separator
+      // hack: sometimes the Dash creates more than one separator
       // workaround - remove all separators in such situation
+      //! pinpoint the cause of the errors
       if (this._separators.length > 1) {
         this._separators.forEach((s) => {
           this.dash._box.remove_child(s);
         });
         this._separators = [];
       }
-
       let lastFavIcon = this._icons[this._icons.length - 1] ?? null;
 
+      //--------------------
+      // find custom icons (trash, mounts, downloads, etc...)
+      //--------------------
       if (this._extraIcons) {
         this._lastSeparator = null;
         this._extraIcons.get_children().forEach((icon) => {
@@ -489,6 +498,10 @@ export let Dock = GObject.registerClass(
         }
         this._extraIcons.visible = this._extraIcons.get_children().length > 1;
       }
+
+      //--------------------
+      // find the showAppsIcon
+      //--------------------
       if (this.dash._showAppsIcon) {
         this.dash._showAppsIcon.visible = this.extension.apps_icon;
         if (this._inspectIcon(this.dash._showAppsIcon)) {
@@ -568,6 +581,7 @@ export let Dock = GObject.registerClass(
         }
 
         // icon image quality
+        // move back to animate icons - fix random bug - pixelated when idle
         if (this._iconSizeScaledDown) {
           c._icon.set_icon_size(
             this._iconSizeScaledDown * this.extension.icon_quality
@@ -588,6 +602,7 @@ export let Dock = GObject.registerClass(
       // the mount icons
       //---------------
       {
+        //! avoid creating app_info & /tmp/*.desktop files
         let extras = [...this._extraIcons.get_children()];
         let extraNames = extras.map((e) => e.name);
         let mounted = Object.keys(this.extension.services._mounts);
@@ -694,6 +709,7 @@ export let Dock = GObject.registerClass(
       //---------------
       if (!this._trashIcon && this.extension.trash_icon) {
         // pin trash icon
+        //! avoid creating app_info & /tmp/*.desktop files
         this._trashIcon = this.createItem(`/tmp/trash-dash2dock-lite.desktop`);
         this._icons = null;
       } else if (this._trashIcon && !this.extension.trash_icon) {
@@ -737,6 +753,7 @@ export let Dock = GObject.registerClass(
 
       this._icons = this._findIcons();
 
+      //! add explanation
       let flags = {
         top: {
           edgeX: 0,
@@ -775,9 +792,10 @@ export let Dock = GObject.registerClass(
 
       let width = 1200;
       let height = 140;
+      //! use dock size limit - add preferences
       let dock_size_limit = 1;
       let animation_spread = this.extension.animation_spread;
-      let animation_magnify = this.extension.animation_magnify;
+      // let animation_magnify = this.extension.animation_magnify;
 
       let iconMargins = 0;
       let iconStyle = '';
@@ -792,6 +810,7 @@ export let Dock = GObject.registerClass(
       }
 
       let iconSize = this._preferredIconSize();
+      //! why not use icon_spacing? animation spread should only be when animated
       let iconSizeSpaced = iconSize + 2 + 8 * animation_spread;
 
       let projectedWidth =
@@ -801,10 +820,8 @@ export let Dock = GObject.registerClass(
       projectedWidth += iconMargins;
 
       let scaleDown = 1.0;
-      let limit = vertical ? 0.96 : 0.98;
-
+      let limit = vertical ? 0.96 : 0.98; // use dock_size_limit
       let maxWidth = (vertical ? m.height : m.width) * limit;
-
       if (projectedWidth * scaleFactor > maxWidth * 0.98) {
         scaleDown = (maxWidth - iconSize / 2) / (projectedWidth * scaleFactor);
       }
@@ -832,11 +849,13 @@ export let Dock = GObject.registerClass(
       width = this._projectedWidth * scaleFactor;
       height = iconSizeSpaced * 1.5 * scaleFactor;
 
+      //! make dock area equal the monitor area - speed consideration?
       this.width = (vertical ? height : width) + iconSize * scaleFactor;
       this.height = (vertical ? width : height) + iconSize * scaleFactor;
 
       if (this.animated) {
         let adjust = 1.25;
+        //! avoid !vertical ? use ifs for readability
         this.width *= vertical ? adjust : 1;
         this.height *= !vertical ? adjust : 1;
         this.width += !vertical * iconSizeSpaced * adjust * scaleFactor;
@@ -852,7 +871,7 @@ export let Dock = GObject.registerClass(
 
       // console.log(`${width} ${height}`);
 
-      // reposition the dash
+      // reorient and reposition the dash
       this.dash.last_child.layout_manager.orientation = vertical;
       this.dash._box.layout_manager.orientation = vertical;
       if (this._extraIcons) {
@@ -871,7 +890,6 @@ export let Dock = GObject.registerClass(
         this.height * f.offsetY +
         (m.height / 2 - this.height / 2) * f.centerY;
 
-      // todo vertical
       if (this.extension.panel_mode) {
         if (vertical) {
           this.y = m.y;
@@ -883,6 +901,7 @@ export let Dock = GObject.registerClass(
       }
 
       // center the dash
+      //! move to hug the edge
       this.dash.x = this.width / 2 - this.dash.width / 2;
       this.dash.y = this.height / 2 - this.dash.height / 2;
 
@@ -899,10 +918,10 @@ export let Dock = GObject.registerClass(
       // resize dash icons
       // console.log(this.dash.height);
       // console.log('---------------');
-
       // this.acquirePanel();
     }
 
+    //! remove, panel widget has changed and may be different between gnome versions
     acquirePanel() {
       // panel
       if (!this.panel && Main.panel) {
@@ -966,10 +985,12 @@ export let Dock = GObject.registerClass(
         this.simulated_pointer = p;
         this._preview--;
       }
+      //! add layout here instead of at the 
       this.animator.animate();
       this.simulated_pointer = null;
     }
 
+    //! move these generic functions outside of this class
     _get_distance_sqr(pos1, pos2) {
       let a = pos1[0] - pos2[0];
       let b = pos1[1] - pos2[1];
@@ -1167,7 +1188,7 @@ export let Dock = GObject.registerClass(
 
         let icon = target;
 
-        // add scrollwheel vs touchpad differentiation
+        // adjustment for touch scroll (much more sensitive) and mouse scrollwheel
         let multiplier = 1;
         if (
           evt.get_source_device().get_device_type() == 5 ||
@@ -1178,12 +1199,11 @@ export let Dock = GObject.registerClass(
           multiplier = 5;
         }
 
-        // console.log(this._scrollCounter);
-
         let SCROLL_RESOLUTION =
           MIN_SCROLL_RESOLUTION +
           MAX_SCROLL_RESOLUTION -
           (MAX_SCROLL_RESOLUTION * this.extension.scroll_sensitivity || 0);
+
         if (icon._appwell && icon._appwell.app) {
           this._lastScrollObject = icon;
           let direction = evt.get_scroll_direction();
@@ -1202,6 +1222,7 @@ export let Dock = GObject.registerClass(
       }
     }
 
+    // an overly sensitive setting will make window too fast. allow a half second pause after each cycle
     _lockCycle() {
       if (this._lockedCycle) return;
       this._lockedCycle = true;
@@ -1233,6 +1254,7 @@ export let Dock = GObject.registerClass(
         return w1.get_id() > w2.get_id() ? -1 : 1;
       });
 
+      //! add explanations
       if (nw > 1) {
         for (let i = 0; i < nw; i++) {
           if (windows[i].has_focus()) {

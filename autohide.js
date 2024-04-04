@@ -51,6 +51,7 @@ export let AutoHide = class {
   }
 
   _getScaleFactor() {
+    //! use dock scale factor
     let scaleFactor = this.dashContainer._monitor.geometry_scale;
     return scaleFactor;
   }
@@ -150,6 +151,7 @@ export let AutoHide = class {
   }
 
   _track(window) {
+    //! window tracking should be made global
     if (!window._tracked) {
       // log('tracking...');
       window.connectObject(
@@ -189,7 +191,6 @@ export let AutoHide = class {
       pointer = [...this.extension.simulated_pointer];
     }
 
-    // inaccurate
     let pos = this.dashContainer.struts.get_transformed_position();
     let rect = {
       x: pos[0],
@@ -197,8 +198,8 @@ export let AutoHide = class {
       w: this.dashContainer.struts.width,
       h: this.dashContainer.struts.height,
     };
+    //! change to struts rect
     let arect = [rect.x, rect.y, rect.w, rect.h];
-    let dash_position = [this.dashContainer.x, this.dashContainer.y];
 
     if (!this.extension.autohide_dash) {
       return false;

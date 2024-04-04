@@ -412,6 +412,8 @@ export const DockBackground = GObject.registerClass(
       }
 
       let dp = dashContainer.dash.get_transformed_position();
+      if (isNaN(dp[0]) || isNaN(dp[1])) return;
+
       let padding =
         iconSize *
         0.1 *

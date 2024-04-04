@@ -173,13 +173,8 @@ export default class Dash2DockLiteExt extends Extension {
     this.services.enable();
     this._onCheckServices();
 
-    // this._updateAnimationFPS();
-    // this._updateShrink();
-    // this._updateIconResolution();
-    // this._updateLayout();
-    // this._updateAutohide();
-    // this._updateWidgetStyle();
-    // this._updateStyle();
+    this._updateAnimationFPS();
+    this._updateStyle();
     this._updateBlurredBackground();
 
     this._addEvents();
@@ -257,11 +252,9 @@ export default class Dash2DockLiteExt extends Extension {
   startUp() {
     this.createTheDocks();
     this._loTimer.runOnce(() => {
-      this._updateAnimationFPS();
       this._updateShrink();
       this._updateIconResolution();
       this._updateWidgetStyle();
-      this._updateStyle();
       this.animate({ refresh: true });
       this.docks.forEach((dock) => {
         dock._debounceEndAnimation();

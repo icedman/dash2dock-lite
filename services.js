@@ -10,6 +10,7 @@ import { Calendar } from './apps/calendar.js';
 
 // sync with animator
 const CANVAS_SIZE = 120;
+const DEBOUNCE_CHECK_TIMEOUT = 750;
 
 class ServiceCounter {
   constructor(name, interval, callback, advance) {
@@ -119,7 +120,7 @@ export const Services = class {
           case Gio.FileMonitorEvent.MOVED_IN:
             return;
         }
-        this.checkDownloads();
+        this._debounceCheckDownloads();
       },
       this
     );
@@ -462,6 +463,22 @@ export const Services = class {
         }
       }
       f = iter.next_file(null);
+    }
+  }
+
+  _debounceCheckDownloads() {
+    if (this.extension._loTimer) {
+      if (!this._debounceCheckSeq) {
+        this._debounceCheckSeq = this.extension._loTimer.runDebounced(
+          () => {
+            this.checkDownloads();
+          },
+          DEBOUNCE_CHECK_TIMEOUT,
+          'debounceCheckDownloads'
+        );
+      } else {
+        this.extension._loTimer.runDebounced(this._debounceCheckSeq);
+      }
     }
   }
 

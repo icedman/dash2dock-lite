@@ -289,7 +289,7 @@ export const DockItemList = GObject.registerClass(
     }
 
     slideOut() {
-      if(!this._hidden) {
+      if (!this._hidden) {
         this._hidden = true;
         this._hiddenFrames = 80;
       }

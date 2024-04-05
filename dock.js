@@ -288,7 +288,7 @@ export let Dock = GObject.registerClass(
 
       Main.layoutManager.addChrome(this.struts, {
         affectsStruts: !this.extension.autohide_dash,
-        affectsInputRegion: false,
+        affectsInputRegion: true,
         trackFullscreen: true,
       });
 
@@ -764,6 +764,8 @@ export let Dock = GObject.registerClass(
     }
 
     layout() {
+      const full_screen_dock_container = true;
+
       if (this.extension.apps_icon_front) {
         this.dash.last_child.text_direction = 2; // RTL
         this.dash._box.text_direction = 1; // LTR
@@ -797,28 +799,38 @@ export let Dock = GObject.registerClass(
           edgeY: 0,
           offsetX: 0,
           offsetY: 0,
+          centerX: 1,
+          centerY: 0,
         },
         bottom: {
           edgeX: 0,
           edgeY: 1,
           offsetX: 0,
           offsetY: -1,
+          centerX: 1,
+          centerY: 0,
         },
         left: {
           edgeX: 0,
           edgeY: 0,
           offsetX: 0,
           offsetY: 0,
+          centerX: 0,
+          centerY: 1,
         },
         right: {
           edgeX: 1,
           edgeY: 0,
           offsetX: -1,
           offsetY: 0,
+          centerX: 0,
+          centerY: 1,
         },
       };
       let f = flags[this._position];
 
+      let width = 1200;
+      let height = 140;
       //! use dock size limit - add preferences
       let dock_size_limit = 1;
       let animation_spread = this.extension.animation_spread;
@@ -873,18 +885,58 @@ export let Dock = GObject.registerClass(
         }
       });
 
-      //! make dock area equal the monitor area - speed consideration?
       //! check with multi-monitor and scaled displays
       this.x = m.x;
       this.y = m.y;
       this.width = m.width;
       this.height = m.height;
 
+      //! for removal
+      if (!full_screen_dock_container) {
+        width = this._projectedWidth * scaleFactor;
+        height = iconSizeSpaced * 1.5 * scaleFactor;
+
+        //! make dock area equal the monitor area - speed consideration?
+        this.width = (vertical ? height : width) + iconSize * scaleFactor;
+        this.height = (vertical ? width : height) + iconSize * scaleFactor;
+
+        if (this.animated) {
+          let adjust = 1.25;
+          //! avoid !vertical ? use ifs for readability
+          this.width *= vertical ? adjust : 1;
+          this.height *= !vertical ? adjust : 1;
+          this.width += !vertical * iconSizeSpaced * adjust * scaleFactor;
+          this.height += vertical * iconSizeSpaced * adjust * scaleFactor;
+
+          if (this.width > m.width) {
+            this.width = m.width;
+          }
+          if (this.height > m.height) {
+            this.height = m.height;
+          }
+        }
+      }
+
       // reorient and reposition the dash
       this.dash.last_child.layout_manager.orientation = vertical;
       this.dash._box.layout_manager.orientation = vertical;
       if (this._extraIcons) {
         this._extraIcons.layout_manager.orientation = vertical;
+      }
+
+      //! for removal
+      if (!full_screen_dock_container) {
+        this.x =
+          m.x +
+          m.width * f.edgeX +
+          this.width * f.offsetX +
+          (m.width / 2 - this.width / 2) * f.centerX;
+
+        this.y =
+          m.y +
+          m.height * f.edgeY +
+          this.height * f.offsetY +
+          (m.height / 2 - this.height / 2) * f.centerY;
       }
 
       // hug the edge

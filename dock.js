@@ -5,6 +5,7 @@ import * as Fav from 'resource:///org/gnome/shell/ui/appFavorites.js';
 
 import Shell from 'gi://Shell';
 import GObject from 'gi://GObject';
+import Gio from 'gi://Gio';
 import Clutter from 'gi://Clutter';
 import Graphene from 'gi://Graphene';
 import St from 'gi://St';
@@ -642,42 +643,57 @@ export let Dock = GObject.registerClass(
       //---------------
       // the folder icons
       //---------------
+      //! add explanations
       let folders = [
         {
           icon: '_downloadsIcon',
+          folder: Gio.File.new_for_path('Downloads').get_path(),
+          //! find a way to avoid this
           path: '/tmp/downloads-dash2dock-lite.desktop',
-          show: this.extension.downloads_icon, // && this._position == DockPosition.BOTTOM
+          show: this.extension.downloads_icon,
+          items: '_downloadFiles',
+          itemsLength: '_downloadFilesLength',
+          prepare: this.extension.services.checkDownloads,
+          cleanup: () => {},
         },
-        // {
-        //   icon: '_documentsIcon',
-        //   path: '/tmp/documents-dash2dock-lite.desktop',
-        //   show: this.extension.documents_icon // && this._position == DockPosition.BOTTOM
-        // }
+        {
+          icon: '_recentFilesIcon',
+          folder: 'recents:///',
+          //! find a way to avoid this
+          path: `${this.extension.path}/apps/recents-dash2dock-lite.desktop`,
+          show: this.extension.documents_icon,
+          prepare: this.extension.services.checkRecents,
+          items: '_recentFiles',
+          itemsLength: '_recentFilesLength',
+          cleanup: () => {
+            this.extension.services._recentFiles = null;
+          },
+        },
       ];
+
+      //! cleanup this mess
       folders.forEach((f) => {
         if (!this[f.icon] && f.show) {
           // pin downloads icon
           this[f.icon] = this.createItem(f.path);
 
           let target = this[f.icon];
-
           target._onClick = async () => {
             if (this._position != DockPosition.BOTTOM) {
               target.activateNewWindow();
               return;
             }
-            if (!this.extension.services._downloadFiles) {
-              await this.extension.services.checkDownloads();
+            if (!this.extension.services[f.items]) {
+              await f.prepare();
             }
-            let files = [...(this.extension.services._downloadFiles || [])];
+            let files = [...(this.extension.services[f.items] || [])];
             if (!files.length) return;
-            if (files.length < this.extension.services._downloadFilesLength) {
+            if (files.length < this.extension.services[f.itemsLength]) {
               files = [
                 {
                   index: -1,
                   name: 'More...',
-                  path: 'Downloads',
-                  // icon: 'view-list-symbolic',
+                  exec: `nautilus ${f.folder}`,
                   icon: target._icon.icon_name,
                   type: 'directory',
                 },

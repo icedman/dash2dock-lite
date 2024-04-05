@@ -16,7 +16,7 @@ function test() {
         null
       );
       const icon = fileInfo.get_icon().get_names()[0] ?? 'folder';
-      console.log(`${file.get_path()} ${icon}`);
+      console.log(`|${file.get_path()}|${icon}`);
     }
   });
 }

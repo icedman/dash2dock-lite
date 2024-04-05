@@ -126,8 +126,10 @@ export const Services = class {
       this
     );
 
+    //! these are blocking calls. async these.
     this.checkTrash();
-    this.checkDownloads();
+    this._debounceCheckDownloads();
+
     this.checkNotifications();
 
     this.checkMounts();
@@ -443,6 +445,7 @@ export const Services = class {
               index: fileStat.index,
               name: fileStat.name,
               display: fileStat.index, // fileInfo.get_display_name(),
+              path: file.get_path(),
               icon: fileInfo.get_icon().get_names()[0] ?? 'file',
               type: fileInfo.get_content_type(),
               date: fileStat.date ?? '',
@@ -458,10 +461,64 @@ export const Services = class {
     return [downloadFiles, downloadFilesLength];
   }
 
+  async checkRecentFilesFromRecentManager() {
+    let maxs = [5, 10, 15, 20, 25];
+    let max_recent_items = maxs[this.extension.max_recent_items || 0];
+
+    let recentFiles = [];
+    let recentFilesLength = 0;
+
+    try {
+      await trySpawnCommandLine(
+        `/usr/bin/gjs "${this.extension.path}/apps/recents.js"`
+      );
+    } catch (err) {
+      console.log(err);
+    }
+
+    let fn = Gio.File.new_for_path('/tmp/recents.txt');
+    if (fn.query_exists(null)) {
+      try {
+        const [success, contents] = fn.load_contents(null);
+        const decoder = new TextDecoder();
+        let contentsString = decoder.decode(contents);
+        let idx = 0;
+        let lines = contentsString.split('\n');
+        lines.forEach((l) => {
+          let res = l.split('|');
+          if (res.length != 3) return;
+          const file = Gio.File.new_for_path(res[1]);
+          if (!file.query_exists(null)) {
+            return;
+          }
+          if (recentFiles.length < max_recent_items) {
+            const fileStat = {
+              index: idx++,
+              name: file.get_basename(),
+              icon: res[2],
+              path: file.get_path(),
+              type: 'file',
+            };
+            recentFiles.push(fileStat);
+          }
+          recentFilesLength++;
+        });
+      } catch (err) {
+        console.log(err);
+      }
+    }
+    return [recentFiles, recentFilesLength];
+  }
+
+  async checkRecents() {
+    [this._recentFiles, this._recentFilesLength] =
+      await this.checkRecentFilesFromRecentManager();
+  }
+
   async checkDownloads() {
     let path = this._downloadsDir.get_path();
-    [this._downloadFiles, this._downloadFilesLength] = await
-      this.checkRecentFilesInFolder(path);
+    [this._downloadFiles, this._downloadFilesLength] =
+      await this.checkRecentFilesInFolder(path);
   }
 
   _debounceCheckDownloads() {

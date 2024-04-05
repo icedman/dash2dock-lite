@@ -88,9 +88,8 @@
         </child>
         <child>
           <object class="AdwActionRow">
-            <property name="visible">false</property>
-            <property name="title" translatable="yes">Documents</property>
-            <property name="subtitle" translatable="yes">Show documents folder to access recently edit documents.</property>
+            <property name="title" translatable="yes">Recent Files</property>
+            <property name="subtitle" translatable="yes">Show recently accessed files.</property>
             <property name="activatable-widget">documents-icon</property>
             <child>
               <object class="GtkSwitch" id="documents-icon">

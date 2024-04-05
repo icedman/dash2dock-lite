@@ -218,7 +218,8 @@ export const DockItemList = GObject.registerClass(
         w._label = label;
 
         icon.connect('button-press-event', () => {
-          let path = Gio.File.new_for_path(`Downloads/${l.name}`).get_path();
+          // let path = Gio.File.new_for_path(`Downloads/${l.name}`).get_path();
+          let path = l.path;
           let cmd = `xdg-open "${path}"`;
           if (l.type.includes('directory')) {
             cmd = `nautilus --select "${path}"`;
@@ -340,7 +341,7 @@ export const DockItemContainer = GObject.registerClass(
 
     _createIcon(size) {
       this._iconActor = new St.Icon({
-        icon_name: this._default_icon_name,
+        icon_name: this._default_icon_name || 'file',
         icon_size: size,
         style_class: 'show-apps-icon',
         track_hover: true,

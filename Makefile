@@ -10,7 +10,6 @@ install: build
 	rm -rf ~/.local/share/gnome-shell/extensions/dash2dock-lite@icedman.github.com/
 	mkdir -p ~/.local/share/gnome-shell/extensions/dash2dock-lite@icedman.github.com/
 	cp -R ./* ~/.local/share/gnome-shell/extensions/dash2dock-lite@icedman.github.com/
-	rm -R ~/.local/share/gnome-shell/extensions/dash2dock-lite@icedman.github.com/apps/*.desktop
 
 clean:
 	rm -rf ./build
@@ -31,7 +30,6 @@ publish:
 	cp -R preferences ./build
 	cp -R effects ./build
 	rm -rf ./*.zip
-	rm -rf build/apps/*.desktop
 	rm -rf build/*_.js
 	rm -rf build/imports*.js
 	cd build ; \

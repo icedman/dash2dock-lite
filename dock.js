@@ -646,19 +646,6 @@ export let Dock = GObject.registerClass(
       //! add explanations
       let folders = [
         {
-          icon: '_downloadsIcon',
-          folder: Gio.File.new_for_path('Downloads').get_path(),
-          //! find a way to avoid this
-          path: '/tmp/downloads-dash2dock-lite.desktop',
-          show: this.extension.downloads_icon,
-          items: '_downloadFiles',
-          itemsLength: '_downloadFilesLength',
-          prepare: this.extension.services.checkDownloads.bind(
-            this.extension.services
-          ),
-          cleanup: () => {},
-        },
-        {
           icon: '_recentFilesIcon',
           folder: 'recent:///',
           //! find a way to avoid this
@@ -672,6 +659,19 @@ export let Dock = GObject.registerClass(
           cleanup: () => {
             this.extension.services._recentFiles = null;
           },
+        },
+        {
+          icon: '_downloadsIcon',
+          folder: Gio.File.new_for_path('Downloads').get_path(),
+          //! find a way to avoid this
+          path: '/tmp/downloads-dash2dock-lite.desktop',
+          show: this.extension.downloads_icon,
+          items: '_downloadFiles',
+          itemsLength: '_downloadFilesLength',
+          prepare: this.extension.services.checkDownloads.bind(
+            this.extension.services
+          ),
+          cleanup: () => {},
         },
       ];
 

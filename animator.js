@@ -55,7 +55,12 @@ export let Animator = class {
       simulation = true;
     }
     // disable icon scale animation upon hovering an item
-    if (dock._list && dock._list.visible && dock._list._box && dock._lastHoveredIcon == dock._list._target) {
+    if (
+      dock._list &&
+      dock._list.visible &&
+      dock._list._box &&
+      dock._lastHoveredIcon == dock._list._target
+    ) {
       pointer[1] -= dock._iconSize * dock._scaleFactor;
     }
 
@@ -619,7 +624,7 @@ export let Animator = class {
 
       let tw = target.width * target._icon.scaleX;
       let th = target.height * target._icon.scaleY;
-
+      let prev = null;
       list._box?.get_children().forEach((c) => {
         c.translationX = target._icon.translationX + tw / 8;
         c.translationY =
@@ -635,6 +640,9 @@ export let Animator = class {
           ty = c._oy;
           tz = c._oz;
           to = 0;
+          if (prev) {
+            tx = (tx * 5 + prev.x) / 6;
+          }
           if (list._hiddenFrames-- == 0) {
             list.visible = false;
             list._hidden = false;
@@ -647,8 +655,13 @@ export let Animator = class {
           (c._label.opacity * list_coef + to) / (list_coef + 1);
         c.x = (c.x * list_coef_x + tx) / (list_coef_x + 1);
         c.y = (c.y * list_coef + ty) / (list_coef + 1);
+        // if (list._hidden) {
+        c.opacity = c._label.opacity;
+        // }
         c.rotation_angle_z =
           (c.rotation_angle_z * list_coef_z + tz) / (list_coef_z + 1);
+
+        prev = c;
       });
 
       target._label.hide();

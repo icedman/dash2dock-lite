@@ -216,12 +216,13 @@ export const DockItemList = GObject.registerClass(
         w.add_child(label);
         w._icon = icon;
         w._label = label;
+        label.opacity = 0;
 
         icon.connect('button-press-event', () => {
           // let path = Gio.File.new_for_path(`Downloads/${l.name}`).get_path();
           let path = l.path;
           let cmd = `xdg-open "${path}"`;
-          
+
           if (l.type.includes('directory')) {
             cmd = `nautilus --select "${path}"`;
           }

@@ -59,7 +59,7 @@ g44: build
 	mkdir -p ./build/apps
 	mkdir -p ./build/effects
 	mkdir -p ./build/preferences
-	python3 ./transpile.py
+	python3 ./tools/transpile.py
 	rm -rf ~/.local/share/gnome-shell/extensions/dash2dock-lite@icedman.github.com/
 	mkdir -p ~/.local/share/gnome-shell/extensions/dash2dock-lite@icedman.github.com/
 	cp -R ./schemas ./build

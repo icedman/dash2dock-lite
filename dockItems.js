@@ -238,12 +238,13 @@ export const DockItemList = GObject.registerClass(
       this.add_child(this._box);
 
       let tp = this._target.get_transformed_position();
-      let ox = 0;
-      let oy = 0;
-      let angleInc = 0 + 2 * dock.extension.items_pullout_angle;
-      let startAngle = 270 - angleInc;
+      let angleInc = 0 + 2.5 * dock.extension.items_pullout_angle;
+      let startAngle = 270 + 1 * angleInc;
       let angle = startAngle;
       let rad = iconSize * dock._scaleFactor;
+
+      let ox = 0;
+      let oy = -rad / 4;
 
       let children = this._box.get_children();
       children.reverse();

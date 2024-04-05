@@ -4,6 +4,7 @@ import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import { trySpawnCommandLine } from 'resource:///org/gnome/shell/misc/util.js';
 
 import Gio from 'gi://Gio';
+import GLib from 'gi://GLib';
 
 import { Clock } from './apps/clock.js';
 import { Calendar } from './apps/calendar.js';
@@ -159,7 +160,7 @@ export const Services = class {
 
     this.last_mounted = mount;
     let basename = mount.get_default_location().get_basename();
-    let appname = `mount-${basename}-dash2dock-lite.desktop`;
+    // let appname = `mount-${basename}-dash2dock-lite.desktop`;
     this.setupMountIcon(mount);
     this.extension.animate();
     return true;
@@ -394,76 +395,73 @@ export const Services = class {
     return this.trashFull;
   }
 
-  async checkDownloads() {
-    // this._trySpawnCommandLine = trySpawnCommandLine;
-    console.log('checking downloads');
-    if (!this.extension.downloads_icon) return;
+  async checkRecentFilesInFolder(path) {
+    let maxs = [5, 10, 15, 20, 25];
+    let max_recent_items = maxs[this.extension.max_recent_items || 0];
+
+    let downloadFiles = [];
+    let downloadFilesLength = 0;
     try {
-      let path = this._downloadsDir.get_path();
-      let cmd = `${this.extension.path}/apps/list-downloads.sh`;
-      await trySpawnCommandLine(cmd);
+      let [res, pid, in_fd, out_fd, err_fd] = GLib.spawn_async_with_pipes(
+        null,
+        ['/bin/ls', '-lah', `${path}`],
+        null,
+        0,
+        null
+      );
+
+      let out_reader = new Gio.DataInputStream({
+        base_stream: new Gio.UnixInputStream({ fd: out_fd }),
+      });
+
+      let idx = 0;
+      for (let i = 0; i < 100 && idx < 30; i++) {
+        let [line, size] = out_reader.read_line_utf8(null);
+        if (line == null) break;
+        const res =
+          /\s([a-zA-Z]{3})\s{1,3}([0-9]{1,3})\s{1,3}([0-9:]{4,8})\s{1,3}(.*)/.exec(
+            line
+          );
+        if (res) {
+          const fileStat = {
+            name: res[4],
+            date: `${res[1]}. ${res[2]}, ${res[3]}`,
+          };
+          if (fileStat.name && (fileStat.name == '.' || fileStat.name == '..'))
+            continue;
+          fileStat.index = idx++;
+
+          const file = Gio.File.new_for_path(`Downloads/${res[4]}`);
+          const fileInfo = file.query_info(
+            'standard::*,unix::uid',
+            Gio.FileQueryInfoFlags.NOFOLLOW_SYMLINKS,
+            null
+          );
+
+          if (file && fileInfo && fileStat.index < max_recent_items) {
+            downloadFiles.push({
+              index: fileStat.index,
+              name: fileStat.name,
+              display: fileStat.index, // fileInfo.get_display_name(),
+              icon: fileInfo.get_icon().get_names()[0] ?? 'file',
+              type: fileInfo.get_content_type(),
+              date: fileStat.date ?? '',
+            });
+          }
+          downloadFilesLength++;
+        }
+      }
     } catch (err) {
       console.log(err);
     }
 
-    let fileStat = {};
-    let fn = Gio.File.new_for_path('/tmp/downloads.txt');
-    if (fn.query_exists(null)) {
-      try {
-        const [success, contents] = fn.load_contents(null);
-        const decoder = new TextDecoder();
-        let contentsString = decoder.decode(contents);
-        let idx = 0;
-        let lines = contentsString.split('\n');
-        lines.forEach((l) => {
-          let res =
-            /\s([a-zA-Z]{3})\s{1,3}([0-9]{1,3})\s{1,3}([0-9:]{4,8})\s{1,3}(.*)/.exec(
-              l
-            );
-          if (res) {
-            fileStat[res[4]] = {
-              index: idx,
-              name: res[4],
-              date: `${res[1]}. ${res[2]}, ${res[3]}`,
-            };
-            idx++;
-          }
-        });
-      } catch (err) {
-        console.log(err);
-      }
-    }
+    return [downloadFiles, downloadFilesLength];
+  }
 
-    let iter = this._downloadsDir.enumerate_children(
-      'standard::*',
-      Gio.FileQueryInfoFlags.NONE,
-      null
-    );
-
-    // console.log(fileStat);
-
-    this._downloadFilesLength = Object.keys(fileStat).length;
-    let maxs = [5, 10, 15, 20, 25];
-    let max_recent_items = maxs[this.extension.max_recent_items];
-
-    this._downloadFiles = [];
-    let f = iter.next_file(null);
-    while (f) {
-      if (!f.get_is_hidden()) {
-        let name = f.get_name();
-        if (fileStat[name]?.index <= max_recent_items + 1) {
-          this._downloadFiles.push({
-            index: fileStat[name]?.index,
-            name,
-            display: f.get_display_name(),
-            icon: f.get_icon().get_names()[0] ?? 'folder',
-            type: f.get_content_type(),
-            date: fileStat[name]?.date ?? '',
-          });
-        }
-      }
-      f = iter.next_file(null);
-    }
+  async checkDownloads() {
+    let path = this._downloadsDir.get_path();
+    [this._downloadFiles, this._downloadFilesLength] = await
+      this.checkRecentFilesInFolder(path);
   }
 
   _debounceCheckDownloads() {

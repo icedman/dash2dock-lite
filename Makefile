@@ -96,3 +96,6 @@ xml-lint:
 pretty: xml-lint
 	rm -rf ./build/*
 	prettier --single-quote --write "**/*.js"
+
+todo:
+	python ./tools/todo.py > TODO.md

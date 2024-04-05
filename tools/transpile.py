@@ -77,8 +77,6 @@ def dump(f):
     if "imports_" in f:
         return
     f = f.strip()
-    if not f.endswith(".js"):
-        return
     of = f.replace("./", "./build/")
     
     output = open(of, "w")

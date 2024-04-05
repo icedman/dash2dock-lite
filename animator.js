@@ -30,6 +30,9 @@ export let Animator = class {
   animate() {
     //! replace dashContainer with dock
     let dock = this.dashContainer;
+    if (dock._hoveredIcon) {
+      dock._lastHoveredIcon = dock._hoveredIcon;
+    }
 
     let simulation = false;
 
@@ -41,6 +44,8 @@ export let Animator = class {
 
     let m = dock.getMonitor();
     let pointer = global.get_pointer();
+
+    // simulated or transformed pointers
     if (dock.extension.simulated_pointer) {
       pointer = [...dock.extension.simulated_pointer];
       simulation = true;
@@ -50,7 +55,7 @@ export let Animator = class {
       simulation = true;
     }
     // disable icon scale animation upon hovering an item
-    if (dock._list && dock._list.visible && dock._list._box) {
+    if (dock._list && dock._list.visible && dock._list._box && dock._lastHoveredIcon == dock._list._target) {
       pointer[1] -= dock._iconSize * dock._scaleFactor;
     }
 
@@ -604,6 +609,7 @@ export let Animator = class {
     //---------------------
     // animate the list
     //---------------------
+    //! use easing functions here
     if (dock._list && dock._list.visible && dock._list._target) {
       let list = dock._list;
       list.opacity = 255;

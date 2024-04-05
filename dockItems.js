@@ -221,9 +221,14 @@ export const DockItemList = GObject.registerClass(
           // let path = Gio.File.new_for_path(`Downloads/${l.name}`).get_path();
           let path = l.path;
           let cmd = `xdg-open "${path}"`;
+          
           if (l.type.includes('directory')) {
             cmd = `nautilus --select "${path}"`;
           }
+          if (l.type.includes('exec')) {
+            cmd = l.exec;
+          }
+
           this.visible = false;
           this.dock._maybeBounce(this._target);
 

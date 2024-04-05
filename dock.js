@@ -660,7 +660,7 @@ export let Dock = GObject.registerClass(
         },
         {
           icon: '_recentFilesIcon',
-          folder: 'recents:///',
+          folder: 'recent:///',
           //! find a way to avoid this
           path: `${this.extension.path}/apps/recents-dash2dock-lite.desktop`,
           show: this.extension.documents_icon,
@@ -699,7 +699,7 @@ export let Dock = GObject.registerClass(
                   name: 'More...',
                   exec: `nautilus ${f.folder}`,
                   icon: target._icon.icon_name,
-                  type: 'directory',
+                  type: 'exec',
                 },
                 ...files,
               ];

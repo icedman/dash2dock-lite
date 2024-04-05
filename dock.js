@@ -653,7 +653,9 @@ export let Dock = GObject.registerClass(
           show: this.extension.downloads_icon,
           items: '_downloadFiles',
           itemsLength: '_downloadFilesLength',
-          prepare: this.extension.services.checkDownloads,
+          prepare: this.extension.services.checkDownloads.bind(
+            this.extension.services
+          ),
           cleanup: () => {},
         },
         {
@@ -662,7 +664,9 @@ export let Dock = GObject.registerClass(
           //! find a way to avoid this
           path: `${this.extension.path}/apps/recents-dash2dock-lite.desktop`,
           show: this.extension.documents_icon,
-          prepare: this.extension.services.checkRecents,
+          prepare: this.extension.services.checkRecents.bind(
+            this.extension.services
+          ),
           items: '_recentFiles',
           itemsLength: '_recentFilesLength',
           cleanup: () => {

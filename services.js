@@ -511,14 +511,22 @@ export const Services = class {
   }
 
   async checkRecents() {
-    [this._recentFiles, this._recentFilesLength] =
-      await this.checkRecentFilesFromRecentManager();
+    try {
+      [this._recentFiles, this._recentFilesLength] =
+        await this.checkRecentFilesFromRecentManager();
+    } catch (err) {
+      console.log(err);
+    }
   }
 
   async checkDownloads() {
-    let path = this._downloadsDir.get_path();
-    [this._downloadFiles, this._downloadFilesLength] =
-      await this.checkRecentFilesInFolder(path);
+    try {
+      let path = this._downloadsDir.get_path();
+      [this._downloadFiles, this._downloadFilesLength] =
+        await this.checkRecentFilesInFolder(path);
+    } catch (err) {
+      console.log(err);
+    }
   }
 
   _debounceCheckDownloads() {

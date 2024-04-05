@@ -471,14 +471,6 @@ export let Dock = GObject.registerClass(
         this._inspectIcon(icon);
       });
 
-      // hide separator betweeing running apps and favorites - if not needed
-      if (this.extension.favorites_only) {
-        if (this._separators.length) {
-          this._separators[0].visible = false;
-          this._separators = [];
-        }
-      }
-
       // hack: sometimes the Dash creates more than one separator
       // workaround - remove all separators in such situation
       //! pinpoint the cause of the errors
@@ -487,6 +479,18 @@ export let Dock = GObject.registerClass(
           this.dash._box.remove_child(s);
         });
         this._separators = [];
+      }
+
+      // hide separator betweeing running apps and favorites - if not needed
+      if (this.extension.favorites_only) {
+        if (this._separators.length) {
+          this._separators[0].visible = false;
+          this._separators = [];
+        }
+      } else {
+        if (this._separators.length) {
+          this._separators[0].visible = true;
+        }
       }
 
       //--------------------
@@ -733,6 +737,8 @@ export let Dock = GObject.registerClass(
           this._downloadsIcon = null;
           this._icons = null;
         }
+
+        f.cleanup();
       });
 
       //---------------

@@ -398,6 +398,7 @@ export const Services = class {
   }
 
   async checkRecentFilesInFolder(path) {
+    console.log(`checking ${path}`);
     let maxs = [5, 10, 15, 20, 25];
     let max_recent_items = maxs[this.extension.max_recent_items || 0];
 
@@ -406,7 +407,7 @@ export const Services = class {
     try {
       let [res, pid, in_fd, out_fd, err_fd] = GLib.spawn_async_with_pipes(
         null,
-        ['/bin/ls', '-lah', `${path}`],
+        ['/bin/ls', '-laht', `${path}`],
         null,
         0,
         null
@@ -462,6 +463,7 @@ export const Services = class {
   }
 
   async checkRecentFilesFromRecentManager() {
+    console.log('checking recent manager');
     let maxs = [5, 10, 15, 20, 25];
     let max_recent_items = maxs[this.extension.max_recent_items || 0];
 

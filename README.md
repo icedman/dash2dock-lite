@@ -17,9 +17,8 @@
 
 ### Notice
 
-* Gnome 46 update is ready for testing
-* Gnome 45 port is ready for testing
-* Gnome 44 and prior will be under g44 branch
+* Supports Gnome 42, 43, 44, 45, 46
+* Prior versions are largely unsupported
 
 ### Features
 
@@ -77,22 +76,11 @@ Export your settings under Style > Themes Button > "Export"...
 
 This will be saved to ```/tmp/theme.json```. Edit this json file and save under ```~/.config/d2da/themes``` or at ```{extension_path}/dash2dock-animated/themes``` so that it becomes available at the extension settings app.
 
-## Dynamic Icons
+## Gnome 42, 43, 44
 
-Dynamic trash icon is supported (beta). The first time this is enabled, a GNOME shell restart is required.
+Build and install Dash2Dock Animated for prior versions (before Gnome 45)
 
-The trash icon has an action "Empty Trash" which requires a script *{EXTENSION_PATH}/apps/empty-trash.sh* with the content:
-
-```sh
-#!/usr/bin/sh
-rm -rf ~/.local/share/Trash/*
-```
-
-Modify the script to match your system if necessary. And make sure that the script is executable:
-
-```sh
-chmod +x {EXTENSION_PATH}/apps/empty-trash.sh
-```
+```make g44```
 
 ## Bug Reporting
 
@@ -123,12 +111,12 @@ Please be specific on the errors encountered. Add screenshots whenever possible.
 ## Testing Rig
 
 * Arch Linux (Gnome 45.5)
-* Ubuntu 23 (Gnome 45.0)
 * Debian 12 (Gnome 43.9)
-* Manjaro Linux (Gnome 45.3)
 * Fedora 39 (Gnome 45.0)
 * Fedora 40 Beta (Gnome 46.0)
+* Manjaro Linux (Gnome 45.3)
 * Opensuse Tumbleweed (Gnome 46.0)
+* Ubuntu 23 (Gnome 45.0)
 
 ## License
 

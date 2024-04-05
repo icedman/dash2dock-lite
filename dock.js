@@ -677,6 +677,7 @@ export let Dock = GObject.registerClass(
                   index: -1,
                   name: 'More...',
                   path: 'Downloads',
+                  // icon: 'view-list-symbolic',
                   icon: target._icon.icon_name,
                   type: 'directory',
                 },

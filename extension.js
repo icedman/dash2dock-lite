@@ -753,7 +753,7 @@ export default class Dash2DockLiteExt extends Extension {
   _updateStyle(disable) {
     let styles = [];
 
-    let rads = [0, 8, 16, 20, 24, 28, 32];
+    let rads = [0, 8, 16, 20, 24, 28, 32, 36, 40, 42];
 
     // icons-shadow
     if (this.icon_shadow) {

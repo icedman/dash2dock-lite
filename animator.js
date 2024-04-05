@@ -626,6 +626,8 @@ export let Animator = class {
       let th = target.height * target._icon.scaleY;
       let prev = null;
       list._box?.get_children().forEach((c) => {
+        if (!dock._list) return;
+
         c.translationX = target._icon.translationX + tw / 8;
         c.translationY =
           -target._icon.scaleX * target._icon.height + target._icon.height;
@@ -643,9 +645,10 @@ export let Animator = class {
           if (prev) {
             tx = (tx * 5 + prev.x) / 6;
           }
-          if (list._hiddenFrames-- == 0) {
-            list.visible = false;
-            list._hidden = false;
+
+          //! frame count is not accurate ... check if the animatton has ended
+          if (list._hiddenFrames-- <= 0) {
+            dock._destroyList();
           }
         }
 

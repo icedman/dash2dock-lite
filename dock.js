@@ -128,10 +128,7 @@ export let Dock = GObject.registerClass(
     }
 
     undock() {
-      if (this._list) {
-        Main.uiGroup.remove_child(this._list);
-        this._list = null;
-      }
+      this._destroyList();
       this._endAnimation();
       this.dash._box.remove_effect_by_name('icon-effect');
       this.autohider.disable();
@@ -1004,6 +1001,13 @@ export let Dock = GObject.registerClass(
       }
       this.autohider._debounceCheckHide();
       this._icons = null;
+    }
+
+    _destroyList() {
+      if (this._list) {
+        Main.uiGroup.remove_child(this._list);
+        this._list = null;
+      }
     }
 
     _debounceEndAnimation() {

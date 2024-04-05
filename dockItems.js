@@ -162,7 +162,6 @@ export const DockItemList = GObject.registerClass(
       });
 
       this.connect('button-press-event', (obj, evt) => {
-        // this.visible = false;
         if (!this._box || !this._box.get_children().length) {
           return Clutter.EVENT_PROPAGATE;
         }
@@ -290,8 +289,10 @@ export const DockItemList = GObject.registerClass(
     }
 
     slideOut() {
-      this._hidden = true;
-      this._hiddenFrames = 80;
+      if(!this._hidden) {
+        this._hidden = true;
+        this._hiddenFrames = 80;
+      }
     }
   }
 );

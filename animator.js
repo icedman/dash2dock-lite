@@ -49,6 +49,10 @@ export let Animator = class {
       pointer = [...dock.simulated_pointer];
       simulation = true;
     }
+    // disable icon scale animation upon hovering an item
+    if (dock._list && dock._list.visible && dock._list._box) {
+      pointer[1] -= dock._iconSize * dock._scaleFactor;
+    }
 
     let [px, py] = pointer;
     let p = new Point();

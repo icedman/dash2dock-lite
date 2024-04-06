@@ -633,23 +633,24 @@ export let Dock = GObject.registerClass(
       {
         //! avoid creating app_info & /tmp/*.desktop files
         let extras = [...this._extraIcons.get_children()];
-        let extraNames = extras.map((e) => e.name);
+        let extraMountPaths = extras.map((e) => e._mountPath);
         let mounted = Object.keys(this.extension.services._mounts);
 
         extras.forEach((extra) => {
           if (!extra._mountType) {
             return;
           }
-          if (!mounted.includes(extra.name)) {
+          if (!mounted.includes(extra._mountPath)) {
             this._extraIcons.remove_child(extra);
             this._icons = null;
           }
         });
 
         mounted.forEach((mount) => {
-          if (!extraNames.includes(mount)) {
+          if (!extraMountPaths.includes(mount)) {
             let mountedIcon = this.createItem(mount);
             mountedIcon._mountType = true;
+            mountedIcon._mountPath = mount;
             this._icons = null;
           }
         });

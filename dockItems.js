@@ -312,7 +312,7 @@ export const DockIcon = GObject.registerClass(
       this._iconActor = new St.Icon({
         icon_name: this._default_icon_name || 'file',
         icon_size: size,
-        // style_class: 'show-apps-icon',
+        style_class: this._default_icon_style_class || '',
         track_hover: true,
       });
 
@@ -356,7 +356,13 @@ export const DockItemContainer = GObject.registerClass(
   {},
   class DockItemContainer extends DashItemContainer {
     _init(params) {
-      super._init({ ...params, scale_x: 1, scale_y: 1 });
+      super._init({
+        name: 'DockItemContainer',
+        style_class: 'dash-item-container',
+        ...params,
+        scale_x: 1,
+        scale_y: 1,
+      });
 
       let desktopApp = params.app;
       if (desktopApp) {

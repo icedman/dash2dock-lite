@@ -399,16 +399,11 @@ export let Dock = GObject.registerClass(
           });
           let dockIcon = container.child;
           dockIcon._default_icon_name = 'view-app-grid-symbolic';
+          dockIcon._default_icon_style_class = 'show-apps-icon';
           dockIcon.child.add_style_class_name('show-apps');
           container.remove_child(dockIcon);
           c.setChild(dockIcon);
           c._skinned = true;
-        }
-      }
-      if (c._skinned && !c._skinClassed) {
-        if (c._iconActor) {
-          c._iconActor.add_style_class_name('show-apps-icon');
-          c._skinClassed = true;
         }
       }
 

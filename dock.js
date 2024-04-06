@@ -484,11 +484,9 @@ export let Dock = GObject.registerClass(
       // hack: sometimes the Dash creates more than one separator
       // workaround - remove all separators in such situation
       //! pinpoint the cause of the errors
-      if (this._separators.length > 1) {
-        this._separators.forEach((s) => {
-          this.dash._box.remove_child(s);
-        });
-        this._separators = [];
+      while (this._separators.length > 1) {
+        this.dash._box.remove_child(this._separators[0]);
+        this._separators.shift();
       }
 
       // hide separator betweeing running apps and favorites - if not needed
@@ -1232,7 +1230,7 @@ export let Dock = GObject.registerClass(
       this._lockedCycle = true;
       this.extension._hiTimer.runOnce(() => {
         this._lockedCycle = false;
-      }, 500);
+      }, 150);
     }
 
     _cycleWindows(app, evt) {

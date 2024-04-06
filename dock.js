@@ -352,7 +352,7 @@ export let Dock = GObject.registerClass(
         ] || 64);
       iconSize *= this.extension.scale;
 
-      this._iconSize = iconSize;
+      this._iconSize = Math.floor(iconSize / 2) * 2;
       return iconSize;
     }
 
@@ -603,7 +603,7 @@ export let Dock = GObject.registerClass(
         // move back to animate icons - fix random bug - pixelated when idle
         if (this._iconSizeScaledDown) {
           c._icon.set_icon_size(
-            this._iconSizeScaledDown * this.extension.icon_quality
+            Math.floor(this._iconSizeScaledDown * this.extension.icon_quality / 2) * 2
           );
         }
       });
@@ -884,6 +884,12 @@ export let Dock = GObject.registerClass(
       iconSize *= scaleDown;
       iconSizeSpaced *= scaleDown;
       projectedWidth *= scaleDown;
+
+      // make multiple of 2
+      iconSize = Math.floor(iconSize / 2) * 2;
+      iconSizeSpaced = Math.floor(iconSizeSpaced / 2) * 2;
+      projectedWidth = Math.floor(projectedWidth / 2) * 2;
+      
       this._projectedWidth = projectedWidth;
 
       this._edge_distance =

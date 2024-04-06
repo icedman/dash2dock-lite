@@ -392,15 +392,17 @@ export let Dock = GObject.registerClass(
 
       /* ShowAppsIcon */
       if (c.icon /* IconGrid */ && c.icon.icon /* StIcon */) {
-        if (!c._invaded) {
-          // console.log(`${this.extension.path}/app-grid-dash2dock-lite.desktop`);
+        if (!c._skinned) {
+          c._skinned = c.child;
+          console.log(c.icon.icon.gicon.get_names());
           let container = new DockItemContainer({
             appinfo_filename: `${this.extension.path}/apps/app-grid-dash2dock-lite.desktop`,
           });
           let dockIcon = container.child;
+          dockIcon._default_icon_name = 'view-app-grid';
+          dockIcon.add_style_class_name('show-apps-icon');
           container.remove_child(dockIcon);
           c.setChild(dockIcon);
-          c._invaded = true;
         }
       }
 

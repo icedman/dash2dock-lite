@@ -8,7 +8,7 @@ from os.path import isdir, isfile, join, exists
 from shutil import copyfile, copytree, rmtree
 from pprint import pprint
 
-output = open("./TODO.md", "w")
+# output = open("./TODO.md", "w")
 
 def dump(f):
     if not f.endswith(".js"):

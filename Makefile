@@ -99,4 +99,4 @@ pretty: xml-lint
 	prettier --single-quote --write "**/*.js"
 
 todo:
-	python ./tools/todo.py > TODO.md
+	python ./tools/todo.py > ./TODO.md

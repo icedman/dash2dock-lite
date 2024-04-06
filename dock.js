@@ -333,7 +333,7 @@ export let Dock = GObject.registerClass(
       let iconSize = 64;
       if (!preferredIconSizes) {
         preferredIconSizes = [32];
-        for (let i = 16; i < 128; i += 4) {
+        for (let i = 16; i <= 128; i += 4) {
           preferredIconSizes.push(i);
         }
         this._preferredIconSizes = preferredIconSizes;
@@ -393,16 +393,22 @@ export let Dock = GObject.registerClass(
       /* ShowAppsIcon */
       if (c.icon /* IconGrid */ && c.icon.icon /* StIcon */) {
         if (!c._skinned) {
-          c._skinned = c.child;
-          console.log(c.icon.icon.gicon.get_names());
+          // console.log(c.icon.icon.gicon.get_names());
           let container = new DockItemContainer({
             appinfo_filename: `${this.extension.path}/apps/app-grid-dash2dock-lite.desktop`,
           });
           let dockIcon = container.child;
-          dockIcon._default_icon_name = 'view-app-grid';
-          dockIcon.add_style_class_name('show-apps-icon');
+          dockIcon._default_icon_name = 'view-app-grid-symbolic';
+          dockIcon.child.add_style_class_name('show-apps');
           container.remove_child(dockIcon);
           c.setChild(dockIcon);
+          c._skinned = true;
+        }
+      }
+      if (c._skinned && !c._skinClassed) {
+        if (c._iconActor) {
+          c._iconActor.add_style_class_name('show-apps-icon');
+          c._skinClassed = true;
         }
       }
 

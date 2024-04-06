@@ -10,7 +10,10 @@ import GObject from 'gi://GObject';
 import Clutter from 'gi://Clutter';
 import St from 'gi://St';
 
-import { ShowAppsIcon } from 'resource:///org/gnome/shell/ui/dash.js';
+import {
+  DashIcon,
+  DashItemContainer,
+} from 'resource:///org/gnome/shell/ui/dash.js';
 
 import { DockPosition } from './dock.js';
 
@@ -230,7 +233,7 @@ export const DockItemList = GObject.registerClass(
           }
 
           this.visible = false;
-          this.dock._maybeBounce(this._target);
+          this.dock._maybeBounce(this._target.child);
 
           try {
             console.log(cmd);
@@ -297,31 +300,83 @@ export const DockItemList = GObject.registerClass(
   }
 );
 
-export const DockItemContainer = GObject.registerClass(
+export const DockIcon = GObject.registerClass(
   {},
-  class DockItemContainer extends ShowAppsIcon {
+  class DockIcon extends DashIcon {
     _init(params) {
-      super._init({
-        name: 'DockItemContainer',
-        style_class: 'dash-item-container',
-        ...(params || {}),
+      super._init(params);
+      this._dot.visible = false;
+    }
+
+    _createIcon(size) {
+      this._iconActor = new St.Icon({
+        icon_name: this._default_icon_name || 'file',
+        icon_size: size,
+        // style_class: 'show-apps-icon',
+        track_hover: true,
       });
 
-      this.name = params.appinfo_filename;
-      this.show(false);
+      let container = this.get_parent();
+
+      // attach event
+      let icon = this._iconActor;
+      icon.reactive = true;
+      icon.track_hover = true;
+
+      icon.connectObject(
+        'enter-event',
+        () => {
+          container.showLabel();
+        },
+        'leave-event',
+        () => {
+          container.hideLabel();
+        },
+        'button-press-event',
+        (actor, evt) => {
+          if (evt.get_button() != 1) {
+            if (container._menu) {
+              container._menu.popup();
+            }
+          } else {
+            container._onClick();
+          }
+        },
+        this
+      );
+
+      return this._iconActor;
+    }
+  }
+);
+
+export const DockItemContainer = GObject.registerClass(
+  {},
+  class DockItemContainer extends DashItemContainer {
+    _init(params) {
+      super._init({ ...params, scale_x: 1, scale_y: 1 });
 
       let desktopApp = Gio.DesktopAppInfo.new_from_filename(
         params.appinfo_filename
       );
 
-      this._label = this.label;
+      let dashIcon = new DockIcon(desktopApp, {
+        name: 'DockItemContainer',
+        style_class: 'dash-item-container',
+        ...(params || {}),
+      });
+      this.set_scale(1, 1);
+      this.setChild(dashIcon);
+
+      // this.name = params.appinfo_filename;
 
       try {
-        this._labelText = desktopApp.get_name();
-        this._default_icon_name = desktopApp.get_icon().get_names()[0];
+        //   // this._labelText = desktopApp.get_name();
+        this.setLabelText(desktopApp.get_name());
+        dashIcon._default_icon_name = desktopApp.get_icon().get_names()[0];
       } catch (err) {
         console.log(err);
-        console.log(params);
+        //   console.log(params);
       }
 
       // menu
@@ -334,6 +389,8 @@ export const DockItemContainer = GObject.registerClass(
       Main.uiGroup.add_child(this._menu.actor);
       this._menuManager.addMenu(this._menu);
       this._menu.close();
+
+      dashIcon._menu = this._menu;
     }
 
     activateNewWindow() {
@@ -344,51 +401,6 @@ export const DockItemContainer = GObject.registerClass(
 
     _onClick() {
       this.activateNewWindow();
-    }
-
-    _createIcon(size) {
-      this._iconActor = new St.Icon({
-        icon_name: this._default_icon_name || 'file',
-        icon_size: size,
-        style_class: 'show-apps-icon',
-        track_hover: true,
-      });
-
-      // attach event
-      let button = this.first_child;
-      button.reactive = false;
-      let icon = this._iconActor;
-
-      icon.reactive = true;
-      icon.track_hover = true;
-      [icon].forEach((btn) => {
-        if (btn._connected) return;
-        btn._connected = true;
-        btn.button_mask = St.ButtonMask.ONE | St.ButtonMask.TWO;
-        btn.connectObject(
-          'enter-event',
-          () => {
-            this.showLabel();
-          },
-          'leave-event',
-          () => {
-            this.hideLabel();
-          },
-          'button-press-event',
-          (actor, evt) => {
-            if (evt.get_button() != 1) {
-              if (this._menu) {
-                this._menu.popup();
-              }
-            } else {
-              this._onClick();
-            }
-          },
-          this
-        );
-      });
-
-      return this._iconActor;
     }
   }
 );

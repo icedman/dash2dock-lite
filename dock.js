@@ -10,7 +10,10 @@ import Clutter from 'gi://Clutter';
 import Graphene from 'gi://Graphene';
 import St from 'gi://St';
 
-import { Dash } from 'resource:///org/gnome/shell/ui/dash.js';
+import {
+  Dash,
+  DashItemContainer,
+} from 'resource:///org/gnome/shell/ui/dash.js';
 
 import { TintEffect } from './effects/tint_effect.js';
 import { MonochromeEffect } from './effects/monochrome_effect.js';
@@ -109,13 +112,12 @@ export let Dock = GObject.registerClass(
     }
 
     createItem(appinfo_filename) {
-      //! avoid creating app_info & /tmp/*.desktop files
       let item = new DockItemContainer({
         appinfo_filename,
       });
       item.dock = this;
       item._menu._onActivate = () => {
-        this._maybeBounce(item);
+        this._maybeBounce(item.child);
       };
       this._extraIcons.add_child(item);
       return item;
@@ -1092,6 +1094,8 @@ export let Dock = GObject.registerClass(
     }
 
     _maybeMinimizeOrMaximize(app) {
+      if (!app.get_windows) return;
+
       let windows = app.get_windows();
       if (!windows.length) return;
 
@@ -1155,7 +1159,9 @@ export let Dock = GObject.registerClass(
       }
       if (
         !container.child.app ||
-        (container.child.app && !container.child.app.get_n_windows())
+        (container.child.app &&
+          container.child.app.get_n_windows &&
+          !container.child.app.get_n_windows())
       ) {
         if (container.child) {
           this.animator.bounceIcon(container.child);

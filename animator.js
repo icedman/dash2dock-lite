@@ -325,9 +325,22 @@ export let Animator = class {
       // hack: for 2x scaled display - showAppsIcon getting misaligned
       //! make computation accurate rather than guesswork
       if (icon._button) {
-        icon.first_child.translationX =
-          scaleFactor > 1 ? -iconSize * 0.15 * scaleFactor : 1;
+        // icon.first_child.translationX =
+        //   scaleFactor > 1 ? -iconSize * 0.15 * scaleFactor : 1;
       }
+
+      // console.log('-------------------');
+      // console.log(icon.style_class_name);
+      // console.log(`button: ${icon._button!=undefined}`);
+      // console.log(`icon.width/height: ${icon._icon.width} ${icon._icon.height}`);
+      // console.log(`icon._icon.width/height: ${icon._icon.width} ${icon._icon.height}`);
+      // console.log(`icon._icon.icon_size: ${icon._icon.icon_size}`);
+      // console.log(`icon._icon.scaleX: ${icon._icon.scaleX}`);
+      // let c = icon.child;
+      // while(c) {
+      //   console.log(`${c.width} ${c.scaleX}`);
+      //   c = c.child;
+      // };
 
       icon._icon.pivot_point = pv;
       icon._icon.set_scale(newScale, newScale);
@@ -439,8 +452,12 @@ export let Animator = class {
       }
 
       // dots
-      {
-        let appCount = icon._appwell ? icon._appwell.app.get_n_windows() : 0;
+      if (
+        icon._appwell &&
+        icon._appwell.app &&
+        icon._appwell.app.get_n_windows
+      ) {
+        let appCount = icon._appwell.app.get_n_windows();
         // appCount = 1;
         let target = icon._dot?.get_parent();
         let dots = target?._dots;

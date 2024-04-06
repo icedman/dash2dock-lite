@@ -407,7 +407,7 @@ export const Services = class {
     try {
       let [res, pid, in_fd, out_fd, err_fd] = GLib.spawn_async_with_pipes(
         null,
-        ['/bin/ls', '-laht', `${path}`],
+        ['/bin/ls', '-1t', `${path}`],
         null,
         0,
         null
@@ -421,39 +421,39 @@ export const Services = class {
       for (let i = 0; i < 100 && idx < 30; i++) {
         let [line, size] = out_reader.read_line_utf8(null);
         if (line == null) break;
-        const res =
-          /\s([a-zA-Z]{3})\s{1,3}([0-9]{1,3})\s{1,3}([0-9:]{4,8})\s{1,3}(.*)/.exec(
-            line
-          );
-        if (res) {
-          const fileStat = {
-            name: res[4],
-            date: `${res[1]}. ${res[2]}, ${res[3]}`,
-          };
-          if (fileStat.name && (fileStat.name == '.' || fileStat.name == '..'))
-            continue;
-          fileStat.index = idx++;
+        // const res =
+        //   /\s([a-zA-Z]{3})\s{1,3}([0-9]{1,3})\s{1,3}([0-9:]{4,8})\s{1,3}(.*)/.exec(
+        //     line
+        //   );
+        // if (res) {
+        let fileName = line.trim();
+        const fileStat = {
+          name: fileName,
+        };
+        if (fileStat.name && (fileStat.name == '.' || fileStat.name == '..'))
+          continue;
+        fileStat.index = idx++;
 
-          const file = Gio.File.new_for_path(`Downloads/${res[4]}`);
-          const fileInfo = file.query_info(
-            'standard::*,unix::uid',
-            Gio.FileQueryInfoFlags.NOFOLLOW_SYMLINKS,
-            null
-          );
+        const file = Gio.File.new_for_path(`Downloads/${fileName}`);
+        const fileInfo = file.query_info(
+          'standard::*,unix::uid',
+          Gio.FileQueryInfoFlags.NOFOLLOW_SYMLINKS,
+          null
+        );
 
-          if (file && fileInfo && fileStat.index < max_recent_items) {
-            downloadFiles.push({
-              index: fileStat.index,
-              name: fileStat.name,
-              display: fileStat.index, // fileInfo.get_display_name(),
-              path: file.get_path(),
-              icon: fileInfo.get_icon().get_names()[0] ?? 'file',
-              type: fileInfo.get_content_type(),
-              date: fileStat.date ?? '',
-            });
-          }
-          downloadFilesLength++;
+        if (file && fileInfo && fileStat.index < max_recent_items) {
+          downloadFiles.push({
+            index: fileStat.index,
+            name: fileStat.name,
+            display: fileStat.index, // fileInfo.get_display_name(),
+            path: file.get_path(),
+            icon: fileInfo.get_icon().get_names()[0] ?? 'file',
+            type: fileInfo.get_content_type(),
+            date: fileStat.date ?? '',
+          });
         }
+        downloadFilesLength++;
+        // }
       }
     } catch (err) {
       console.log(err);

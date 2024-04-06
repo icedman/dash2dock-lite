@@ -339,7 +339,9 @@ export const DockIcon = GObject.registerClass(
               container._menu.popup();
             }
           } else {
-            container._onClick();
+            if (container._onClick) {
+              container._onClick();
+            }
           }
         },
         this
@@ -356,9 +358,22 @@ export const DockItemContainer = GObject.registerClass(
     _init(params) {
       super._init({ ...params, scale_x: 1, scale_y: 1 });
 
-      let desktopApp = Gio.DesktopAppInfo.new_from_filename(
-        params.appinfo_filename
-      );
+      let desktopApp = params.app;
+      if (desktopApp) {
+        // monkey patch dummy app
+        if (!desktopApp.get_icon) {
+          desktopApp.can_open_new_window = () => false;
+          desktopApp.get_icon = () => {
+            return {
+              get_names: () => [],
+            };
+          };
+        }
+      } else {
+        desktopApp = Gio.DesktopAppInfo.new_from_filename(
+          params.appinfo_filename
+        );
+      }
 
       let dashIcon = new DockIcon(desktopApp, {
         name: 'DockItemContainer',
@@ -368,10 +383,7 @@ export const DockItemContainer = GObject.registerClass(
       this.set_scale(1, 1);
       this.setChild(dashIcon);
 
-      // this.name = params.appinfo_filename;
-
       try {
-        //   // this._labelText = desktopApp.get_name();
         this.setLabelText(desktopApp.get_name());
         dashIcon._default_icon_name = desktopApp.get_icon().get_names()[0];
       } catch (err) {
@@ -380,17 +392,18 @@ export const DockItemContainer = GObject.registerClass(
       }
 
       // menu
-      this._menu = new DockItemMenu(this, St.Side.TOP, {
-        desktopApp,
-      });
-      this._menu.item = this;
-      this._menuManager = new PopupMenu.PopupMenuManager(this);
-      this._menu._menuManager = this._menuManager;
-      Main.uiGroup.add_child(this._menu.actor);
-      this._menuManager.addMenu(this._menu);
-      this._menu.close();
-
-      dashIcon._menu = this._menu;
+      if (params.appinfo_filename) {
+        this._menu = new DockItemMenu(this, St.Side.TOP, {
+          desktopApp,
+        });
+        this._menu.item = this;
+        this._menuManager = new PopupMenu.PopupMenuManager(this);
+        this._menu._menuManager = this._menuManager;
+        Main.uiGroup.add_child(this._menu.actor);
+        this._menuManager.addMenu(this._menu);
+        this._menu.close();
+        dashIcon._menu = this._menu;
+      }
     }
 
     activateNewWindow() {

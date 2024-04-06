@@ -19,6 +19,7 @@ import { TintEffect } from './effects/tint_effect.js';
 import { MonochromeEffect } from './effects/monochrome_effect.js';
 
 import {
+  DockIcon,
   DockItemList,
   DockItemContainer,
   DockBackground,
@@ -391,9 +392,16 @@ export let Dock = GObject.registerClass(
 
       /* ShowAppsIcon */
       if (c.icon /* IconGrid */ && c.icon.icon /* StIcon */) {
-        c._icon = c.icon.icon;
-        c._button = c.child;
-        c.icon.style = 'background-color: transparent !important;';
+        if (!c._invaded) {
+          // console.log(`${this.extension.path}/app-grid-dash2dock-lite.desktop`);
+          let container = new DockItemContainer({
+            appinfo_filename: `${this.extension.path}/apps/app-grid-dash2dock-lite.desktop`,
+          });
+          let dockIcon = container.child;
+          container.remove_child(dockIcon);
+          c.setChild(dockIcon);
+          c._invaded = true;
+        }
       }
 
       /* DashItemContainer */
@@ -563,9 +571,13 @@ export let Dock = GObject.registerClass(
         if (c._appwell && !c._appwell._activate) {
           c._appwell._activate = c._appwell.activate;
           c._appwell.activate = () => {
-            this._maybeBounce(c);
-            this._maybeMinimizeOrMaximize(c._appwell.app);
-            c._appwell._activate();
+            try {
+              this._maybeBounce(c);
+              this._maybeMinimizeOrMaximize(c._appwell.app);
+              c._appwell._activate();
+            } catch (err) {
+              // happens with dummy DashIcons
+            }
           };
         }
         let icon = c._icon;

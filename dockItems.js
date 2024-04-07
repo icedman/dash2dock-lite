@@ -13,7 +13,7 @@ import St from 'gi://St';
 
 import {
   DashIcon,
-  DashItemContainer,
+  DashItemContainer
 } from 'resource:///org/gnome/shell/ui/dash.js';
 
 import { DockPosition } from './dock.js';

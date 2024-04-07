@@ -10,10 +10,7 @@ import Clutter from 'gi://Clutter';
 import Graphene from 'gi://Graphene';
 import St from 'gi://St';
 
-import {
-  Dash,
-  DashItemContainer,
-} from 'resource:///org/gnome/shell/ui/dash.js';
+import { Dash } from 'resource:///org/gnome/shell/ui/dash.js';
 
 import { TintEffect } from './effects/tint_effect.js';
 import { MonochromeEffect } from './effects/monochrome_effect.js';

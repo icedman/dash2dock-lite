@@ -211,7 +211,6 @@ export let Dock = GObject.registerClass(
     }
 
     _effectTargets() {
-      // return [this.dash._box.get_parent(), this.renderArea];
       return [this.renderArea];
     }
 
@@ -378,7 +377,7 @@ export let Dock = GObject.registerClass(
         ] || 64);
       iconSize *= this.extension.scale;
 
-      this._iconSize = Math.floor(iconSize / 2) * 2;
+      this._iconSize = iconSize;
       return iconSize;
     }
 
@@ -418,22 +417,9 @@ export let Dock = GObject.registerClass(
 
       /* ShowAppsIcon */
       if (c.icon /* IconGrid */ && c.icon.icon /* StIcon */) {
-        if (!c._skinned) {
-          // console.log(c.icon.icon.gicon.get_names());
-          let container = new DockItemContainer({
-            appinfo_filename: `${this.extension.path}/apps/app-grid-dash2dock-lite.desktop`,
-          });
-          let dockIcon = container.child;
-          dockIcon._default_icon_name = 'view-app-grid-symbolic';
-          dockIcon._default_icon_style_class = 'show-apps-icon';
-          dockIcon.child.add_style_class_name('show-apps');
-          container.remove_child(dockIcon);
-          c.setChild(dockIcon);
-          c._skinned = true;
-          // disable drop
-          c.setDragApp = () => {};
-          c.acceptDrop = () => false;
-        }
+        c._icon = c.icon.icon;
+        c._button = c.child;
+        c.icon.style = 'background-color: transparent !important;';
       }
 
       /* DashItemContainer */
@@ -514,11 +500,13 @@ export let Dock = GObject.registerClass(
       });
 
       // hack: sometimes the Dash creates more than one separator
-      // workaround - remove all but one separators in such situation
+      // workaround - remove all separators in such situation
       //! pinpoint the cause of the errors
-      while (this._separators.length > 1) {
-        this.dash._box.remove_child(this._separators[0]);
-        this._separators.shift();
+      if (this._separators.length > 1) {
+        while (this._separators.length > 0) {
+          this.dash._box.remove_child(this._separators[0]);
+          this._separators.shift();
+        }
       }
 
       // hide separator between running apps and favorites - if not needed
@@ -635,12 +623,9 @@ export let Dock = GObject.registerClass(
         }
 
         // icon image quality
-        // move back to animate icons - fix random bug - pixelated when idle
         if (this._iconSizeScaledDown) {
           c._icon.set_icon_size(
-            Math.floor(
-              (this._iconSizeScaledDown * this.extension.icon_quality) / 2
-            ) * 2
+            this._iconSizeScaledDown * this.extension.icon_quality
           );
         }
       });
@@ -817,8 +802,6 @@ export let Dock = GObject.registerClass(
     }
 
     layout() {
-      const full_screen_dock_container = true;
-
       if (this.extension.apps_icon_front) {
         this.dash.last_child.text_direction = 2; // RTL
         this.dash._box.text_direction = 1; // LTR
@@ -852,32 +835,24 @@ export let Dock = GObject.registerClass(
           edgeY: 0,
           offsetX: 0,
           offsetY: 0,
-          centerX: 1,
-          centerY: 0,
         },
         bottom: {
           edgeX: 0,
           edgeY: 1,
           offsetX: 0,
           offsetY: -1,
-          centerX: 1,
-          centerY: 0,
         },
         left: {
           edgeX: 0,
           edgeY: 0,
           offsetX: 0,
           offsetY: 0,
-          centerX: 0,
-          centerY: 1,
         },
         right: {
           edgeX: 1,
           edgeY: 0,
           offsetX: -1,
           offsetY: 0,
-          centerX: 0,
-          centerY: 1,
         },
       };
       let f = flags[this._position];
@@ -950,52 +925,11 @@ export let Dock = GObject.registerClass(
       this.width = m.width;
       this.height = m.height;
 
-      //! for removal
-      if (!full_screen_dock_container) {
-        width = this._projectedWidth * scaleFactor;
-        height = iconSizeSpaced * 1.5 * scaleFactor;
-
-        //! make dock area equal the monitor area - speed consideration?
-        this.width = (vertical ? height : width) + iconSize * scaleFactor;
-        this.height = (vertical ? width : height) + iconSize * scaleFactor;
-
-        if (this.animated) {
-          let adjust = 1.25;
-          //! avoid !vertical ? use ifs for readability
-          this.width *= vertical ? adjust : 1;
-          this.height *= !vertical ? adjust : 1;
-          this.width += !vertical * iconSizeSpaced * adjust * scaleFactor;
-          this.height += vertical * iconSizeSpaced * adjust * scaleFactor;
-
-          if (this.width > m.width) {
-            this.width = m.width;
-          }
-          if (this.height > m.height) {
-            this.height = m.height;
-          }
-        }
-      }
-
       // reorient and reposition the dash
       this.dash.last_child.layout_manager.orientation = vertical;
       this.dash._box.layout_manager.orientation = vertical;
       if (this._extraIcons) {
         this._extraIcons.layout_manager.orientation = vertical;
-      }
-
-      //! for removal
-      if (!full_screen_dock_container) {
-        this.x =
-          m.x +
-          m.width * f.edgeX +
-          this.width * f.offsetX +
-          (m.width / 2 - this.width / 2) * f.centerX;
-
-        this.y =
-          m.y +
-          m.height * f.edgeY +
-          this.height * f.offsetY +
-          (m.height / 2 - this.height / 2) * f.centerY;
       }
 
       // hug the edge
@@ -1026,17 +960,6 @@ export let Dock = GObject.registerClass(
       //! add layout here instead of at the
       this.animator.animate();
       this.simulated_pointer = null;
-
-      // let { icons, pivot, iconSize, quality, scaleFactor } = params;
-      // let p = new Graphene.Point();
-      // p.init(0.5,0.5);
-      // this.renderer.update({
-      //   icons: this._icons,
-      //   pivot: p,
-      //   iconSize: this._iconSizeScaledDown,
-      //   quality: this.extension.icon_quality,
-      //   scaleFactor: this._scaleFactor
-      // });
     }
 
     //! move these generic functions outside of this class

@@ -44,24 +44,12 @@ export const clearInterval = (id) => {
 };
 
 export const trySpawnCommandLine = function (cmd) {
-  if (typeof cmd == 'string') {
-    cmd = cmd.split(' ');
-  }
-  let [res, pid, in_fd, out_fd, err_fd] = GLib.spawn_async_with_pipes(
-    null,
-    cmd,
-    null,
-    0,
-    null
-  );
-
-  // let out_reader = new Gio.DataInputStream({
-  //   base_stream: new Gio.UnixInputStream({ fd: out_fd }),
-  // });
-
-  // for (let i = 0; i < 100; i++) {
-  //   let [line, size] = out_reader.read_line_utf8(null);
-  //   if (line == null) break;
-  //   console.log(line);
-  // }
+  return new Promise((resolve, reject) => {
+    try {
+      GLib.spawn_command_line_async(cmd);
+      setTimeout(resolve, 250);
+    } catch (err) {
+      reject();
+    }
+  });
 };

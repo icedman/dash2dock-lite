@@ -604,7 +604,9 @@ export const Services = class {
           clock = new Clock(CANVAS_SIZE, dock.extension._widgetStyle);
           dock._clock = clock;
           item._clock = clock;
-          item._appwell.first_child.add_child(clock);
+          item._image = clock;
+          // item._appwell.first_child.add_child(clock);
+          dock.renderArea.add_child(clock);
         }
         if (clock) {
           clock._icon = icon;
@@ -613,9 +615,13 @@ export const Services = class {
           clock.set_scale(item._icon.scaleX, item._icon.scaleY);
           let canvasScale = clock.width / (clock._canvas.width + 2);
           clock._canvas.set_scale(canvasScale, canvasScale);
-          clock.pivot_point = item._icon.pivot_point;
-          clock.translationX = item._icon.translationX;
-          clock.translationY = item._icon.translationY;
+          // clock.pivot_point = item._icon.pivot_point;
+          // clock.translationX = item._icon.translationX;
+          // clock.translationY = item._icon.translationY;
+
+          clock.x = item._renderer.x;
+          clock.y = item._renderer.y;
+
           clock.show();
           item._icon.visible = !clock.shouldHideIcon();
         }
@@ -629,29 +635,35 @@ export const Services = class {
     // calender
     if (icon.icon_name == 'org.gnome.Calendar') {
       if (this.extension.calendar_icon) {
-        let calender = item._calender;
-        if (!calender) {
-          calender = new Calendar(CANVAS_SIZE, dock.extension._widgetStyle);
-          dock._calender = calender;
-          item._calender = calender;
-          item._appwell.first_child.add_child(calender);
+        let calendar = item._calendar;
+        if (!calendar) {
+          calendar = new Calendar(CANVAS_SIZE, dock.extension._widgetStyle);
+          dock._calendar = calendar;
+          item._calendar = calendar;
+          item._image = calendar;
+          // item._appwell.first_child.add_child(calendar);
+          dock.renderArea.add_child(calendar);
         }
-        if (calender) {
-          calender.width = item._icon.width;
-          calender.height = item._icon.height;
-          calender.set_scale(item._icon.scaleX, item._icon.scaleY);
-          let canvasScale = calender.width / (calender._canvas.width + 2);
-          calender._canvas.set_scale(canvasScale, canvasScale);
-          calender.pivot_point = item._icon.pivot_point;
-          calender.translationX = item._icon.translationX;
-          calender.translationY = item._icon.translationY;
-          calender.show();
-          item._icon.visible = !calender.shouldHideIcon();
+        if (calendar) {
+          calendar.width = item._icon.width;
+          calendar.height = item._icon.height;
+          calendar.set_scale(item._icon.scaleX, item._icon.scaleY);
+          let canvasScale = calendar.width / (calendar._canvas.width + 2);
+          calendar._canvas.set_scale(canvasScale, canvasScale);
+          // calendar.pivot_point = item._icon.pivot_point;
+          // calendar.translationX = item._icon.translationX;
+          // calendar.translationY = item._icon.translationY;
+
+          calendar.x = item._renderer.x;
+          calendar.y = item._renderer.y;
+
+          calendar.show();
+          item._icon.visible = !calendar.shouldHideIcon();
         }
       } else {
-        let calender = item._calender;
+        let calendar = item._calendar;
         item._icon.visible = true;
-        calender?.hide();
+        calendar?.hide();
       }
     }
   }

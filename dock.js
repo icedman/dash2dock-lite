@@ -68,6 +68,12 @@ export let Dock = GObject.registerClass(
       this._background = new DockBackground({ name: 'd2daBackground' });
       this.add_child(this._background);
 
+      this.renderArea = new St.Widget({
+        name: 'DockRenderArea',
+      });
+      this.renderArea.opacity = 0;
+      this.add_child(this.renderArea);
+
       this.add_child(this.createDash());
       this._scrollCounter = 0;
 
@@ -103,6 +109,9 @@ export let Dock = GObject.registerClass(
     }
 
     recreateDash() {
+      this.opacity = 0;
+      this.renderArea.remove_all_children();
+      this.renderArea.opacity = 0;
       this.remove_child(this.dash);
       this.add_child(this.createDash());
       this._icons = null;
@@ -198,14 +207,30 @@ export let Dock = GObject.registerClass(
       return effect;
     }
 
+    _effectTargets() {
+      return [this.renderArea];
+    }
+
     _updateIconEffect() {
-      this.dash._box.get_parent().remove_effect_by_name('icon-effect');
-      let effect = this._createEffect(this.extension.icon_effect);
-      if (effect) {
-        effect.color = this.extension.icon_effect_color;
-        this.dash._box.get_parent().add_effect_with_name('icon-effect', effect);
-      }
-      this.iconEffect = effect;
+      let targets = this._effectTargets();
+      targets.forEach((target) => {
+        target.remove_effect_by_name('icon-effect');
+        let effect = this._createEffect(this.extension.icon_effect);
+        if (effect) {
+          effect.color = this.extension.icon_effect_color;
+          target.add_effect_with_name('icon-effect', effect);
+        }
+        target.iconEffect = effect;
+      });
+    }
+
+    _updateIconEffectColor(color) {
+      let targets = this._effectTargets();
+      targets.forEach((target) => {
+        if (target.iconEffect) {
+          target.iconEffect.color = color;
+        }
+      });
     }
 
     slideIn() {
@@ -275,7 +300,6 @@ export let Dock = GObject.registerClass(
       );
 
       this.dash.opacity = 0;
-
       return dash;
     }
 
@@ -349,7 +373,7 @@ export let Dock = GObject.registerClass(
         ] || 64);
       iconSize *= this.extension.scale;
 
-      this._iconSize = Math.floor(iconSize / 2) * 2;
+      this._iconSize = iconSize;
       return iconSize;
     }
 
@@ -389,22 +413,9 @@ export let Dock = GObject.registerClass(
 
       /* ShowAppsIcon */
       if (c.icon /* IconGrid */ && c.icon.icon /* StIcon */) {
-        if (!c._skinned) {
-          // console.log(c.icon.icon.gicon.get_names());
-          let container = new DockItemContainer({
-            appinfo_filename: `${this.extension.path}/apps/app-grid-dash2dock-lite.desktop`,
-          });
-          let dockIcon = container.child;
-          dockIcon._default_icon_name = 'view-app-grid-symbolic';
-          dockIcon._default_icon_style_class = 'show-apps-icon';
-          dockIcon.child.add_style_class_name('show-apps');
-          container.remove_child(dockIcon);
-          c.setChild(dockIcon);
-          c._skinned = true;
-          // disable drop
-          c.setDragApp = () => {};
-          c.acceptDrop = () => false;
-        }
+        c._icon = c.icon.icon;
+        c._button = c.child;
+        c.icon.style = 'background-color: transparent !important;';
       }
 
       /* DashItemContainer */
@@ -485,11 +496,13 @@ export let Dock = GObject.registerClass(
       });
 
       // hack: sometimes the Dash creates more than one separator
-      // workaround - remove all but one separators in such situation
+      // workaround - remove all separators in such situation
       //! pinpoint the cause of the errors
-      while (this._separators.length > 1) {
-        this.dash._box.remove_child(this._separators[0]);
-        this._separators.shift();
+      if (this._separators.length > 1) {
+        while (this._separators.length > 0) {
+          this.dash._box.remove_child(this._separators[0]);
+          this._separators.shift();
+        }
       }
 
       // hide separator between running apps and favorites - if not needed
@@ -587,10 +600,13 @@ export let Dock = GObject.registerClass(
             if (icon._renderer) {
               icon._renderer.get_parent().remove_child(icon._renderer);
             }
+            if (icon._image) {
+              icon._image.get_parent().remove_child(icon._image);
+            }
             this._icons = null;
           });
         }
-        let { _draggable } = icon;
+        let { _draggable } = c.child;
         if (_draggable && !_draggable._dragBeginId) {
           _draggable._dragBeginId = _draggable.connect('drag-begin', () => {
             this._dragging = true;
@@ -603,12 +619,9 @@ export let Dock = GObject.registerClass(
         }
 
         // icon image quality
-        // move back to animate icons - fix random bug - pixelated when idle
         if (this._iconSizeScaledDown) {
           c._icon.set_icon_size(
-            Math.floor(
-              (this._iconSizeScaledDown * this.extension.icon_quality) / 2
-            ) * 2
+            this._iconSizeScaledDown * this.extension.icon_quality
           );
         }
       });
@@ -785,8 +798,6 @@ export let Dock = GObject.registerClass(
     }
 
     layout() {
-      const full_screen_dock_container = true;
-
       if (this.extension.apps_icon_front) {
         this.dash.last_child.text_direction = 2; // RTL
         this.dash._box.text_direction = 1; // LTR
@@ -820,32 +831,24 @@ export let Dock = GObject.registerClass(
           edgeY: 0,
           offsetX: 0,
           offsetY: 0,
-          centerX: 1,
-          centerY: 0,
         },
         bottom: {
           edgeX: 0,
           edgeY: 1,
           offsetX: 0,
           offsetY: -1,
-          centerX: 1,
-          centerY: 0,
         },
         left: {
           edgeX: 0,
           edgeY: 0,
           offsetX: 0,
           offsetY: 0,
-          centerX: 0,
-          centerY: 1,
         },
         right: {
           edgeX: 1,
           edgeY: 0,
           offsetX: -1,
           offsetY: 0,
-          centerX: 0,
-          centerY: 1,
         },
       };
       let f = flags[this._position];
@@ -918,52 +921,11 @@ export let Dock = GObject.registerClass(
       this.width = m.width;
       this.height = m.height;
 
-      //! for removal
-      if (!full_screen_dock_container) {
-        width = this._projectedWidth * scaleFactor;
-        height = iconSizeSpaced * 1.5 * scaleFactor;
-
-        //! make dock area equal the monitor area - speed consideration?
-        this.width = (vertical ? height : width) + iconSize * scaleFactor;
-        this.height = (vertical ? width : height) + iconSize * scaleFactor;
-
-        if (this.animated) {
-          let adjust = 1.25;
-          //! avoid !vertical ? use ifs for readability
-          this.width *= vertical ? adjust : 1;
-          this.height *= !vertical ? adjust : 1;
-          this.width += !vertical * iconSizeSpaced * adjust * scaleFactor;
-          this.height += vertical * iconSizeSpaced * adjust * scaleFactor;
-
-          if (this.width > m.width) {
-            this.width = m.width;
-          }
-          if (this.height > m.height) {
-            this.height = m.height;
-          }
-        }
-      }
-
       // reorient and reposition the dash
       this.dash.last_child.layout_manager.orientation = vertical;
       this.dash._box.layout_manager.orientation = vertical;
       if (this._extraIcons) {
         this._extraIcons.layout_manager.orientation = vertical;
-      }
-
-      //! for removal
-      if (!full_screen_dock_container) {
-        this.x =
-          m.x +
-          m.width * f.edgeX +
-          this.width * f.offsetX +
-          (m.width / 2 - this.width / 2) * f.centerX;
-
-        this.y =
-          m.y +
-          m.height * f.edgeY +
-          this.height * f.offsetY +
-          (m.height / 2 - this.height / 2) * f.centerY;
       }
 
       // hug the edge
@@ -983,7 +945,7 @@ export let Dock = GObject.registerClass(
       this._preview = PREVIEW_FRAMES;
     }
 
-    animate() {
+    animate(dt) {
       if (this._preview) {
         let p = this.dash.get_transformed_position();
         p[0] += this.dash.width / 2;
@@ -992,19 +954,8 @@ export let Dock = GObject.registerClass(
         this._preview--;
       }
       //! add layout here instead of at the
-      this.animator.animate();
+      this.animator.animate(dt);
       this.simulated_pointer = null;
-
-      // let { icons, pivot, iconSize, quality, scaleFactor } = params;
-      // let p = new Graphene.Point();
-      // p.init(0.5,0.5);
-      // this.renderer.update({
-      //   icons: this._icons,
-      //   pivot: p,
-      //   iconSize: this._iconSizeScaledDown,
-      //   quality: this.extension.icon_quality,
-      //   scaleFactor: this._scaleFactor
-      // });
     }
 
     //! move these generic functions outside of this class
@@ -1073,8 +1024,8 @@ export let Dock = GObject.registerClass(
       if (this.extension._hiTimer) {
         if (!this._animationSeq) {
           this._animationSeq = this.extension._hiTimer.runLoop(
-            () => {
-              this.animate();
+            (s) => {
+              this.animate(s._delay);
             },
             this.animationInterval,
             'animationTimer'

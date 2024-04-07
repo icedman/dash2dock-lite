@@ -39,6 +39,7 @@ importMap = [
     [ "import Adw", "const Adw = imports.gi.Adw;" ],
     [ "import Cairo", "const Cairo = imports.cairo;" ],
     # [ "", "const Point = Graphene.Point;" ],
+    [ "from './vector.js", "const Vector = Me.imports.animator.Vector;" ],
     [ "from './animator.js", "const Animator = Me.imports.animator.Animator;" ],
     [ "from './autohide.js", "const AutoHide = Me.imports.autohide.AutoHide;" ],
     [ "import { MonitorsConfig }", "const MonitorsConfig = Me.imports.monitors.MonitorsConfig;" ],

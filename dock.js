@@ -485,14 +485,14 @@ export let Dock = GObject.registerClass(
       });
 
       // hack: sometimes the Dash creates more than one separator
-      // workaround - remove all separators in such situation
+      // workaround - remove all but one separators in such situation
       //! pinpoint the cause of the errors
       while (this._separators.length > 1) {
         this.dash._box.remove_child(this._separators[0]);
         this._separators.shift();
       }
 
-      // hide separator betweeing running apps and favorites - if not needed
+      // hide separator between running apps and favorites - if not needed
       if (this.extension.favorites_only) {
         if (this._separators.length) {
           this._separators[0].visible = false;

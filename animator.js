@@ -485,44 +485,54 @@ export let Animator = class {
       }
 
       // renderer
-      if (!icon._renderer) {
-        let target = dock;
-        let renderer = new St.Icon({ icon_name: icon._icon.icon_name });
+      if (!isWithin) {
+        if (!icon._renderer) {
+          let target = dock;
+          let renderer = new St.Icon({ icon_name: icon._icon.icon_name });
+          // icon._icon.visible = false;
+          icon._renderer = renderer;
+          icon.connect('destroy', () => {
+            target.remove_child(renderer);
+          });
+          // renderer.add_style_class_name('hi');
+          target.add_child(renderer);
+        }
+
         icon._icon.opacity = 0;
-        // icon._icon.visible = false;
-        icon._renderer = renderer;
-        icon.connect('destroy', () => {
-          target.remove_child(renderer);
-        });
-        target.add_child(renderer);
+        
+        let renderer = icon._renderer;
+        renderer.visible = true;
+        renderer.icon_name = icon._icon.icon_name;
+
+        let quality = dock.extension.icon_quality / 4;
+        // console.log(dock.extension.icon_quality);
+        quality = 1;
+
+        let targetSize = icon._icon.width * icon._icon.scaleX;
+        let sz = targetSize;
+
+        renderer.set_size(sz * quality, sz * quality);
+        renderer.set_icon_size(sz * quality);
+        renderer.set_scale(1 / quality, 1 / quality);
+
+        let p = icon.get_transformed_position();
+        let adjustX = icon.width / 2 - sz / 2;
+        let adjustY = icon.height / 2 - sz / 2;
+
+        if (sz > icon.height) {
+          adjustY -= (sz - icon.height) * 0.5;
+        }
+
+        renderer.set_position(
+          p[0] + adjustX + icon._icon.translationX,
+          p[1] + adjustY + icon._icon.translationY
+        );
+      } else {
+        icon._icon.opacity = 255;
+        if (icon._renderer) {
+          icon._renderer.visible = false;
+        }
       }
-
-      let renderer = icon._renderer;
-      renderer.icon_name = icon._icon.icon_name;
-
-      let quality = dock.extension.icon_quality / 4;
-      // console.log(dock.extension.icon_quality);
-      quality = 1;
-
-      let targetSize = icon._icon.width * icon._icon.scaleX;
-      let sz = targetSize;
-
-      renderer.set_size(sz * quality, sz * quality);
-      renderer.set_icon_size(sz * quality);
-      renderer.set_scale(1 / quality, 1 / quality);
-
-      let p = icon.get_transformed_position();
-      let adjustX = icon.width / 2 - sz / 2;
-      let adjustY = icon.height / 2 - sz / 2;
-
-      if (sz > icon.height) {
-        adjustY -= (sz - icon.height) * 0.5;
-      }
-
-      renderer.set_position(
-        p[0] + adjustX + icon._icon.translationX,
-        p[1] + adjustY + icon._icon.translationY
-      );
 
       // renderer.add_style_class_name('hi');
       // renderedIcon.add_style_class_name('hi');

@@ -754,7 +754,8 @@ export let Animator = class {
     // * scaleFactor;
     appwell.translation_y = 0;
 
-    let icon = appwell.get_parent()._icon;
+    let container = appwell.get_parent();
+    let icon = container._icon;
 
     let t = 250;
     let _frames = [
@@ -771,6 +772,10 @@ export let Animator = class {
           } else {
             appwell.translation_y =
               dock._position == DockPosition.BOTTOM ? -res : res;
+
+            if (container._renderer) {
+              container._renderer.translationY = appwell.translationY;
+            }
           }
         },
       },
@@ -784,6 +789,9 @@ export let Animator = class {
           } else {
             appwell.translation_y =
               dock._position == DockPosition.BOTTOM ? -res : res;
+            if (container._renderer) {
+              container._renderer.translationY = appwell.translationY;
+            }
           }
         },
       },
@@ -804,6 +812,9 @@ export let Animator = class {
         _duration: 10,
         _func: (f, s) => {
           appwell.translation_y = 0;
+          if (container._renderer) {
+            container._renderer.translationY = 0;
+          }
         },
       },
     ]);

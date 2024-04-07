@@ -24,7 +24,6 @@ import {
   DockItemContainer,
   DockBackground,
 } from './dockItems.js';
-import { DockIconsRenderer } from './iconsRenderer.js';
 import { AutoHide } from './autohide.js';
 import { Animator } from './animator.js';
 
@@ -86,9 +85,6 @@ export let Dock = GObject.registerClass(
       if (this.extension.autohide_dash) {
         this.autohider.enable();
       }
-
-      this.renderer = new DockIconsRenderer();
-      this.add_child(this.renderer);
 
       this.struts = new St.Widget({
         name: 'DockStruts',

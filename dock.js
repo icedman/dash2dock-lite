@@ -71,6 +71,12 @@ export let Dock = GObject.registerClass(
       this._background = new DockBackground({ name: 'd2daBackground' });
       this.add_child(this._background);
 
+      this.renderArea = new St.Widget({
+        name: 'DockRenderArea',
+      });
+      this.renderArea.opacity = 0;
+      this.add_child(this.renderArea);
+
       this.add_child(this.createDash());
       this._scrollCounter = 0;
 
@@ -106,6 +112,9 @@ export let Dock = GObject.registerClass(
     }
 
     recreateDash() {
+      this.opacity = 0;
+      this.renderArea.remove_all_children();
+      this.renderArea.opacity = 0;
       this.remove_child(this.dash);
       this.add_child(this.createDash());
       this._icons = null;
@@ -201,14 +210,31 @@ export let Dock = GObject.registerClass(
       return effect;
     }
 
+    _effectTargets() {
+      // return [this.dash._box.get_parent(), this.renderArea];
+      return [this.renderArea];
+    }
+
     _updateIconEffect() {
-      this.dash._box.get_parent().remove_effect_by_name('icon-effect');
-      let effect = this._createEffect(this.extension.icon_effect);
-      if (effect) {
-        effect.color = this.extension.icon_effect_color;
-        this.dash._box.get_parent().add_effect_with_name('icon-effect', effect);
-      }
-      this.iconEffect = effect;
+      let targets = this._effectTargets();
+      targets.forEach((target) => {
+        target.remove_effect_by_name('icon-effect');
+        let effect = this._createEffect(this.extension.icon_effect);
+        if (effect) {
+          effect.color = this.extension.icon_effect_color;
+          target.add_effect_with_name('icon-effect', effect);
+        }
+        target.iconEffect = effect;
+      });
+    }
+
+    _updateIconEffectColor(color) {
+      let targets = this._effectTargets();
+      targets.forEach((target) => {
+        if (target.iconEffect) {
+          target.iconEffect.color = color;
+        }
+      });
     }
 
     slideIn() {
@@ -590,10 +616,13 @@ export let Dock = GObject.registerClass(
             if (icon._renderer) {
               icon._renderer.get_parent().remove_child(icon._renderer);
             }
+            if (icon._image) {
+              icon._image.get_parent().remove_child(icon._image);
+            }
             this._icons = null;
           });
         }
-        let { _draggable } = icon;
+        let { _draggable } = c.child;
         if (_draggable && !_draggable._dragBeginId) {
           _draggable._dragBeginId = _draggable.connect('drag-begin', () => {
             this._dragging = true;

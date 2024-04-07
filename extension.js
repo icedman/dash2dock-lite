@@ -394,9 +394,7 @@ export default class Dash2DockLiteExt extends Extension {
         }
         case 'icon-effect-color': {
           this.docks.forEach((dock) => {
-            if (dock.iconEffect) {
-              dock.iconEffect.color = this.icon_effect_color;
-            }
+            dock._updateIconEffectColor(this.icon_effect_color);
           });
           this.animate();
           break;

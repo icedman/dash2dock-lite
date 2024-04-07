@@ -690,17 +690,17 @@ export default class Dash2DockLiteExt extends Extension {
 
   async _updateBlurredBackground() {
     // if (this.blur_background) {
-    let color = this.background_color || [0, 0, 0, 0.5];
-    let bg = this._desktopSettings.get_string('picture-uri');
-    let a = Math.floor(100 - color[3] * 100);
-    let rgb = this._style.hex(color);
-    let file = Gio.File.new_for_uri(bg);
+    // let color = this.background_color || [0, 0, 0, 0.5];
+    // let bg = this._desktopSettings.get_string('picture-uri');
+    // let a = Math.floor(100 - color[3] * 100);
+    // let rgb = this._style.hex(color);
+    // let file = Gio.File.new_for_uri(bg);
     // let cmd = `convert -scale 10% -blur 0x2.5 -resize 1000% -fill "${rgb}" -tint ${a} "${file.get_path()}" ${BLURRED_BG_PATH}`;
-    let cmd = `/usr/bin/convert -scale 10% -blur 0x2.5 -resize 1000% "${file.get_path()}" ${BLURRED_BG_PATH}`;
+    // let cmd = `/usr/bin/convert -scale 10% -blur 0x2.5 -resize 1000% "${file.get_path()}" ${BLURRED_BG_PATH}`;
     // let cmd = `convert -crop 800x40+0+200 -scale 10% -blur 0x2.5 -resize 1000% "${file.get_path()}" ${BLURRED_BG_PATH}`;
     // cmd = '/usr/bin/ls -1t';
-    console.log(cmd);
-    await trySpawnCommandLine(cmd);
+    // console.log(cmd);
+    // await trySpawnCommandLine(cmd);
     // }
   }
 

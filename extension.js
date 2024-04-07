@@ -107,15 +107,6 @@ export default class Dash2DockLiteExt extends Extension {
 
   recreateAllDocks(delay = 750) {
     console.log('recreate all docks');
-    // some settings change cause glitches ... recreate all docks (workaround)
-    // if (!this._recreateSeq) {
-    //   this._recreateSeq = this._loTimer.runDebounced(() => {
-    //     this.destroyDocks();
-    //     this.createTheDocks();
-    //   }, delay);
-    // } else {
-    //   this._loTimer.runDebounced(this._recreateSeq);
-    // }
 
     // recreate only the dash
     this.docks.forEach((d) => {
@@ -730,9 +721,7 @@ export default class Dash2DockLiteExt extends Extension {
   }
 
   _updateMultiMonitorPreference() {
-    this.createTheDocks();
-    this._updateLayout();
-    this.animate();
+    this.startUp();
   }
 
   _updateIconResolution(disable) {
@@ -762,11 +751,11 @@ export default class Dash2DockLiteExt extends Extension {
     // icons-shadow
     if (this.icon_shadow) {
       styles.push(
-        '#dash StIcon, #DockItemList StIcon {icon-shadow: rgba(0, 0, 0, 0.24) 0 2px 6px;}'
+        '.renderer_icon, #DockItemList StIcon {icon-shadow: rgba(0, 0, 0, 0.32) 0 2px 6px;}'
       );
-      styles.push(
-        '#dash StIcon:hover, #DockItemList StIcon:hover {icon-shadow: rgba(0, 0, 0, 0.24) 0 2px 8px;}'
-      );
+      // styles.push(
+      //   '#dash StIcon:hover, #DockItemList StIcon:hover {icon-shadow: rgba(0, 0, 0, 0.24) 0 2px 8px;}'
+      // );
     }
 
     // dash

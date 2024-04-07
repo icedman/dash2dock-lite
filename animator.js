@@ -39,7 +39,7 @@ export let Animator = class {
     let didFadeIn = false;
     if (dock.opacity < 255) {
       didFadeIn = true;
-      let speed = 255 / 1750;
+      let speed = 255 / 1250;
       let dst = 255 - dock.opacity;
       let mag = Math.abs(dst);
       let dir = Math.sign(dst);
@@ -271,6 +271,8 @@ export let Animator = class {
     let last = animateIcons[animateIcons.length - 1];
     let slowDown = !nearestIcon || !animated ? 0.5 : 1;
 
+    let renderOffset = dock.renderArea.get_transformed_position();
+
     animateIcons.forEach((icon) => {
       let scale = icon._icon.get_scale();
       let newScale = scale;
@@ -284,7 +286,7 @@ export let Animator = class {
         if (speed > mag / dt) {
           speed = mag / dt;
         }
-        speed *= scaleFactor * slowDown;
+        speed *= slowDown;
         newScale = scale[0] + speed * dt * dir;
       }
 
@@ -324,7 +326,7 @@ export let Animator = class {
 
       // icon translation
       {
-        let speed = ((350 * scaleFactor) / 500) * slowDown;
+        let speed = (350 / 500) * slowDown;
         let v1 = new Vector([translationX, translationY, 0]);
         let v2 = new Vector([
           icon._icon.translationX,
@@ -334,7 +336,7 @@ export let Animator = class {
         let dst = v1.subtract(v2);
         let mag = dst.magnitude();
         if (mag > 0) {
-          let ndst = dst.normalize();
+          // let ndst = dst.normalize();
           let v3 = v2.add(dst.multiplyScalar(speed));
           translationX = v3.x;
           translationY = v3.y;
@@ -414,7 +416,7 @@ export let Animator = class {
         let icon_name = icon._icon.icon_name || 'file';
         if (!icon._renderer) {
           let target = dock.renderArea;
-          let renderer = new St.Icon({ icon_name: icon_name });
+          let renderer = new St.Icon({ icon_name: icon_name, style_class: 'renderer_icon' });
           // icon._icon.visible = false;
           icon._renderer = renderer;
           icon.connect('destroy', () => {
@@ -449,8 +451,8 @@ export let Animator = class {
 
         if (!isNaN(p[0]) && !isNaN(p[1])) {
           renderer.set_position(
-            p[0] + adjustX + icon._icon.translationX,
-            p[1] + adjustY + icon._icon.translationY
+            p[0] + adjustX + icon._icon.translationX - renderOffset[0],
+            p[1] + adjustY + icon._icon.translationY - renderOffset[1]
           );
           renderer.visible = true;
         } else {
@@ -553,7 +555,7 @@ export let Animator = class {
       let dst = v1.subtract(v2);
       let mag = dst.magnitude();
       if (mag > 0) {
-        let ndst = dst.normalize();
+        // let ndst = dst.normalize();
         let v3 = v2.add(dst.multiplyScalar(speed));
         translationX = v3.x;
         translationY = v3.y;

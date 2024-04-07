@@ -24,6 +24,7 @@ import {
   DockItemContainer,
   DockBackground,
 } from './dockItems.js';
+import { DockIconsRenderer } from './iconsRenderer.js';
 import { AutoHide } from './autohide.js';
 import { Animator } from './animator.js';
 
@@ -85,6 +86,9 @@ export let Dock = GObject.registerClass(
       if (this.extension.autohide_dash) {
         this.autohider.enable();
       }
+
+      this.renderer = new DockIconsRenderer();
+      this.add_child(this.renderer);
 
       this.struts = new St.Widget({
         name: 'DockStruts',
@@ -587,6 +591,9 @@ export let Dock = GObject.registerClass(
         let icon = c._icon;
         if (!icon._destroyConnectId) {
           icon._destroyConnectId = icon.connect('destroy', () => {
+            if (icon._renderer) {
+              icon._renderer.get_parent().remove_child(icon._renderer);
+            }
             this._icons = null;
           });
         }
@@ -875,7 +882,7 @@ export let Dock = GObject.registerClass(
 
       let projectedWidth =
         iconSize +
-        (this.animate ? iconSizeSpaced : 0) +
+        // (this.animated ? iconSizeSpaced : 0) +
         iconSizeSpaced * (this._icons.length > 3 ? this._icons.length : 3);
       projectedWidth += iconMargins;
 
@@ -994,6 +1001,17 @@ export let Dock = GObject.registerClass(
       //! add layout here instead of at the
       this.animator.animate();
       this.simulated_pointer = null;
+
+      // let { icons, pivot, iconSize, quality, scaleFactor } = params;
+      // let p = new Graphene.Point();
+      // p.init(0.5,0.5);
+      // this.renderer.update({
+      //   icons: this._icons,
+      //   pivot: p,
+      //   iconSize: this._iconSizeScaledDown,
+      //   quality: this.extension.icon_quality,
+      //   scaleFactor: this._scaleFactor
+      // });
     }
 
     //! move these generic functions outside of this class

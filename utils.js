@@ -1,6 +1,7 @@
 'use strict';
 
 import GLib from 'gi://GLib';
+import Gio from 'gi://Gio';
 
 const pointer_wrapper = {
   get_position: () => {
@@ -40,4 +41,15 @@ export const clearTimeout = (id) => {
 
 export const clearInterval = (id) => {
   GLib.source_remove(id);
+};
+
+export const trySpawnCommandLine = function (cmd) {
+  return new Promise((resolve, reject) => {
+    try {
+      GLib.spawn_command_line_async(cmd);
+      setTimeout(resolve, 250);
+    } catch (err) {
+      reject();
+    }
+  });
 };

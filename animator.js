@@ -194,10 +194,11 @@ export let Animator = class {
       icon._icon.set_size(iconSize, iconSize);
 
       // moved to findIcons
-      // icon._icon.set_icon_size(iconSize * dock.extension.icon_quality);
       if (dock._iconSizeScaledDown) {
         icon._icon.set_icon_size(
-          dock._iconSizeScaledDown * dock.extension.icon_quality
+          Math.floor(
+            (dock._iconSizeScaledDown * dock.extension.icon_quality) / 2
+          ) * 2
         );
       }
 

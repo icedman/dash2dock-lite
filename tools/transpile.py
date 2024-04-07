@@ -63,7 +63,8 @@ importMap = [
     [ "import {ExtensionPreferences", "class ExtensionPreferences {}" ],
     [ "import {Extension", "class Extension {}" ],
     # [ "import { trySpawnCommandLine }", "const trySpawnCommandLine = () => {};" ],
-    [ "import { trySpawnCommandLine }", "const { trySpawnCommandLine } = imports.misc.util;" ],
+    # [ "import { trySpawnCommandLine }", "const { trySpawnCommandLine } = imports.misc.util;" ],
+    [ "import { trySpawnCommandLine }", "const { trySpawnCommandLine } = Me.imports.utils;" ],
 ]
 
 def dump(f):

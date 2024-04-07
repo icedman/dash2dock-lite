@@ -330,7 +330,7 @@ export let Dock = GObject.registerClass(
       let iconSize = 64;
       if (!preferredIconSizes) {
         preferredIconSizes = [32];
-        for (let i = 16; i < 128; i += 4) {
+        for (let i = 16; i <= 128; i += 4) {
           preferredIconSizes.push(i);
         }
         this._preferredIconSizes = preferredIconSizes;
@@ -349,7 +349,7 @@ export let Dock = GObject.registerClass(
         ] || 64);
       iconSize *= this.extension.scale;
 
-      this._iconSize = iconSize;
+      this._iconSize = Math.floor(iconSize / 2) * 2;
       return iconSize;
     }
 
@@ -389,15 +389,21 @@ export let Dock = GObject.registerClass(
 
       /* ShowAppsIcon */
       if (c.icon /* IconGrid */ && c.icon.icon /* StIcon */) {
-        if (!c._invaded) {
-          // console.log(`${this.extension.path}/app-grid-dash2dock-lite.desktop`);
+        if (!c._skinned) {
+          // console.log(c.icon.icon.gicon.get_names());
           let container = new DockItemContainer({
             appinfo_filename: `${this.extension.path}/apps/app-grid-dash2dock-lite.desktop`,
           });
           let dockIcon = container.child;
+          dockIcon._default_icon_name = 'view-app-grid-symbolic';
+          dockIcon._default_icon_style_class = 'show-apps-icon';
+          dockIcon.child.add_style_class_name('show-apps');
           container.remove_child(dockIcon);
           c.setChild(dockIcon);
-          c._invaded = true;
+          c._skinned = true;
+          // disable drop
+          c.setDragApp = () => {};
+          c.acceptDrop = () => false;
         }
       }
 
@@ -479,14 +485,14 @@ export let Dock = GObject.registerClass(
       });
 
       // hack: sometimes the Dash creates more than one separator
-      // workaround - remove all separators in such situation
+      // workaround - remove all but one separators in such situation
       //! pinpoint the cause of the errors
       while (this._separators.length > 1) {
         this.dash._box.remove_child(this._separators[0]);
         this._separators.shift();
       }
 
-      // hide separator betweeing running apps and favorites - if not needed
+      // hide separator between running apps and favorites - if not needed
       if (this.extension.favorites_only) {
         if (this._separators.length) {
           this._separators[0].visible = false;
@@ -597,7 +603,9 @@ export let Dock = GObject.registerClass(
         // move back to animate icons - fix random bug - pixelated when idle
         if (this._iconSizeScaledDown) {
           c._icon.set_icon_size(
-            this._iconSizeScaledDown * this.extension.icon_quality
+            Math.floor(
+              (this._iconSizeScaledDown * this.extension.icon_quality) / 2
+            ) * 2
           );
         }
       });
@@ -628,23 +636,24 @@ export let Dock = GObject.registerClass(
       {
         //! avoid creating app_info & /tmp/*.desktop files
         let extras = [...this._extraIcons.get_children()];
-        let extraNames = extras.map((e) => e.name);
+        let extraMountPaths = extras.map((e) => e._mountPath);
         let mounted = Object.keys(this.extension.services._mounts);
 
         extras.forEach((extra) => {
           if (!extra._mountType) {
             return;
           }
-          if (!mounted.includes(extra.name)) {
+          if (!mounted.includes(extra._mountPath)) {
             this._extraIcons.remove_child(extra);
             this._icons = null;
           }
         });
 
         mounted.forEach((mount) => {
-          if (!extraNames.includes(mount)) {
+          if (!extraMountPaths.includes(mount)) {
             let mountedIcon = this.createItem(mount);
             mountedIcon._mountType = true;
+            mountedIcon._mountPath = mount;
             this._icons = null;
           }
         });
@@ -877,6 +886,12 @@ export let Dock = GObject.registerClass(
       iconSize *= scaleDown;
       iconSizeSpaced *= scaleDown;
       projectedWidth *= scaleDown;
+
+      // make multiple of 2
+      iconSize = Math.floor(iconSize / 2) * 2;
+      iconSizeSpaced = Math.floor(iconSizeSpaced / 2) * 2;
+      projectedWidth = Math.floor(projectedWidth / 2) * 2;
+
       this._projectedWidth = projectedWidth;
 
       this._edge_distance =

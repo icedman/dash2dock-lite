@@ -1,7 +1,8 @@
 'use strict';
 
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
-import { trySpawnCommandLine } from 'resource:///org/gnome/shell/misc/util.js';
+import { trySpawnCommandLine } from './utils.js';
+// import { trySpawnCommandLine } from 'resource:///org/gnome/shell/misc/util.js';
 
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';

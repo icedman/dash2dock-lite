@@ -303,7 +303,6 @@ export let Dock = GObject.registerClass(
       );
 
       this.dash.opacity = 0;
-
       return dash;
     }
 
@@ -949,7 +948,7 @@ export let Dock = GObject.registerClass(
       this._preview = PREVIEW_FRAMES;
     }
 
-    animate() {
+    animate(dt) {
       if (this._preview) {
         let p = this.dash.get_transformed_position();
         p[0] += this.dash.width / 2;
@@ -958,7 +957,7 @@ export let Dock = GObject.registerClass(
         this._preview--;
       }
       //! add layout here instead of at the
-      this.animator.animate();
+      this.animator.animate(dt);
       this.simulated_pointer = null;
     }
 
@@ -1028,8 +1027,8 @@ export let Dock = GObject.registerClass(
       if (this.extension._hiTimer) {
         if (!this._animationSeq) {
           this._animationSeq = this.extension._hiTimer.runLoop(
-            () => {
-              this.animate();
+            (s) => {
+              this.animate(s._delay);
             },
             this.animationInterval,
             'animationTimer'

@@ -120,6 +120,8 @@ export default class Dash2DockLiteExt extends Extension {
     // recreate only the dash
     this.docks.forEach((d) => {
       d.recreateDash();
+      d._beginAnimation();
+      d._debounceEndAnimation();
     });
   }
 
@@ -258,6 +260,7 @@ export default class Dash2DockLiteExt extends Extension {
       this._updateWidgetStyle();
       this.animate({ refresh: true });
       this.docks.forEach((dock) => {
+        dock._beginAnimation();
         dock._debounceEndAnimation();
       });
     }, 10);

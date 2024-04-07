@@ -404,6 +404,9 @@ export let Dock = GObject.registerClass(
           container.remove_child(dockIcon);
           c.setChild(dockIcon);
           c._skinned = true;
+          // disable drop
+          c.setDragApp = () => {};
+          c.acceptDrop = () => false;
         }
       }
 
@@ -603,7 +606,9 @@ export let Dock = GObject.registerClass(
         // move back to animate icons - fix random bug - pixelated when idle
         if (this._iconSizeScaledDown) {
           c._icon.set_icon_size(
-            Math.floor(this._iconSizeScaledDown * this.extension.icon_quality / 2) * 2
+            Math.floor(
+              (this._iconSizeScaledDown * this.extension.icon_quality) / 2
+            ) * 2
           );
         }
       });
@@ -889,7 +894,7 @@ export let Dock = GObject.registerClass(
       iconSize = Math.floor(iconSize / 2) * 2;
       iconSizeSpaced = Math.floor(iconSizeSpaced / 2) * 2;
       projectedWidth = Math.floor(projectedWidth / 2) * 2;
-      
+
       this._projectedWidth = projectedWidth;
 
       this._edge_distance =

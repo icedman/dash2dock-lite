@@ -26,7 +26,8 @@ import St from 'gi://St';
 import Shell from 'gi://Shell';
 import Graphene from 'gi://Graphene';
 import Gio from 'gi://Gio';
-import { trySpawnCommandLine } from 'resource:///org/gnome/shell/misc/util.js';
+import GLib from 'gi://GLib';
+import { trySpawnCommandLine } from './utils.js';
 
 import { Timer } from './timer.js';
 import { Style } from './style.js';
@@ -687,17 +688,19 @@ export default class Dash2DockLiteExt extends Extension {
     this.animate();
   }
 
-  _updateBlurredBackground() {
+  async _updateBlurredBackground() {
     // if (this.blur_background) {
-    //   let color = this.background_color || [0, 0, 0, 0.5];
-    //   let bg = this._desktopSettings.get_string('picture-uri');
-    //   let a = Math.floor(100 - color[3] * 100);
-    //   let rgb = this._style.hex(color);
-    //   // let cmd = `convert -scale 10% -blur 0x2.5 -resize 1000% -fill "${rgb}" -tint ${a} "${bg}" ${BLURRED_BG_PATH}`;
-    //   let cmd = `convert -scale 10% -blur 0x2.5 -resize 1000% "${bg}" ${BLURRED_BG_PATH}`;
-    //   // let cmd = `convert -crop 800x40+0+200 -scale 10% -blur 0x2.5 -resize 1000% "${bg}" ${BLURRED_BG_PATH}`;
-    //   console.log(cmd);
-    //   trySpawnCommandLine(cmd);
+    let color = this.background_color || [0, 0, 0, 0.5];
+    let bg = this._desktopSettings.get_string('picture-uri');
+    let a = Math.floor(100 - color[3] * 100);
+    let rgb = this._style.hex(color);
+    let file = Gio.File.new_for_uri(bg);
+    // let cmd = `convert -scale 10% -blur 0x2.5 -resize 1000% -fill "${rgb}" -tint ${a} "${file.get_path()}" ${BLURRED_BG_PATH}`;
+    let cmd = `/usr/bin/convert -scale 10% -blur 0x2.5 -resize 1000% "${file.get_path()}" ${BLURRED_BG_PATH}`;
+    // let cmd = `convert -crop 800x40+0+200 -scale 10% -blur 0x2.5 -resize 1000% "${file.get_path()}" ${BLURRED_BG_PATH}`;
+    // cmd = '/usr/bin/ls -1t';
+    console.log(cmd);
+    await trySpawnCommandLine(cmd);
     // }
   }
 
@@ -780,10 +783,10 @@ export default class Dash2DockLiteExt extends Extension {
       styles.push(`#d2daBackground { ${ss.join(' ')}}`);
     }
 
-    // if (this.blur_background) {
+    // if (this.blur_background)
+    // {
     //   let ss = [];
     //   ss.push(`\n background-image: url("${BLURRED_BG_PATH}");`);
-    //   // ss.push(`\n background-position: top center;`);
     //   ss.push(`\n background-position: center;`);
     //   styles.push(`#d2daBackground { ${ss.join(' ')}}`);
     // }

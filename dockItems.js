@@ -3,7 +3,8 @@
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as BoxPointer from 'resource:///org/gnome/shell/ui/boxpointer.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
-import { trySpawnCommandLine } from 'resource:///org/gnome/shell/misc/util.js';
+import { trySpawnCommandLine } from './utils.js';
+// import { trySpawnCommandLine } from 'resource:///org/gnome/shell/misc/util.js';
 
 import Gio from 'gi://Gio';
 import GObject from 'gi://GObject';
@@ -303,9 +304,17 @@ export const DockItemList = GObject.registerClass(
 export const DockIcon = GObject.registerClass(
   {},
   class DockIcon extends DashIcon {
-    _init(params) {
-      super._init(params);
+    _init(app) {
+      super._init(app);
       this._dot.visible = false;
+
+      this._draggable._onButtonPress = () => {
+        return Clutter.EVENT_PROPAGATE;
+      };
+      this._draggable._onTouchEvent = () => {
+        return Clutter.EVENT_PROPAGATE;
+      };
+      this._draggable._grabActor = () => {};
     }
 
     _createIcon(size) {
@@ -369,6 +378,7 @@ export const DockItemContainer = GObject.registerClass(
         // monkey patch dummy app
         if (!desktopApp.get_icon) {
           desktopApp.can_open_new_window = () => false;
+          desktopApp.create_icon_texture = () => null;
           desktopApp.get_icon = () => {
             return {
               get_names: () => [],

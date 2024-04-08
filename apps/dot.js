@@ -84,8 +84,8 @@ const DotCanvas = GObject.registerClass(
       if (this.state.translate) {
         ctx.translate(
           this.state.translate[0] * width,
-          this.state.translate[1]
-        ) * height;
+          this.state.translate[1] * height
+        );
       }
       if (this.state.rotate) {
         ctx.rotate((this.state.rotate * 3.14) / 180);

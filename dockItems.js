@@ -88,7 +88,8 @@ export const DockItemBadgeOverlay = GObject.registerClass(
 
       renderer.width = icon._icon.width;
       renderer.height = icon._icon.height;
-      renderer.set_scale(icon._icon.scaleX, icon._icon.scaleY);
+      let toScale = icon._icon.scaleX;
+      renderer.set_scale(toScale, toScale);
       renderer.pivot_point = icon._icon.pivot_point;
       renderer.translationX = icon._icon.translationX + 4;
       renderer.translationY = icon._icon.translationY - 4;

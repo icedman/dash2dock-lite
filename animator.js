@@ -273,13 +273,18 @@ export let Animator = class {
 
     let renderOffset = dock.renderArea.get_transformed_position();
 
+    let springy = false;
+    let springyScale = true;
+    let springyTranslate = false;
+
     animateIcons.forEach((icon) => {
       let scale = icon._icon.get_scale();
-      let newScale = scale;
+      let newScale = icon._targetScale || scale[0];
 
       // scale
+      if (springy && springyScale)
       {
-        let speed = 4 / 500;
+        let speed = 10 / 1000;
         let dst = icon._targetScale - scale[0];
         let mag = Math.abs(dst);
         let dir = Math.sign(dst);
@@ -287,7 +292,13 @@ export let Animator = class {
           speed = mag / dt;
         }
         speed *= slowDown;
-        newScale = scale[0] + speed * dt * dir;
+        let deltaScale = speed * dt * dir;
+        let appliedScale = deltaScale;
+        if (icon._deltaScale) {
+          appliedScale = (icon._deltaScale * 4/ dt + deltaScale / dt) / 5 * dt;
+        }
+        newScale = scale[0] + appliedScale;
+        icon._deltaScale = appliedScale;
       }
 
       //! make more readable
@@ -299,10 +310,6 @@ export let Animator = class {
       };
 
       let posFlags = flags[dock._position];
-      // let pv = new Point();
-      // pv.x = posFlags.x;
-      // pv.y = posFlags.y;
-      // icon._icon.pivot_point = pv;
 
       if (newScale < 1.01) {
         newScale = 1;
@@ -325,8 +332,9 @@ export let Animator = class {
       }
 
       // icon translation
+      if (springy && springyTranslate)
       {
-        let speed = (350 / 500) * slowDown;
+        let speed = (25 / 1000) * slowDown;
         let v1 = new Vector([translationX, translationY, 0]);
         let v2 = new Vector([
           icon._icon.translationX,
@@ -336,10 +344,14 @@ export let Animator = class {
         let dst = v1.subtract(v2);
         let mag = dst.magnitude();
         if (mag > 0) {
-          // let ndst = dst.normalize();
-          let v3 = v2.add(dst.multiplyScalar(speed));
-          translationX = v3.x;
-          translationY = v3.y;
+          let v3 = v2.add(dst.multiplyScalar(speed * dt));
+          let appliedVector = new Vector([v3.x, v3.y, 0]);
+          if (icon._deltaVector) {
+            appliedVector = appliedVector.multiplyScalar(1/dt).add(v3.multiplyScalar(1/dt)).multiplyScalar(dt/2);
+          }
+          translationX = appliedVector.x;
+          translationY = appliedVector.y;
+          icon._deltaVector = appliedVector;
         }
       }
 
@@ -375,7 +387,7 @@ export let Animator = class {
             noticesCount,
             position: dock._position,
             vertical,
-            extension: dock.extension,
+            extension: dock.extension
           });
           badge.show();
         } else {
@@ -412,12 +424,12 @@ export let Animator = class {
       }
 
       // renderer
+      // dock.renderArea.opacity = 100;
       {
         let icon_name = icon._icon.icon_name || 'file';
         if (!icon._renderer) {
           let target = dock.renderArea;
           let renderer = new St.Icon({ icon_name: icon_name, style_class: 'renderer_icon' });
-          // icon._icon.visible = false;
           icon._renderer = renderer;
           icon.connect('destroy', () => {
             target.remove_child(renderer);
@@ -428,12 +440,15 @@ export let Animator = class {
         let renderer = icon._renderer;
         renderer.icon_name = icon_name;
 
-        let targetSize = icon._icon.width * icon._icon.scaleX;
+        let toScale = icon._icon.scaleX;
+        let targetSize = icon._icon.width * toScale;
+        let currentScale = renderer.scaleX;
 
         let baseSize = 32 * (dock.extension.icon_quality || 1);
         renderer.set_size(baseSize, baseSize);
         renderer.set_icon_size(baseSize);
         let scaleToTarget = targetSize / baseSize;
+
         renderer.set_scale(scaleToTarget, scaleToTarget);
 
         let p = icon.get_transformed_position();
@@ -455,6 +470,12 @@ export let Animator = class {
             p[1] + adjustY + icon._icon.translationY - renderOffset[1]
           );
           renderer.visible = true;
+
+            let target = icon._dot?.get_parent();
+            let badge = target?._badge;
+            if (badge) {
+              badge.set_position(0, icon._icon.translationY / 2 * icon._icon.scaleX);
+            }
         } else {
           dock.opacity = 0;
         }

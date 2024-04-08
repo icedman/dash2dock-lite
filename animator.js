@@ -381,14 +381,14 @@ export let Animator = class {
             appliedScale =
               (((icon._deltaScale * 2) / dt + deltaScale / dt) / 3) * dt;
           }
-          newScale = scale + appliedScale;
+          newScale = (scale + appliedScale) / scaleFactor;
           if (newScale < 1) newScale = 1;
           // newScale = icon._targetScale;
           icon._deltaScale = appliedScale;
           icon._scale = newScale;
         }
 
-        let targetSize = iconSize * newScale;
+        let targetSize = dock._iconSizeScaledDown * scaleFactor * newScale;
         let baseSize = 32 * (dock.extension.icon_quality || 1);
         renderer.set_size(baseSize, baseSize);
         renderer.set_icon_size(baseSize);

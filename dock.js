@@ -573,7 +573,7 @@ export let Dock = GObject.registerClass(
       this._icons.forEach((c) => {
         c._deltaScale = null;
         c._deltaVector = null;
-        
+
         c._icon.track_hover = true;
         c._icon.reactive = true;
         c._icon.pivot_point = pv;

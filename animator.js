@@ -202,7 +202,7 @@ export let Animator = class {
       //! what is the difference between set_size and set_icon_size? and effects
       // set_icon_size resizes the image... avoid changing per frame
       // set_size resizes the widget
-      icon._icon.set_size(iconSize, iconSize);
+      // icon._icon.set_size(iconSize, iconSize);
 
       if (!icon._pos) {
         return;
@@ -273,32 +273,12 @@ export let Animator = class {
 
     let renderOffset = dock.renderArea.get_transformed_position();
 
-    let springy = false;
+    let springy = true;
     let springyScale = true;
-    let springyTranslate = false;
+    let springyTranslate = true;
 
     animateIcons.forEach((icon) => {
-      let scale = icon._icon.get_scale();
-      let newScale = icon._targetScale || scale[0];
-
-      // scale
-      {
-        let speed = 10 / 1000;
-        let dst = icon._targetScale - scale[0];
-        let mag = Math.abs(dst);
-        let dir = Math.sign(dst);
-        if (speed > mag / dt) {
-          speed = mag / dt;
-        }
-        speed *= slowDown;
-        let deltaScale = speed * dt * dir;
-        let appliedScale = deltaScale;
-        if (icon._deltaScale && springy && springyScale) {
-          appliedScale = (icon._deltaScale * 4/ dt + deltaScale / dt) / 5 * dt;
-        }
-        newScale = scale[0] + appliedScale;
-        icon._deltaScale = appliedScale;
-      }
+      let newScale = icon._targetScale || 1;
 
       //! make more readable
       let flags = {
@@ -313,7 +293,7 @@ export let Animator = class {
       if (newScale < 1.01) {
         newScale = 1;
       }
-      icon._icon.set_scale(newScale, newScale);
+      // icon._icon.set_scale(newScale, newScale);
       icon._scale = newScale;
 
       //! make these computation more readable even if more verbose
@@ -329,6 +309,7 @@ export let Animator = class {
         translationX = icon._translateRise * rdir;
         translationY = icon._translate;
       }
+      icon._deltaVector = new Vector([translationX, translationY, 0]);
 
       // icon translation
       {
@@ -341,20 +322,116 @@ export let Animator = class {
         ]);
         let dst = v1.subtract(v2);
         let mag = dst.magnitude();
-        if (mag > 0) {
+        if (mag > 6) {
           let v3 = v2.add(dst.multiplyScalar(speed * dt));
           let appliedVector = new Vector([v3.x, v3.y, 0]);
           if (icon._deltaVector && springy && springyTranslate) {
-            appliedVector = appliedVector.multiplyScalar(1/dt).add(v3.multiplyScalar(1/dt)).multiplyScalar(dt/2);
+            appliedVector = appliedVector
+              .multiplyScalar(1 / dt)
+              .add(v3.multiplyScalar(1 / dt))
+              .multiplyScalar(dt / 2);
           }
           translationX = appliedVector.x;
           translationY = appliedVector.y;
           icon._deltaVector = appliedVector;
+        } else {
+          icon._deltaVector = null;
         }
       }
 
       icon._icon.translationX = translationX;
       icon._icon.translationY = translationY;
+
+      //--------------
+      // renderer
+      //--------------
+      // dock.renderArea.opacity = 100;
+      {
+        let icon_name = icon._icon.icon_name || 'file';
+        if (!icon._renderer) {
+          let target = dock.renderArea;
+          let renderer = new St.Icon({
+            icon_name: icon_name,
+            style_class: 'renderer_icon',
+          });
+          icon._renderer = renderer;
+          icon.connect('destroy', () => {
+            target.remove_child(renderer);
+          });
+          target.add_child(renderer);
+        }
+
+        let renderer = icon._renderer;
+        renderer.icon_name = icon_name;
+
+        // scale
+        {
+          let scale = renderer.scaleX || 1;
+          let speed = 100 / 1000;
+          let dst = icon._targetScale - scale;
+          let mag = Math.abs(dst);
+          let dir = Math.sign(dst);
+          if (speed > mag / dt) {
+            speed = mag / dt;
+          }
+          speed *= slowDown;
+          let deltaScale = speed * dt * dir;
+          let appliedScale = deltaScale;
+          if (icon._deltaScale && springy && springyScale) {
+            appliedScale =
+              (((icon._deltaScale * 2) / dt + deltaScale / dt) / 3) * dt;
+          }
+          newScale = scale + appliedScale;
+          if (newScale < 1) newScale = 1;
+          // newScale = icon._targetScale;
+          icon._deltaScale = appliedScale;
+          icon._scale = newScale;
+        }
+
+        let targetSize = iconSize * newScale;
+        let baseSize = 32 * (dock.extension.icon_quality || 1);
+        renderer.set_size(baseSize, baseSize);
+        renderer.set_icon_size(baseSize);
+        let scaleToTarget = targetSize / baseSize;
+        renderer.set_scale(scaleToTarget, scaleToTarget);
+
+        // position
+        let p = icon.get_transformed_position();
+        let adjustX = icon.width / 2 - targetSize / 2;
+        let adjustY = icon.height / 2 - targetSize / 2;
+
+        if (targetSize > icon.height) {
+          let rise = (targetSize - icon.height) * 0.5;
+          if (dock.isVertical()) {
+            adjustX += rise * (dock._position == 'left' ? 1 : -1);
+          } else {
+            adjustY += rise * (dock._position == 'bottom' ? -1 : 1);
+          }
+        }
+
+        if (!isNaN(p[0]) && !isNaN(p[1])) {
+          renderer.set_position(
+            p[0] + adjustX + icon._icon.translationX - renderOffset[0],
+            p[1] + adjustY + icon._icon.translationY - renderOffset[1]
+          );
+          renderer.visible = true;
+          let target = icon._dot?.get_parent();
+          let badge = target?._badge;
+          if (badge) {
+            badge.set_position(
+              0,
+              (icon._icon.translationY / 2) * icon._icon.scaleX
+            );
+          }
+        } else {
+          dock.opacity = 0;
+        }
+
+        // renderer.add_style_class_name('hi');
+        icon._icon.opacity = 0;
+        renderer.opacity =
+          icon._icon == dock._dragged && dock._dragging ? 75 : 255;
+      }
 
       // labels
       if (icon._label) {
@@ -375,6 +452,13 @@ export let Animator = class {
         let target = icon._dot?.get_parent();
         let badge = target?._badge;
 
+        if (icon._renderer && badge) {
+          badge.set_scale(newScale, newScale);
+          let p = new Graphene.Point();
+          p.init(0.5, 0.75);
+          badge.pivot_point = p;
+        }
+
         if (!badge && icon._appwell && target) {
           badge = new DockItemBadgeOverlay(new Dot(DOT_CANVAS_SIZE));
           target._badge = badge;
@@ -385,7 +469,7 @@ export let Animator = class {
             noticesCount,
             position: dock._position,
             vertical,
-            extension: dock.extension
+            extension: dock.extension,
           });
           badge.show();
         } else {
@@ -419,69 +503,6 @@ export let Animator = class {
         } else {
           dots?.hide();
         }
-      }
-
-      // renderer
-      // dock.renderArea.opacity = 100;
-      {
-        let icon_name = icon._icon.icon_name || 'file';
-        if (!icon._renderer) {
-          let target = dock.renderArea;
-          let renderer = new St.Icon({ icon_name: icon_name, style_class: 'renderer_icon' });
-          icon._renderer = renderer;
-          icon.connect('destroy', () => {
-            target.remove_child(renderer);
-          });
-          target.add_child(renderer);
-        }
-
-        let renderer = icon._renderer;
-        renderer.icon_name = icon_name;
-
-        let toScale = icon._icon.scaleX;
-        let targetSize = icon._icon.width * toScale;
-        let currentScale = renderer.scaleX;
-
-        let baseSize = 32 * (dock.extension.icon_quality || 1);
-        renderer.set_size(baseSize, baseSize);
-        renderer.set_icon_size(baseSize);
-        let scaleToTarget = targetSize / baseSize;
-
-        renderer.set_scale(scaleToTarget, scaleToTarget);
-
-        let p = icon.get_transformed_position();
-        let adjustX = icon.width / 2 - targetSize / 2;
-        let adjustY = icon.height / 2 - targetSize / 2;
-
-        if (targetSize > icon.height) {
-          let rise = (targetSize - icon.height) * 0.5;
-          if (dock.isVertical()) {
-            adjustX += rise * (dock._position == 'left' ? 1 : -1);
-          } else {
-            adjustY += rise * (dock._position == 'bottom' ? -1 : 1);
-          }
-        }
-
-        if (!isNaN(p[0]) && !isNaN(p[1])) {
-          renderer.set_position(
-            p[0] + adjustX + icon._icon.translationX - renderOffset[0],
-            p[1] + adjustY + icon._icon.translationY - renderOffset[1]
-          );
-          renderer.visible = true;
-
-            let target = icon._dot?.get_parent();
-            let badge = target?._badge;
-            if (badge) {
-              badge.set_position(0, icon._icon.translationY / 2 * icon._icon.scaleX);
-            }
-        } else {
-          dock.opacity = 0;
-        }
-
-        // renderer.add_style_class_name('hi');
-        icon._icon.opacity = 0;
-        renderer.opacity =
-          icon._icon == dock._dragged && dock._dragging ? 75 : 255;
       }
 
       // custom icons

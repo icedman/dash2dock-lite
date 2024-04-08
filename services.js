@@ -612,7 +612,8 @@ export const Services = class {
           clock._icon = icon;
           clock.width = item._icon.width;
           clock.height = item._icon.height;
-          clock.set_scale(item._icon.scaleX, item._icon.scaleY);
+          let toScale = item._scale;
+          clock.set_scale(toScale, toScale);
           let canvasScale = clock.width / (clock._canvas.width + 2);
           clock._canvas.set_scale(canvasScale, canvasScale);
           // clock.pivot_point = item._icon.pivot_point;
@@ -647,13 +648,13 @@ export const Services = class {
         if (calendar) {
           calendar.width = item._icon.width;
           calendar.height = item._icon.height;
-          calendar.set_scale(item._icon.scaleX, item._icon.scaleY);
+          let toScale = item._scale;
+          calendar.set_scale(toScale, toScale);
           let canvasScale = calendar.width / (calendar._canvas.width + 2);
           calendar._canvas.set_scale(canvasScale, canvasScale);
           // calendar.pivot_point = item._icon.pivot_point;
           // calendar.translationX = item._icon.translationX;
           // calendar.translationY = item._icon.translationY;
-
           calendar.x = item._renderer.x;
           calendar.y = item._renderer.y;
 

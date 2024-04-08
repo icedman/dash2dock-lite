@@ -282,7 +282,6 @@ export let Animator = class {
       let newScale = icon._targetScale || scale[0];
 
       // scale
-      if (springy && springyScale)
       {
         let speed = 10 / 1000;
         let dst = icon._targetScale - scale[0];
@@ -294,7 +293,7 @@ export let Animator = class {
         speed *= slowDown;
         let deltaScale = speed * dt * dir;
         let appliedScale = deltaScale;
-        if (icon._deltaScale) {
+        if (icon._deltaScale && springy && springyScale) {
           appliedScale = (icon._deltaScale * 4/ dt + deltaScale / dt) / 5 * dt;
         }
         newScale = scale[0] + appliedScale;
@@ -332,7 +331,6 @@ export let Animator = class {
       }
 
       // icon translation
-      if (springy && springyTranslate)
       {
         let speed = (25 / 1000) * slowDown;
         let v1 = new Vector([translationX, translationY, 0]);
@@ -346,7 +344,7 @@ export let Animator = class {
         if (mag > 0) {
           let v3 = v2.add(dst.multiplyScalar(speed * dt));
           let appliedVector = new Vector([v3.x, v3.y, 0]);
-          if (icon._deltaVector) {
+          if (icon._deltaVector && springy && springyTranslate) {
             appliedVector = appliedVector.multiplyScalar(1/dt).add(v3.multiplyScalar(1/dt)).multiplyScalar(dt/2);
           }
           translationX = appliedVector.x;

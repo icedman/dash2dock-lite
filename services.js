@@ -624,7 +624,7 @@ export const Services = class {
           clock.y = item._renderer.y;
 
           clock.show();
-          item._icon.visible = !clock.shouldHideIcon();
+          item._renderer.opacity = clock.shouldHideIcon() ? 0 : 255;
         }
       } else {
         let clock = item._clock;

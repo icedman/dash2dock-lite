@@ -216,7 +216,7 @@ const ClockCanvas = GObject.registerClass(
       };
 
       // clock_style = 4;
-      // console.log(this.settings);
+      console.log(size);
 
       switch (clock_style) {
         // framed clocks
@@ -258,7 +258,6 @@ const ClockCanvas = GObject.registerClass(
           };
           break;
         }
-
         // round clocks
         case 5: {
           style.dial.size = 0.95;

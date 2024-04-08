@@ -84,16 +84,10 @@ export const DockItemBadgeOverlay = GObject.registerClass(
   class DockItemBadgeOverlay extends DockItemOverlay {
     update(icon, data) {
       let renderer = this.renderer;
-      let { noticesCount, position, vertical, extension } = data;
+      let { noticesCount, position, vertical, extension, scale } = data;
 
       renderer.width = icon._icon.width;
       renderer.height = icon._icon.height;
-      let toScale = icon._icon.scaleX;
-      renderer.set_scale(toScale, toScale);
-      renderer.pivot_point = icon._icon.pivot_point;
-      renderer.translationX = icon._icon.translationX + 4;
-      renderer.translationY = icon._icon.translationY - 4;
-
       let canvasScale = renderer.width / renderer._canvas.width;
       renderer._canvas.set_scale(canvasScale, canvasScale);
 
@@ -102,12 +96,14 @@ export const DockItemBadgeOverlay = GObject.registerClass(
         options[extension.notification_badge_style];
       let notification_badge_color = extension.notification_badge_color;
 
+      renderer.translationX = icon._icon.translationX;
+      renderer.translationY = icon._icon.translationY;
+
       renderer.set_state({
         count: noticesCount,
         color: notification_badge_color || [1, 1, 1, 1],
         style: notification_badge_style || 'default',
-        rotate: position == DockPosition.BOTTOM ? 180 : 0,
-        translate: [0.4, 0],
+        translate: [0.4,-0.8],
       });
     }
   }

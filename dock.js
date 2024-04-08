@@ -313,19 +313,19 @@ export let Dock = GObject.registerClass(
       Main.layoutManager.addChrome(this.struts, {
         affectsStruts: !this.extension.autohide_dash,
         affectsInputRegion: true,
-        trackFullscreen: true,
+        // trackFullscreen: true,
       });
 
       Main.layoutManager.addChrome(this, {
         affectsStruts: false,
         affectsInputRegion: false,
-        trackFullscreen: true,
+        // trackFullscreen: true,
       });
 
       Main.layoutManager.addChrome(this.dwell, {
         affectsStruts: false,
         affectsInputRegion: false,
-        trackFullscreen: true,
+        // trackFullscreen: true,
       });
 
       this._onChrome = true;
@@ -448,6 +448,7 @@ export let Dock = GObject.registerClass(
       }
 
       if (c._icon) {
+        c._icon.opacity = 0; // renderer takes care of displaying an icon
         c._label = c.label;
         // limitation: vertical layout cannot do apps_icon_front
         if (
@@ -571,9 +572,6 @@ export let Dock = GObject.registerClass(
       pv.x = 0.5;
       pv.y = 0.5;
       this._icons.forEach((c) => {
-        c._deltaSize = null;
-        c._deltaVector = null;
-
         c._icon.track_hover = true;
         c._icon.reactive = true;
         c._icon.pivot_point = pv;
@@ -622,11 +620,11 @@ export let Dock = GObject.registerClass(
         }
 
         // icon image quality
-        if (this._iconSizeScaledDown) {
-          c._icon.set_icon_size(
-            this._iconSizeScaledDown * this.extension.icon_quality
-          );
-        }
+        // if (this._iconSizeScaledDown) {
+        //   c._icon.set_icon_size(
+        //     this._iconSizeScaledDown * this.extension.icon_quality
+        //   );
+        // }
       });
 
       // link list the dash items

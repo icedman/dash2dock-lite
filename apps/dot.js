@@ -54,7 +54,8 @@ const DotCanvas = GObject.registerClass(
         this.state.color != s.color ||
         this.state.style != s.style ||
         this.state.rotate != s.rotate ||
-        this.state.translate != s.translate
+        this.state.translate != s.translate ||
+        this.state.scale != s.scale
       ) {
         this.state = s;
         this.redraw();

@@ -14,7 +14,7 @@ import { DockItemDotsOverlay, DockItemBadgeOverlay } from './dockItems.js';
 import { Bounce, Linear } from './effects/easing.js';
 
 const ANIM_POSITION_PER_SEC = 450 / 1000;
-const ANIM_SIZE_PER_SEC = 250 / 1000;
+const ANIM_SIZE_PER_SEC = 150 / 1000;
 
 const ANIM_ICON_RAISE = 0.6;
 const ANIM_ICON_SCALE = 1.5;
@@ -38,6 +38,7 @@ export let Animator = class {
     dock.layout();
 
     // opacity
+    //! make time based
     let didFadeIn = false;
     if (dock.opacity < 255) {
       didFadeIn = true;
@@ -291,7 +292,6 @@ export let Animator = class {
         translationX = icon._translateRise * rdir;
         translationY = icon._translate;
       }
-      icon._deltaVector = new Vector([translationX, translationY, 0]);
 
       //-------------------
       // animate position
@@ -318,7 +318,6 @@ export let Animator = class {
         translationY = appliedVector.y;
         icon._deltaVector = appliedVector;
       }
-
       icon._icon.translationX = translationX;
       icon._icon.translationY = translationY;
 
@@ -328,7 +327,9 @@ export let Animator = class {
       // dock.renderArea.opacity = 100;
       {
         let icon_name = icon._icon.icon_name || 'file';
+        let didCreate = false;
         if (!icon._renderer) {
+          didCreate = true;
           let target = dock.renderArea;
           let renderer = new St.Icon({
             icon_name: icon_name,
@@ -354,14 +355,27 @@ export let Animator = class {
           let dst = targetSize - currentSize;
           let mag = Math.abs(dst);
           let dir = Math.sign(dst);
+          let accel = 0;
           let pixelOverTime = ANIM_SIZE_PER_SEC;
+         // add some acceleration
+          if (false)
+          {
+            accel = ((icon._deltaSize || 0) / 50 * dt);;
+            pixelOverTime *= 0.5;
+          }
           let deltaSize = pixelOverTime * dir * dt;
           let appliedSize = deltaSize;
+          appliedSize += accel;
           if (Math.abs(appliedSize) > mag) {
             appliedSize = dst;
           }
+          if (didCreate) {
+            appliedSize = 0;
+            currentSize = targetSize;
+          }
           targetSize = currentSize + appliedSize;
           icon._deltaSize = appliedSize;
+          icon._targetSize = targetSize;
         }
         // compute icon scale based on size
         icon._scale = targetSize / unscaledIconSize;
@@ -408,8 +422,6 @@ export let Animator = class {
           dock.opacity = 0;
         }
 
-        // renderer.add_style_class_name('hi');
-        icon._icon.opacity = 0;
         renderer.opacity =
           icon._icon == dock._dragged && dock._dragging ? 75 : 255;
       }
@@ -444,10 +456,11 @@ export let Animator = class {
         let badge = target?._badge;
 
         if (icon._renderer && badge) {
-          badge.set_scale(icon._targetScale, icon._targetScale);
-          let p = new Graphene.Point();
-          p.init(0.5, 0.75);
-          badge.pivot_point = p;
+          badge.set_scale(icon._scale, icon._scale);
+          let pv = new Point();
+          pv.init(0.5,1.0);
+          badge.pivot_point = pv;
+          badge.set_position(4, 0);
         }
 
         if (!badge && icon._appwell && target) {
@@ -461,6 +474,7 @@ export let Animator = class {
             position: dock._position,
             vertical,
             extension: dock.extension,
+            scale: icon._scale
           });
           badge.show();
         } else {
@@ -490,6 +504,7 @@ export let Animator = class {
             vertical,
             extension: dock.extension,
           });
+          dots.set_position(0, 2);
           dots.show();
         } else {
           dots?.hide();
@@ -752,9 +767,6 @@ export let Animator = class {
           if (dock.isVertical()) {
             appwell.translation_x =
               dock._position == DockPosition.LEFT ? res : -res;
-            if (icon._badge) {
-              icon._badge.translation_x = appwell.translation_x;
-            }
           } else {
             appwell.translation_y =
               dock._position == DockPosition.BOTTOM ? -res : res;

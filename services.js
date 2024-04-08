@@ -616,15 +616,12 @@ export const Services = class {
           clock.set_scale(toScale, toScale);
           let canvasScale = clock.width / (clock._canvas.width + 2);
           clock._canvas.set_scale(canvasScale, canvasScale);
-          // clock.pivot_point = item._icon.pivot_point;
-          // clock.translationX = item._icon.translationX;
-          // clock.translationY = item._icon.translationY;
-
           clock.x = item._renderer.x;
           clock.y = item._renderer.y;
-
+          clock.opacity = item._renderer.opacity;
           clock.show();
-          item._renderer.opacity = clock.shouldHideIcon() ? 0 : 255;
+          item._renderer.visible = !clock.shouldHideIcon();
+          // item._renderer.visible = opacity = clock.shouldHideIcon() ? 0 : 255;
         }
       } else {
         let clock = item._clock;
@@ -642,7 +639,6 @@ export const Services = class {
           dock._calendar = calendar;
           item._calendar = calendar;
           item._image = calendar;
-          // item._appwell.first_child.add_child(calendar);
           dock.renderArea.add_child(calendar);
         }
         if (calendar) {
@@ -652,11 +648,9 @@ export const Services = class {
           calendar.set_scale(toScale, toScale);
           let canvasScale = calendar.width / (calendar._canvas.width + 2);
           calendar._canvas.set_scale(canvasScale, canvasScale);
-          // calendar.pivot_point = item._icon.pivot_point;
-          // calendar.translationX = item._icon.translationX;
-          // calendar.translationY = item._icon.translationY;
           calendar.x = item._renderer.x;
           calendar.y = item._renderer.y;
+          calendar.opacity = item._renderer.opacity;
 
           calendar.show();
           item._icon.visible = !calendar.shouldHideIcon();

@@ -335,6 +335,7 @@ export let Animator = class {
             icon_name: icon_name,
             style_class: 'renderer_icon',
           });
+          renderer.opacity = 0;
           icon._renderer = renderer;
           icon.connect('destroy', () => {
             target.remove_child(renderer);
@@ -344,6 +345,9 @@ export let Animator = class {
 
         let renderer = icon._renderer;
         renderer.icon_name = icon_name;
+        if (renderer.opacity < 255 && !didCreate) {
+          renderer.opacity += 5;
+        }
 
         //-------------------
         // animate scaling at renderer
@@ -422,8 +426,8 @@ export let Animator = class {
           dock.opacity = 0;
         }
 
-        renderer.opacity =
-          icon._icon == dock._dragged && dock._dragging ? 75 : 255;
+        // renderer.opacity =
+        //   icon._icon == dock._dragged && dock._dragging ? 75 : 255;
       }
 
       //! make more readable

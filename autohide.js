@@ -52,13 +52,13 @@ export let AutoHide = class {
 
   _getScaleFactor() {
     //! use dock scale factor
-    let scaleFactor = this.dashContainer._monitor.geometry_scale;
+    let scaleFactor = this.dock._monitor.geometry_scale;
     return scaleFactor;
   }
 
   _onMotionEvent() {
     if (this.extension.pressure_sense && !this._shown) {
-      let monitor = this.dashContainer._monitor;
+      let monitor = this.dock._monitor;
       let pointer = global.get_pointer();
       if (this.extension.simulated_pointer) {
         pointer = [...this.extension.simulated_pointer];
@@ -81,14 +81,14 @@ export let AutoHide = class {
       let dwell_count =
         80 - 60 * (this.extension.pressure_sense_sensitivity || 0);
 
-      if (this.dashContainer.isVertical()) {
+      if (this.dock.isVertical()) {
         if (
           // right
-          (this.dashContainer._position == DockPosition.RIGHT &&
+          (this.dock._position == DockPosition.RIGHT &&
             dy < area &&
             pointer[0] > monitor.x + sw - 4) ||
           // left
-          (this.dashContainer._position == DockPosition.LEFT &&
+          (this.dock._position == DockPosition.LEFT &&
             dy < area &&
             pointer[0] < monitor.x + 4)
         ) {
@@ -140,14 +140,14 @@ export let AutoHide = class {
     this._dwell = 0;
     this.frameDelay = 0;
     this._shown = true;
-    this.dashContainer.slideIn();
+    this.dock.slideIn();
   }
 
   hide() {
     this._dwell = 0;
     this.frameDelay = 10;
     this._shown = false;
-    this.dashContainer.slideOut();
+    this.dock.slideOut();
   }
 
   _track(window) {
@@ -158,12 +158,12 @@ export let AutoHide = class {
         'position-changed',
         // this._debounceCheckHide.bind(this),
         () => {
-          this.dashContainer.extension.checkHide();
+          this.dock.extension.checkHide();
         },
         'size-changed',
         // this._debounceCheckHide.bind(this),
         () => {
-          this.dashContainer.extension.checkHide();
+          this.dock.extension.checkHide();
         },
         this
       );
@@ -191,12 +191,12 @@ export let AutoHide = class {
       pointer = [...this.extension.simulated_pointer];
     }
 
-    let pos = this.dashContainer.struts.get_transformed_position();
+    let pos = this.dock.struts.get_transformed_position();
     let rect = {
       x: pos[0],
       y: pos[1],
-      w: this.dashContainer.struts.width,
-      h: this.dashContainer.struts.height,
+      w: this.dock.struts.width,
+      h: this.dock.struts.height,
     };
     //! change to struts rect
     let arect = [rect.x, rect.y, rect.w, rect.h];
@@ -207,8 +207,8 @@ export let AutoHide = class {
 
     // within the dash
     if (
-      this.dashContainer._isWithinDash(pointer) ||
-      this.dashContainer._isInRect(arect, pointer)
+      this.dock._isWithinDash(pointer) ||
+      this.dock._isInRect(arect, pointer)
     ) {
       return false;
     }
@@ -217,7 +217,7 @@ export let AutoHide = class {
       return true;
     }
 
-    let monitor = this.dashContainer._monitor;
+    let monitor = this.dock._monitor;
     let actors = global.get_window_actors();
     let windows = actors.map((a) => {
       let w = a.get_meta_window();
@@ -234,9 +234,9 @@ export let AutoHide = class {
     windows = windows.filter((w) => w.get_window_type() in handledWindowTypes);
 
     let isOverlapped = false;
-    let dock = this.dashContainer.struts.get_transformed_position();
-    dock.push(this.dashContainer.struts.width);
-    dock.push(this.dashContainer.struts.height);
+    let dock = this.dock.struts.get_transformed_position();
+    dock.push(this.dock.struts.width);
+    dock.push(this.dock.struts.height);
 
     windows.forEach((w) => {
       this._track(w);
@@ -245,7 +245,7 @@ export let AutoHide = class {
       let frame = w.get_frame_rect();
       let win = [frame.x, frame.y, frame.width, frame.height];
 
-      if (this.dashContainer._isOverlapRect(dock, win)) {
+      if (this.dock._isOverlapRect(dock, win)) {
         isOverlapped = true;
       }
     });

@@ -25,8 +25,7 @@ export let Animator = class {
   disable() {}
 
   animate(dt) {
-    //! replace dashContainer with dock
-    let dock = this.dashContainer;
+    let dock = this.dock;
     if (dock._hoveredIcon) {
       dock._lastHoveredIcon = dock._hoveredIcon;
     }
@@ -616,7 +615,7 @@ export let Animator = class {
         position: dock._position,
         vertical: vertical,
         panel_mode: dock.extension.panel_mode,
-        dashContainer: dock,
+        dock,
       });
 
       // allied areas
@@ -740,7 +739,7 @@ export let Animator = class {
   }
 
   bounceIcon(appwell) {
-    let dock = this.dashContainer;
+    let dock = this.dock;
 
     // let scaleFactor = dock.getMonitor().geometry_scale;
     //! why not scaleFactor?

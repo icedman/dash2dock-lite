@@ -78,12 +78,12 @@ export let Dock = GObject.registerClass(
       this._scrollCounter = 0;
 
       this.animator = new Animator();
-      this.animator.dashContainer = this;
+      this.animator.dock = this;
       this.animator.extension = this.extension;
       this.animator.enable();
 
       this.autohider = new AutoHide();
-      this.autohider.dashContainer = this;
+      this.autohider.dock = this;
       this.autohider.extension = this.extension;
       if (this.extension.autohide_dash) {
         this.autohider.enable();

@@ -454,7 +454,7 @@ export const DockBackground = GObject.registerClass(
         vertical,
         position,
         panel_mode,
-        dashContainer,
+        dock,
       } = params;
 
       this._padding = 0;
@@ -464,14 +464,11 @@ export const DockBackground = GObject.registerClass(
         return;
       }
 
-      let dp = dashContainer.dash.get_transformed_position();
+      let dp = dock.dash.get_transformed_position();
       if (isNaN(dp[0]) || isNaN(dp[1])) return;
 
       let padding =
-        iconSize *
-        0.1 *
-        (dashContainer.extension.dock_padding || 0) *
-        scaleFactor;
+        iconSize * 0.1 * (dock.extension.dock_padding || 0) * scaleFactor;
 
       if (first && last) {
         let tx = first._icon.translationX;
@@ -482,10 +479,10 @@ export const DockBackground = GObject.registerClass(
         // bottom
         this.x = dp[0];
         this.y = dp[1];
-        let width = dashContainer.dash.width;
-        let height = dashContainer.dash.height;
+        let width = dock.dash.width;
+        let height = dock.dash.height;
 
-        if (dashContainer.isVertical()) {
+        if (dock.isVertical()) {
           this.y += ty;
           height += ty2 - ty;
         } else {
@@ -506,8 +503,8 @@ export const DockBackground = GObject.registerClass(
           this.height = height;
         }
 
-        this.x -= dashContainer.x;
-        this.y -= dashContainer.y;
+        this.x -= dock.x;
+        this.y -= dock.y;
         this._padding = padding;
 
         // adjust padding
@@ -519,16 +516,16 @@ export const DockBackground = GObject.registerClass(
 
         if (panel_mode) {
           if (vertical) {
-            this.y = dashContainer.y;
-            this.height = dashContainer.height;
+            this.y = dock.y;
+            this.height = dock.height;
           } else {
-            this.x = dashContainer.x;
-            this.width = dashContainer.width;
+            this.x = dock.x;
+            this.width = dock.width;
           }
         }
 
         this.opacity = 255;
-        dashContainer.dash.opacity = this.opacity;
+        dock.dash.opacity = this.opacity;
       }
     }
   }

@@ -13,6 +13,9 @@ import { DockItemDotsOverlay, DockItemBadgeOverlay } from './dockItems.js';
 
 import { Bounce, Linear } from './effects/easing.js';
 
+const ANIM_POSITION_PER_SEC = 450 / 1000;
+const ANIM_SIZE_PER_SEC = 250 / 1000;
+
 const ANIM_ICON_RAISE = 0.6;
 const ANIM_ICON_SCALE = 1.5;
 const ANIM_ICON_HIT_AREA = 2.5;
@@ -196,7 +199,7 @@ export let Animator = class {
       }
 
       icon._scale = scale;
-      icon._targetScale = scale * scaleFactor;
+      icon._targetScale = scale;
 
       //! what is the difference between set_size and set_icon_size? and effects
       // set_icon_size resizes the image... avoid changing per frame
@@ -272,28 +275,8 @@ export let Animator = class {
 
     let renderOffset = dock.renderArea.get_transformed_position();
 
-    let springy = true;
-    let springyScale = true;
-    let springyTranslate = true;
-
     animateIcons.forEach((icon) => {
-      let newScale = icon._targetScale || 1;
-
-      //! make more readable
-      let flags = {
-        bottom: { x: 0.5, y: 1, lx: 0, ly: 0.5 * newScale },
-        top: { x: 0.5, y: 0, lx: 0, ly: -1.5 * newScale },
-        left: { x: 0, y: 0.5, lx: -1.25 * newScale, ly: -1.25 },
-        right: { x: 1, y: 0.5, lx: 1.5 * newScale, ly: -1.25 },
-      };
-
-      let posFlags = flags[dock._position];
-
-      if (newScale < 1.01) {
-        newScale = 1;
-      }
-      // icon._icon.set_scale(newScale, newScale);
-      icon._scale = newScale;
+      icon._scale = icon._targetScale;
 
       //! make these computation more readable even if more verbose
       let rdir =
@@ -310,32 +293,30 @@ export let Animator = class {
       }
       icon._deltaVector = new Vector([translationX, translationY, 0]);
 
-      // icon translation
+      //-------------------
+      // animate position
+      //-------------------
       {
-        let speed = (25 / 1000) * slowDown;
-        let v1 = new Vector([translationX, translationY, 0]);
-        let v2 = new Vector([
+        let speed = ANIM_POSITION_PER_SEC * slowDown;
+        let targetPosition = new Vector([translationX, translationY, 0]);
+        let currentPosition = new Vector([
           icon._icon.translationX,
           icon._icon.translationY,
           0,
         ]);
-        let dst = v1.subtract(v2);
+        let dst = targetPosition.subtract(currentPosition);
         let mag = dst.magnitude();
-        if (mag > 6) {
-          let v3 = v2.add(dst.multiplyScalar(speed * dt));
-          let appliedVector = new Vector([v3.x, v3.y, 0]);
-          if (icon._deltaVector && springy && springyTranslate) {
-            appliedVector = appliedVector
-              .multiplyScalar(1 / dt)
-              .add(v3.multiplyScalar(1 / dt))
-              .multiplyScalar(dt / 2);
-          }
-          translationX = appliedVector.x;
-          translationY = appliedVector.y;
-          icon._deltaVector = appliedVector;
-        } else {
-          icon._deltaVector = null;
+        if (mag > 0) {
+          dst = dst.normalize();
         }
+        let deltaVector = dst.multiplyScalar(speed * dt);
+        let appliedVector = new Vector([targetPosition.x, targetPosition.y, 0]);
+        if (deltaVector.magnitude() < mag && mag > 10) {
+          appliedVector = currentPosition.add(deltaVector);
+        }
+        translationX = appliedVector.x;
+        translationY = appliedVector.y;
+        icon._deltaVector = appliedVector;
       }
 
       icon._icon.translationX = translationX;
@@ -363,38 +344,36 @@ export let Animator = class {
         let renderer = icon._renderer;
         renderer.icon_name = icon_name;
 
-        // scale
+        //-------------------
+        // animate scaling at renderer
+        //-------------------
+        let unscaledIconSize = dock._iconSizeScaledDown * scaleFactor;
+        let targetSize = unscaledIconSize * icon._targetScale;
+        let currentSize = renderer.icon_size * renderer.scaleX;
         {
-          let scale = renderer.scaleX || 1;
-          let speed = 100 / 1000;
-          let dst = icon._targetScale - scale;
+          let dst = targetSize - currentSize;
           let mag = Math.abs(dst);
           let dir = Math.sign(dst);
-          if (speed > mag / dt) {
-            speed = mag / dt;
+          let pixelOverTime = ANIM_SIZE_PER_SEC;
+          let deltaSize = pixelOverTime * dir * dt;
+          let appliedSize = deltaSize;
+          if (Math.abs(appliedSize) > mag) {
+            appliedSize = dst;
           }
-          speed *= slowDown;
-          let deltaScale = speed * dt * dir;
-          let appliedScale = deltaScale;
-          if (icon._deltaScale && springy && springyScale) {
-            appliedScale =
-              (((icon._deltaScale * 2) / dt + deltaScale / dt) / 3) * dt;
-          }
-          newScale = (scale + appliedScale) / scaleFactor;
-          if (newScale < 1) newScale = 1;
-          // newScale = icon._targetScale;
-          icon._deltaScale = appliedScale;
-          icon._scale = newScale;
+          targetSize = currentSize + appliedSize;
+          icon._deltaSize = appliedSize;
         }
+        // compute icon scale based on size
+        icon._scale = targetSize / unscaledIconSize;
 
-        let targetSize = dock._iconSizeScaledDown * scaleFactor * newScale;
         let baseSize = 32 * (dock.extension.icon_quality || 1);
-        renderer.set_size(baseSize, baseSize);
-        renderer.set_icon_size(baseSize);
+        if (renderer.icon_size != baseSize) {
+          renderer.set_size(baseSize, baseSize);
+          renderer.set_icon_size(baseSize);
+        }
         let scaleToTarget = targetSize / baseSize;
         renderer.set_scale(scaleToTarget, scaleToTarget);
 
-        // position
         let p = icon.get_transformed_position();
         let adjustX = icon.width / 2 - targetSize / 2;
         let adjustY = icon.height / 2 - targetSize / 2;
@@ -408,6 +387,9 @@ export let Animator = class {
           }
         }
 
+        //-------------------
+        // commit position
+        //-------------------
         if (!isNaN(p[0]) && !isNaN(p[1])) {
           renderer.set_position(
             p[0] + adjustX + icon._icon.translationX - renderOffset[0],
@@ -432,6 +414,16 @@ export let Animator = class {
           icon._icon == dock._dragged && dock._dragging ? 75 : 255;
       }
 
+      //! make more readable
+      let flags = {
+        bottom: { x: 0.5, y: 1, lx: 0, ly: 0.5 * icon._targetScale },
+        top: { x: 0.5, y: 0, lx: 0, ly: -1.5 * icon._targetScale },
+        left: { x: 0, y: 0.5, lx: -1.25 * icon._targetScale, ly: -1.25 },
+        right: { x: 1, y: 0.5, lx: 1.5 * icon._targetScale, ly: -1.25 },
+      };
+
+      let posFlags = flags[dock._position];
+
       // labels
       if (icon._label) {
         icon._label.translationX = translationX - iconSize * posFlags.lx;
@@ -452,7 +444,7 @@ export let Animator = class {
         let badge = target?._badge;
 
         if (icon._renderer && badge) {
-          badge.set_scale(newScale, newScale);
+          badge.set_scale(icon._targetScale, icon._targetScale);
           let p = new Graphene.Point();
           p.init(0.5, 0.75);
           badge.pivot_point = p;

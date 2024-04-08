@@ -571,7 +571,7 @@ export let Dock = GObject.registerClass(
       pv.x = 0.5;
       pv.y = 0.5;
       this._icons.forEach((c) => {
-        c._deltaScale = null;
+        c._deltaSize = null;
         c._deltaVector = null;
 
         c._icon.track_hover = true;

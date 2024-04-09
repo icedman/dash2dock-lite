@@ -51,7 +51,7 @@ export let Animator = class {
         opacityPerSecond = mag / dt;
       }
       dock.opacity += Math.floor(opacityPerSecond * dt * dir);
-      if (dock.opacity > 50) {
+      if (dock.renderArea.opacity < 255 && dock.opacity > 50) {
         dock.renderArea.opacity = dock.opacity;
       }
     }
@@ -94,6 +94,8 @@ export let Animator = class {
     let nearestDistance = -1;
 
     let iconCenterOffset = (iconSize * scaleFactor) / 2;
+    let hitArea = iconSize * ANIM_ICON_HIT_AREA * scaleFactor;
+    hitArea *= hitArea;
 
     let idx = 0;
     animateIcons.forEach((icon) => {
@@ -105,12 +107,12 @@ export let Animator = class {
       let bposcenter = [...pos];
       bposcenter[0] += iconCenterOffset;
       bposcenter[1] += iconCenterOffset;
-      let dst = dock._get_distance(pointer, bposcenter);
+      let dst = dock._get_distance_sqr(pointer, bposcenter);
 
       if (
         isWithin &&
         (nearestDistance == -1 || nearestDistance > dst) &&
-        dst < iconSize * ANIM_ICON_HIT_AREA * scaleFactor
+        dst < hitArea
       ) {
         nearestDistance = dst;
         nearestIcon = icon;
@@ -160,7 +162,7 @@ export let Animator = class {
     // animate
     let iconTable = [];
     animateIcons.forEach((icon) => {
-      let original_pos = icon.get_transformed_position();
+      let original_pos = [...icon._pos];
 
       // used by background resizing and repositioning
       icon._fixedPosition = [...original_pos];
@@ -328,7 +330,7 @@ export let Animator = class {
       // fix jitterness
       if (lockPosition && icon._p == 0) {
         icon._positionCache = icon._positionCache || [];
-        if (icon._positionCache.length > 24) {
+        if (icon._positionCache.length > 16) {
           [translationX, translationY] =
             icon._positionCache[icon._positionCache.length - 1];
         } else {
@@ -355,12 +357,9 @@ export let Animator = class {
             icon_name: icon_name,
             style_class: 'renderer_icon',
           });
-          icon._renderer = renderer;
-          icon.connect('destroy', () => {
-            target.remove_child(renderer);
-          });
-          target.add_child(renderer);
           renderer.opacity = 0;
+          icon._renderer = renderer;
+          target.add_child(renderer);
         } else {
           icon._renderer.opacity = 255;
         }
@@ -435,10 +434,9 @@ export let Animator = class {
               (icon._icon.translationY / 2) * icon._icon.scaleX
             );
           }
-        } else {
-          dock.opacity = 0;
         }
 
+        //! todo... add placeholder opacity when dragging
         // renderer.opacity =
         //   icon._icon == dock._dragged && dock._dragging ? 75 : 255;
       }
@@ -701,58 +699,7 @@ export let Animator = class {
     //---------------------
     //! use time based animation
     if (dock._list && dock._list.visible && dock._list._target) {
-      let list = dock._list;
-      list.opacity = 255;
-
-      let target = list._target;
-      let list_coef = 2;
-
-      let tw = target.width * target._icon.scaleX;
-      let th = target.height * target._icon.scaleY;
-      let prev = null;
-      list._box?.get_children().forEach((c) => {
-        if (!dock._list) return;
-
-        c.translationX = target._icon.translationX + tw / 8;
-        c.translationY =
-          -target._icon.scaleX * target._icon.height + target._icon.height;
-        c._label.translationX = -c._label.width;
-
-        let tx = c._x;
-        let ty = c._y;
-        let tz = c._rotation_angle_z;
-        let to = 255;
-        if (list._hidden) {
-          tx = c._ox;
-          ty = c._oy;
-          tz = c._oz;
-          to = 0;
-          if (prev) {
-            tx = (tx * 5 + prev.x) / 6;
-          }
-
-          //! frame count is not accurate ... check if the animatton has ended
-          if (list._hiddenFrames-- <= 0) {
-            dock._destroyList();
-          }
-        }
-
-        let list_coef_x = list_coef + 4;
-        let list_coef_z = list_coef + 6;
-        c._label.opacity =
-          (c._label.opacity * list_coef + to) / (list_coef + 1);
-        c.x = (c.x * list_coef_x + tx) / (list_coef_x + 1);
-        c.y = (c.y * list_coef + ty) / (list_coef + 1);
-        // if (list._hidden) {
-        c.opacity = c._label.opacity;
-        // }
-        c.rotation_angle_z =
-          (c.rotation_angle_z * list_coef_z + tz) / (list_coef_z + 1);
-
-        prev = c;
-      });
-
-      target._label.hide();
+      dock._list.animate(dt);
       didScale = true;
     }
 

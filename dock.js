@@ -308,19 +308,19 @@ export let Dock = GObject.registerClass(
       Main.layoutManager.addChrome(this.struts, {
         affectsStruts: !this.extension.autohide_dash,
         affectsInputRegion: true,
-        // trackFullscreen: true,
+        trackFullscreen: true,
       });
 
       Main.layoutManager.addChrome(this, {
         affectsStruts: false,
         affectsInputRegion: false,
-        // trackFullscreen: true,
+        trackFullscreen: true,
       });
 
       Main.layoutManager.addChrome(this.dwell, {
         affectsStruts: false,
         affectsInputRegion: false,
-        // trackFullscreen: true,
+        trackFullscreen: true,
       });
 
       this._onChrome = true;
@@ -591,13 +591,13 @@ export let Dock = GObject.registerClass(
           };
         }
         let icon = c._icon;
-        if (!icon._destroyConnectId) {
+        if (icon && !icon._destroyConnectId) {
           icon._destroyConnectId = icon.connect('destroy', () => {
-            if (icon._renderer) {
-              icon._renderer.get_parent().remove_child(icon._renderer);
+            if (c._renderer) {
+              c._renderer.get_parent().remove_child(c._renderer);
             }
-            if (icon._image) {
-              icon._image.get_parent().remove_child(icon._image);
+            if (c._image) {
+              c._image.get_parent().remove_child(c._image);
             }
             this._icons = null;
           });
@@ -657,6 +657,9 @@ export let Dock = GObject.registerClass(
           }
           if (!mounted.includes(extra._mountPath)) {
             this._extraIcons.remove_child(extra);
+            if (extra._renderer) {
+              this.renderArea.remove_child(extra._renderer);
+            }
             this._icons = null;
           }
         });
@@ -687,9 +690,9 @@ export let Dock = GObject.registerClass(
           ),
           items: '_recentFiles',
           itemsLength: '_recentFilesLength',
-          cleanup: () => {
+          cleanup: (() => {
             this.extension.services._recentFiles = null;
-          },
+          }).bind(this)
         },
         {
           icon: '_downloadsIcon',
@@ -699,74 +702,26 @@ export let Dock = GObject.registerClass(
           show: this.extension.downloads_icon,
           items: '_downloadFiles',
           itemsLength: '_downloadFilesLength',
-          prepare: this.extension.services.checkDownloads.bind(
-            this.extension.services
-          ),
+          prepare: (() => {
+            this.extension.services.checkDownloads();
+          }).bind(this),
           cleanup: () => {},
         },
       ];
 
-      //! cleanup this mess
       folders.forEach((f) => {
         if (!this[f.icon] && f.show) {
-          // pin downloads icon
-          this[f.icon] = this.createItem(f.path);
-          let target = this[f.icon];
-          target._onClick = async () => {
-            if (this._position != DockPosition.BOTTOM) {
-              target.activateNewWindow();
-              return;
-            }
-            if (!this.extension.services[f.items]) {
-              await f.prepare();
-            }
-            let files = [...(this.extension.services[f.items] || [])];
-            if (!files.length) return;
-            if (files.length < this.extension.services[f.itemsLength]) {
-              files = [
-                {
-                  index: -1,
-                  name: 'More...',
-                  exec: `nautilus ${f.folder}`,
-                  icon: target._icon.icon_name,
-                  type: 'exec',
-                },
-                ...files,
-              ];
-            }
-            files = files.sort(function (a, b) {
-              return a.index > b.index ? 1 : -1;
-            });
-
-            if (!this._list) {
-              this._list = new DockItemList();
-              this._list.dock = this;
-              Main.uiGroup.add_child(this._list);
-            } else if (this._list.visible) {
-              this._list.slideOut();
-            } else {
-              // remove and re-add so that it is repositioned to topmost
-              Main.uiGroup.remove_child(this._list);
-              Main.uiGroup.add_child(this._list);
-              this._list.visible = true;
-            }
-
-            if (this._list.visible && !this._list._hidden) {
-              this._list.slideIn(target, files);
-              let pv = new Point();
-              pv.x = 0.5;
-              pv.y = 1;
-            }
-          };
-
+          this[f.icon] = DockItemList.createItem(this, f);
           this._icons = null;
         } else if (this[f.icon] && !f.show) {
           // unpin downloads icon
           this._extraIcons.remove_child(this[f.icon]);
+          if (this[f.icon]._renderer) {
+            this.renderArea.remove_child(this[f.icon]._renderer);
+          }
           this[f.icon] = null;
           this._icons = null;
         }
-
         f.cleanup();
       });
 
@@ -781,6 +736,9 @@ export let Dock = GObject.registerClass(
       } else if (this._trashIcon && !this.extension.trash_icon) {
         // unpin trash icon
         this._extraIcons.remove_child(this._trashIcon);
+        if (this._trashIcon._renderer) {
+          this.renderArea.remove_child(this._trashIcon._renderer);
+        }
         this._trashIcon = null;
         this._icons = null;
       } else if (this._trashIcon && this.extension.trash_icon) {

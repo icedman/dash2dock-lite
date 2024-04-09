@@ -303,7 +303,7 @@ const ClockCanvas = GObject.registerClass(
           break;
         }
         case 0:
-      default:{
+        default: {
           style.dial.size = 0.95;
           style.dial.border = light_color;
           style.dial.borderWidth = 3;

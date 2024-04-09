@@ -11,6 +11,8 @@ import GObject from 'gi://GObject';
 import Clutter from 'gi://Clutter';
 import St from 'gi://St';
 
+import { DockPosition } from './dock.js';
+
 export class DockItemMenu extends PopupMenu.PopupMenu {
   constructor(sourceActor, side = St.Side.TOP, params = {}) {
     if (Clutter.get_default_text_direction() === Clutter.TextDirection.RTL) {
@@ -71,6 +73,62 @@ export const DockItemList = GObject.registerClass(
         this.slideOut();
         return Clutter.EVENT_PROPAGATE;
       });
+    }
+
+    static createItem(dock, f) {
+      console.log('----------------');
+      console.log(f.icon);
+      console.log('----------------');
+
+      let target = dock.createItem(f.path);
+      target._onClick = async () => {
+        if (dock._position != DockPosition.BOTTOM) {
+          target.activateNewWindow();
+          return;
+        }
+        if (!dock.extension.services[f.items]) {
+          await f.prepare();
+        }
+        let files = [...(dock.extension.services[f.items] || [])];
+        if (!files.length) return;
+        if (files.length < dock.extension.services[f.itemsLength]) {
+          files = [
+            {
+              index: -1,
+              name: 'More...',
+              exec: `nautilus ${f.folder}`,
+              icon: target._icon.icon_name,
+              type: 'exec',
+            },
+            ...files,
+          ];
+        }
+        files = files.sort(function (a, b) {
+          return a.index > b.index ? 1 : -1;
+        });
+
+        if (!dock._list) {
+          dock._list = new DockItemList();
+          dock._list.dock = dock;
+          Main.uiGroup.add_child(dock._list);
+        } else if (dock._list.visible) {
+          dock._list.slideOut();
+        } else {
+          // remove and re-add so that it is repositioned to topmost
+          Main.uiGroup.remove_child(dock._list);
+          Main.uiGroup.add_child(dock._list);
+          dock._list.visible = true;
+        }
+
+        if (dock._list.visible && !dock._list._hidden) {
+          dock._list.slideIn(target, files);
+          let pv = new Point();
+          pv.x = 0.5;
+          pv.y = 1;
+        }
+      };
+
+      return target;
     }
 
     slideIn(target, list) {
@@ -196,6 +254,62 @@ export const DockItemList = GObject.registerClass(
         this._hidden = true;
         this._hiddenFrames = 80;
       }
+    }
+
+    animate(dt) {
+      let dock = this.dock;
+      let list = dock._list;
+      list.opacity = 255;
+
+      let target = list._target;
+      let list_coef = 2;
+
+      let tw = target.width * target._icon.scaleX;
+      let th = target.height * target._icon.scaleY;
+      let prev = null;
+      list._box?.get_children().forEach((c) => {
+        if (!dock._list) return;
+
+        c.translationX = target._icon.translationX + tw / 8;
+        c.translationY =
+          -target._icon.scaleX * target._icon.height + target._icon.height;
+        c._label.translationX = -c._label.width;
+
+        let tx = c._x;
+        let ty = c._y;
+        let tz = c._rotation_angle_z;
+        let to = 255;
+        if (list._hidden) {
+          tx = c._ox;
+          ty = c._oy;
+          tz = c._oz;
+          to = 0;
+          if (prev) {
+            tx = (tx * 5 + prev.x) / 6;
+          }
+
+          //! frame count is not accurate ... check if the animatton has ended
+          if (list._hiddenFrames-- <= 0) {
+            dock._destroyList();
+          }
+        }
+
+        let list_coef_x = list_coef + 4;
+        let list_coef_z = list_coef + 6;
+        c._label.opacity =
+          (c._label.opacity * list_coef + to) / (list_coef + 1);
+        c.x = (c.x * list_coef_x + tx) / (list_coef_x + 1);
+        c.y = (c.y * list_coef + ty) / (list_coef + 1);
+        // if (list._hidden) {
+        c.opacity = c._label.opacity;
+        // }
+        c.rotation_angle_z =
+          (c.rotation_angle_z * list_coef_z + tz) / (list_coef_z + 1);
+
+        prev = c;
+      });
+
+      target._label.hide();
     }
   }
 );

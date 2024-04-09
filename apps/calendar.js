@@ -27,7 +27,7 @@ export const Calendar = GObject.registerClass(
     }
 
     shouldHideIcon() {
-      return false;
+      return true;
     }
   }
 );
@@ -69,7 +69,7 @@ const CalendarCanvas = GObject.registerClass(
       ctx.setLineCap(Cairo.LineCap.ROUND);
       ctx.setOperator(Cairo.Operator.SOURCE);
 
-      let bgSize = size * 0.7;
+      let bgSize = size * 0.85;
       let offset = size - bgSize;
 
       const d0 = new Date();
@@ -82,16 +82,16 @@ const CalendarCanvas = GObject.registerClass(
         bgSize,
         bgSize,
         0,
-        8
+        16
       );
       Drawing.set_color(ctx, date_color, 1.0);
-      ctx.moveTo(0, 12);
-      Drawing.draw_text(ctx, `${d0.getDate()}`, 'DejaVuSans 36');
+      ctx.moveTo(0, 14);
+      Drawing.draw_text(ctx, `${d0.getDate()}`, 'DejaVuSans 40');
 
       let dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
       Drawing.set_color(ctx, day_color, 1.0);
-      ctx.moveTo(0, -22);
-      Drawing.draw_text(ctx, `${dayNames[d0.getDay()]}`, 'DejaVuSans 16');
+      ctx.moveTo(0, -24);
+      Drawing.draw_text(ctx, `${dayNames[d0.getDay()]}`, 'DejaVuSans 20');
 
       ctx.$dispose();
     }

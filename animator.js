@@ -699,7 +699,7 @@ export let Animator = class {
     //---------------------
     // animate the list
     //---------------------
-    //! use easing functions here
+    //! use time based animation
     if (dock._list && dock._list.visible && dock._list._target) {
       let list = dock._list;
       list.opacity = 255;

@@ -622,7 +622,7 @@ export const Services = class {
           clock.opacity = item._renderer.opacity;
           clock.show();
           item._renderer.visible = !clock.shouldHideIcon();
-          // item._renderer.visible = opacity = clock.shouldHideIcon() ? 0 : 255;
+          // item._renderer.opacity = clock.shouldHideIcon() ? 0 : 255;
         }
       } else {
         let clock = item._clock;
@@ -653,7 +653,7 @@ export const Services = class {
           calendar.y = item._renderer.y - 1 * scaleFactor;
           calendar.opacity = item._renderer.opacity;
           calendar.show();
-          item._icon.visible = !calendar.shouldHideIcon();
+          item._renderer.visible = !calendar.shouldHideIcon();
         }
       } else {
         let calendar = item._calendar;

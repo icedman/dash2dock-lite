@@ -15,12 +15,8 @@ import { Dash } from 'resource:///org/gnome/shell/ui/dash.js';
 import { TintEffect } from './effects/tint_effect.js';
 import { MonochromeEffect } from './effects/monochrome_effect.js';
 
-import {
-  DockIcon,
-  DockItemList,
-  DockItemContainer,
-  DockBackground,
-} from './dockItems.js';
+import { DockIcon, DockItemContainer, DockBackground } from './dockItems.js';
+import { DockItemList } from './dockItemMenu.js';
 import { AutoHide } from './autohide.js';
 import { Animator } from './animator.js';
 
@@ -271,7 +267,6 @@ export let Dock = GObject.registerClass(
 
       // null these - needed when calling recreateDash
       this._trashIcon = null;
-      this._downloadsIcon = null;
 
       this._separator = new St.Widget({
         style_class: 'dash-separator',
@@ -716,7 +711,6 @@ export let Dock = GObject.registerClass(
         if (!this[f.icon] && f.show) {
           // pin downloads icon
           this[f.icon] = this.createItem(f.path);
-
           let target = this[f.icon];
           target._onClick = async () => {
             if (this._position != DockPosition.BOTTOM) {
@@ -769,7 +763,7 @@ export let Dock = GObject.registerClass(
         } else if (this[f.icon] && !f.show) {
           // unpin downloads icon
           this._extraIcons.remove_child(this[f.icon]);
-          this._downloadsIcon = null;
+          this[f.icon] = null;
           this._icons = null;
         }
 

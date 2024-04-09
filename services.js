@@ -6,6 +6,7 @@ import { trySpawnCommandLine } from './utils.js';
 
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
+import Graphene from 'gi://Graphene';
 
 import { Clock } from './apps/clock.js';
 import { Calendar } from './apps/calendar.js';
@@ -616,8 +617,8 @@ export const Services = class {
           clock.set_scale(toScale, toScale);
           let canvasScale = clock.width / (clock._canvas.width + 2);
           clock._canvas.set_scale(canvasScale, canvasScale);
-          clock.x = item._renderer.x;
-          clock.y = item._renderer.y;
+          clock.x = item._renderer.x - 1 * scaleFactor;
+          clock.y = item._renderer.y - 1 * scaleFactor;
           clock.opacity = item._renderer.opacity;
           clock.show();
           item._renderer.visible = !clock.shouldHideIcon();
@@ -648,10 +649,9 @@ export const Services = class {
           calendar.set_scale(toScale, toScale);
           let canvasScale = calendar.width / (calendar._canvas.width + 2);
           calendar._canvas.set_scale(canvasScale, canvasScale);
-          calendar.x = item._renderer.x;
-          calendar.y = item._renderer.y;
+          calendar.x = item._renderer.x - 1 * scaleFactor;
+          calendar.y = item._renderer.y - 1 * scaleFactor;
           calendar.opacity = item._renderer.opacity;
-
           calendar.show();
           item._icon.visible = !calendar.shouldHideIcon();
         }

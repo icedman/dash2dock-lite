@@ -946,7 +946,7 @@ export let Dock = GObject.registerClass(
       this._preview = PREVIEW_FRAMES;
     }
 
-    animate(dt) {
+    animate(dt = 15) {
       if (this._preview) {
         let p = this.dash.get_transformed_position();
         p[0] += this.dash.width / 2;

@@ -103,7 +103,7 @@ export const DockItemBadgeOverlay = GObject.registerClass(
         count: noticesCount,
         color: notification_badge_color || [1, 1, 1, 1],
         style: notification_badge_style || 'default',
-        translate: [0.4,-0.8],
+        translate: [0.4, -0.8],
       });
     }
   }

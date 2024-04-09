@@ -14,7 +14,7 @@ import { DockItemDotsOverlay, DockItemBadgeOverlay } from './dockItems.js';
 import { Bounce, Linear } from './effects/easing.js';
 
 const ANIM_POSITION_PER_SEC = 450 / 1000;
-const ANIM_SIZE_PER_SEC = 150 / 1000;
+const ANIM_SIZE_PER_SEC = 250 / 1000;
 
 const ANIM_ICON_RAISE = 0.6;
 const ANIM_ICON_SCALE = 1.5;
@@ -27,6 +27,7 @@ export let Animator = class {
 
   disable() {}
 
+  //! begin optimization
   animate(dt) {
     let dock = this.dock;
     if (dock._hoveredIcon) {
@@ -41,15 +42,15 @@ export let Animator = class {
     //! make time based
     let didFadeIn = false;
     if (dock.opacity < 255) {
+      let opacityPerSecond = 255 / 1000;
       didFadeIn = true;
-      let speed = 255 / 1250;
       let dst = 255 - dock.opacity;
       let mag = Math.abs(dst);
       let dir = Math.sign(dst);
-      if (speed > mag / dt) {
-        speed = mag / dt;
+      if (opacityPerSecond > mag / dt) {
+        opacityPerSecond = mag / dt;
       }
-      dock.opacity += speed * dt * dir;
+      dock.opacity += Math.floor(opacityPerSecond * dt * dir);
       if (dock.opacity > 50) {
         dock.renderArea.opacity = dock.opacity;
       }
@@ -309,17 +310,20 @@ export let Animator = class {
         if (mag > 0) {
           dst = dst.normalize();
         }
+        let accelVector = new Vector([0, 0, 0]);
         let deltaVector = dst.multiplyScalar(speed * dt);
+        let deltaMag = deltaVector.magnitude();
         let appliedVector = new Vector([targetPosition.x, targetPosition.y, 0]);
-        if (deltaVector.magnitude() < mag && mag > 10) {
+        appliedVector = appliedVector.add(accelVector);
+        if (deltaMag < mag && deltaMag > 10) {
           appliedVector = currentPosition.add(deltaVector);
         }
         translationX = appliedVector.x;
         translationY = appliedVector.y;
         icon._deltaVector = appliedVector;
       }
-      icon._icon.translationX = translationX;
-      icon._icon.translationY = translationY;
+      icon._icon.translationX = (icon._icon.translationX + translationX) / 2;
+      icon._icon.translationY = (icon._icon.translationY + translationY) / 2;
 
       //--------------
       // renderer
@@ -335,19 +339,18 @@ export let Animator = class {
             icon_name: icon_name,
             style_class: 'renderer_icon',
           });
-          renderer.opacity = 0;
           icon._renderer = renderer;
           icon.connect('destroy', () => {
             target.remove_child(renderer);
           });
           target.add_child(renderer);
+          renderer.opacity = 0;
+        } else {
+          icon._renderer.opacity = 255;
         }
 
         let renderer = icon._renderer;
         renderer.icon_name = icon_name;
-        if (renderer.opacity < 255 && !didCreate) {
-          renderer.opacity += 5;
-        }
 
         //-------------------
         // animate scaling at renderer
@@ -361,17 +364,11 @@ export let Animator = class {
           let dir = Math.sign(dst);
           let accel = 0;
           let pixelOverTime = ANIM_SIZE_PER_SEC;
-         // add some acceleration
-          if (false)
-          {
-            accel = ((icon._deltaSize || 0) / 50 * dt);;
-            pixelOverTime *= 0.5;
-          }
           let deltaSize = pixelOverTime * dir * dt;
           let appliedSize = deltaSize;
           appliedSize += accel;
           if (Math.abs(appliedSize) > mag) {
-            appliedSize = dst;
+            appliedSize = dst * 0.5;
           }
           if (didCreate) {
             appliedSize = 0;
@@ -462,7 +459,7 @@ export let Animator = class {
         if (icon._renderer && badge) {
           badge.set_scale(icon._scale, icon._scale);
           let pv = new Point();
-          pv.init(0.5,1.0);
+          pv.init(0.5, 1.0);
           badge.pivot_point = pv;
           badge.set_position(4, 0);
         }
@@ -478,7 +475,7 @@ export let Animator = class {
             position: dock._position,
             vertical,
             extension: dock.extension,
-            scale: icon._scale
+            scale: icon._scale,
           });
           badge.show();
         } else {

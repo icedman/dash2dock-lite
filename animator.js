@@ -270,12 +270,14 @@ export let Animator = class {
     //-------------------
     // interpolation / animation
     //-------------------
+    let renderOffset = dock.renderArea.get_transformed_position();
 
     let first = animateIcons[0];
     let last = animateIcons[animateIcons.length - 1];
-    let slowDown = !nearestIcon || !animated ? 0.5 : 1;
 
-    let renderOffset = dock.renderArea.get_transformed_position();
+    let slowDown = !nearestIcon || !animated ? 0.75 : 1;
+    let lockPosition =
+      didScale && first && last && first._p == 0 && last._p == 0;
 
     animateIcons.forEach((icon) => {
       icon._scale = icon._targetScale;
@@ -322,6 +324,20 @@ export let Animator = class {
         translationY = appliedVector.y;
         icon._deltaVector = appliedVector;
       }
+
+      // fix jitterness
+      if (lockPosition && icon._p == 0) {
+        icon._positionCache = icon._positionCache || [];
+        if (icon._positionCache.length > 24) {
+          [translationX, translationY] =
+            icon._positionCache[icon._positionCache.length - 1];
+        } else {
+          icon._positionCache.push([translationX, translationY]);
+        }
+      } else {
+        icon._positionCache = null;
+      }
+
       icon._icon.translationX = (icon._icon.translationX + translationX) / 2;
       icon._icon.translationY = (icon._icon.translationY + translationY) / 2;
 
@@ -363,7 +379,7 @@ export let Animator = class {
           let mag = Math.abs(dst);
           let dir = Math.sign(dst);
           let accel = 0;
-          let pixelOverTime = ANIM_SIZE_PER_SEC;
+          let pixelOverTime = ANIM_SIZE_PER_SEC * slowDown;
           let deltaSize = pixelOverTime * dir * dt;
           let appliedSize = deltaSize;
           appliedSize += accel;

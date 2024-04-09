@@ -12,6 +12,9 @@ import Clutter from 'gi://Clutter';
 import St from 'gi://St';
 
 import { DockPosition } from './dock.js';
+import { Vector } from './vector.js';
+
+const ANIM_POSITION_PER_SEC = 1250 / 1000;
 
 export class DockItemMenu extends PopupMenu.PopupMenu {
   constructor(sourceActor, side = St.Side.TOP, params = {}) {
@@ -247,6 +250,20 @@ export const DockItemList = GObject.registerClass(
         l.y = first.y;
         l.rotation_angle_z = 0;
       });
+
+      for (let i = 0; i < children.length; i++) {
+        let target = children[i];
+        let wp = new Vector([first._x, first._y, 0]);
+        wp.rotation_angle_z = target._rotation_angle_z;
+        target._waypointsIn = [wp];
+        target._waypointsOut = [wp];
+        for (let j = 0; j <= i; j++) {
+          let wp = new Vector([children[j]._x, children[j]._y, 0]);
+          wp.rotation_angle_z = children[j]._rotation_angle_z;
+          target._waypointsIn.push(wp);
+          target._waypointsOut.unshift(wp);
+        }
+      }
     }
 
     slideOut() {
@@ -257,57 +274,74 @@ export const DockItemList = GObject.registerClass(
     }
 
     animate(dt) {
+      // let faster
+      for (let i = 0; i < 3; i++) {
+        // more precise animation
+        this._animate(dt / 2);
+        this._animate(dt / 2);
+      }
+    }
+
+    _animate(dt) {
       let dock = this.dock;
       let list = dock._list;
+      if (!list) return;
+
       list.opacity = 255;
 
       let target = list._target;
       let list_coef = 2;
 
+      let speed = ANIM_POSITION_PER_SEC;
+      let didAnimate = false;
+
+      list.translationX = target._icon.translationX;
+      list.translationY =
+        -((dock._iconSizeScaledDown / 4) * target._scale) +
+        target._icon.translationY;
+
       let tw = target.width * target._icon.scaleX;
       let th = target.height * target._icon.scaleY;
       let prev = null;
       list._box?.get_children().forEach((c) => {
-        if (!dock._list) return;
-
-        c.translationX = target._icon.translationX + tw / 8;
-        c.translationY =
-          -target._icon.scaleX * target._icon.height + target._icon.height;
-        c._label.translationX = -c._label.width;
-
-        let tx = c._x;
-        let ty = c._y;
-        let tz = c._rotation_angle_z;
-        let to = 255;
-        if (list._hidden) {
-          tx = c._ox;
-          ty = c._oy;
-          tz = c._oz;
-          to = 0;
-          if (prev) {
-            tx = (tx * 5 + prev.x) / 6;
-          }
-
-          //! frame count is not accurate ... check if the animatton has ended
-          if (list._hiddenFrames-- <= 0) {
-            dock._destroyList();
-          }
+        let waypoints = list._hidden ? c._waypointsOut : c._waypointsIn;
+        if (!waypoints || !waypoints.length) {
+          return;
         }
 
-        let list_coef_x = list_coef + 4;
-        let list_coef_z = list_coef + 6;
-        c._label.opacity =
-          (c._label.opacity * list_coef + to) / (list_coef + 1);
-        c.x = (c.x * list_coef_x + tx) / (list_coef_x + 1);
-        c.y = (c.y * list_coef + ty) / (list_coef + 1);
-        // if (list._hidden) {
-        c.opacity = c._label.opacity;
-        // }
-        c.rotation_angle_z =
-          (c.rotation_angle_z * list_coef_z + tz) / (list_coef_z + 1);
+        let posVector = new Vector([c.x, c.y]);
+        let wp = waypoints[0];
 
-        prev = c;
+        didAnimate = true;
+
+        let dir = wp.subtract(posVector);
+        let mag = dir.magnitude();
+        if (mag > 0) {
+          dir = dir.normalize();
+        }
+        let delta = dir.multiplyScalar(speed * dt);
+        posVector = posVector.add(delta);
+        if (delta.magnitude() > mag) {
+          waypoints.shift();
+          posVector = wp;
+        }
+        c.x = posVector.x;
+        c.y = posVector.y;
+        c._label.translationX = -c._label.width;
+        if (list._hidden) {
+          let opacity = c._label.opacity - 15;
+          if (opacity < 0) opacity = 0;
+          c._label.opacity = opacity;
+        } else {
+          c._label.opacity = 255;
+        }
+        c.rotation_angle_z = wp.rotation_angle_z;
       });
+
+      if (!didAnimate && list._hidden) {
+        console.log('destroy');
+        dock._destroyList();
+      }
 
       target._label.hide();
     }

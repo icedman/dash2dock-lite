@@ -17,7 +17,49 @@ import {
 } from 'resource:///org/gnome/shell/ui/dash.js';
 
 import { DockPosition } from './dock.js';
-import { DockItemMenu } from './dockItemMenu.js';
+
+//! move to dockitemMenu
+class DockItemMenu extends PopupMenu.PopupMenu {
+  constructor(sourceActor, side = St.Side.TOP, params = {}) {
+    if (Clutter.get_default_text_direction() === Clutter.TextDirection.RTL) {
+      if (side === St.Side.LEFT) side = St.Side.RIGHT;
+      else if (side === St.Side.RIGHT) side = St.Side.LEFT;
+    }
+
+    super(sourceActor, 0.5, side);
+
+    let { desktopApp } = params;
+    if (!desktopApp) return;
+
+    this.desktopApp = desktopApp;
+
+    this._newWindowItem = this.addAction('Open Window', () => {
+      let workspaceManager = global.workspace_manager;
+      let workspace = workspaceManager.get_active_workspace();
+      let ctx = global.create_app_launch_context(0, workspace);
+      desktopApp.launch([], ctx);
+      this._onActivate();
+    });
+
+    desktopApp.list_actions().forEach((action) => {
+      let name = desktopApp.get_action_name(action);
+      this.addAction(name, () => {
+        let workspaceManager = global.workspace_manager;
+        let workspace = workspaceManager.get_active_workspace();
+        let ctx = global.create_app_launch_context(0, workspace);
+        desktopApp.launch_action(action, ctx);
+        this.item.dock.extension.animate({ refresh: true });
+      });
+    });
+  }
+
+  _onActivate() {}
+
+  popup() {
+    this.open(BoxPointer.PopupAnimation.FULL);
+    this._menuManager.ignoreRelease();
+  }
+}
 
 const DockItemOverlay = GObject.registerClass(
   {},

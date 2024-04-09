@@ -692,7 +692,7 @@ export let Dock = GObject.registerClass(
           itemsLength: '_recentFilesLength',
           cleanup: (() => {
             this.extension.services._recentFiles = null;
-          }).bind(this)
+          }).bind(this),
         },
         {
           icon: '_downloadsIcon',

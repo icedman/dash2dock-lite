@@ -684,7 +684,9 @@ export let Dock = GObject.registerClass(
           folder: 'recent:///',
           //! find a way to avoid this
           path: `${this.extension.path}/apps/recents-dash2dock-lite.desktop`,
-          show: this.extension.documents_icon,
+          // not ready for prime time
+          // does not work on gnome 43 (debian)
+          show: false, // this.extension.documents_icon,
           prepare: this.extension.services.checkRecents.bind(
             this.extension.services
           ),

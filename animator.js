@@ -42,7 +42,7 @@ export let Animator = class {
     //! make time based
     let didFadeIn = false;
     if (dock.opacity < 255) {
-      let opacityPerSecond = 255 / 1000;
+      let opacityPerSecond = 255 / 500;
       didFadeIn = true;
       let dst = 255 - dock.opacity;
       let mag = Math.abs(dst);

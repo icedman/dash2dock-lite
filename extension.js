@@ -168,6 +168,8 @@ export default class Dash2DockLiteExt extends Extension {
     this._onCheckServices();
 
     this._updateAnimationFPS();
+    this._updateShrink();
+    this._updateIconResolution();
     this._updateStyle();
     this._updateBlurredBackground();
 
@@ -175,10 +177,9 @@ export default class Dash2DockLiteExt extends Extension {
     this._queryDisplay();
     this.startUp();
 
-    log('dash2dock-lite enabled');
+    console.log('dash2dock-lite enabled');
 
     Main.overview.d2dl = this;
-    Main.overview.Graphene = Graphene;
   }
 
   disable() {
@@ -246,8 +247,6 @@ export default class Dash2DockLiteExt extends Extension {
   startUp() {
     this.createTheDocks();
     this._loTimer.runOnce(() => {
-      this._updateShrink();
-      this._updateIconResolution();
       this._updateWidgetStyle();
       this.animate({ refresh: true });
       this.docks.forEach((dock) => {
@@ -712,7 +711,6 @@ export default class Dash2DockLiteExt extends Extension {
     } else {
       this.scale = 1.0; // * rescale_modifier;
     }
-
     if (this.animate_icons) {
       // this._animators().forEach((animator) => {
       //   animator.relayout();

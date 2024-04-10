@@ -214,7 +214,13 @@ export let Animator = class {
       // set_icon_size resizes the image... avoid changing per frame
       // set_size resizes the widget
       // icon._icon.set_size(iconSize * scale, iconSize * scale);
-      // icon._icon.set_scale(scale, scale);
+
+      //! png image makes this extremely slow -- this may be the cause of "lag" experienced by some users
+      //! some themes or apps use PNG instead of SVG... set_scale is apparently resource hog
+      if (icon._icon.scaleX != !scale) {
+        console.log(scale);
+        icon._icon.set_scale(scale, scale);
+      }
 
       if (!icon._pos) {
         return;
@@ -445,12 +451,14 @@ export let Animator = class {
         // commit position
         //-------------------
         if (!isNaN(p[0]) && !isNaN(p[1])) {
+
           let iconContainer = icon._icon.get_parent();
           if (vertical) {
-            iconContainer.translationX = adjustX / 1;
+            iconContainer.translationX = adjustX / 2;
           } else {
-            iconContainer.translationY = adjustY / 1;
+            iconContainer.translationY = adjustY / 2;
           }
+
           renderer.set_position(
             p[0] + adjustX + icon._icon.translationX - renderOffset[0],
             p[1] + adjustY + icon._icon.translationY - renderOffset[1]

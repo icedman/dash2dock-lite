@@ -139,8 +139,8 @@ export const DockItemBadgeOverlay = GObject.registerClass(
         options[extension.notification_badge_style];
       let notification_badge_color = extension.notification_badge_color;
 
-      renderer.translationX = icon._icon.translationX;
-      renderer.translationY = icon._icon.translationY;
+      // renderer.translationX = icon._icon.translationX;
+      // renderer.translationY = icon._icon.translationY;
 
       renderer.set_state({
         count: noticesCount,

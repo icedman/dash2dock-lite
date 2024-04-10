@@ -283,14 +283,14 @@ export let Animator = class {
     let first = animateIcons[0];
     let last = animateIcons[animateIcons.length - 1];
 
-    let slowDown = !nearestIcon || !animated ? 0.75 : 1;
+    let slowDown = 1; // !nearestIcon || !animated ? 0.75 : 1;
     let lockPosition =
       didScale && first && last && first._p == 0 && last._p == 0;
 
     animateIcons.forEach((icon) => {
       // this fixes jittery hovered icon
       if (icon._targetScale > 1.9) icon._targetScale = 2;
-      
+
       icon._scale = icon._targetScale;
 
       //! make these computation more readable even if more verbose
@@ -456,14 +456,6 @@ export let Animator = class {
             p[1] + adjustY + icon._icon.translationY - renderOffset[1]
           );
           renderer.visible = true;
-          let target = icon._dot?.get_parent();
-          let badge = target?._badge;
-          if (badge) {
-            badge.set_position(
-              0,
-              (icon._icon.translationY / 2) * icon._icon.scaleX
-            );
-          }
         }
 
         //! todo... add placeholder opacity when dragging
@@ -518,20 +510,12 @@ export let Animator = class {
           noticesCount = appNotices.count;
         }
         // noticesCount = 1;
-        let target = icon._dot?.get_parent();
-        let badge = target?._badge;
-
-        if (icon._renderer && badge) {
-          badge.set_scale(icon._scale, icon._scale);
-          let pv = new Point();
-          pv.init(0.5, 1.0);
-          badge.pivot_point = pv;
-          badge.set_position(4, 0);
-        }
+        let target = dock.renderArea;
+        let badge = icon._badge;
 
         if (!badge && icon._appwell && target) {
           badge = new DockItemBadgeOverlay(new Dot(DOT_CANVAS_SIZE));
-          target._badge = badge;
+          icon._badge = badge;
           target.add_child(badge);
         }
         if (badge && noticesCount > 0) {
@@ -540,8 +524,12 @@ export let Animator = class {
             position: dock._position,
             vertical,
             extension: dock.extension,
-            scale: icon._scale,
           });
+
+          badge.x = icon._renderer.x + 4;
+          badge.y = icon._renderer.y - 8;
+          badge.set_scale(icon._scale, icon._scale);
+
           badge.show();
         } else {
           badge?.hide();
@@ -753,6 +741,18 @@ export let Animator = class {
     let container = appwell.get_parent();
     let icon = container._icon;
 
+    const translateDecor = (container, appwell) => {
+      if (container._renderer) {
+        container._renderer.translationY = appwell.translationY;
+      }
+      if (container._image) {
+        container._image.translationY = appwell.translationY;
+      }
+      if (container._badge) {
+        container._badge.translationY = appwell.translationY;
+      }
+    };
+
     let t = 250;
     let _frames = [
       {
@@ -765,11 +765,8 @@ export let Animator = class {
           } else {
             appwell.translation_y =
               dock._position == DockPosition.BOTTOM ? -res : res;
-
-            if (container._renderer) {
-              container._renderer.translationY = appwell.translationY;
-            }
           }
+          translateDecor(container, appwell);
         },
       },
       {
@@ -786,6 +783,7 @@ export let Animator = class {
               container._renderer.translationY = appwell.translationY;
             }
           }
+          translateDecor(container, appwell);
         },
       },
     ];
@@ -805,9 +803,7 @@ export let Animator = class {
         _duration: 10,
         _func: (f, s) => {
           appwell.translation_y = 0;
-          if (container._renderer) {
-            container._renderer.translationY = 0;
-          }
+          translateDecor(container, appwell);
         },
       },
     ]);

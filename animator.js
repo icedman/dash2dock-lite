@@ -544,7 +544,7 @@ export let Animator = class {
         icon._appwell.app.get_n_windows
       ) {
         let appCount = icon._appwell.app.get_n_windows();
-        appCount = 1;
+        // appCount = 1;
         let target = icon._dot?.get_parent();
         let dots = target?._dots;
         if (!dots && icon._appwell && target) {

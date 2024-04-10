@@ -609,7 +609,7 @@ export default class Dash2DockLiteExt extends Extension {
       this.services.enable();
     }
     this._updateStyle();
-    this.animate();
+    this.recreateAllDocks();
   }
 
   _onFocusWindow() {

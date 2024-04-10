@@ -376,15 +376,15 @@ export let Animator = class {
           renderer.icon_name = icon_name;
         } else {
           //! clone
-          if (icon._icon.gicon) {
-            let clone = true;
-            if (renderer.gicon && renderer.gicon.file.get_path() == icon._icon.file.get_path()) {
-              clone = false;
-            }
-            if (clone) {
-              renderer.gicon = new Gio.FileIcon({ file: icon._icon.file });
-            }
-          }
+          // if (icon._icon.gicon) {
+          //   let clone = true;
+          //   if (renderer.gicon && renderer.gicon.file.get_path() == icon._icon.file.get_path()) {
+          //     clone = false;
+          //   }
+          //   if (clone) {
+          //     renderer.gicon = new Gio.FileIcon({ file: icon._icon.file });
+          //   }
+          // }
           renderer.gicon = icon._icon.gicon;
         }
 

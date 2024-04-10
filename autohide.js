@@ -3,6 +3,12 @@
 import Meta from 'gi://Meta';
 
 import { DockPosition } from './dock.js';
+import {
+  get_distance_sqr,
+  get_distance,
+  isInRect,
+  isOverlapRect,
+} from './utils.js';
 
 const DEBOUNCE_HIDE_TIMEOUT = 120;
 const PRESSURE_SENSE_DISTANCE = 40;
@@ -206,10 +212,7 @@ export let AutoHide = class {
     }
 
     // within the dash
-    if (
-      this.dock._isWithinDash(pointer) ||
-      this.dock._isInRect(arect, pointer)
-    ) {
+    if (this.dock._isWithinDash(pointer) || isInRect(arect, pointer)) {
       return false;
     }
 
@@ -226,6 +229,7 @@ export let AutoHide = class {
     });
     windows = windows.filter((w) => w.can_close());
     windows = windows.filter((w) => w.get_monitor() == monitor.index);
+    // windows = windows.filter((w) => !w.is_override_redirect());
     let workspace = global.workspace_manager.get_active_workspace_index();
     windows = windows.filter(
       (w) =>
@@ -245,7 +249,7 @@ export let AutoHide = class {
       let frame = w.get_frame_rect();
       let win = [frame.x, frame.y, frame.width, frame.height];
 
-      if (this.dock._isOverlapRect(dock, win)) {
+      if (isOverlapRect(dock, win)) {
         isOverlapped = true;
       }
     });

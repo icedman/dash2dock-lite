@@ -10,8 +10,13 @@ import { DockPosition } from './dock.js';
 import { Vector } from './vector.js';
 
 import { DockItemDotsOverlay, DockItemBadgeOverlay } from './dockItems.js';
-
 import { Bounce, Linear } from './effects/easing.js';
+import {
+  get_distance_sqr,
+  get_distance,
+  isInRect,
+  isOverlapRect,
+} from './utils.js';
 
 const ANIM_POSITION_PER_SEC = 450 / 1000;
 const ANIM_SIZE_PER_SEC = 250 / 1000;
@@ -39,7 +44,6 @@ export let Animator = class {
     dock.layout();
 
     // opacity
-    //! make time based
     let didFadeIn = false;
     if (dock.opacity < 255) {
       let opacityPerSecond = 255 / 500;
@@ -107,7 +111,7 @@ export let Animator = class {
       let bposcenter = [...pos];
       bposcenter[0] += iconCenterOffset;
       bposcenter[1] += iconCenterOffset;
-      let dst = dock._get_distance_sqr(pointer, bposcenter);
+      let dst = get_distance_sqr(pointer, bposcenter);
 
       if (
         isWithin &&
@@ -641,6 +645,7 @@ export let Animator = class {
       });
 
       // allied areas
+      //! this should be at the layout -- make independent of background
       // struts
       if (vertical) {
         dock.struts.width =
@@ -667,27 +672,6 @@ export let Animator = class {
           dock.struts.y = dock.y + dock.height - dock.struts.height;
         } else {
           dock.struts.y = dock.y;
-        }
-      }
-
-      // dwell
-      //! add scaleFactor?
-      let dwellHeight = 4;
-      if (vertical) {
-        dock.dwell.width = dwellHeight;
-        dock.dwell.height = dock.height;
-        dock.dwell.x = m.x;
-        dock.dwell.y = dock.y;
-        if (dock._position == DockPosition.RIGHT) {
-          dock.dwell.x = m.x + m.width - dwellHeight;
-        }
-      } else {
-        dock.dwell.width = dock.width;
-        dock.dwell.height = dwellHeight;
-        dock.dwell.x = dock.x;
-        dock.dwell.y = dock.y + dock.height - dock.dwell.height;
-        if (dock._position == DockPosition.TOP) {
-          dock.dwell.y = dock.y;
         }
       }
     }

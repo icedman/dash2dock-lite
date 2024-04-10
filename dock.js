@@ -19,6 +19,12 @@ import { DockIcon, DockItemContainer, DockBackground } from './dockItems.js';
 import { DockItemList } from './dockItemMenu.js';
 import { AutoHide } from './autohide.js';
 import { Animator } from './animator.js';
+import {
+  get_distance_sqr,
+  get_distance,
+  isInRect,
+  isOverlapRect,
+} from './utils.js';
 
 const Point = Graphene.Point;
 
@@ -54,6 +60,7 @@ export let Dock = GObject.registerClass(
         clip_to_allocation: true,
         x_align: Clutter.ActorAlign.CENTER,
         y_align: Clutter.ActorAlign.CENTER,
+        offscreen_redirect: Clutter.OffscreenRedirect.ALWAYS
       });
 
       this.extension = params.extension;
@@ -66,6 +73,7 @@ export let Dock = GObject.registerClass(
 
       this.renderArea = new St.Widget({
         name: 'DockRenderArea',
+        offscreen_redirect: Clutter.OffscreenRedirect.ALWAYS
       });
       this.renderArea.opacity = 0;
       this.add_child(this.renderArea);
@@ -87,11 +95,13 @@ export let Dock = GObject.registerClass(
 
       this.struts = new St.Widget({
         name: 'DockStruts',
+        offscreen_redirect: Clutter.OffscreenRedirect.ALWAYS
       });
       this.dwell = new St.Widget({
         name: 'DockDwell',
         reactive: true,
         track_hover: true,
+        offscreen_redirect: Clutter.OffscreenRedirect.ALWAYS
       });
       this.dwell.connectObject(
         'motion-event',
@@ -308,19 +318,19 @@ export let Dock = GObject.registerClass(
       Main.layoutManager.addChrome(this.struts, {
         affectsStruts: !this.extension.autohide_dash,
         affectsInputRegion: true,
-        trackFullscreen: true,
+        trackFullscreen: false,
       });
 
       Main.layoutManager.addChrome(this, {
         affectsStruts: false,
         affectsInputRegion: false,
-        trackFullscreen: true,
+        trackFullscreen: false,
       });
 
       Main.layoutManager.addChrome(this.dwell, {
         affectsStruts: false,
         affectsInputRegion: false,
-        trackFullscreen: true,
+        trackFullscreen: false,
       });
 
       this._onChrome = true;
@@ -894,6 +904,27 @@ export let Dock = GObject.registerClass(
 
       this._iconSizeScaledDown = iconSize;
       this._scaledDown = scaleDown;
+
+      // dwell
+      //! add scaleFactor?
+      let dwellHeight = 2;
+      if (vertical) {
+        this.dwell.width = dwellHeight;
+        this.dwell.height = this.height;
+        this.dwell.x = m.x;
+        this.dwell.y = this.y;
+        if (this._position == DockPosition.RIGHT) {
+          this.dwell.x = m.x + m.width - dwellHeight;
+        }
+      } else {
+        this.dwell.width = this.width;
+        this.dwell.height = dwellHeight;
+        this.dwell.x = this.x;
+        this.dwell.y = this.y + this.height - this.dwell.height;
+        if (this._position == DockPosition.TOP) {
+          this.dwell.y = this.y;
+        }
+      }
     }
 
     preview() {
@@ -914,40 +945,6 @@ export let Dock = GObject.registerClass(
     }
 
     //! move these generic functions outside of this class
-    _get_distance_sqr(pos1, pos2) {
-      let a = pos1[0] - pos2[0];
-      let b = pos1[1] - pos2[1];
-      return a * a + b * b;
-    }
-
-    _get_distance(pos1, pos2) {
-      return Math.sqrt(this._get_distance_sqr(pos1, pos2));
-    }
-
-    _isOverlapRect(r1, r2) {
-      let [r1x, r1y, r1w, r1h] = r1;
-      let [r2x, r2y, r2w, r2h] = r2;
-      // are the sides of one rectangle touching the other?
-      if (
-        r1x + r1w >= r2x && // r1 right edge past r2 left
-        r1x <= r2x + r2w && // r1 left edge past r2 right
-        r1y + r1h >= r2y && // r1 top edge past r2 bottom
-        r1y <= r2y + r2h
-      ) {
-        // r1 bottom edge past r2 top
-        return true;
-      }
-      return false;
-    }
-
-    _isInRect(r, p, pad) {
-      let [x1, y1, w, h] = r;
-      let x2 = x1 + w;
-      let y2 = y1 + h;
-      let [px, py] = p;
-      return px + pad >= x1 && px - pad < x2 && py + pad >= y1 && py - pad < y2;
-    }
-
     _isWithinDash(p) {
       if (this._hidden) {
         return false;
@@ -955,7 +952,7 @@ export let Dock = GObject.registerClass(
       if (this._hoveredIcon) return true;
       let xy = this.struts.get_transformed_position();
       let wh = [this.struts.width, this.struts.height];
-      if (this._isInRect([xy[0], xy[1], wh[0], wh[1]], p, 20)) {
+      if (isInRect([xy[0], xy[1], wh[0], wh[1]], p, 20)) {
         return true;
       }
       return false;

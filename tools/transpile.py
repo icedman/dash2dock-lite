@@ -58,6 +58,7 @@ importMap = [
     [ "import { Dot }", "const Dot = Me.imports.apps.dot.Dot;" ],
     [ "import { PrefKeys }", "let { PrefKeys } = Me.imports.preferences.prefKeys;" ],
     [ "import { getPointer, warpPointer }", "const { getPointer, warpPointer } = Me.imports.utils;" ],
+    [ "import {get_distance_sqr,get_distance,isInRect,isOverlapRect", "const { get_distance_sqr, get_distance,isInRect, isOverlapRect } = Me.imports.utils;" ],
     [ "import {DashIcon,DashItemContainer", "const { DashIcon, DashItemContainer } = imports.ui.dash;" ],
     [ "from '../drawing.js'", "const Drawing = Me.imports.drawing.Drawing;" ],
     [ "from './dockItems.js'", "const { DockItemDotsOverlay, DockItemBadgeOverlay, DockItemContainer, DockBackground } = Me.imports.dockItems;" ],

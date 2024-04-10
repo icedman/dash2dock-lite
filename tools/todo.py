@@ -32,6 +32,7 @@ def dump(f):
         if "//!" in l:
             l = l.replace("*", "-")
             l = l.replace("_", "-")
+            l = l.replace("---", "***")
             content = content + "* "
             content = content + str(lineNo)
             content = content + ": "

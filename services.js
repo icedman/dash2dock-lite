@@ -128,7 +128,7 @@ export const Services = class {
       this
     );
 
-    //! these are blocking calls. async these.
+    //! ***services startup function are blocking calls. async these***
     this.checkTrash();
     this._debounceCheckDownloads();
 

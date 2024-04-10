@@ -376,6 +376,15 @@ export let Animator = class {
           renderer.icon_name = icon_name;
         } else {
           //! clone
+          if (icon._icon.gicon) {
+            let clone = true;
+            if (renderer.gicon && renderer.gicon.file.get_path() == icon._icon.file.get_path()) {
+              clone = false;
+            }
+            if (clone) {
+              renderer.gicon = new Gio.FileIcon({ file: icon._icon.file });
+            }
+          }
           renderer.gicon = icon._icon.gicon;
         }
 
@@ -496,6 +505,7 @@ export let Animator = class {
       }
 
       // badges
+      //! ***badge location at scaling is messed up***
       {
         let appNotices = icon._appwell
           ? dock.extension.services._appNotices[icon._appwell.app.get_id()]
@@ -536,6 +546,7 @@ export let Animator = class {
       }
 
       // dots
+      //! ***dot requires a little more aligning at dock position other than bottom***
       if (
         icon._appwell &&
         icon._appwell.app &&
@@ -715,7 +726,6 @@ export let Animator = class {
     //---------------------
     // animate the list
     //---------------------
-    //! use time based animation
     if (dock._list && dock._list.visible && dock._list._target) {
       dock._list.animate(dt);
       didScale = true;

@@ -121,6 +121,8 @@ export let Dock = GObject.registerClass(
       this.remove_child(this.dash);
       this.add_child(this.createDash());
       this._icons = null;
+      this._recentFilesIcon = null;
+      this._downloadsIcon = null;
       this._beginAnimation();
     }
 

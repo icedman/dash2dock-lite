@@ -254,9 +254,9 @@ export let Animator = class {
     // re-center to hovered icon
     dock._hoveredIcon = hoveredIcon;
     let TRANSLATE_COEF = 24;
-    if (hoveredIcon) {
-      hoveredIcon._targetScale += 0.1;
-      let adjust = hoveredIcon._translate / 2;
+    if (nearestIcon) {
+      nearestIcon._targetScale += 0.1;
+      let adjust = nearestIcon._translate / 2;
       animateIcons.forEach((icon) => {
         if (icon._scale > 1) {
           let o = -adjust * (2 - icon._scale);
@@ -544,7 +544,7 @@ export let Animator = class {
         icon._appwell.app.get_n_windows
       ) {
         let appCount = icon._appwell.app.get_n_windows();
-        // appCount = 1;
+        appCount = 1;
         let target = icon._dot?.get_parent();
         let dots = target?._dots;
         if (!dots && icon._appwell && target) {

@@ -576,6 +576,7 @@ export const Services = class {
     // added devices will subsequently be on mounted events
   }
 
+  //! this is out of place - services should only do background process - no rendering
   updateIcon(item, settings) {
     if (!item) {
       return;
@@ -611,14 +612,14 @@ export const Services = class {
         }
         if (clock) {
           clock._icon = icon;
-          clock.width = item._icon.width;
-          clock.height = item._icon.height;
-          let toScale = item._scale;
-          clock.set_scale(toScale, toScale);
+          clock.width = item._renderer.width * item._renderer.scaleX;
+          clock.height = clock.width;
+          // let toScale = item._scale;
+          // clock.set_scale(toScale, toScale);
           let canvasScale = clock.width / (clock._canvas.width + 2);
           clock._canvas.set_scale(canvasScale, canvasScale);
-          clock.x = item._renderer.x - 1 * scaleFactor;
-          clock.y = item._renderer.y - 1 * scaleFactor;
+          clock.x = item._renderer.x;
+          clock.y = item._renderer.y;
           clock.opacity = item._renderer.opacity;
           clock.show();
           item._renderer.visible = !clock.shouldHideIcon();
@@ -643,14 +644,14 @@ export const Services = class {
           dock.renderArea.add_child(calendar);
         }
         if (calendar) {
-          calendar.width = item._icon.width;
-          calendar.height = item._icon.height;
-          let toScale = item._scale;
-          calendar.set_scale(toScale, toScale);
+          calendar.width = item._renderer.width * item._renderer.scaleX;
+          calendar.height = calendar.width;
+          // let toScale = item._scale;
+          // calendar.set_scale(toScale, toScale);
           let canvasScale = calendar.width / (calendar._canvas.width + 2);
           calendar._canvas.set_scale(canvasScale, canvasScale);
-          calendar.x = item._renderer.x - 1 * scaleFactor;
-          calendar.y = item._renderer.y - 1 * scaleFactor;
+          calendar.x = item._renderer.x;
+          calendar.y = item._renderer.y;
           calendar.opacity = item._renderer.opacity;
           calendar.show();
           item._renderer.visible = !calendar.shouldHideIcon();

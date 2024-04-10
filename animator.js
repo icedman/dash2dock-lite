@@ -3,6 +3,7 @@
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import St from 'gi://St';
 import Graphene from 'gi://Graphene';
+import Clutter from 'gi://Clutter';
 const Point = Graphene.Point;
 
 import { Dot } from './apps/dot.js';
@@ -212,7 +213,8 @@ export let Animator = class {
       //! what is the difference between set_size and set_icon_size? and effects
       // set_icon_size resizes the image... avoid changing per frame
       // set_size resizes the widget
-      // icon._icon.set_size(iconSize, iconSize);
+      // icon._icon.set_size(iconSize * scale, iconSize * scale);
+      icon._icon.set_scale(scale, scale);
 
       if (!icon._pos) {
         return;
@@ -297,7 +299,7 @@ export let Animator = class {
 
       let translationX = icon._translate;
       let translationY = icon._translateRise * rdir;
-      if (dock.isVertical()) {
+      if (vertical) {
         translationX = icon._translateRise * rdir;
         translationY = icon._translate;
       }
@@ -360,6 +362,7 @@ export let Animator = class {
           let renderer = new St.Icon({
             icon_name: icon_name,
             style_class: 'renderer_icon',
+            reactive: true,
           });
           renderer.opacity = 0;
           icon._renderer = renderer;
@@ -419,7 +422,7 @@ export let Animator = class {
 
         if (targetSize > icon.height) {
           let rise = (targetSize - icon.height) * 0.5;
-          if (dock.isVertical()) {
+          if (vertical) {
             adjustX += rise * (dock._position == 'left' ? 1 : -1);
           } else {
             adjustY += rise * (dock._position == 'bottom' ? -1 : 1);
@@ -430,6 +433,12 @@ export let Animator = class {
         // commit position
         //-------------------
         if (!isNaN(p[0]) && !isNaN(p[1])) {
+          let iconContainer = icon._icon.get_parent();
+          if (vertical) {
+            iconContainer.translationX = adjustX / 2;
+          } else {
+            iconContainer.translationY = adjustY / 2;
+          }
           renderer.set_position(
             p[0] + adjustX + icon._icon.translationX - renderOffset[0],
             p[1] + adjustY + icon._icon.translationY - renderOffset[1]

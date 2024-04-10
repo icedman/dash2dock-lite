@@ -60,7 +60,7 @@ export let Dock = GObject.registerClass(
         clip_to_allocation: true,
         x_align: Clutter.ActorAlign.CENTER,
         y_align: Clutter.ActorAlign.CENTER,
-        offscreen_redirect: Clutter.OffscreenRedirect.ALWAYS
+        offscreen_redirect: Clutter.OffscreenRedirect.ALWAYS,
       });
 
       this.extension = params.extension;
@@ -73,7 +73,7 @@ export let Dock = GObject.registerClass(
 
       this.renderArea = new St.Widget({
         name: 'DockRenderArea',
-        offscreen_redirect: Clutter.OffscreenRedirect.ALWAYS
+        offscreen_redirect: Clutter.OffscreenRedirect.ALWAYS,
       });
       this.renderArea.opacity = 0;
       this.add_child(this.renderArea);
@@ -95,13 +95,13 @@ export let Dock = GObject.registerClass(
 
       this.struts = new St.Widget({
         name: 'DockStruts',
-        offscreen_redirect: Clutter.OffscreenRedirect.ALWAYS
+        offscreen_redirect: Clutter.OffscreenRedirect.ALWAYS,
       });
       this.dwell = new St.Widget({
         name: 'DockDwell',
         reactive: true,
         track_hover: true,
-        offscreen_redirect: Clutter.OffscreenRedirect.ALWAYS
+        offscreen_redirect: Clutter.OffscreenRedirect.ALWAYS,
       });
       this.dwell.connectObject(
         'motion-event',
@@ -453,7 +453,8 @@ export let Dock = GObject.registerClass(
       }
 
       if (c._icon) {
-        c._icon.opacity = 0; // renderer takes care of displaying an icon
+        // renderer takes care of displaying an icon
+        c._icon.opacity = 0;
         c._label = c.label;
         // limitation: vertical layout cannot do apps_icon_front
         if (

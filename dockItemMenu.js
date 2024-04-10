@@ -241,7 +241,7 @@ export const DockItemList = GObject.registerClass(
       let list = dock._list;
       if (!list) return;
 
-      list.opacity = 255;
+      // list.opacity = 255;
 
       let target = list._target;
       let list_coef = 2;
@@ -289,8 +289,16 @@ export const DockItemList = GObject.registerClass(
         } else {
           c._label.opacity = 255;
         }
-        c.rotation_angle_z = wp.rotation_angle_z;
+        c.rotation_angle_z = (c.rotation_angle_z + wp.rotation_angle_z) / 2;
       });
+
+      if (list._hidden) {
+        let opacity = list.opacity - 2;
+        if (opacity < 0) opacity = 0;
+        list.opacity = opacity;
+      } else {
+        list.opacity = 255;
+      }
 
       if (!didAnimate && list._hidden) {
         console.log('destroy');

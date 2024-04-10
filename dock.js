@@ -603,10 +603,10 @@ export let Dock = GObject.registerClass(
         let icon = c._icon;
         if (icon && !icon._destroyConnectId) {
           icon._destroyConnectId = icon.connect('destroy', () => {
-            if (c._renderer) {
+            if (c._renderer && c._renderer.get_parent()) {
               c._renderer.get_parent().remove_child(c._renderer);
             }
-            if (c._image) {
+            if (c._image && c._renderer.get_parent()) {
               c._image.get_parent().remove_child(c._image);
             }
             this._icons = null;

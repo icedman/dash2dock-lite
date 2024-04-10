@@ -352,7 +352,7 @@ export let Animator = class {
       //--------------
       // dock.renderArea.opacity = 100;
       {
-        let icon_name = icon._icon.icon_name || 'file';
+        let icon_name = icon._icon.icon_name;
         let didCreate = false;
         if (!icon._renderer) {
           didCreate = true;
@@ -369,7 +369,12 @@ export let Animator = class {
         }
 
         let renderer = icon._renderer;
-        renderer.icon_name = icon_name;
+        if (icon_name) {
+          renderer.icon_name = icon_name;
+        } else {
+          //! clone
+          renderer.gicon = icon._icon.gicon;
+        }
 
         //-------------------
         // animate scaling at renderer

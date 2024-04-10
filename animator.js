@@ -214,7 +214,7 @@ export let Animator = class {
       // set_icon_size resizes the image... avoid changing per frame
       // set_size resizes the widget
       // icon._icon.set_size(iconSize * scale, iconSize * scale);
-      icon._icon.set_scale(scale, scale);
+      // icon._icon.set_scale(scale, scale);
 
       if (!icon._pos) {
         return;
@@ -288,6 +288,9 @@ export let Animator = class {
       didScale && first && last && first._p == 0 && last._p == 0;
 
     animateIcons.forEach((icon) => {
+      // this fixes jittery hovered icon
+      if (icon._targetScale > 1.9) icon._targetScale = 2;
+      
       icon._scale = icon._targetScale;
 
       //! make these computation more readable even if more verbose
@@ -444,9 +447,9 @@ export let Animator = class {
         if (!isNaN(p[0]) && !isNaN(p[1])) {
           let iconContainer = icon._icon.get_parent();
           if (vertical) {
-            iconContainer.translationX = adjustX / 2;
+            iconContainer.translationX = adjustX / 1;
           } else {
-            iconContainer.translationY = adjustY / 2;
+            iconContainer.translationY = adjustY / 1;
           }
           renderer.set_position(
             p[0] + adjustX + icon._icon.translationX - renderOffset[0],

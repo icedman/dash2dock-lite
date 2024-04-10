@@ -461,10 +461,30 @@ export let Animator = class {
 
       //! make more readable
       let flags = {
-        bottom: { x: 0.5, y: 1, lx: 0, ly: 0.5 * icon._targetScale },
-        top: { x: 0.5, y: 0, lx: 0, ly: -1.5 * icon._targetScale },
-        left: { x: 0, y: 0.5, lx: -1.25 * icon._targetScale, ly: -1.25 },
-        right: { x: 1, y: 0.5, lx: 1.5 * icon._targetScale, ly: -1.25 },
+        bottom: {
+          x: 0.5,
+          y: 1,
+          lx: 0,
+          ly: 0.5 * icon._targetScale * scaleFactor,
+        },
+        top: {
+          x: 0.5,
+          y: 0,
+          lx: 0,
+          ly: -1.5 * icon._targetScale * scaleFactor,
+        },
+        left: {
+          x: 0,
+          y: 0.5,
+          lx: -1.25 * icon._targetScale * scaleFactor,
+          ly: -1.25,
+        },
+        right: {
+          x: 1,
+          y: 0.5,
+          lx: 1.5 * icon._targetScale * scaleFactor,
+          ly: -1.25,
+        },
       };
 
       let posFlags = flags[dock._position];

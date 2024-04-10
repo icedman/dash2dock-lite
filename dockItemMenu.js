@@ -79,10 +79,6 @@ export const DockItemList = GObject.registerClass(
     }
 
     static createItem(dock, f) {
-      console.log('----------------');
-      console.log(f.icon);
-      console.log('----------------');
-
       let target = dock.createItem(f.path);
       target._onClick = async () => {
         if (dock._position != DockPosition.BOTTOM) {

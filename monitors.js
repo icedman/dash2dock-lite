@@ -43,14 +43,13 @@ export const MonitorsConfig = GObject.registerClass(
         this._updateResources()
       );
 
-      this._primaryMonitor = null;
-      this._monitors = [];
-      this._logicalMonitors = [];
-
       this._updateResources();
     }
 
     _updateResources() {
+      this._primaryMonitor = null;
+      this._monitors = [];
+      this._logicalMonitors = [];
       this._monitorsConfigProxy.GetCurrentStateRemote((resources, err) => {
         if (err) {
           logError(err);
@@ -104,6 +103,8 @@ export const MonitorsConfig = GObject.registerClass(
           this._primaryMonitor.active = true;
         }
 
+        // console.log(this._monitors);
+        // console.log(this._logicalMonitors);
         this.emit('updated');
       });
     }

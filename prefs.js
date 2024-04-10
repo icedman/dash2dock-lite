@@ -315,6 +315,7 @@ export default class Preferences extends ExtensionPreferences {
     list.append('Primary Monitor');
     for (let i = 0; i < count; i++) {
       let m = monitors[i];
+      if (!m.active) continue;
       list.append(m.displayName);
     }
     this._builder.get_object('preferred-monitor').set_model(list);

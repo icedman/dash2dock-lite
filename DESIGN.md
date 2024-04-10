@@ -29,11 +29,11 @@ Contains the Dock and other renderer. This will clip the widgets to the assigned
 
 Dock allows any widget to be docked at any edge of the screen.
 
-* may be assigned a child or multiple children
+* may be assigned a child
 * may be assigned to a monitor
 * has vertical and horizontal layout
 * handles animation loop (not the rendering)
-* handles autohide
+* handles autohide (via translationX,Y)
 
 ```js
 class Dock {

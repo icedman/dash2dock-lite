@@ -214,7 +214,12 @@ export let Animator = class {
       // set_icon_size resizes the image... avoid changing per frame
       // set_size resizes the widget
       // icon._icon.set_size(iconSize * scale, iconSize * scale);
-      // icon._icon.set_scale(scale, scale);
+
+      if (icon._icon.gicon.file != null) {
+        // skip scaling image files!... too costly
+      } else {
+        icon._icon.set_scale(scale, scale);
+      }
 
       if (!icon._pos) {
         return;
@@ -447,9 +452,9 @@ export let Animator = class {
         if (!isNaN(p[0]) && !isNaN(p[1])) {
           let iconContainer = icon._icon.get_parent();
           if (vertical) {
-            iconContainer.translationX = adjustX / 1;
+            iconContainer.translationX = adjustX / 2;
           } else {
-            iconContainer.translationY = adjustY / 1;
+            iconContainer.translationY = adjustY / 2;
           }
           renderer.set_position(
             p[0] + adjustX + icon._icon.translationX - renderOffset[0],

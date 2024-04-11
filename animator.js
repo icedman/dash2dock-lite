@@ -104,7 +104,13 @@ export let Animator = class {
 
     if (this._prevPointer && isWithin) {
       let dst = get_distance_sqr(pointer, this._prevPointer);
-      if (dst < 10) return;
+      if (dst < 10) {
+        if (this._frameSkip++ > 20) {
+          return;
+        }
+      }
+    } else {
+      this._frameSkip = 0;
     }
 
     this._prevPointer = pointer;

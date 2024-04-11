@@ -102,6 +102,13 @@ export let Animator = class {
     let hitArea = iconSize * ANIM_ICON_HIT_AREA * scaleFactor;
     hitArea *= hitArea;
 
+    if (this._prevPointer && isWithin) {
+      let dst = get_distance_sqr(pointer, this._prevPointer);
+      if (dst < 10) return;
+    }
+
+    this._prevPointer = pointer;
+
     let idx = 0;
     animateIcons.forEach((icon) => {
       let pos = icon.get_transformed_position();

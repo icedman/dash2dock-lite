@@ -480,7 +480,7 @@ export default class Dash2DockLiteExt extends Extension {
     this._settingsKeys.disconnectSettings();
     this._settingsKeys = null;
 
-    this._desktopSettings.disconnectObject();
+    this._desktopSettings.disconnectObject(this);
     this._desktopSettings = null;
   }
 

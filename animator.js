@@ -102,6 +102,19 @@ export let Animator = class {
     let hitArea = iconSize * ANIM_ICON_HIT_AREA * scaleFactor;
     hitArea *= hitArea;
 
+    if (this._prevPointer && isWithin) {
+      let dst = get_distance_sqr(pointer, this._prevPointer);
+      if (dst < 10) {
+        if (this._frameSkip++ > 20) {
+          return;
+        }
+      }
+    } else {
+      this._frameSkip = 0;
+    }
+
+    this._prevPointer = pointer;
+
     let idx = 0;
     animateIcons.forEach((icon) => {
       let pos = icon.get_transformed_position();
@@ -217,8 +230,9 @@ export let Animator = class {
 
       //! png image makes this extremely slow -- this may be the cause of "lag" experienced by some users
       //! some themes or apps use PNG instead of SVG... set_scale is apparently resource hog
-      if (icon._icon.scaleX != !scale) {
-        console.log(scale);
+      if (icon._icon.gicon.file != null) {
+        // skip scaling image files!... too costly
+      } else {
         icon._icon.set_scale(scale, scale);
       }
 

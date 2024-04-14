@@ -474,7 +474,7 @@ export const Services = class {
 
     try {
       await trySpawnCommandLine(
-        `/usr/bin/gjs "${this.extension.path}/apps/recents.js"`
+        `/usr/bin/env -S gjs -m "${this.extension.path}/apps/recents.js"`
       );
     } catch (err) {
       console.log(err);

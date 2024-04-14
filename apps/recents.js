@@ -1,8 +1,14 @@
-// imports.gi.versions.Gtk = '3.0';
+#!/usr/bin/env -S gjs -m
 
-const Gtk = imports.gi.Gtk;
-const Gio = imports.gi.Gio;
-const GLib = imports.gi.GLib;
+imports.gi.versions.Gtk = '3.0';
+
+// const Gtk = imports.gi.Gtk;
+// const Gio = imports.gi.Gio;
+// const GLib = imports.gi.GLib;
+
+import Gtk from 'gi://Gtk';
+import Gio from 'gi://Gio';
+import GLib from 'gi://Graphene';
 
 let limit = 40;
 const recents = Gtk.RecentManager.get_default();

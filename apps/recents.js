@@ -1,12 +1,12 @@
 #!/usr/bin/env -S gjs -m
 
-imports.gi.versions.Gtk = '3.0';
+//imports.gi.versions.Gtk = '3.0';
 
 // const Gtk = imports.gi.Gtk;
 // const Gio = imports.gi.Gio;
 // const GLib = imports.gi.GLib;
 
-import Gtk from 'gi://Gtk';
+import Gtk from 'gi://Gtk?version=4.0';
 import Gio from 'gi://Gio';
 import GLib from 'gi://Graphene';
 

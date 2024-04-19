@@ -3,6 +3,6 @@ Version=1.0
 Terminal=false
 Type=Application
 Name=Downloads
-Exec=xdg-open ~/Downloads
+Exec=xdg-open $(xdg-user-dir DOWNLOAD)
 Icon=folder-downloads
 StartupWMClass=downloads-dash2dock-lite

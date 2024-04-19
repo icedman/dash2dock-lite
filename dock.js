@@ -185,7 +185,7 @@ export let Dock = GObject.registerClass(
       this.autohider._debounceCheckHide();
       return Clutter.EVENT_PROPAGATE;
     }
-    
+
     _onClock() {
       this._clock?.redraw();
     }

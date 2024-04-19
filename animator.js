@@ -102,6 +102,7 @@ export let Animator = class {
     let hitArea = iconSize * ANIM_ICON_HIT_AREA * scaleFactor;
     hitArea *= hitArea;
 
+    /*
     if (this._prevPointer && isWithin) {
       let dst = get_distance_sqr(pointer, this._prevPointer);
       if (dst < 10) {
@@ -112,8 +113,8 @@ export let Animator = class {
     } else {
       this._frameSkip = 0;
     }
-
     this._prevPointer = pointer;
+    */
 
     let idx = 0;
     animateIcons.forEach((icon) => {
@@ -465,7 +466,6 @@ export let Animator = class {
         // commit position
         //-------------------
         if (!isNaN(p[0]) && !isNaN(p[1])) {
-
           let iconContainer = icon._icon.get_parent();
           if (vertical) {
             iconContainer.translationX = adjustX / 2;

@@ -192,6 +192,8 @@ export const DockItemList = GObject.registerClass(
       });
 
       let first = children[0];
+      let fx = first.x;
+      let fy = first.y;
       children.forEach((l) => {
         l._ox = first.x;
         l._oy = first.y;
@@ -217,6 +219,9 @@ export const DockItemList = GObject.registerClass(
           target._waypointsIn.push(wp);
           target._waypointsOut.unshift(wp);
         }
+        target._waypointsOut.push(
+          new Vector([tp[0] - this.x, tp[1] - this.y, 0])
+        );
       }
     }
 
@@ -237,6 +242,7 @@ export const DockItemList = GObject.registerClass(
     }
 
     _animate(dt) {
+      // dt /= 8;
       let dock = this.dock;
       let list = dock._list;
       if (!list) return;
@@ -261,6 +267,10 @@ export const DockItemList = GObject.registerClass(
         let waypoints = list._hidden ? c._waypointsOut : c._waypointsIn;
         if (!waypoints || !waypoints.length) {
           return;
+        }
+
+        if (list._hidden) {
+          c._icon.reactive = false;
         }
 
         let posVector = new Vector([c.x, c.y]);
@@ -289,7 +299,8 @@ export const DockItemList = GObject.registerClass(
         } else {
           c._label.opacity = 255;
         }
-        c.rotation_angle_z = (c.rotation_angle_z + wp.rotation_angle_z) / 2;
+        c.rotation_angle_z =
+          (c.rotation_angle_z + (wp.rotation_angle_z || 0)) / 2;
       });
 
       if (list._hidden) {

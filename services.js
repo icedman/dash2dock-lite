@@ -109,7 +109,12 @@ export const Services = class {
       this
     );
 
-    this._downloadsDir = Gio.File.new_for_path('Downloads');
+    if (this._downloadsUserDir) {
+      this._downloadsDir = Gio.File.new_for_path(this._downloadsUserDir);
+    } else {
+      // fallback
+      this._downloadsDir = Gio.File.new_for_path('Downloads');
+    }
     this._downloadsMonitor = this._downloadsDir.monitor(
       Gio.FileMonitorFlags.WATCH_MOVES,
       null
@@ -127,6 +132,8 @@ export const Services = class {
       },
       this
     );
+
+    this.getDownloadsPath();
 
     //! ***services startup function are blocking calls. async these***
     this.checkTrash();
@@ -397,6 +404,27 @@ export const Services = class {
       this.extension.animate({ refresh: true });
     }
     return this.trashFull;
+  }
+
+  async getDownloadsPath() {
+    try {
+      let [res, pid, in_fd, out_fd, err_fd] = GLib.spawn_async_with_pipes(
+        null,
+        ['/usr/bin/xdg-user-dir', 'DOWNLOAD'],
+        null,
+        0,
+        null
+      );
+
+      let out_reader = new Gio.DataInputStream({
+        base_stream: new Gio.UnixInputStream({ fd: out_fd }),
+      });
+
+      let [line, size] = out_reader.read_line_utf8(null);
+      this._downloadsUserDir = line;
+    } catch (err) {
+      //
+    }
   }
 
   async checkRecentFilesInFolder(path) {

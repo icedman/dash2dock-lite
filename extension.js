@@ -116,6 +116,21 @@ export default class Dash2DockLiteExt extends Extension {
     });
   }
 
+  _showMainOverviewDash(show) {
+    Main.overview.dash.opacity = show ? 255 : 0;
+    Main.overview.dash._background.opacity = show ? 255 : 0;
+    Main.overview.dash.__box.get_children().forEach((c) => {
+      c.opacity = show ? 255 : 0;
+      if (c.child) {
+        c.child.reactive = show;
+        c.child.track_hover = show;
+      }
+    });
+    Main.overview.dash._showAppsIcon.opacity = show ? 255 : 0;
+    Main.overview.dash._showAppsIcon.child.reactive = show;
+    Main.overview.dash._showAppsIcon.child.track_hover = show;
+  }
+
   enable() {
     this._enableJitterHack = true;
 
@@ -153,9 +168,8 @@ export default class Dash2DockLiteExt extends Extension {
       this._settingsKeys.setValue('animate-icons', true);
     }
 
-    Main.overview.dash.last_child.reactive = false;
-    Main.overview.dash.opacity = 0;
-
+    Main.overview.dash.__box = Main.overview.dash._box;
+    this._showMainOverviewDash(false);
     this.docks = [];
 
     // service
@@ -196,8 +210,8 @@ export default class Dash2DockLiteExt extends Extension {
     this._updateLayout(true);
     this._updateAutohide(true);
 
-    Main.overview.dash.last_child.visible = true;
-    Main.overview.dash.opacity = 255;
+    this._showMainOverviewDash(true);
+
     if (Main.overview.dash.__box) {
       Main.overview.dash._box = Main.overview.dash.__box;
     }
@@ -634,6 +648,8 @@ export default class Dash2DockLiteExt extends Extension {
   }
 
   _onOverviewShowing() {
+    this._showMainOverviewDash(false);
+    //this._loTimer.runOnce(() => { Main.overview.dash.set_height(1); }, 50);
     this._inOverview = true;
     this._autohiders().forEach((autohider) => {
       autohider._debounceCheckHide();
@@ -641,6 +657,7 @@ export default class Dash2DockLiteExt extends Extension {
   }
 
   _onOverviewHidden() {
+    //Main.overview.dash.set_height(1);
     this._inOverview = false;
     this._autohiders().forEach((autohider) => {
       autohider._debounceCheckHide();

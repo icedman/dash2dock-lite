@@ -133,7 +133,7 @@ export const Services = class {
       this
     );
 
-    this.getDownloadsPath();
+    this._downloadsUserDir = this.getUserPath('DOWNLOAD');
 
     //! ***services startup function are blocking calls. async these***
     this.checkTrash();
@@ -406,11 +406,11 @@ export const Services = class {
     return this.trashFull;
   }
 
-  async getDownloadsPath() {
+  async getUserPath(user_path) {
     try {
       let [res, pid, in_fd, out_fd, err_fd] = GLib.spawn_async_with_pipes(
         null,
-        ['/usr/bin/xdg-user-dir', 'DOWNLOAD'],
+        ['/usr/bin/xdg-user-dir', user_path],
         null,
         0,
         null
@@ -421,13 +421,62 @@ export const Services = class {
       });
 
       let [line, size] = out_reader.read_line_utf8(null);
-      this._downloadsUserDir = line;
+      return line;
     } catch (err) {
       //
     }
   }
 
   async checkRecentFilesInFolder(path) {
+    console.log(`checking ${path}`);
+    let maxs = [5, 10, 15, 20, 25];
+    let max_recent_items = maxs[this.extension.max_recent_items || 0];
+    let downloadFiles = [];
+    let downloadFilesLength = 0;
+
+    let directory = Gio.File.new_for_path(path);
+    let enumerator = directory.enumerate_children(
+      [
+        Gio.FILE_ATTRIBUTE_STANDARD_NAME,
+        Gio.FILE_ATTRIBUTE_STANDARD_ICON,
+        Gio.FILE_ATTRIBUTE_TIME_MODIFIED,
+      ].join(','),
+      Gio.FileQueryInfoFlags.NONE,
+      null
+    );
+
+    let fileInfo;
+    while ((fileInfo = enumerator.next_file(null)) !== null) {
+      let fileName = fileInfo.get_name();
+      let fileModified = fileInfo.get_modification_time();
+      downloadFiles.push({
+        index: 0,
+        name: fileName,
+        display: fileName,
+        icon: fileInfo.get_icon().get_names()[0] ?? 'file',
+        type: fileInfo.get_file_type(),
+        path: [path, fileName].join('/'),
+        date: fileModified ?? { tv_sec: 0 },
+      });
+    }
+
+    downloadFilesLength = downloadFiles.length;
+    downloadFiles.sort((a, b) => {
+      a.date.tv_sec > b.date.tv_sec ? -1 : 1;
+    });
+
+    let index = 0;
+    downloadFiles.forEach((f) => {
+      f.index = index++;
+    });
+
+    downloadFiles.splice(max_recent_items);
+    console.log(downloadFiles);
+
+    return Promise.resolve([downloadFiles, downloadFilesLength]);
+  }
+
+  async _checkRecentFilesInFolder(path) {
     console.log(`checking ${path}`);
     let maxs = [5, 10, 15, 20, 25];
     let max_recent_items = maxs[this.extension.max_recent_items || 0];
@@ -475,7 +524,7 @@ export const Services = class {
           downloadFiles.push({
             index: fileStat.index,
             name: fileStat.name,
-            display: fileStat.index, // fileInfo.get_display_name(),
+            display: fileInfo.get_display_name(),
             path: file.get_path(),
             icon: fileInfo.get_icon().get_names()[0] ?? 'file',
             type: fileInfo.get_content_type(),

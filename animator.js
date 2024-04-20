@@ -21,7 +21,6 @@ import {
 
 const ANIM_POSITION_PER_SEC = 450 / 1000;
 const ANIM_SIZE_PER_SEC = 250 / 1000;
-
 const ANIM_ICON_RAISE = 0.6;
 const ANIM_ICON_SCALE = 1.5;
 const ANIM_ICON_HIT_AREA = 2.5;
@@ -480,6 +479,41 @@ export let Animator = class {
           renderer.visible = true;
         }
 
+        // labels
+        if (icon._label) {
+          icon._label.x =
+            renderer.x +
+            dock.renderArea.x +
+            dock._monitor.x +
+            renderer.width / 2 -
+            icon._label.width / 2;
+          icon._label.y =
+            renderer.y +
+            dock.renderArea.y +
+            dock._monitor.y +
+            renderer.height / 2 -
+            icon._label.height / 2;
+          icon._label.translationX = 0;
+          icon._label.translationY = 0;
+          if (vertical) {
+            if (dock._position == DockPosition.RIGHT) {
+              icon._label.translationX =
+                -iconSize * 1 * scaleFactor - icon._label.width / 2;
+            } else {
+              icon._label.translationX =
+                iconSize * 1 * scaleFactor + icon._label.width / 2;
+            }
+          } else {
+            if (dock._position == DockPosition.BOTTOM) {
+              icon._label.translationY = -iconSize * 1.5 * scaleFactor;
+            } else {
+              icon._label.translationY = iconSize * 1.5 * scaleFactor;
+            }
+          }
+          // icon._label.translationX = translationX - iconSize * posFlags.lx;
+          // icon._label.translationY = translationY - iconSize * posFlags.ly;
+        }
+
         //! todo... add placeholder opacity when dragging
         // renderer.opacity =
         //   icon._icon == dock._dragged && dock._dragging ? 75 : 255;
@@ -514,12 +548,6 @@ export let Animator = class {
       };
 
       let posFlags = flags[dock._position];
-
-      // labels
-      if (icon._label) {
-        icon._label.translationX = translationX - iconSize * posFlags.lx;
-        icon._label.translationY = translationY - iconSize * posFlags.ly;
-      }
 
       // badges
       //! ***badge location at scaling is messed up***

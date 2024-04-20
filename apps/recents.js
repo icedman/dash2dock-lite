@@ -8,7 +8,6 @@
 
 import Gtk from 'gi://Gtk?version=4.0';
 import Gio from 'gi://Gio';
-import GLib from 'gi://Graphene';
 
 let limit = 40;
 const recents = Gtk.RecentManager.get_default();

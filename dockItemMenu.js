@@ -14,7 +14,7 @@ import St from 'gi://St';
 import { DockPosition } from './dock.js';
 import { Vector } from './vector.js';
 
-const ANIM_POSITION_PER_SEC = 1250 / 1000;
+const ANIM_POSITION_PER_SEC = 750 / 1000;
 
 export const DockItemList = GObject.registerClass(
   {},
@@ -219,9 +219,10 @@ export const DockItemList = GObject.registerClass(
           target._waypointsIn.push(wp);
           target._waypointsOut.unshift(wp);
         }
-        target._waypointsOut.push(
-          new Vector([tp[0] - this.x, tp[1] - this.y, 0])
-        );
+
+        let start = new Vector([tp[0] - this.x, tp[1] - this.y, 0]);
+        target._waypointsIn.unshift(start);
+        target._waypointsOut.push(start);
       }
     }
 
@@ -285,12 +286,13 @@ export const DockItemList = GObject.registerClass(
         }
         let delta = dir.multiplyScalar(speed * dt);
         posVector = posVector.add(delta);
-        if (delta.magnitude() > mag) {
+        if (delta.magnitude() > mag || mag == 0) {
           waypoints.shift();
           posVector = wp;
         }
         c.x = posVector.x;
         c.y = posVector.y;
+
         c._label.translationX = -c._label.width;
         if (list._hidden) {
           let opacity = c._label.opacity - 15;

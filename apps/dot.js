@@ -111,7 +111,7 @@ const DotCanvas = GObject.registerClass(
       if (count > 4) count = 4;
       let height = this._barHeight;
       let width = size - this._padding * 2;
-      ctx.translate(this._padding, size - height);
+      ctx.translate(this._padding, size - height * 2.5);
 
       let sz = width / 20;
       let spacing = Math.ceil(width / 18); // separation between the dots
@@ -146,7 +146,7 @@ const DotCanvas = GObject.registerClass(
 
       ctx.translate(
         Math.floor((size - count * dashLength - (count - 1) * spacing) / 2),
-        size - height
+        size - height * 1.5
       );
 
       for (let i = 0; i < count; i++) {
@@ -176,7 +176,7 @@ const DotCanvas = GObject.registerClass(
 
       ctx.translate(
         Math.floor((size - count * dashLength - (count - 1) * spacing) / 2),
-        size - height
+        size - height * 1.5
       );
 
       for (let i = 0; i < count; i++) {
@@ -206,7 +206,7 @@ const DotCanvas = GObject.registerClass(
 
       ctx.translate(
         Math.floor((size - count * dashLength - (count - 1) * spacing) / 2),
-        size - height
+        size - height * 1.5
       );
 
       for (let i = 0; i < count; i++) {
@@ -238,7 +238,7 @@ const DotCanvas = GObject.registerClass(
 
       ctx.translate(
         Math.floor((size - count * dashLength - (count - 1) * spacing) / 2),
-        size - height
+        size - height * 1.5
       );
 
       for (let i = 0; i < count; i++) {
@@ -308,7 +308,7 @@ const DotCanvas = GObject.registerClass(
 
       ctx.translate(
         Math.floor((size - count * dashLength - (count - 1) * spacing) / 2),
-        size - height - radius / 2
+        size - (height * 1.5) - radius / 2
       );
 
       for (let i = 0; i < count; i++) {

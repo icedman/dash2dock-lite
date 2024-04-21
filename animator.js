@@ -512,8 +512,8 @@ export let Animator = class {
         }
 
         //! todo... add placeholder opacity when dragging
-        // renderer.opacity =
-        //   icon._icon == dock._dragged && dock._dragging ? 75 : 255;
+        renderer.opacity =
+          icon._icon == dock._dragged && dock._dragging ? 75 : 255;
       }
 
       //! make more readable
@@ -591,7 +591,7 @@ export let Animator = class {
         icon._appwell.app.get_n_windows
       ) {
         let appCount = icon._appwell.app.get_n_windows();
-        // appCount = 1;
+        // appCount = 2;
         let target = icon._dot?.get_parent();
         let dots = target?._dots;
         if (!dots && icon._appwell && target) {

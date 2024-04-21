@@ -481,37 +481,34 @@ export let Animator = class {
 
         // labels
         if (icon._label) {
+          let tSize = renderer.get_transformed_size();
+          let sw = !isNaN(tSize[0]) ? tSize[0] : 0;
+          let sh = !isNaN(tSize[1]) ? tSize[1] : 0;
           icon._label.x =
             renderer.x +
             dock.renderArea.x +
             dock._monitor.x +
-            renderer.width * renderer.scaleX / 2 -
+            sw / 2 -
             icon._label.width / 2;
           icon._label.y =
             renderer.y +
             dock.renderArea.y +
             dock._monitor.y +
-            renderer.height * renderer.scaleY / 2 -
+            sh / 2 -
             icon._label.height / 2;
-          icon._label.translationX = 0;
-          icon._label.translationY = 0;
           if (vertical) {
-            if (dock._position == DockPosition.RIGHT) {
-              icon._label.translationX =
-                -iconSize * 1 * scaleFactor - icon._label.width / 2;
+            if (dock._position == DockPosition.LEFT) {
+              icon._label.x += sh / 1.5 + icon._label.width / 2;
             } else {
-              icon._label.translationX =
-                iconSize * 1 * scaleFactor + icon._label.width / 2;
+              icon._label.x -= sh / 1.5 + icon._label.width / 2;
             }
           } else {
             if (dock._position == DockPosition.BOTTOM) {
-              icon._label.translationY = -iconSize * 1.5 * scaleFactor;
+              icon._label.y -= sh / 1.5;
             } else {
-              icon._label.translationY = iconSize * 1.5 * scaleFactor;
+              icon._label.y += sh / 1.5;
             }
           }
-          // icon._label.translationX = translationX - iconSize * posFlags.lx;
-          // icon._label.translationY = translationY - iconSize * posFlags.ly;
         }
 
         //! todo... add placeholder opacity when dragging

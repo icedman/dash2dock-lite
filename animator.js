@@ -485,13 +485,13 @@ export let Animator = class {
             renderer.x +
             dock.renderArea.x +
             dock._monitor.x +
-            renderer.width / 2 -
+            renderer.width * renderer.scaleX / 2 -
             icon._label.width / 2;
           icon._label.y =
             renderer.y +
             dock.renderArea.y +
             dock._monitor.y +
-            renderer.height / 2 -
+            renderer.height * renderer.scaleY / 2 -
             icon._label.height / 2;
           icon._label.translationX = 0;
           icon._label.translationY = 0;

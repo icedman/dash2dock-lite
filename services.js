@@ -699,8 +699,7 @@ export const Services = class {
           clock.y = item._renderer.y;
           clock.opacity = item._renderer.opacity;
           clock.show();
-          item._renderer.visible = !clock.shouldHideIcon();
-          // item._renderer.opacity = clock.shouldHideIcon() ? 0 : 255;
+          item._renderer.opacity = clock.shouldHideIcon() ? 0 : 255;
         }
       } else {
         let clock = item._clock;
@@ -721,6 +720,7 @@ export const Services = class {
           dock.renderArea.add_child(calendar);
         }
         if (calendar) {
+          calendar._icon = icon;
           calendar.width = item._renderer.width * item._renderer.scaleX;
           calendar.height = calendar.width;
           // let toScale = item._scale;
@@ -731,7 +731,7 @@ export const Services = class {
           calendar.y = item._renderer.y;
           calendar.opacity = item._renderer.opacity;
           calendar.show();
-          item._renderer.visible = !calendar.shouldHideIcon();
+          item._renderer.opacity = calendar.shouldHideIcon() ? 0 : 255;
         }
       } else {
         let calendar = item._calendar;

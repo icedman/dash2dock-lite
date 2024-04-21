@@ -471,7 +471,7 @@ export const Services = class {
     });
 
     downloadFiles.splice(max_recent_items);
-    console.log(downloadFiles);
+    // console.log(downloadFiles);
 
     return Promise.resolve([downloadFiles, downloadFilesLength]);
   }

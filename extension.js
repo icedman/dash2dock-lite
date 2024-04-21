@@ -118,7 +118,8 @@ export default class Dash2DockLiteExt extends Extension {
 
   _showMainOverviewDash(show) {
     Main.overview.dash.opacity = show ? 255 : 0;
-    Main.overview.dash._background.opacity = show ? 255 : 0;
+    // Main.overview.dash._background.opacity = show ? 255 : 0;
+    Main.overview.dash._background.style = show ? '' : 'background: transparent !important;';
     Main.overview.dash.__box.get_children().forEach((c) => {
       c.opacity = show ? 255 : 0;
       if (c.child) {

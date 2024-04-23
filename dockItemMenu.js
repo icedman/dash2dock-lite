@@ -314,7 +314,7 @@ export const DockItemList = GObject.registerClass(
       }
 
       if (!didAnimate && list._hidden) {
-        console.log('destroy');
+        // console.log('destroy');
         dock._destroyList();
       }
 

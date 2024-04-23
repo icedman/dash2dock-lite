@@ -252,6 +252,10 @@ export const Services = class {
 
   setupMountIcon(mount) {
     let basename = mount.get_default_location().get_basename();
+    if (basename.startsWith('/')) {
+      // why does this happen?? issue #125
+      return;
+    }
     let label = mount.get_name();
     let appname = `mount-${basename}-dash2dock-lite.desktop`;
     let fullpath = mount.get_default_location().get_path();

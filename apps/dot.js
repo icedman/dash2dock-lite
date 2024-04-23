@@ -308,7 +308,7 @@ const DotCanvas = GObject.registerClass(
 
       ctx.translate(
         Math.floor((size - count * dashLength - (count - 1) * spacing) / 2),
-        size - (height * 1.5) - radius / 2
+        size - height * 1.5 - radius / 2
       );
 
       for (let i = 0; i < count; i++) {

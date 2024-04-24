@@ -466,7 +466,7 @@ export const Services = class {
 
     downloadFilesLength = downloadFiles.length;
     downloadFiles.sort((a, b) => {
-      a.date.tv_sec > b.date.tv_sec ? -1 : 1;
+      return a.date.tv_sec > b.date.tv_sec ? -1 : 1;
     });
 
     let index = 0;

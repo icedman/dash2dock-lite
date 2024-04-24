@@ -32,6 +32,7 @@ publish:
 	rm -rf ./*.zip
 	rm -rf build/*_.js
 	rm -rf build/imports*.js
+	rm -rf build/apps/mount-dash2dock-lite.desktop
 	cd build ; \
 	zip -qr ../dash2dock-lite@icedman.github.com.zip .
 
@@ -47,7 +48,7 @@ test-prefs:
 test-shell: install
 	env GNOME_SHELL_SLOWDOWN_FACTOR=2 \
 		MUTTER_DEBUG_DUMMY_MODE_SPECS=1400x800 \
-	 	MUTTER_DEBUG_DUMMY_MONITOR_SCALES=2 \
+	 	MUTTER_DEBUG_DUMMY_MONITOR_SCALES=1 \
 		dbus-run-session -- gnome-shell --nested --wayland
 	rm /run/user/1000/gnome-shell-disable-extensions
 
@@ -65,6 +66,7 @@ g44: build
 	cp -R ./ui ./build
 	cp -R apps/*.sh ./build/apps
 	cp -R apps/*.desktop ./build/apps
+	rm -rf build/apps/mount-dash2dock-lite.desktop
 	cp ./effects/*.glsl ./build/effects
 	cp ./LICENSE* ./build
 	cp ./CHANGELOG* ./build

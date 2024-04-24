@@ -230,7 +230,7 @@ export let Animator = class {
 
       //! png image makes this extremely slow -- this may be the cause of "lag" experienced by some users
       //! some themes or apps use PNG instead of SVG... set_scale is apparently resource hog
-      if (icon._icon.gicon.file != null) {
+      if (icon._icon.gicon && icon._icon.gicon.file != null) {
         // skip scaling image files!... too costly
       } else {
         icon._icon.set_scale(scale, scale);
@@ -737,7 +737,15 @@ export let Animator = class {
           edge_distance -
           dock._background._padding * scaleFactor;
         dock.struts.height = dock.height;
-        dock.struts.y = dock.y;
+
+        if (dock.extension.autohide_dash) {
+          dock.struts.y = dock._background.y;
+          dock.struts.height = dock._background.height;
+          // X11 .. click through fix .. 
+          // dock.struts.width *= 1.25;
+        }
+
+        // dock.struts.y = dock.y;
         if (dock._position == DockPosition.RIGHT) {
           dock.struts.x = dock.x + dock.width - dock.struts.width;
         } else {
@@ -750,7 +758,15 @@ export let Animator = class {
           iconSize * 0.2 * scaleFactor +
           edge_distance -
           dock._background._padding * scaleFactor;
-        dock.struts.x = dock.x;
+
+        if (dock.extension.autohide_dash) {
+          dock.struts.x = dock._background.x;
+          dock.struts.width = dock._background.width;
+          // X11 .. click through fix .. 
+          // dock.struts.height *= 1.25;
+        }
+
+        // dock.struts.x = dock.x;
         if (dock._position == DockPosition.BOTTOM) {
           dock.struts.y = dock.y + dock.height - dock.struts.height;
         } else {
@@ -758,7 +774,7 @@ export let Animator = class {
         }
       }
     }
-
+    dock.struts.visible = !dock._hidden;
     dock.dash.opacity = 255;
 
     //---------------------

@@ -592,7 +592,8 @@ export let Dock = GObject.registerClass(
           c.toggle_mode = false;
         }
         if (c._grid) {
-          c._grid.style = noAnimation ? '' : 'background: none !important;';
+          // c._grid.style = noAnimation ? '' : 'background: none !important;';
+          c._grid.style = 'background: none !important;';
         }
         if (c._appwell && !c._appwell._activate) {
           c._appwell._activate = c._appwell.activate;

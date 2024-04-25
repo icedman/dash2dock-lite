@@ -486,13 +486,13 @@ export let Animator = class {
           let sh = !isNaN(tSize[1]) ? tSize[1] : 0;
           icon._label.x =
             renderer.x +
-            dock.renderArea.x +
+            dock.x +
             dock._monitor.x +
             sw / 2 -
             icon._label.width / 2;
           icon._label.y =
             renderer.y +
-            dock.renderArea.y +
+            dock.y +
             dock._monitor.y +
             sh / 2 -
             icon._label.height / 2;
@@ -741,7 +741,7 @@ export let Animator = class {
         if (dock.extension.autohide_dash) {
           dock.struts.y = dock._background.y;
           dock.struts.height = dock._background.height;
-          // X11 .. click through fix .. 
+          // X11 .. click through fix ..
           // dock.struts.width *= 1.25;
         }
 
@@ -762,7 +762,7 @@ export let Animator = class {
         if (dock.extension.autohide_dash) {
           dock.struts.x = dock._background.x;
           dock.struts.width = dock._background.width;
-          // X11 .. click through fix .. 
+          // X11 .. click through fix ..
           // dock.struts.height *= 1.25;
         }
 

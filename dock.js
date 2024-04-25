@@ -74,6 +74,8 @@ export let Dock = GObject.registerClass(
       this.renderArea = new St.Widget({
         name: 'DockRenderArea',
         offscreen_redirect: Clutter.OffscreenRedirect.ALWAYS,
+        reactive: false,
+        track_hover: false,
       });
       this.renderArea.opacity = 0;
       this.add_child(this.renderArea);
@@ -770,6 +772,26 @@ export let Dock = GObject.registerClass(
       }
     }
 
+    _snapToContainerEdge(container, child, edge = true) {
+      child.x = container.width / 2 - child.width / 2;
+      child.y = container.height / 2 - child.height / 2;
+      if (edge) {
+        if (this.isVertical()) {
+          if (this._position == DockPosition.LEFT) {
+            child.x = 0;
+          } else {
+            child.x = container.width - child.width;
+          }
+        } else {
+          if (this._position == DockPosition.TOP) {
+            child.y = 0;
+          } else {
+            child.y = container.height - child.height;
+          }
+        }
+      }
+    }
+
     layout() {
       if (this.extension.apps_icon_front) {
         this.dash.last_child.text_direction = 2; // RTL
@@ -902,6 +924,7 @@ export let Dock = GObject.registerClass(
       }
 
       // hug the edge
+      /*
       if (vertical) {
         this.dash.x = this.width * f.edgeX + this.dash.width * f.offsetX;
         this.dash.y = this.height / 2 - this.dash.height / 2;
@@ -909,6 +932,20 @@ export let Dock = GObject.registerClass(
         this.dash.x = this.width / 2 - this.dash.width / 2;
         this.dash.y = this.height * f.edgeY + this.dash.height * f.offsetY;
       }
+      */
+
+      // computation derived from animation scale
+      let magnify = this.extension.animation_magnify * 1.8;
+      let fp = iconSize * 2 + iconSize * (0.6 * (1 + magnify));
+
+      if (vertical) {
+        this.width = fp * scaleFactor;
+      } else {
+        this.height = fp * scaleFactor;
+      }
+
+      this._snapToContainerEdge(m, this, true);
+      this._snapToContainerEdge(this, this.dash, true);
 
       this._iconSizeScaledDown = iconSize;
       this._scaledDown = scaleDown;

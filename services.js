@@ -480,6 +480,7 @@ export const Services = class {
     return Promise.resolve([downloadFiles, downloadFilesLength]);
   }
 
+  /*
   async _checkRecentFilesInFolder(path) {
     console.log(`checking ${path}`);
     let maxs = [5, 10, 15, 20, 25];
@@ -544,7 +545,8 @@ export const Services = class {
 
     return [downloadFiles, downloadFilesLength];
   }
-
+  */
+  
   async checkRecentFilesFromRecentManager() {
     console.log('checking recent manager');
     let maxs = [5, 10, 15, 20, 25];

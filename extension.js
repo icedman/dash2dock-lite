@@ -162,6 +162,7 @@ export default class Dash2DockLiteExt extends Extension {
     this._style = new Style();
 
     this._enableSettings();
+    this._loadIconMap();
 
     // no longer needed
     // this._disable_borders = this.border_radius > 0;
@@ -301,6 +302,23 @@ export default class Dash2DockLiteExt extends Extension {
     }
 
     return idx;
+  }
+
+  _loadIconMap() {
+    let fn = Gio.File.new_for_path('.config/d2da/icons.json');
+    if (fn.query_exists(null)) {
+      const [success, contents] = fn.load_contents(null);
+      const decoder = new TextDecoder();
+      let contentsString = decoder.decode(contents);
+      try {
+        let json = JSON.parse(contentsString);
+        if (json['icons']) {
+          this.icon_map = json['icons'];
+        }
+      } catch(err) {
+        console.log(err);
+      }
+    }
   }
 
   _enableSettings() {

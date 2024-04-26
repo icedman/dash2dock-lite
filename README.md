@@ -76,6 +76,34 @@ Export your settings under Style > Themes Button > "Export"...
 
 This will be saved to ```/tmp/theme.json```. Edit this json file and save under ```~/.config/d2da/themes``` or at ```{extension_path}/dash2dock-animated/themes``` so that it becomes available at the extension settings app.
 
+## Custom Icons
+
+Create a file under ```sh~/.config/d2da/icons.json```. And create a mapping file with the following format:
+
+```json
+{
+  "icons": {
+     "view-apps-grid-symbolic": "show-apps-icon.svg",
+     "user-trash": "my-own-trash.svg"
+  }
+}
+
+```
+
+You custom icons ```show-apps-icon.svg```, and ```my-own-trash.svg``` must be available on your icons theme folder. Preferably save them at ```apps/scalable``` like:
+
+```sh
+/usr/share/icons/WhiteSur/apps/scalable/
+```
+
+You icons must have unique names to avoid conflict icon available on your icon theme.
+
+Check the log to see the icon names currently being used by Dash2Dock Animated. Search for log text such assets
+
+```sh
+Icon created "user-trash"
+```
+
 ## Gnome 42, 43, 44
 
 Build and install Dash2Dock Animated for prior versions (before Gnome 45)

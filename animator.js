@@ -381,6 +381,11 @@ export let Animator = class {
       // dock.renderArea.opacity = 100;
       {
         let icon_name = icon._icon.icon_name;
+
+        if (dock.extension.icon_map && dock.extension.icon_map[icon_name]) {
+          icon_name = dock.extension.icon_map[icon_name];
+        }
+
         let didCreate = false;
         if (!icon._renderer) {
           didCreate = true;
@@ -393,6 +398,7 @@ export let Animator = class {
           renderer.opacity = 0;
           icon._renderer = renderer;
           target.add_child(renderer);
+          console.log(`Icon created: ${icon_name}`);
         } else {
           icon._renderer.opacity = 255;
         }

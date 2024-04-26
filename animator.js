@@ -41,7 +41,10 @@ export let Animator = class {
 
     let simulation = false;
 
-    dock.layout();
+    if (!dock.layout()) {
+      console.log('unable to layout()');
+      return;
+    }
 
     // opacity
     let didFadeIn = false;

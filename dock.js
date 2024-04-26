@@ -814,6 +814,10 @@ export let Dock = GObject.registerClass(
       this._updateExtraIcons();
 
       let m = this.getMonitor();
+      if (!m) {
+        return false;
+      }
+
       let scaleFactor = m.geometry_scale;
       let vertical = this.isVertical();
       this._scaleFactor = scaleFactor;
@@ -969,6 +973,8 @@ export let Dock = GObject.registerClass(
           this.dwell.y = this.y;
         }
       }
+
+      return true;
     }
 
     preview() {

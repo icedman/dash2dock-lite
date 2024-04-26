@@ -285,7 +285,7 @@ export default class Dash2DockLiteExt extends Extension {
       Main.layoutManager.monitors.length > 0 &&
       this.multi_monitor_preference > 0
     ) {
-      // if multi-monitor ... left _updateLayout take care of updating the docks
+      // if multi-monitor ... let _updateLayout take care of updating the docks
       return currentMonitorIndex;
     }
 

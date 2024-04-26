@@ -482,18 +482,21 @@ export let Animator = class {
         // labels
         if (icon._label) {
           let tSize = renderer.get_transformed_size();
+          let tPos = icon._icon.get_transformed_position();
           let sw = !isNaN(tSize[0]) ? tSize[0] : 0;
           let sh = !isNaN(tSize[1]) ? tSize[1] : 0;
           icon._label.x =
-            renderer.x +
-            dock.x +
-            dock._monitor.x +
+            tPos[0] +
+            // renderer.x +
+            // dock.x -
+            // dock._monitor.x +
             sw / 2 -
             icon._label.width / 2;
           icon._label.y =
-            renderer.y +
-            dock.y +
-            dock._monitor.y +
+            tPos[1] +
+            // renderer.y +
+            // dock.y -
+            // dock._monitor.y +
             sh / 2 -
             icon._label.height / 2;
           if (vertical) {

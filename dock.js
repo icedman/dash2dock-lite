@@ -925,27 +925,25 @@ export let Dock = GObject.registerClass(
       }
 
       // hug the edge
-      /*
-      if (vertical) {
-        this.dash.x = this.width * f.edgeX + this.dash.width * f.offsetX;
-        this.dash.y = this.height / 2 - this.dash.height / 2;
-      } else {
-        this.dash.x = this.width / 2 - this.dash.width / 2;
-        this.dash.y = this.height * f.edgeY + this.dash.height * f.offsetY;
-      }
-      */
+      // if (vertical) {
+      //   this.dash.x = this.width * f.edgeX + this.dash.width * f.offsetX;
+      //   this.dash.y = this.height / 2 - this.dash.height / 2;
+      // } else {
+      //   this.dash.x = this.width / 2 - this.dash.width / 2;
+      //   this.dash.y = this.height * f.edgeY + this.dash.height * f.offsetY;
+      // }
 
       // computation derived from animation scale
       let magnify = this.extension.animation_magnify * 1.8;
       let fp = iconSize * 2 + iconSize * (0.6 * (1 + magnify));
-
       if (vertical) {
         this.width = fp * scaleFactor;
       } else {
         this.height = fp * scaleFactor;
       }
-
       this._snapToContainerEdge(m, this, true);
+      this.x += m.x;
+      this.y += m.y;
       this._snapToContainerEdge(this, this.dash, true);
 
       this._iconSizeScaledDown = iconSize;

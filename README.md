@@ -83,8 +83,8 @@ Create a file under ```sh~/.config/d2da/icons.json```. And create a mapping file
 ```json
 {
   "icons": {
-     "view-apps-grid-symbolic": "show-apps-icon.svg",
-     "user-trash": "my-own-trash.svg"
+     "view-apps-grid-symbolic": "show-apps-icon",
+     "user-trash": "my-own-trash"
   }
 }
 

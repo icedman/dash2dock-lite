@@ -483,6 +483,10 @@ export let Animator = class {
         if (icon._label) {
           let tSize = renderer.get_transformed_size();
           let tPos = icon._icon.get_transformed_position();
+          if (isNaN(tPos[0]) || isNaN(tPos[1])) {
+            tPos[0] = 0;
+            tPos[1] = 0;
+          }
           let sw = !isNaN(tSize[0]) ? tSize[0] : 0;
           let sh = !isNaN(tSize[1]) ? tSize[1] : 0;
           icon._label.x =

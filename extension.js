@@ -757,7 +757,11 @@ export default class Dash2DockLiteExt extends Extension {
   }
 
   _updateMultiMonitorPreference() {
-    this.startUp();
+    console.log('update monitors');
+    this.destroyDocks();
+    this._loTimer.runOnce(() => {
+      this.startUp();
+    }, 500);
   }
 
   _updateIconResolution(disable) {

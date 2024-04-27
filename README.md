@@ -78,31 +78,31 @@ This will be saved to ```/tmp/theme.json```. Edit this json file and save under 
 
 ## Custom Icons
 
-Create a file under ```sh~/.config/d2da/icons.json```. And create a mapping file with the following format:
+Create a folder under ```sh~/.config/d2da/icons``` and place here your SVG icons. Then create a file under ```sh~/.config/d2da/icons.json``` and create a mapping file with the following format:
+
+```json
+{
+  "icons": {
+     "view-app-grid-symbolic": "icons/show-apps-icon.svg",
+     "user-trash": "icons/my-own-trash.svg",
+     "user-trash-full": "icons/my-own-trash-full.svg"
+  }
+}
+```
+
+You may also use **icon names** from your favorite icon theme. And use the following format:
 
 ```json
 {
   "icons": {
      "view-app-grid-symbolic": "show-apps-icon",
-     "user-trash": "my-own-trash"
+     "user-trash": "trash",
+     "user-trash-full": "trash-full"
   }
 }
-
 ```
 
-You custom icons ```show-apps-icon.svg```, and ```my-own-trash.svg``` must be available on your icons theme folder. Preferably save them at ```apps/scalable``` like:
-
-```sh
-~/.local/share/icons/WhiteSur/apps/scalable/
-```
-
-Alternatively, you may save your icons at the Adwaita icons folder:
-
-```sh
-/usr/share/icons/Adwait/scalable/places
-```
-
-You icons must have unique names to avoid conflict with icons available on your icon theme.
+The icons ```show-apps-icon, trash, trash-full``` must be available on your icons theme folder. 
 
 Check the log to see the icon names currently being used by Dash2Dock Animated. Search for log text such assets
 

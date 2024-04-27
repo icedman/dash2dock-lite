@@ -4,6 +4,7 @@ import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import St from 'gi://St';
 import Graphene from 'gi://Graphene';
 import Clutter from 'gi://Clutter';
+import Gio from 'gi://Gio';
 const Point = Graphene.Point;
 
 import { Dot } from './apps/dot.js';
@@ -381,8 +382,15 @@ export let Animator = class {
       // dock.renderArea.opacity = 100;
       {
         let icon_name = icon._icon.icon_name;
+        let gicon = null;
 
         if (dock.extension.icon_map && dock.extension.icon_map[icon_name]) {
+          if (
+            dock.extension.icon_map_cache &&
+            dock.extension.icon_map_cache[icon_name]
+          ) {
+            gicon = dock.extension.icon_map_cache[icon_name];
+          }
           icon_name = dock.extension.icon_map[icon_name];
         }
 
@@ -405,7 +413,11 @@ export let Animator = class {
 
         let renderer = icon._renderer;
         if (icon_name) {
-          renderer.icon_name = icon_name;
+          if (gicon) {
+            renderer.gicon = gicon;
+          } else {
+            renderer.icon_name = icon_name;
+          }
         } else {
           //! clone
           // if (icon._icon.gicon) {

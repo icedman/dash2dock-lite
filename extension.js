@@ -213,6 +213,7 @@ export default class Dash2DockLiteExt extends Extension {
     this._updateShrink(true);
     this._updateLayout(true);
     this._updateAutohide(true);
+    this._unloadIconMap();
 
     this._showMainOverviewDash(true);
 
@@ -314,11 +315,27 @@ export default class Dash2DockLiteExt extends Extension {
         let json = JSON.parse(contentsString);
         if (json['icons']) {
           this.icon_map = json['icons'];
+          this.icon_map_cache = {};
+          Object.keys(this.icon_map).forEach((k) => {
+            let path = this.icon_map[k];
+            if (path.toLowerCase().endsWith('.svg')) {
+              let file = Gio.File.new_for_path(`.config/d2da/${path}`);
+              if (file.query_exists(null)) {
+                console.log(`loading icon ${file.get_path()}`);
+                this.icon_map_cache[k] = new Gio.FileIcon({ file: file });
+              }
+            }
+          });
         }
-      } catch(err) {
+      } catch (err) {
         console.log(err);
       }
     }
+  }
+
+  _unloadIconMap() {
+    this.icon_map = {};
+    this.icon_map_cache = {};
   }
 
   _enableSettings() {

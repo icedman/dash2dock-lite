@@ -546,7 +546,7 @@ export const Services = class {
     return [downloadFiles, downloadFilesLength];
   }
   */
-  
+
   async checkRecentFilesFromRecentManager() {
     console.log('checking recent manager');
     let maxs = [5, 10, 15, 20, 25];

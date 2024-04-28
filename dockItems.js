@@ -376,6 +376,23 @@ export const DockBackground = GObject.registerClass(
 
         this.opacity = 255;
         dock.dash.opacity = this.opacity;
+
+        let style = [];
+        style.push(
+          // `background-image: url("${dock.extension.desktop_background}");`
+          `background-image: url("${dock.extension.desktop_background_blurred}");`
+        );
+        // style.push(`background-image: url("/home/iceman/Pictures/bg.jpg");`);
+        // style.push(`background-image: url("/usr/share/backgrounds/gdm-login-background.jpg");`);
+        style.push(
+          `background-size: ${dock._monitor.width}px ${dock._monitor.height}px;`
+        );
+        style.push(
+          `background-position: -${this.x}px -${
+            dock._monitor.height - this.height
+          }px;`
+        );
+        this.style = style.join(' ');
       }
     }
   }

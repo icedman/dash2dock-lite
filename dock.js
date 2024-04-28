@@ -14,6 +14,7 @@ import { Dash } from 'resource:///org/gnome/shell/ui/dash.js';
 
 import { TintEffect } from './effects/tint_effect.js';
 import { MonochromeEffect } from './effects/monochrome_effect.js';
+import { BlurEffect } from './effects/blur_effect.js';
 
 import { DockIcon, DockItemContainer, DockBackground } from './dockItems.js';
 import { DockItemList } from './dockItemMenu.js';
@@ -70,6 +71,10 @@ export let Dock = GObject.registerClass(
 
       this._background = new DockBackground({ name: 'd2daBackground' });
       this.add_child(this._background);
+
+      // this._blurEffect = this._createEffect(2); // tint
+      // this._blurEffect.color = this.extension.background_color;
+      // this._background.add_effect_with_name('blur', this._blurEffect);
 
       this.renderArea = new St.Widget({
         name: 'DockRenderArea',
@@ -208,6 +213,14 @@ export let Dock = GObject.registerClass(
         }
         case 2: {
           effect = new MonochromeEffect({
+            name: 'color',
+            color: this.extension.icon_effect_color,
+          });
+          effect.preload(this.extension.path);
+          break;
+        }
+        case 3: {
+          effect = new BlurEffect({
             name: 'color',
             color: this.extension.icon_effect_color,
           });

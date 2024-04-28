@@ -15,7 +15,7 @@ export let BackgroundCanvas = GObject.registerClass(
   class BackgroundCanvas extends St.DrawingArea {
     _init(settings = {}) {
       super._init({
-        style_class: 'dock-box'
+        style_class: 'dock-box',
       });
 
       this.width = 128;
@@ -30,7 +30,7 @@ export let BackgroundCanvas = GObject.registerClass(
       return new Promise((resolve, reject) => {
         const loader = new GdkPixbuf.PixbufLoader();
 
-        loader.connect('size-prepared', sz => {
+        loader.connect('size-prepared', (sz) => {
           console.log('size-prepared');
         });
 
@@ -112,17 +112,17 @@ export let BackgroundCanvas = GObject.registerClass(
 
       ctx.setOperator(Cairo.Operator.SOURCE);
 
-        ctx.save();
-        if (this.surface) {
-          ctx.setSourceSurface(this.surface, 0, 0);
-        }
-        ctx.moveTo(0, 0);
-        ctx.lineTo(size, 0);
-        ctx.lineTo(size, size);
-        ctx.lineTo(0, size);
-        ctx.lineTo(0, 0);
-        ctx.fill();
-        ctx.restore();
+      ctx.save();
+      if (this.surface) {
+        ctx.setSourceSurface(this.surface, 0, 0);
+      }
+      ctx.moveTo(0, 0);
+      ctx.lineTo(size, 0);
+      ctx.lineTo(size, size);
+      ctx.lineTo(0, size);
+      ctx.lineTo(0, 0);
+      ctx.fill();
+      ctx.restore();
 
       ctx.$dispose();
     }

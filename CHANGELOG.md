@@ -1,7 +1,8 @@
 # Roadmap
 
 * Panel mode features
-* Support for Gnome 40-42 (test with OpenSuse)
+* Apps folder
+* Custom icons UI
 
 # Current Issues
 

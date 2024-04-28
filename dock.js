@@ -72,10 +72,6 @@ export let Dock = GObject.registerClass(
       this._background = new DockBackground({ name: 'd2daBackground' });
       this.add_child(this._background);
 
-      // this._blurEffect = this._createEffect(2); // tint
-      // this._blurEffect.color = this.extension.background_color;
-      // this._background.add_effect_with_name('blur', this._blurEffect);
-
       this.renderArea = new St.Widget({
         name: 'DockRenderArea',
         offscreen_redirect: Clutter.OffscreenRedirect.ALWAYS,
@@ -119,6 +115,9 @@ export let Dock = GObject.registerClass(
         this.autohider._onLeaveEvent.bind(this.autohider),
         this
       );
+
+      this._blurEffect = this._createEffect(3);
+      this._updateBackgroundEffect();
     }
 
     recreateDash() {
@@ -233,6 +232,14 @@ export let Dock = GObject.registerClass(
 
     _effectTargets() {
       return [this.renderArea];
+    }
+
+    _updateBackgroundEffect() {
+      this._background.remove_effect_by_name('blur');
+      if (this.extension.blur_background) {
+        this._background.add_effect_with_name('blur', this._blurEffect);
+      }
+      this._blurEffect.color = this.extension.background_color;
     }
 
     _updateIconEffect() {

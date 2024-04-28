@@ -736,18 +736,23 @@ export default class Dash2DockLiteExt extends Extension {
 
   async _updateBlurredBackground() {
     this.desktop_background = this._desktopSettings.get_string('picture-uri');
-    this.desktop_background_blurred = BLURRED_BG_PATH;
-    if (this.blur_background) {
-      let file = Gio.File.new_for_uri(this.desktop_background);
-      let cmd = `convert -scale 10% -blur 0x2.5 -resize 500% "${file.get_path()}" ${BLURRED_BG_PATH}`;
-      console.log('------------------');
-      console.log(cmd);
-      try {
-        await trySpawnCommandLine(cmd);
-      } catch (err) {
-        console.log(err);
-      }
-    }
+    this.docks.forEach((dock) => {
+      dock._updateBackgroundEffect();
+    });
+    this.animate();
+
+    // this.desktop_background_blurred = BLURRED_BG_PATH;
+    // if (this.blur_background) {
+    //   let file = Gio.File.new_for_uri(this.desktop_background);
+    //   let cmd = `convert -scale 10% -blur 0x2.5 -resize 500% "${file.get_path()}" ${BLURRED_BG_PATH}`;
+    //   console.log('------------------');
+    //   console.log(cmd);
+    //   try {
+    //     await trySpawnCommandLine(cmd);
+    //   } catch (err) {
+    //     console.log(err);
+    //   }
+    // }
   }
 
   _updateAnimationFPS() {
@@ -823,7 +828,7 @@ export default class Dash2DockLiteExt extends Extension {
         r = 0;
       }
       ss.push(`border-radius: ${r}px;`);
-      {
+      if (!this.blur_background) {
         let rgba = this._style.rgba(this.background_color);
         ss.push(`background: rgba(${rgba});`);
       }

@@ -22,7 +22,7 @@ const getTintShaderSource = (extensionDir) => {
 
 export const BlurEffect = GObject.registerClass(
   {},
-  class BlurEffect extends Clutter.ShaderEffect {
+  class D2DABlurEffect extends Clutter.ShaderEffect {
     _init(params) {
       this._red = null;
       this._green = null;

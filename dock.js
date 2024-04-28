@@ -116,7 +116,7 @@ export let Dock = GObject.registerClass(
         this
       );
 
-      this._blurEffect = this._createEffect(3);
+      this._blurEffect = this._createEffect(1);
       this._updateBackgroundEffect();
     }
 
@@ -236,10 +236,12 @@ export let Dock = GObject.registerClass(
 
     _updateBackgroundEffect() {
       this._background.remove_effect_by_name('blur');
-      if (this.extension.blur_background) {
-        this._background.add_effect_with_name('blur', this._blurEffect);
+      if (this._blurEffect) {
+        if (this.extension.blur_background) {
+          this._background.add_effect_with_name('blur', this._blurEffect);
+        }
+        this._blurEffect.color = this.extension.background_color;
       }
-      this._blurEffect.color = this.extension.background_color;
     }
 
     _updateIconEffect() {

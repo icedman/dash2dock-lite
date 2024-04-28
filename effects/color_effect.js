@@ -33,7 +33,7 @@ const getColorEffectShaderSource = (extensionDir) => {
 /// https://gjs-docs.gnome.org/clutter10~10_api/clutter.shadereffect
 export const ColorEffect = GObject.registerClass(
   {},
-  class ColorShader extends Clutter.ShaderEffect {
+  class D2DAColorShader extends Clutter.ShaderEffect {
     _init(params) {
       this._red = null;
       this._green = null;

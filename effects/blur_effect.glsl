@@ -30,9 +30,10 @@ void main() {
 
     if (original.a >= 0.5) {
         vec4 blurred = blur(tex, texCoord);
+        // blurred.a = original.a;
         vec3 pix_color = blurred.rgb;
         vec3 color = vec3(red * blurred.a, green * blurred.a, blue * blurred.a);
-        vec3 finalColor = mix(pix_color, color, blend * 0.45);
+        vec3 finalColor = mix(pix_color, color, blend * 0.75);
         cogl_color_out = vec4(finalColor, (blurred.a + original.a)/2);
     } else {
         cogl_color_out = original;

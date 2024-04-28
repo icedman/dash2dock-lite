@@ -380,11 +380,9 @@ export const DockBackground = GObject.registerClass(
         let style = [dock.extension._backgroundStyle];
         if (dock.extension.blur_background) {
           style.push(
-            `background-image: url("${dock.extension.desktop_background}");`
-            // `background-image: url("${dock.extension.desktop_background_blurred}");`
+            // `background-image: url("${dock.extension.desktop_background}");`
+            `background-image: url("${dock.extension.desktop_background_blurred}");`
           );
-          // style.push(`background-image: url("/home/iceman/Pictures/bg.jpg");`);
-          // style.push(`background-image: url("/usr/share/backgrounds/gdm-login-background.jpg");`);
           style.push(
             `background-size: ${dock._monitor.width}px ${dock._monitor.height}px;`
           );

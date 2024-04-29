@@ -291,14 +291,6 @@ export let Animator = class {
       });
     }
 
-    // compiz alike lamp animation compatibility
-    if (hoveredIcon) {
-      if (!Main.overview.dash.__box) {
-        Main.overview.dash.__box = Main.overview.dash._box;
-      }
-      Main.overview.dash._box = dock.dash._box;
-    }
-
     //-------------------
     // interpolation / animation
     //-------------------

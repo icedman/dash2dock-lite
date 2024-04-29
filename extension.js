@@ -246,6 +246,7 @@ export default class Dash2DockLiteExt extends Extension {
     this._style.unloadAll();
     this._style = null;
 
+    this._hookCompiz(false);
     log('dash2dock-lite disabled');
   }
 
@@ -262,12 +263,51 @@ export default class Dash2DockLiteExt extends Extension {
     });
   }
 
+  // unused?
   checkHide() {
     this.docks.forEach((dock) => {
       if (dock.autohider) {
         dock.autohider._debounceCheckHide();
       }
     });
+  }
+
+  _hookCompiz(hook = true) {
+    let compiz = Main.extensionManager.lookup(
+      'compiz-alike-magic-lamp-effect@hermes83.github.com'
+    );
+    if (compiz) {
+      let stateObj = compiz.stateObj;
+      this._compiz = stateObj;
+      if (stateObj._getIcon && !hook) {
+        stateObj.getIcon = stateObj._getIcon;
+        stateObj._getIcon = null;
+      }
+      if (!stateObj._getIcon && hook) {
+        stateObj._getIcon = stateObj.getIcon;
+        stateObj.getIcon = this._getIcon.bind(this);
+      }
+    }
+  }
+
+  // override compiz getIcon
+  _getIcon(actor) {
+    let [success, icon] = actor.meta_window.get_icon_geometry();
+    if (success) {
+      return icon;
+    }
+    let monitor = Main.layoutManager.monitors[actor.meta_window.get_monitor()];
+    let dock = this.docks.find((d) => d._monitorIndex == monitor.index);
+
+    if (!dock) {
+      return { x: monitor.x, y: monitor.y, width: 0, height: 0 };
+    }
+    if (!Main.overview.dash.__box) {
+      Main.overview.dash.__box = Main.overview.dash._box;
+    }
+    Main.overview.dash._box = dock.dash._box;
+
+    return this._compiz._getIcon(actor);
   }
 
   startUp() {
@@ -279,6 +319,9 @@ export default class Dash2DockLiteExt extends Extension {
         dock._beginAnimation();
         dock._debounceEndAnimation();
       });
+
+      this._hookCompiz();
+      this._createTobarBackground();
     }, 10);
   }
 
@@ -761,8 +804,12 @@ export default class Dash2DockLiteExt extends Extension {
       }
     }
 
+    this.animate();
+  }
+
+  _createTobarBackground() {
     if (this.topbar_blur_background) {
-      if (!this._topbar_background) {
+      if (!this._topbar_background && Main.panel) {
         this._topbar_background = new St.Widget({
           name: 'd2daTopbarBackground',
           clip_to_allocation: true,
@@ -773,8 +820,6 @@ export default class Dash2DockLiteExt extends Extension {
         );
       }
     }
-
-    this.animate();
   }
 
   _updateAnimationFPS() {

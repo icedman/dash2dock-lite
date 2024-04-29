@@ -39,6 +39,8 @@
 * Mounted devices
 * Downloads icon with fan animation (new!)
 * Icon color effects(Tint, Monochrome)
+* Blurred background
+* Custom icons
 
 ### Prerequisites
 
@@ -109,6 +111,10 @@ Check the log to see the icon names currently being used by Dash2Dock Animated. 
 ```sh
 Icon created "user-trash"
 ```
+
+## Blurred Background
+
+Blurred background feature requires **imagemagick** to be install in the system. This generates the blurred image based of the desktop wallpaper.
 
 ## Gnome 42, 43, 44
 

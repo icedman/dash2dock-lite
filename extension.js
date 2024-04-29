@@ -135,8 +135,6 @@ export default class Dash2DockLiteExt extends Extension {
   }
 
   enable() {
-    this._enableJitterHack = true;
-
     // for debugging - set to 255
     this._dash_opacity = 0;
 
@@ -227,6 +225,15 @@ export default class Dash2DockLiteExt extends Extension {
     this.docks = [];
 
     this.destroyDocks();
+
+    if (this._topbar_background) {
+      if (this._topbar_background.get_parent()) {
+        this._topbar_background
+          .get_parent()
+          .remove_child(this._topbar_background);
+      }
+      this._topbar_background = null;
+    }
 
     this.services.disable();
     this.services = null;
@@ -484,7 +491,6 @@ export default class Dash2DockLiteExt extends Extension {
         case 'icon-shadow':
         case 'topbar-border-color':
         case 'topbar-border-thickness':
-        case 'topbar-background-color':
         case 'topbar-foreground-color':
         case 'customize-label':
         case 'label-border-radius':
@@ -498,6 +504,8 @@ export default class Dash2DockLiteExt extends Extension {
           this.animate();
           break;
         }
+        case 'topbar-background-color':
+        case 'topbar-blur-background':
         case 'background-color':
         case 'blur-background':
           this._updateBlurredBackground();
@@ -742,7 +750,7 @@ export default class Dash2DockLiteExt extends Extension {
     });
 
     this.desktop_background_blurred = BLURRED_BG_PATH;
-    if (this.blur_background) {
+    if (this.blur_background || this.topbar_blur_background) {
       let file = Gio.File.new_for_uri(this.desktop_background);
       let cmd = `convert -scale 10% -blur 0x2.5 -resize 200% "${file.get_path()}" ${BLURRED_BG_PATH}`;
       console.log(cmd);
@@ -750,6 +758,19 @@ export default class Dash2DockLiteExt extends Extension {
         await trySpawnCommandLine(cmd);
       } catch (err) {
         console.log(err);
+      }
+    }
+
+    if (this.topbar_blur_background) {
+      if (!this._topbar_background) {
+        this._topbar_background = new St.Widget({
+          name: 'd2daTopbarBackground',
+          clip_to_allocation: true,
+        });
+        Main.uiGroup.insert_child_below(
+          this._topbar_background,
+          Main.panel.get_parent()
+        );
       }
     }
 
@@ -882,9 +903,11 @@ export default class Dash2DockLiteExt extends Extension {
       }
 
       // background
-      {
+      if (!this.topbar_blur_background) {
         let rgba = this._style.rgba(this.topbar_background_color);
         ss.push(`background: rgba(${rgba});`);
+      } else {
+        ss.push('background: transparent;');
       }
 
       styles.push(`#panelBox #panel {${ss.join(' ')}}`);

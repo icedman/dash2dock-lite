@@ -429,6 +429,19 @@
         </child>
         <child>
           <object class="AdwActionRow">
+            <property name="visible">true</property>
+            <property name="title" translatable="yes">Background Blur</property>
+            <property name="subtitle" translatable="yes">Add background blur with current wallpaper. Requires imagemagick installed.</property>
+            <property name="activatable-widget">topbar-blur-background</property>
+            <child>
+              <object class="GtkSwitch" id="topbar-blur-background">
+                <property name="valign">center</property>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="AdwActionRow">
             <property name="title" translatable="yes">Foreground Color</property>
             <property name="subtitle" translatable="yes">Set topbar panel foreground color. Set opacity to zero to adapt to background.</property>
             <property name="activatable-widget">topbar-foreground-color</property>

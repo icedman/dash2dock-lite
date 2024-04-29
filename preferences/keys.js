@@ -114,6 +114,10 @@ export const SettingsKeys = () => {
       widget_type: 'color',
       themed: true,
     },
+    'topbar-blur-background': {
+      default_value: false,
+      widget_type: 'switch',
+    },
     'customize-label': {
       default_value: false,
       widget_type: 'switch',

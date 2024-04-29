@@ -95,6 +95,11 @@
         <default>0</default>
         <summary>Border thickness</summary>
         <description>Border thickness.</description>
+		</key>
+		<key type="b" name="topbar-blur-background">
+        <default>false</default>
+        <summary>Enable background blur</summary>
+        <description></description>
     </key>
     <key type="b" name="customize-label">
         <default>false</default>

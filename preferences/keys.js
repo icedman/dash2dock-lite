@@ -281,6 +281,10 @@ export const SettingsKeys = () => {
       default_value: false,
       widget_type: 'switch',
     },
+    'running-indicator-size': {
+      default_value: 0,
+      widget_type: 'dropdown',
+    },
     'running-indicator-style': {
       default_value: 0,
       widget_type: 'dropdown',
@@ -305,6 +309,10 @@ export const SettingsKeys = () => {
     'running-indicator-color': {
       default_value: [1, 1, 1, 1],
       widget_type: 'color',
+    },
+    'notification-badge-size': {
+      default_value: 0,
+      widget_type: 'dropdown',
     },
     'notification-badge-style': {
       default_value: 0,

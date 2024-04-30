@@ -625,7 +625,7 @@ export let Animator = class {
             position: dock._position,
             vertical,
             extension: dock.extension,
-						dock
+            dock,
           });
           dots.set_position(0, 2);
           dots.show();

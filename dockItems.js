@@ -112,6 +112,7 @@ export const DockItemDotsOverlay = GObject.registerClass(
         count: appCount,
         color: running_indicator_color || [1, 1, 1, 1],
         style: running_indicator_style || 'default',
+        size: extension.running_indicator_size || 0,
         rotate: vertical
           ? position == DockPosition.RIGHT
             ? -90
@@ -148,6 +149,7 @@ export const DockItemBadgeOverlay = GObject.registerClass(
         count: noticesCount,
         color: notification_badge_color || [1, 1, 1, 1],
         style: notification_badge_style || 'default',
+        size: extension.notification_badge_size || 0,
         translate: [0.4, -0.8],
       });
     }

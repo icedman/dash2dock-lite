@@ -447,8 +447,10 @@ export default class Dash2DockLiteExt extends Extension {
           }
           break;
         }
+        case 'notification-badge-size':
         case 'notification-badge-color':
         case 'notification-badge-style':
+        case 'running-indicator-size':
         case 'running-indicator-color':
         case 'running-indicator-style': {
           this.animate();

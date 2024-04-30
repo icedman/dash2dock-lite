@@ -55,11 +55,17 @@ const DotCanvas = GObject.registerClass(
         this.state.style != s.style ||
         this.state.rotate != s.rotate ||
         this.state.translate != s.translate ||
-        this.state.scale != s.scale
+        this.state.scale != s.scale ||
+        this.state.size != s.size
       ) {
         this.state = s;
         this.redraw();
       }
+    }
+
+    dot_size(h) {
+      let sz = [ 0.8, 0.5, 1.0 ];
+      return h * (sz[this.state.size] || 1);
     }
 
     vfunc_repaint() {
@@ -109,7 +115,7 @@ const DotCanvas = GObject.registerClass(
 
       let count = state.count;
       if (count > 4) count = 4;
-      let height = this._barHeight;
+      let height = this.dot_size(this._barHeight);
       let width = size - this._padding * 2;
       ctx.translate(this._padding, size - height * 2.5);
 
@@ -137,7 +143,7 @@ const DotCanvas = GObject.registerClass(
 
       let count = state.count;
       if (count > 4) count = 4;
-      let height = this._barHeight + 2;
+      let height = this.dot_size(this._barHeight + 2);
       let width = size - this._padding * 2;
 
       let sz = width / 14;
@@ -168,7 +174,7 @@ const DotCanvas = GObject.registerClass(
 
       let count = state.count;
       if (count > 4) count = 4;
-      let height = this._barHeight + 5;
+      let height = this.dot_size(this._barHeight + 5);
       let width = size - this._padding * 2;
 
       let spacing = Math.ceil(width / 18); // separation between the dots
@@ -198,7 +204,7 @@ const DotCanvas = GObject.registerClass(
 
       let count = state.count;
       if (count > 4) count = 4;
-      let height = this._barHeight + 6;
+      let height = this.dot_size(this._barHeight + 6);
       let width = size - this._padding * 2;
 
       let spacing = Math.ceil(width / 16); // separation between the dots
@@ -230,7 +236,7 @@ const DotCanvas = GObject.registerClass(
 
       let count = state.count;
       if (count > 4) count = 4;
-      let height = this._barHeight + 10;
+      let height = this.dot_size(this._barHeight + 10);
       let width = size - this._padding * 2;
 
       let spacing = Math.ceil(width / 16); // separation between the dots
@@ -263,7 +269,7 @@ const DotCanvas = GObject.registerClass(
 
       let count = state.count;
       if (count > 4) count = 4;
-      let height = this._barHeight;
+      let height = this.dot_size(this._barHeight);
       let width = size - this._padding * 2;
 
       let spacing = Math.ceil(width / 18); // separation between the dots
@@ -299,7 +305,7 @@ const DotCanvas = GObject.registerClass(
       let n = Math.min(15, state.count);
       let binaryValue = String('0000' + (n >>> 0).toString(2)).slice(-4);
 
-      let height = this._barHeight + 2;
+      let height = this.dot_size(this._barHeight + 2);
       let width = size - this._padding * 2;
 
       let spacing = Math.ceil(width / 14); // separation between the dots

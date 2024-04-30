@@ -301,6 +301,11 @@
         <summary>Running window indicator</summary>
         <description>Customize the running window indicator style.</description>
     </key>
+    <key type="i" name="running-indicator-size">
+        <default>0</default>
+        <summary>Running window indicator size</summary>
+        <description>Customize the running window indicator size.</description>
+    </key>
     <key type="(dddd)" name="running-indicator-color">
         <default>(1.,1.,1.,1.)</default>
         <summary>Running window indicator color</summary>
@@ -310,6 +315,11 @@
         <default>0</default>
         <summary>Notification badge</summary>
         <description>Customize the notification badge style.</description>
+    </key>
+    <key type="i" name="notification-badge-size">
+        <default>0</default>
+        <summary>Notification badge size</summary>
+        <description>Customize the notification badge size.</description>
     </key>
     <key type="(dddd)" name="notification-badge-color">
         <default>(1.,1.,1.,1.)</default>

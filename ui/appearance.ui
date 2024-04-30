@@ -317,6 +317,19 @@
         </child>
         <child>
           <object class="AdwActionRow">
+            <property name="title" translatable="yes">Running Indicator Size</property>
+            <property name="subtitle" translatable="yes">Set running app indicator size.</property>
+            <property name="activatable-widget">running-indicator-size</property>
+            <child>
+              <object class="GtkDropDown" id="running-indicator-size">
+                <property name="valign">center</property>
+                <property name="model">running-indicator-size-model</property>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="AdwActionRow">
             <property name="title" translatable="yes">Indicator Color</property>
             <property name="subtitle" translatable="yes">Select indicator color.</property>
             <property name="activatable-widget">running-indicator-color</property>
@@ -341,6 +354,19 @@
               <object class="GtkDropDown" id="notification-badge-style">
                 <property name="valign">center</property>
                 <property name="model">notification-badge-style-model</property>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="AdwActionRow">
+            <property name="title" translatable="yes">Notification Badge Size</property>
+            <property name="subtitle" translatable="yes">Set the notification badge size.</property>
+            <property name="activatable-widget">notification-badge-size</property>
+            <child>
+              <object class="GtkDropDown" id="notification-badge-size">
+                <property name="valign">center</property>
+                <property name="model">notification-badge-size-model</property>
               </object>
             </child>
           </object>
@@ -646,6 +672,20 @@
       <item>1px</item>
       <item>2px</item>
       <item>3px</item>
+    </items>
+  </object>
+  <object class="GtkStringList" id="running-indicator-size-model">
+    <items>
+      <item>Normal</item>
+      <item>Small</item>
+      <item>Big</item>
+    </items>
+  </object>
+  <object class="GtkStringList" id="notification-badge-size-model">
+    <items>
+      <item>Normal</item>
+      <item>Small</item>
+      <item>Big</item>
     </items>
   </object>
   <object class="GtkStringList" id="theme-model">

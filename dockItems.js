@@ -83,23 +83,25 @@ export const DockItemDotsOverlay = GObject.registerClass(
   class DockItemDotsOverlay extends DockItemOverlay {
     update(icon, data) {
       let renderer = this.renderer;
-      let { appCount, position, vertical, extension } = data;
+      let { appCount, position, vertical, extension, dock } = data;
 
-      renderer.width = icon._icon.width;
-      renderer.height = icon._icon.height;
+      renderer.width = dock._iconSizeScaledDown || icon._icon.width;
+      renderer.height = dock._iconSizeScaledDown || icon._icon.height;
       renderer.pivot_point = icon._icon.pivot_point;
 
       let canvasScale = renderer.width / renderer._canvas.width;
       renderer._canvas.set_scale(canvasScale, canvasScale);
 
       if (vertical) {
+        let offset = dock._iconSizeScaledDown * 0.1;
         renderer.translationX =
-          icon._icon.translationX + (position == DockPosition.LEFT ? -6 : 6);
+          icon._icon.translationX + (position == DockPosition.LEFT ? -offset : dock._iconSizeScaledDown * 0.3);
         renderer.translationY = icon._icon.translationY;
       } else {
+        let offset = dock._iconSizeScaledDown * 0.2;
         renderer.translationX = icon._icon.translationX;
         renderer.translationY =
-          icon._icon.translationY + (position == DockPosition.BOTTOM ? 8 : -8);
+          icon._icon.translationY + (position == DockPosition.BOTTOM ? offset : -offset);
       }
 
       let options = extension.running_indicator_style_options;

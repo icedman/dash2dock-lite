@@ -625,6 +625,7 @@ export let Animator = class {
             position: dock._position,
             vertical,
             extension: dock.extension,
+						dock
           });
           dots.set_position(0, 2);
           dots.show();
@@ -845,9 +846,15 @@ export let Animator = class {
           if (dock.isVertical()) {
             appwell.translation_x =
               dock._position == DockPosition.LEFT ? res : -res;
+            if (container._renderer) {
+              container._renderer.translationX = appwell.translationX;
+            }
           } else {
             appwell.translation_y =
               dock._position == DockPosition.BOTTOM ? -res : res;
+            if (container._renderer) {
+              container._renderer.translationY = appwell.translationY;
+            }
           }
           translateDecor(container, appwell);
         },
@@ -859,6 +866,9 @@ export let Animator = class {
           if (dock.isVertical()) {
             appwell.translation_x = appwell.translation_x =
               dock._position == DockPosition.LEFT ? res : -res;
+            if (container._renderer) {
+              container._renderer.translationX = appwell.translationX;
+            }
           } else {
             appwell.translation_y =
               dock._position == DockPosition.BOTTOM ? -res : res;

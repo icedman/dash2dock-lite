@@ -121,6 +121,7 @@ export let Dock = GObject.registerClass(
     }
 
     recreateDash() {
+      this._hidden = false;
       this.opacity = 0;
       this.renderArea.remove_all_children();
       this.renderArea.opacity = 0;

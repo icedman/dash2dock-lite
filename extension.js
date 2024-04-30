@@ -624,6 +624,7 @@ export default class Dash2DockLiteExt extends Extension {
       () => {
         Main.overview.dash.last_child.visible = false;
         Main.overview.dash.opacity = 0;
+        this._createTobarBackground();
       },
       // this.startUp.bind(this),
       'monitors-changed',
@@ -756,6 +757,7 @@ export default class Dash2DockLiteExt extends Extension {
   }
 
   _onSessionUpdated() {
+    this._createTobarBackground();
     this.animate();
   }
 
@@ -796,6 +798,7 @@ export default class Dash2DockLiteExt extends Extension {
 
     this.desktop_background_blurred = BLURRED_BG_PATH;
     if (this.blur_background || this.topbar_blur_background) {
+      this._createTobarBackground();
       let file = Gio.File.new_for_uri(this.desktop_background);
       let cmd = `convert -scale 10% -blur 0x2.5 -resize 200% "${file.get_path()}" ${BLURRED_BG_PATH}`;
       console.log(cmd);
@@ -811,7 +814,7 @@ export default class Dash2DockLiteExt extends Extension {
 
   _createTobarBackground() {
     if (this.topbar_blur_background) {
-      if (!this._topbar_background && Main.panel) {
+      if (!this._topbar_background && Main.panel && Main.panel.get_parent()) {
         this._topbar_background = new St.Widget({
           name: 'd2daTopbarBackground',
           clip_to_allocation: true,

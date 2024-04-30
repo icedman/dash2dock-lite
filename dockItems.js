@@ -96,10 +96,10 @@ export const DockItemDotsOverlay = GObject.registerClass(
         let offset = dock._iconSizeScaledDown * 0.1;
         renderer.translationX =
           icon._icon.translationX + (position == DockPosition.LEFT ? -offset : dock._iconSizeScaledDown * 0.3);
-        renderer.translationY = icon._icon.translationY;
+        renderer.translationY = icon._icon.translationY + offset/4;
       } else {
         let offset = dock._iconSizeScaledDown * 0.2;
-        renderer.translationX = icon._icon.translationX;
+        renderer.translationX = icon._icon.translationX + offset/4;
         renderer.translationY =
           icon._icon.translationY + (position == DockPosition.BOTTOM ? offset : -offset);
       }

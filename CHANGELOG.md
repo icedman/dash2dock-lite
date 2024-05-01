@@ -11,6 +11,10 @@
 
 # Next Release
 
+* Bug fixes
+
+# Release 65
+
 * Blurred Backgrounds
 * Custom icons
 

@@ -64,7 +64,7 @@ const DotCanvas = GObject.registerClass(
     }
 
     dot_size(h) {
-      let sz = [ 0.8, 0.5, 1.0 ];
+      let sz = [0.8, 0.5, 1.0];
       return h * (sz[this.state.size] || 1);
     }
 

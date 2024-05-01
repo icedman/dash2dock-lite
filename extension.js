@@ -321,7 +321,7 @@ export default class Dash2DockLiteExt extends Extension {
       });
 
       this._hookCompiz();
-      this._createTobarBackground();
+      this._createTopbarBackground();
     }, 10);
   }
 
@@ -624,7 +624,7 @@ export default class Dash2DockLiteExt extends Extension {
       () => {
         Main.overview.dash.last_child.visible = false;
         Main.overview.dash.opacity = 0;
-        this._createTobarBackground();
+        this._createTopbarBackground();
       },
       // this.startUp.bind(this),
       'monitors-changed',
@@ -757,7 +757,7 @@ export default class Dash2DockLiteExt extends Extension {
   }
 
   _onSessionUpdated() {
-    this._createTobarBackground();
+    this._createTopbarBackground();
     this.animate();
   }
 
@@ -798,7 +798,7 @@ export default class Dash2DockLiteExt extends Extension {
 
     this.desktop_background_blurred = BLURRED_BG_PATH;
     if (this.blur_background || this.topbar_blur_background) {
-      this._createTobarBackground();
+      this._createTopbarBackground();
       let file = Gio.File.new_for_uri(this.desktop_background);
       let cmd = `convert -scale 10% -blur 0x2.5 -resize 200% "${file.get_path()}" ${BLURRED_BG_PATH}`;
       console.log(cmd);
@@ -812,18 +812,16 @@ export default class Dash2DockLiteExt extends Extension {
     this.animate();
   }
 
-  _createTobarBackground() {
-    if (this.topbar_blur_background) {
-      if (!this._topbar_background && Main.panel && Main.panel.get_parent()) {
-        this._topbar_background = new St.Widget({
-          name: 'd2daTopbarBackground',
-          clip_to_allocation: true,
-        });
-        Main.uiGroup.insert_child_below(
-          this._topbar_background,
-          Main.panel.get_parent()
-        );
-      }
+  _createTopbarBackground() {
+    if (!this._topbar_background && Main.panel && Main.panel.get_parent()) {
+      this._topbar_background = new St.Widget({
+        name: 'd2daTopbarBackground',
+        clip_to_allocation: true,
+      });
+      Main.uiGroup.insert_child_below(
+        this._topbar_background,
+        Main.panel.get_parent()
+      );
     }
   }
 
@@ -907,14 +905,6 @@ export default class Dash2DockLiteExt extends Extension {
       styles.push(`#d2daBackground { ${ss.join(' ')}}`);
     }
 
-    // if (this.blur_background)
-    // {
-    //   let ss = [];
-    //   ss.push(`\n background-image: url("${BLURRED_BG_PATH}");`);
-    //   ss.push(`\n background-position: center;`);
-    //   styles.push(`#d2daBackground { ${ss.join(' ')}}`);
-    // }
-
     // dash label
     if (this.customize_label) {
       let rads = [0, 2, 6, 10, 12, 16, 20];
@@ -953,13 +943,7 @@ export default class Dash2DockLiteExt extends Extension {
       }
 
       // background
-      if (!this.topbar_blur_background) {
-        let rgba = this._style.rgba(this.topbar_background_color);
-        ss.push(`background: rgba(${rgba});`);
-      } else {
-        ss.push('background: transparent;');
-      }
-
+      ss.push('background: transparent;');
       styles.push(`#panelBox #panel {${ss.join(' ')}}`);
 
       // foreground

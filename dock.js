@@ -1000,11 +1000,11 @@ export let Dock = GObject.registerClass(
       // take care of panel background
       let topbar_background = this.extension._topbar_background;
       if (this == this.extension.docks[0] && topbar_background) {
-        if (!this._topbarBlurEffect) {
-          this._topbarBlurEffect = this._createEffect(1);
+        if (!topbar_background._blurEffect) {
+          topbar_background._blurEffect = this._createEffect(1);
           topbar_background.add_effect_with_name(
             'blur',
-            this._topbarBlurEffect
+            topbar_background._blurEffect
           );
         }
         let panel = Main.panel.get_parent();
@@ -1013,19 +1013,27 @@ export let Dock = GObject.registerClass(
         topbar_background.width = panel.width;
         topbar_background.height = panel.height;
         let style = [];
-        style.push(
-          // `background-image: url("${dock.extension.desktop_background}");`
-          `background-image: url("${this.extension.desktop_background_blurred}");`
-        );
-        let monitor = Main.layoutManager.primaryMonitor;
-        style.push('background-position: 0px 0px;');
-        style.push(`background-size: ${monitor.width}px ${monitor.height}px;`);
+        if (this.extension.topbar_blur_background) {
+          topbar_background._blurEffect.color =
+            this.extension.topbar_background_color;
+          style.push(
+            // `background-image: url("${dock.extension.desktop_background}");`
+            `background-image: url("${this.extension.desktop_background_blurred}");`
+          );
+          let monitor = Main.layoutManager.primaryMonitor;
+          style.push('background-position: 0px 0px;');
+          style.push(
+            `background-size: ${monitor.width}px ${monitor.height}px;`
+          );
+        } else {
+          let rgba = this.extension._style.rgba(
+            this.extension.topbar_background_color
+          );
+          style.push(`background-color: rgba(${rgba});`);
+        }
         topbar_background.style = style.join('');
-        this._topbarBlurEffect.color = this.extension.topbar_background_color;
-      }
-
-      if (topbar_background) {
-        topbar_background.visible = this.extension.topbar_blur_background;
+        topbar_background._blurEffect.enabled =
+          this.extension.topbar_blur_background;
       }
 
       return true;

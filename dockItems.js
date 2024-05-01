@@ -95,13 +95,17 @@ export const DockItemDotsOverlay = GObject.registerClass(
       if (vertical) {
         let offset = dock._iconSizeScaledDown * 0.1;
         renderer.translationX =
-          icon._icon.translationX + (position == DockPosition.LEFT ? -offset : dock._iconSizeScaledDown * 0.3);
-        renderer.translationY = icon._icon.translationY + offset/4;
+          icon._icon.translationX +
+          (position == DockPosition.LEFT
+            ? -offset
+            : dock._iconSizeScaledDown * 0.3);
+        renderer.translationY = icon._icon.translationY + offset / 4;
       } else {
         let offset = dock._iconSizeScaledDown * 0.2;
-        renderer.translationX = icon._icon.translationX + offset/4;
+        renderer.translationX = icon._icon.translationX + offset / 4;
         renderer.translationY =
-          icon._icon.translationY + (position == DockPosition.BOTTOM ? offset : -offset);
+          icon._icon.translationY +
+          (position == DockPosition.BOTTOM ? offset : -offset);
       }
 
       let options = extension.running_indicator_style_options;

@@ -247,6 +247,30 @@ export const Timer = class {
     return this.subscribe(obj);
   }
 
+  runUntil(func, delay, name) {
+    if (typeof func === 'object') {
+      func._time = 0;
+      return this.subscribe(func);
+    }
+    let obj = {
+      _name: name,
+      _type: 'until',
+      _time: 0,
+      _delay: delay,
+      _func: func,
+      onUpdate: (s, dt) => {
+        s._time += dt;
+        if (s._time >= s._delay) {
+          if (s._func(s)) {
+            this.unsubscribe(s);
+          }
+          s._time -= s._delay;
+        }
+      },
+    };
+    return this.subscribe(obj);
+  }
+
   runOnce(func, delay, name) {
     if (typeof func === 'object') {
       func._time = 0;

@@ -10,6 +10,8 @@ import Gio from 'gi://Gio';
 import GObject from 'gi://GObject';
 import Clutter from 'gi://Clutter';
 import St from 'gi://St';
+import Graphene from 'gi://Graphene';
+const Point = Graphene.Point;
 
 import { DockPosition } from './dock.js';
 import { Vector } from './vector.js';
@@ -38,13 +40,13 @@ export const DockItemList = GObject.registerClass(
 
     static createItem(dock, f) {
       let target = dock.createItem(f.path);
-      target._onClick = async () => {
+      target._onClick = () => {
         if (dock._position != DockPosition.BOTTOM) {
           target.activateNewWindow();
           return;
         }
         if (!dock.extension.services[f.items]) {
-          await f.prepare();
+          f.prepare();
         }
         let files = [...(dock.extension.services[f.items] || [])];
         if (!files.length) return;
@@ -150,12 +152,7 @@ export const DockItemList = GObject.registerClass(
           this.visible = false;
           this.dock._maybeBounce(this._target.child);
 
-          try {
-            console.log(cmd);
-            trySpawnCommandLine(cmd);
-          } catch (err) {
-            console.log(err);
-          }
+          trySpawnCommandLine(cmd);
         });
       });
 

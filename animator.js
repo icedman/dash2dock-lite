@@ -234,7 +234,7 @@ export let Animator = class {
 
       //! png image makes this extremely slow -- this may be the cause of "lag" experienced by some users
       //! some themes or apps use PNG instead of SVG... set_scale is apparently resource hog
-      if (icon._icon.gicon && icon._icon.gicon.file != null) {
+      if (icon._icon.gicon && icon._icon.gicon.file != null && !icon._icon.gicon.file.get_path()?.toLowerCase().endsWith('svg')) {
         // skip scaling image files!... too costly
       } else {
         icon._icon.set_scale(scale, scale);
@@ -424,6 +424,11 @@ export let Animator = class {
         if (gicon) {
           // apply override
           renderer.gicon = gicon;
+
+          // replace PNG with override SVG
+          if (icon._icon.gicon && icon._icon.gicon.file && gicon) {
+            icon._icon.gicon = gicon;
+          }
         } else {   
           if (icon_name) {
             renderer.icon_name = icon_name;

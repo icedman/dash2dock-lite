@@ -234,7 +234,11 @@ export let Animator = class {
 
       //! png image makes this extremely slow -- this may be the cause of "lag" experienced by some users
       //! some themes or apps use PNG instead of SVG... set_scale is apparently resource hog
-      if (icon._icon.gicon && icon._icon.gicon.file != null) {
+      if (
+        icon._icon.gicon &&
+        icon._icon.gicon.file != null &&
+        !icon._icon.gicon.file.get_path()?.toLowerCase().endsWith('svg')
+      ) {
         // skip scaling image files!... too costly
       } else {
         icon._icon.set_scale(scale, scale);
@@ -374,16 +378,44 @@ export let Animator = class {
       // dock.renderArea.opacity = 100;
       {
         let icon_name = icon._icon.icon_name;
+        let app_name =
+          icon._appwell?.app?.app_info?.get_id()?.replace('.desktop', '') ??
+          null;
         let gicon = null;
 
-        if (dock.extension.icon_map && dock.extension.icon_map[icon_name]) {
+        // override icons here
+        if (dock.extension.icon_map || dock.extension.app_map) {
+          // override via icon name
           if (
             dock.extension.icon_map_cache &&
             dock.extension.icon_map_cache[icon_name]
           ) {
             gicon = dock.extension.icon_map_cache[icon_name];
           }
-          icon_name = dock.extension.icon_map[icon_name];
+          if (
+            !gicon &&
+            dock.extension.icon_map &&
+            dock.extension.icon_map[icon_name]
+          ) {
+            icon_name = dock.extension.icon_map[icon_name];
+          }
+
+          // override via app name
+          if (
+            app_name &&
+            dock.extension.app_map_cache &&
+            dock.extension.app_map_cache[app_name]
+          ) {
+            gicon = dock.extension.app_map_cache[app_name];
+          }
+          if (
+            !gicon &&
+            dock.extension.app_map &&
+            app_name &&
+            dock.extension.app_map[app_name]
+          ) {
+            icon_name = dock.extension.app_map[app_name];
+          }
         }
 
         let didCreate = false;
@@ -398,30 +430,43 @@ export let Animator = class {
           renderer.opacity = 0;
           icon._renderer = renderer;
           target.add_child(renderer);
-          console.log(`Icon created: ${icon_name}`);
+          console.log(`Icon created: ${icon_name} [${app_name}]`);
         } else {
           icon._renderer.opacity = 255;
         }
 
         let renderer = icon._renderer;
-        if (icon_name) {
-          if (gicon) {
-            renderer.gicon = gicon;
-          } else {
-            renderer.icon_name = icon_name;
+        if (gicon) {
+          // apply override
+          renderer.gicon = gicon;
+
+          // replace PNG with override SVG
+          if (icon._icon.gicon && icon._icon.gicon.file && gicon) {
+            icon._icon.gicon = gicon;
           }
         } else {
-          //! clone
-          // if (icon._icon.gicon) {
-          //   let clone = true;
-          //   if (renderer.gicon && renderer.gicon.file.get_path() == icon._icon.file.get_path()) {
-          //     clone = false;
-          //   }
-          //   if (clone) {
-          //     renderer.gicon = new Gio.FileIcon({ file: icon._icon.file });
-          //   }
-          // }
-          renderer.gicon = icon._icon.gicon;
+          if (icon_name) {
+            renderer.icon_name = icon_name;
+          } else {
+            //! clone
+            if (icon._icon.gicon) {
+              let clone = icon._icon.gicon.file;
+              if (
+                renderer.gicon &&
+                renderer.gicon.file &&
+                renderer.gicon.file.get_path() ==
+                  icon._icon.gicon.file.get_path()
+              ) {
+                clone = false;
+              }
+              if (clone) {
+                renderer.gicon = new Gio.FileIcon({
+                  file: icon._icon.gicon.file,
+                });
+              }
+            }
+            renderer.gicon = icon._icon.gicon;
+          }
         }
 
         //-------------------
@@ -502,20 +547,8 @@ export let Animator = class {
           }
           let sw = !isNaN(tSize[0]) ? tSize[0] : 0;
           let sh = !isNaN(tSize[1]) ? tSize[1] : 0;
-          icon._label.x =
-            tPos[0] +
-            // renderer.x +
-            // dock.x -
-            // dock._monitor.x +
-            sw / 2 -
-            icon._label.width / 2;
-          icon._label.y =
-            tPos[1] +
-            // renderer.y +
-            // dock.y -
-            // dock._monitor.y +
-            sh / 2 -
-            icon._label.height / 2;
+          icon._label.x = tPos[0] + sw / 2 - icon._label.width / 2;
+          icon._label.y = tPos[1] + sh / 2 - icon._label.height / 2;
           if (vertical) {
             if (dock._position == DockPosition.LEFT) {
               icon._label.x += sh / 1.5 + icon._label.width / 2;

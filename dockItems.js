@@ -208,7 +208,11 @@ export const DockIcon = GObject.registerClass(
             }
           } else {
             if (container._onClick) {
-              container._onClick();
+              try {
+                container._onClick();
+              } catch (err) {
+                console.log(err);
+              }
             }
           }
         },

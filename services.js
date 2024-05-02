@@ -109,31 +109,39 @@ export const Services = class {
       this
     );
 
-    if (this._downloadsUserDir) {
-      this._downloadsDir = Gio.File.new_for_path(this._downloadsUserDir);
-    } else {
-      // fallback
-      this._downloadsDir = Gio.File.new_for_path('Downloads');
-    }
-    this._downloadsMonitor = this._downloadsDir.monitor(
-      Gio.FileMonitorFlags.WATCH_MOVES,
-      null
-    );
-    this._downloadsMonitor.connectObject(
-      'changed',
-      (fileMonitor, file, otherFile, eventType) => {
-        switch (eventType) {
-          case Gio.FileMonitorEvent.CHANGED:
-          case Gio.FileMonitorEvent.CREATED:
-          case Gio.FileMonitorEvent.MOVED_IN:
-            return;
-        }
-        this._debounceCheckDownloads();
-      },
-      this
-    );
+    this.getUserPath('DOWNLOAD')
+      .then((path) => {
+        this._downloadsUserDir = path;
 
-    this._downloadsUserDir = this.getUserPath('DOWNLOAD');
+        if (this._downloadsUserDir) {
+          this._downloadsDir = Gio.File.new_for_path(this._downloadsUserDir);
+        } else {
+          // fallback
+          this._downloadsDir = Gio.File.new_for_path('Downloads');
+        }
+
+        this._downloadsMonitor = this._downloadsDir.monitor(
+          Gio.FileMonitorFlags.WATCH_MOVES,
+          null
+        );
+        this._downloadsMonitor.connectObject(
+          'changed',
+          (fileMonitor, file, otherFile, eventType) => {
+            switch (eventType) {
+              case Gio.FileMonitorEvent.CHANGED:
+              case Gio.FileMonitorEvent.CREATED:
+              case Gio.FileMonitorEvent.MOVED_IN:
+                return;
+            }
+            this._debounceCheckDownloads();
+          },
+          this
+        );
+      })
+      .catch((err) => {
+        console.log('--------------------');
+        console.log(err);
+      });
 
     //! ***services startup function are blocking calls. async these***
     this.checkTrash();
@@ -441,6 +449,7 @@ export const Services = class {
     let directory = Gio.File.new_for_path(path);
     let enumerator = directory.enumerate_children(
       [
+        Gio.FILE_ATTRIBUTE_STANDARD_CONTENT_TYPE,
         Gio.FILE_ATTRIBUTE_STANDARD_NAME,
         Gio.FILE_ATTRIBUTE_STANDARD_ICON,
         Gio.FILE_ATTRIBUTE_TIME_MODIFIED,
@@ -458,7 +467,7 @@ export const Services = class {
         name: fileName,
         display: fileName,
         icon: fileInfo.get_icon().get_names()[0] ?? 'file',
-        type: fileInfo.get_file_type(),
+        type: fileInfo.get_content_type(),
         path: [path, fileName].join('/'),
         date: fileModified ?? { tv_sec: 0 },
       });

@@ -379,6 +379,20 @@ export default class Dash2DockLiteExt extends Extension {
             }
           });
         }
+        if (json['apps']) {
+          this.app_map = json['apps'];
+          this.app_map_cache = {};
+          Object.keys(this.app_map).forEach((k) => {
+            let path = this.app_map[k];
+            if (path.toLowerCase().endsWith('.svg')) {
+              let file = Gio.File.new_for_path(`.config/d2da/${path}`);
+              if (file.query_exists(null)) {
+                console.log(`loading icon ${file.get_path()}`);
+                this.app_map_cache[k] = new Gio.FileIcon({ file: file });
+              }
+            }
+          });
+        }
       } catch (err) {
         console.log(err);
       }
@@ -388,6 +402,7 @@ export default class Dash2DockLiteExt extends Extension {
   _unloadIconMap() {
     this.icon_map = {};
     this.icon_map_cache = {};
+    this.app_map_cache = {};
   }
 
   _enableSettings() {

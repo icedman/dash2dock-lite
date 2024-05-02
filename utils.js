@@ -79,10 +79,6 @@ export const isInRect = (r, p, pad) => {
 
 export const trySpawnCommandLine = function (cmd) {
   return new Promise((resolve, reject) => {
-    try {
-      GLib.spawn_command_line_async(cmd).then(resolve);
-    } catch (err) {
-      reject();
-    }
+    GLib.spawn_command_line_async(cmd).then(resolve).catch(reject);
   });
 };

@@ -106,6 +106,16 @@ You may also use **icon names** from your favorite icon theme. And use the follo
 
 The icons ```show-apps-icon, trash, trash-full``` must be available on your icons theme folder. 
 
+Alternatively, you may override icons via app id:
+
+```json
+{
+   "apps": {
+      "spotify_spotify": "icons/spotify.svg"
+   }
+}
+```
+
 Check the log to see the icon names currently being used by Dash2Dock Animated. Search for log text such assets
 
 ```sh

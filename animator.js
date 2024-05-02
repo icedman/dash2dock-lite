@@ -374,20 +374,33 @@ export let Animator = class {
       // dock.renderArea.opacity = 100;
       {
         let icon_name = icon._icon.icon_name;
+        let app_name = icon._appwell?.app?.app_info?.get_id()?.replace('.desktop', '') ?? null;
         let gicon = null;
 
-        if (dock.extension.icon_map && dock.extension.icon_map[icon_name]) {
+        // override icons here
+        if (dock.extension.icon_map || dock.extension.app_map) {
+          // override via icon name
           if (
             dock.extension.icon_map_cache &&
             dock.extension.icon_map_cache[icon_name]
           ) {
             gicon = dock.extension.icon_map_cache[icon_name];
           }
-          icon_name = dock.extension.icon_map[icon_name];
-        }
+          if (!gicon && dock.extension.icon_map) {
+            icon_name = dock.extension.icon_map[icon_name];
+          }
 
-        if (!icon_name && icon._appwell && icon._appwell.app) {
-          
+          // override via app name
+          if (
+            app_name &&
+            dock.extension.app_map_cache &&
+            dock.extension.app_map_cache[app_name]
+          ) {
+            gicon = dock.extension.app_map_cache[app_name];
+          }
+          if (!gicon && dock.extension.icon_map && app_name) {
+            icon_name = dock.extension.app_map[app_name];
+          }
         }
 
         let didCreate = false;
@@ -402,30 +415,31 @@ export let Animator = class {
           renderer.opacity = 0;
           icon._renderer = renderer;
           target.add_child(renderer);
-          console.log(`Icon created: ${icon_name}`);
+          console.log(`Icon created: ${icon_name} [${app_name}]`);
         } else {
           icon._renderer.opacity = 255;
         }
 
         let renderer = icon._renderer;
-        if (icon_name) {
-          if (gicon) {
-            renderer.gicon = gicon;
-          } else {
+        if (gicon) {
+          // apply override
+          renderer.gicon = gicon;
+        } else {   
+          if (icon_name) {
             renderer.icon_name = icon_name;
-          }
-        } else {
-          //! clone
-          if (icon._icon.gicon) {
-            let clone = true;
-            if (renderer.gicon && renderer.gicon.file.get_path() == icon._icon.gicon.file.get_path()) {
-              clone = false;
+          } else {
+            //! clone
+            if (icon._icon.gicon) {
+              let clone = icon._icon.gicon.file;
+              if (renderer.gicon && renderer.gicon.file && renderer.gicon.file.get_path() == icon._icon.gicon.file.get_path()) {
+                clone = false;
+              }
+              if (clone) {
+                renderer.gicon = new Gio.FileIcon({ file: icon._icon.gicon.file });
+              }
             }
-            if (clone) {
-              renderer.gicon = new Gio.FileIcon({ file: icon._icon.gicon.file });
-            }
+            renderer.gicon = icon._icon.gicon;
           }
-          renderer.gicon = icon._icon.gicon;
         }
 
         //-------------------

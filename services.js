@@ -448,6 +448,7 @@ export const Services = class {
     let directory = Gio.File.new_for_path(path);
     let enumerator = directory.enumerate_children(
       [
+        Gio.FILE_ATTRIBUTE_STANDARD_CONTENT_TYPE,
         Gio.FILE_ATTRIBUTE_STANDARD_NAME,
         Gio.FILE_ATTRIBUTE_STANDARD_ICON,
         Gio.FILE_ATTRIBUTE_TIME_MODIFIED,

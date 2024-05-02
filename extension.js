@@ -324,7 +324,7 @@ export default class Dash2DockLiteExt extends Extension {
     }, 10);
     this._loTimer.runUntil(() => {
       return this._createTopbarBackground();
-    }, 250);
+    }, 150);
   }
 
   _autohiders() {

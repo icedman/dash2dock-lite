@@ -109,38 +109,39 @@ export const Services = class {
       this
     );
 
-    this.getUserPath('DOWNLOAD').then((path) => {
-      this._downloadsUserDir =  path;
+    this.getUserPath('DOWNLOAD')
+      .then((path) => {
+        this._downloadsUserDir = path;
 
-      if (this._downloadsUserDir) {
-        this._downloadsDir = Gio.File.new_for_path(this._downloadsUserDir);
-      } else {
-        // fallback
-        this._downloadsDir = Gio.File.new_for_path('Downloads');
-      }
-      
-      this._downloadsMonitor = this._downloadsDir.monitor(
-        Gio.FileMonitorFlags.WATCH_MOVES,
-        null
-      );
-      this._downloadsMonitor.connectObject(
-        'changed',
-        (fileMonitor, file, otherFile, eventType) => {
-          switch (eventType) {
-            case Gio.FileMonitorEvent.CHANGED:
-            case Gio.FileMonitorEvent.CREATED:
-            case Gio.FileMonitorEvent.MOVED_IN:
-              return;
-          }
-          this._debounceCheckDownloads();
-        },
-        this
-      );
-      
-    }).catch((err) => {
-      console.log('--------------------');
-      console.log(err);
-    });
+        if (this._downloadsUserDir) {
+          this._downloadsDir = Gio.File.new_for_path(this._downloadsUserDir);
+        } else {
+          // fallback
+          this._downloadsDir = Gio.File.new_for_path('Downloads');
+        }
+
+        this._downloadsMonitor = this._downloadsDir.monitor(
+          Gio.FileMonitorFlags.WATCH_MOVES,
+          null
+        );
+        this._downloadsMonitor.connectObject(
+          'changed',
+          (fileMonitor, file, otherFile, eventType) => {
+            switch (eventType) {
+              case Gio.FileMonitorEvent.CHANGED:
+              case Gio.FileMonitorEvent.CREATED:
+              case Gio.FileMonitorEvent.MOVED_IN:
+                return;
+            }
+            this._debounceCheckDownloads();
+          },
+          this
+        );
+      })
+      .catch((err) => {
+        console.log('--------------------');
+        console.log(err);
+      });
 
     //! ***services startup function are blocking calls. async these***
     this.checkTrash();

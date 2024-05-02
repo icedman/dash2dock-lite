@@ -386,6 +386,10 @@ export let Animator = class {
           icon_name = dock.extension.icon_map[icon_name];
         }
 
+        if (!icon_name && icon._appwell && icon._appwell.app) {
+          
+        }
+
         let didCreate = false;
         if (!icon._renderer) {
           didCreate = true;
@@ -412,15 +416,15 @@ export let Animator = class {
           }
         } else {
           //! clone
-          // if (icon._icon.gicon) {
-          //   let clone = true;
-          //   if (renderer.gicon && renderer.gicon.file.get_path() == icon._icon.file.get_path()) {
-          //     clone = false;
-          //   }
-          //   if (clone) {
-          //     renderer.gicon = new Gio.FileIcon({ file: icon._icon.file });
-          //   }
-          // }
+          if (icon._icon.gicon) {
+            let clone = true;
+            if (renderer.gicon && renderer.gicon.file.get_path() == icon._icon.gicon.file.get_path()) {
+              clone = false;
+            }
+            if (clone) {
+              renderer.gicon = new Gio.FileIcon({ file: icon._icon.gicon.file });
+            }
+          }
           renderer.gicon = icon._icon.gicon;
         }
 

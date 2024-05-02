@@ -210,7 +210,7 @@ export const DockIcon = GObject.registerClass(
             if (container._onClick) {
               try {
                 container._onClick();
-              } catch(err) {
+              } catch (err) {
                 console.log(err);
               }
             }

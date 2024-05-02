@@ -386,7 +386,7 @@ export let Animator = class {
           ) {
             gicon = dock.extension.icon_map_cache[icon_name];
           }
-          if (!gicon && dock.extension.icon_map) {
+          if (!gicon && dock.extension.icon_map && dock.extension.icon_map[icon_name]) {
             icon_name = dock.extension.icon_map[icon_name];
           }
 
@@ -398,7 +398,7 @@ export let Animator = class {
           ) {
             gicon = dock.extension.app_map_cache[app_name];
           }
-          if (!gicon && dock.extension.icon_map && app_name) {
+          if (!gicon && dock.extension.app_map && app_name && dock.extension.app_map[app_name]) {
             icon_name = dock.extension.app_map[app_name];
           }
         }
@@ -522,16 +522,10 @@ export let Animator = class {
           let sh = !isNaN(tSize[1]) ? tSize[1] : 0;
           icon._label.x =
             tPos[0] +
-            // renderer.x +
-            // dock.x -
-            // dock._monitor.x +
             sw / 2 -
             icon._label.width / 2;
           icon._label.y =
             tPos[1] +
-            // renderer.y +
-            // dock.y -
-            // dock._monitor.y +
             sh / 2 -
             icon._label.height / 2;
           if (vertical) {

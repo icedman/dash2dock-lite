@@ -248,8 +248,6 @@ export default class Dash2DockLiteExt extends Extension {
 
     this._hookCompiz(false);
 
-    // fedora 39 (gnome 45) workaround
-    Main.panel.style = '';
     log('dash2dock-lite disabled');
   }
 
@@ -773,11 +771,6 @@ export default class Dash2DockLiteExt extends Extension {
     this._autohiders().forEach((autohider) => {
       autohider._debounceCheckHide();
     });
-
-    if (this.customize_topbar) {
-      // fedora 39 (gnome 45) workaround
-      Main.panel.style = 'background: transparent !important;';
-    }
   }
 
   _onSessionUpdated() {
@@ -961,8 +954,6 @@ export default class Dash2DockLiteExt extends Extension {
 
     // topbar
     if (this.customize_topbar) {
-      // fedora 39 (gnome 45) workaround
-      Main.panel.style = 'background: transparent !important;';
       let ss = [];
       // border
       if (this.topbar_border_thickness) {
@@ -988,8 +979,6 @@ export default class Dash2DockLiteExt extends Extension {
         }
         styles.push(`#panelBox #panel * { color: rgba(${rgba}) }`);
       }
-    } else {
-      Main.panel.style = '';
     }
 
     if (this.separator_thickness) {

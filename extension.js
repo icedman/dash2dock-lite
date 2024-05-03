@@ -921,10 +921,12 @@ export default class Dash2DockLiteExt extends Extension {
         r = 0;
       }
       ss.push(`border-radius: ${r}px;`);
+      /*
       if (!this.blur_background) {
         let rgba = this._style.rgba(this.background_color);
         ss.push(`background: rgba(${rgba});`);
       }
+      */
       styles.push(`#d2daBackground { ${ss.join(' ')}}`);
     }
 

@@ -1017,7 +1017,12 @@ export let Dock = GObject.registerClass(
         topbar_background.width = panel.width;
         topbar_background.height = panel.height;
         let style = [];
-        if (this.extension.topbar_blur_background) {
+
+        let blur = !(
+          this.extension._inOverview && this.extension.disable_blur_at_overview
+        );
+
+        if (this.extension.topbar_blur_background && blur) {
           topbar_background._blurEffect.color =
             this.extension.topbar_background_color;
           style.push(
@@ -1035,6 +1040,7 @@ export let Dock = GObject.registerClass(
           );
           style.push(`background-color: rgba(${rgba});`);
         }
+
         topbar_background.style = style.join('');
         topbar_background._blurEffect.enabled =
           this.extension.topbar_blur_background;

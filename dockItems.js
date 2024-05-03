@@ -397,7 +397,6 @@ export const DockBackground = GObject.registerClass(
           style.push(
             `background-size: ${dock._monitor.width}px ${dock._monitor.height}px;`
           );
-
           switch (dock._position) {
             case DockPosition.LEFT: {
               style.push(`background-position: -${this.x}px -${this.y}px;`);
@@ -425,6 +424,9 @@ export const DockBackground = GObject.registerClass(
               break;
             }
           }
+        } else {
+          let rgba = dock.extension._style.rgba(dock.extension.background_color);
+          style.push(`background: rgba(${rgba});`);
         }
 
         this.style = style.join(' ');

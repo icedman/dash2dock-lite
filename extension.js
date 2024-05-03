@@ -570,6 +570,7 @@ export default class Dash2DockLiteExt extends Extension {
         case 'topbar-background-color':
         case 'topbar-blur-background':
         case 'background-color':
+        case 'blur-resolution':
         case 'blur-background':
           this._updateBlurredBackground();
           this._updateStyle();
@@ -815,7 +816,8 @@ export default class Dash2DockLiteExt extends Extension {
     this.desktop_background_blurred = BLURRED_BG_PATH;
     if (this.blur_background || this.topbar_blur_background) {
       let file = Gio.File.new_for_uri(this.desktop_background);
-      let cmd = `convert -scale 10% -blur 0x2.5 -resize 200% "${file.get_path()}" ${BLURRED_BG_PATH}`;
+      let quality = [250, 250, 500, 1000][this.blur_resolution || 0];
+      let cmd = `convert -scale 10% -blur 0x2.5 -resize ${quality}% "${file.get_path()}" ${BLURRED_BG_PATH}`;
       console.log(cmd);
       try {
         await trySpawnCommandLine(cmd);

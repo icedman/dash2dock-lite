@@ -345,6 +345,14 @@ export const SettingsKeys = () => {
       widget_type: 'dropdown',
       test: { values: [0, 1, 2, 3] },
     },
+    'blur-resolution': {
+      default_value: 0,
+      widget_type: 'dropdown',
+    },
+    'disable-blur-at-overview': {
+      default_value: true,
+      widget_type: 'switch',
+    },
     'icon-effect': {
       default_value: 0,
       widget_type: 'dropdown',

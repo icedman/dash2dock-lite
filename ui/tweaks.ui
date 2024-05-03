@@ -151,6 +151,38 @@
     </child>
     <child>
       <object class="AdwPreferencesGroup">
+        <property name="title" translatable="yes">Blur Background</property>
+        <property name="description" translatable="yes"/>
+        <child>
+          <object class="AdwActionRow">
+            <property name="title" translatable="yes">Blur Quality</property>
+            <property name="subtitle" translatable="yes">Set blur resolution quality (affects startup time).</property>
+            <property name="activatable-widget">blur-resolution</property>
+            <child>
+              <object class="GtkDropDown" id="blur-resolution">
+                <property name="valign">center</property>
+                <property name="model">blur-resolution-model</property>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="AdwActionRow">
+            <property name="visible">false</property>
+            <property name="title" translatable="yes">Disable at Overview</property>
+            <property name="subtitle" translatable="yes">Disable bluring at overview</property>
+            <property name="activatable-widget">disable-blur-at-overview</property>
+            <child>
+              <object class="GtkSwitch" id="disable-blur-at-overview">
+                <property name="valign">center</property>
+              </object>
+            </child>
+          </object>
+        </child>
+      </object>
+    </child>
+    <child>
+      <object class="AdwPreferencesGroup">
         <property name="title" translatable="yes">Performance</property>
         <property name="description" translatable="yes"/>
         <child>
@@ -239,6 +271,14 @@
       <item translatable="yes">x2</item>
       <item translatable="yes">x3</item>
       <item translatable="yes">x4</item>
+    </items>
+  </object>
+  <object class="GtkStringList" id="blur-resolution-model">
+    <items>
+      <item translatable="yes">Default</item>
+      <item translatable="yes">25%</item>
+      <item translatable="yes">50%</item>
+      <item translatable="yes">100%</item>
     </items>
   </object>
   <object class="GtkStringList" id="animation-fps-model">

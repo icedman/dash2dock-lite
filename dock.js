@@ -999,7 +999,11 @@ export let Dock = GObject.registerClass(
 
       // take care of panel background
       let topbar_background = this.extension._topbar_background;
-      if (this == this.extension.docks[0] && topbar_background && this.extension.customize_topbar) {
+      if (
+        this == this.extension.docks[0] &&
+        topbar_background &&
+        this.extension.customize_topbar
+      ) {
         if (!topbar_background._blurEffect) {
           topbar_background._blurEffect = this._createEffect(1);
           topbar_background.add_effect_with_name(

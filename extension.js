@@ -764,6 +764,7 @@ export default class Dash2DockLiteExt extends Extension {
     this._autohiders().forEach((autohider) => {
       autohider._debounceCheckHide();
     });
+    this.animate();
   }
 
   _onOverviewHidden() {

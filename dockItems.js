@@ -425,7 +425,9 @@ export const DockBackground = GObject.registerClass(
             }
           }
         } else {
-          let rgba = dock.extension._style.rgba(dock.extension.background_color);
+          let rgba = dock.extension._style.rgba(
+            dock.extension.background_color
+          );
           style.push(`background: rgba(${rgba});`);
         }
 

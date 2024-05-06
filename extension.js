@@ -643,6 +643,8 @@ export default class Dash2DockLiteExt extends Extension {
       () => {
         Main.overview.dash.last_child.visible = false;
         Main.overview.dash.opacity = 0;
+        // fix for topbar not blurring
+        this._updateBlurredBackground();
       },
       // this.startUp.bind(this),
       'monitors-changed',

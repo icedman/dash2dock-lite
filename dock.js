@@ -1226,8 +1226,11 @@ export let Dock = GObject.registerClass(
       ) {
         if (container.child) {
           this.animator.bounceIcon(container.child);
+          return;
         }
       }
+      // bounce the custom icons
+      this.animator.bounceIcon(container.child);
     }
 
     _onScrollEvent(obj, evt) {

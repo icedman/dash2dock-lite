@@ -248,7 +248,7 @@ export default class Dash2DockLiteExt extends Extension {
 
     this._hookCompiz(false);
 
-    log('dash2dock-lite disabled');
+    console.log('dash2dock-lite disabled');
   }
 
   animate(settings = {}) {
@@ -277,7 +277,7 @@ export default class Dash2DockLiteExt extends Extension {
     let compiz = Main.extensionManager.lookup(
       'compiz-alike-magic-lamp-effect@hermes83.github.com'
     );
-    if (compiz) {
+    if (compiz && compiz.stateObj) {
       let stateObj = compiz.stateObj;
       this._compiz = stateObj;
       if (stateObj._getIcon && !hook) {
@@ -425,7 +425,7 @@ export default class Dash2DockLiteExt extends Extension {
       let n = name.replace(/-/g, '_');
       this[n] = value;
 
-      // log(`${n} ${value}`);
+      // console.log(`${n} ${value}`);
 
       switch (name) {
         case 'msg-to-ext': {
@@ -433,7 +433,7 @@ export default class Dash2DockLiteExt extends Extension {
             try {
               eval(value);
             } catch (err) {
-              log(err);
+              console.log(err);
             }
             this._settings.set_string('msg-to-ext', '');
           }

@@ -1269,7 +1269,7 @@ export let Dock = GObject.registerClass(
         }
       }
       // bounce the custom icons
-      this.animator.bounceIcon(container.child);
+      // this.animator.bounceIcon(container.child);
     }
 
     _onScrollEvent(obj, evt) {

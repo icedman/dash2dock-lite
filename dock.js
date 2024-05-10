@@ -171,7 +171,7 @@ export let Dock = GObject.registerClass(
       });
       item.dock = this;
       item._menu._onActivate = () => {
-        this._maybeBounce(item.child);
+        this._maybeBounce(item);
       };
       this._extraIcons.add_child(item);
       return item;
@@ -1269,7 +1269,9 @@ export let Dock = GObject.registerClass(
         }
       }
       // bounce the custom icons
-      // this.animator.bounceIcon(container.child);
+      if (container.custom_icon) {
+        this.animator.bounceIcon(container.child);
+      }
     }
 
     _onScrollEvent(obj, evt) {

@@ -232,6 +232,8 @@ export const DockItemContainer = GObject.registerClass(
         scale_y: 1,
       });
 
+      this.custom_icon = true;
+
       let desktopApp = params.app;
       if (desktopApp) {
         // monkey patch dummy app

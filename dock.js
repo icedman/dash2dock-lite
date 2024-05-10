@@ -120,14 +120,41 @@ export let Dock = GObject.registerClass(
       this._updateBackgroundEffect();
     }
 
+    destroyDash() {
+      if (this.dash) {
+        // destroy labels
+        {
+          this._icons = null;
+          this._findIcons();
+          this._icons.forEach((i) => {
+            if (i._label) {
+              let p = i._label.get_parent();
+              if (p) {
+                p.remove_child(i._label);
+              }
+            }
+          });
+          this._icons = null;
+        }
+
+        this.remove_child(this.dash);
+        this.dash = null;
+
+        this._trashIcon = null;
+        this._recentFilesIcon = null;
+        this._downloadsIcon = null;
+        // mounted icons?
+      }
+    }
+
     recreateDash() {
       this._hidden = false;
       this.opacity = 0;
       this.renderArea.remove_all_children();
       this.renderArea.opacity = 0;
-      this.remove_child(this.dash);
       this.add_child(this.createDash());
       this._icons = null;
+      this._trashIcon = null;
       this._recentFilesIcon = null;
       this._downloadsIcon = null;
       this._beginAnimation();
@@ -146,6 +173,9 @@ export let Dock = GObject.registerClass(
     }
 
     dock() {
+      if (!this.dash) {
+        this.add_child(this.createDash());
+      }
       this.addToChrome();
       this.layout();
       this._beginAnimation();
@@ -294,6 +324,9 @@ export let Dock = GObject.registerClass(
     }
 
     createDash() {
+      if (this.dash) {
+        this.destroyDash();
+      }
       let dash = new Dash();
       dash._adjustIconSize = () => {};
       this.dash = dash;
@@ -1019,7 +1052,8 @@ export let Dock = GObject.registerClass(
         let style = [];
 
         let blur = !(
-          (Main.overview.visible || this.extension._inOverview) && this.extension.disable_blur_at_overview
+          (Main.overview.visible || this.extension._inOverview) &&
+          this.extension.disable_blur_at_overview
         );
 
         if (this.extension.topbar_blur_background && blur) {

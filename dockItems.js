@@ -387,7 +387,8 @@ export const DockBackground = GObject.registerClass(
 
         let style = [dock.extension._backgroundStyle];
         let blur = !(
-          (Main.overview.visible || dock.extension._inOverview) && dock.extension.disable_blur_at_overview
+          (Main.overview.visible || dock.extension._inOverview) &&
+          dock.extension.disable_blur_at_overview
         );
         if (dock.extension.blur_background && blur) {
           style.push(

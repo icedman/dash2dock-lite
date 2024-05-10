@@ -100,6 +100,7 @@ export default class Dash2DockLiteExt extends Extension {
     (this.docks || []).forEach((dock) => {
       dock.undock();
       dock.cancelAnimations();
+      dock.destroyDash();
       this.dock = null;
     });
     this.docks = [];
@@ -219,12 +220,8 @@ export default class Dash2DockLiteExt extends Extension {
       Main.overview.dash._box = Main.overview.dash.__box;
     }
 
-    this.docks.forEach((container) => {
-      container.undock();
-    });
-    this.docks = [];
-
     this.destroyDocks();
+    this.docks = [];
 
     if (this._topbar_background) {
       if (this._topbar_background.get_parent()) {

@@ -132,6 +132,11 @@ export let Dock = GObject.registerClass(
               if (p) {
                 p.remove_child(i._label);
               }
+              i._label = null;
+            }
+            if (i._menu && i._menu.actor) {
+              Main.uiGroup.remove_child(i._menu.actor);
+              i._menu = null;
             }
           });
           this._icons = null;

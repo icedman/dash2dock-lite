@@ -90,6 +90,11 @@ export let Animator = class {
 
     let vertical = dock.isVertical();
     let isWithin = dock._isWithinDash([px, py]);
+
+    if (m.inFullscreen) {
+      isWithin = false;
+    }
+
     let animated = isWithin;
     dock.animated = animated;
 

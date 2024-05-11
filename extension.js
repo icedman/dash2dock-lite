@@ -665,6 +665,8 @@ export default class Dash2DockLiteExt extends Extension {
       this._onFocusWindow.bind(this),
       'in-fullscreen-changed',
       this._onFullScreen.bind(this),
+      'restacked',
+      this._onRestacked.bind(this),
       this
     );
 
@@ -742,17 +744,24 @@ export default class Dash2DockLiteExt extends Extension {
     });
   }
 
-  _onAppsChanged() {
-    let listeners = [...this.listeners];
-    listeners.forEach((l) => {
-      if (l._onAppsChanged) l._onAppsChanged();
-    });
-  }
-
   _onFullScreen() {
     let listeners = [...this.listeners];
     listeners.forEach((l) => {
       if (l._onFullScreen) l._onFullScreen();
+    });
+  }
+
+  _onRestacked() {
+    let listeners = [...this.listeners];
+    listeners.forEach((l) => {
+      if (l._onRestacked) l._onRestacked();
+    });
+  }
+
+  _onAppsChanged() {
+    let listeners = [...this.listeners];
+    listeners.forEach((l) => {
+      if (l._onAppsChanged) l._onAppsChanged();
     });
   }
 

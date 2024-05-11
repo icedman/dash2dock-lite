@@ -188,12 +188,16 @@ export let Dock = GObject.registerClass(
       return Clutter.EVENT_PROPAGATE;
     }
     _onMotionEvent(evt) {
-      this._beginAnimation();
+      if (!this._monitor.inFullscreen) {
+        this._beginAnimation();
+      }
       this.autohider._debounceCheckHide();
       return Clutter.EVENT_PROPAGATE;
     }
     _onEnterEvent(evt) {
-      this._beginAnimation();
+      if (!this._monitor.inFullscreen) {
+        this._beginAnimation();
+      }
       return Clutter.EVENT_PROPAGATE;
     }
     _onLeaveEvent(evt) {
@@ -211,13 +215,17 @@ export let Dock = GObject.registerClass(
       this.autohider._debounceCheckHide();
       return Clutter.EVENT_PROPAGATE;
     }
+    _onRestacked() {
+      this._beginAnimation();
+      this.autohider._debounceCheckHide();
+      return Clutter.EVENT_PROPAGATE;
+    }
     _onAppsChanged(evt) {
       this._icons = null;
       this._beginAnimation();
       this.autohider._debounceCheckHide();
       return Clutter.EVENT_PROPAGATE;
     }
-
     _onClock() {
       this._clock?.redraw();
     }
@@ -512,6 +520,11 @@ export let Dock = GObject.registerClass(
         // renderer takes care of displaying an icon
         c._icon.opacity = 0;
         c._label = c.label;
+
+        if (c._label && !c._destroyLabelConnectId) {
+          c._destroyLabelConnectId = c._label.connect('destroy', () => { c._label = null; });
+        }
+
         // limitation: vertical layout cannot do apps_icon_front
         if (
           c == this.dash._showAppsIcon &&

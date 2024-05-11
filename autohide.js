@@ -143,6 +143,9 @@ export let AutoHide = class {
   }
 
   show() {
+    if (this.dock._monitor.inFullscreen) {
+      return;
+    }
     this._dwell = 0;
     this.frameDelay = 0;
     this._shown = true;
@@ -220,6 +223,10 @@ export let AutoHide = class {
       return true;
     }
 
+    if (this.dock._monitor.inFullscreen) {
+      return true;
+    }
+
     let monitor = this.dock._monitor;
     let actors = global.get_window_actors();
     let windows = actors.map((a) => {
@@ -238,9 +245,9 @@ export let AutoHide = class {
     windows = windows.filter((w) => w.get_window_type() in handledWindowTypes);
 
     let isOverlapped = false;
-    let dock = this.dock.struts.get_transformed_position();
-    dock.push(this.dock.struts.width);
-    dock.push(this.dock.struts.height);
+    let dockRect = this.dock.struts.get_transformed_position();
+    dockRect.push(this.dock.struts.width);
+    dockRect.push(this.dock.struts.height);
 
     windows.forEach((w) => {
       this._track(w);
@@ -249,7 +256,7 @@ export let AutoHide = class {
       let frame = w.get_frame_rect();
       let win = [frame.x, frame.y, frame.width, frame.height];
 
-      if (isOverlapRect(dock, win)) {
+      if (isOverlapRect(dockRect, win)) {
         isOverlapped = true;
       }
     });

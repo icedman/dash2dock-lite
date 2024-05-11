@@ -122,22 +122,12 @@ export let Dock = GObject.registerClass(
 
     destroyDash() {
       if (this.dash) {
-        // destroy labels
+        // cleanup renderers
         {
           this._icons = null;
           this._findIcons();
           this._icons.forEach((i) => {
-            if (i._label) {
-              let p = i._label.get_parent();
-              if (p) {
-                p.remove_child(i._label);
-              }
-              i._label = null;
-            }
-            if (i._menu && i._menu.actor) {
-              Main.uiGroup.remove_child(i._menu.actor);
-              i._menu = null;
-            }
+            this._cleanupIcon(i);
           });
           this._icons = null;
         }
@@ -540,16 +530,47 @@ export let Dock = GObject.registerClass(
       return false;
     }
 
+    _cleanupIcon(c) {
+      if (c._renderer && c._renderer.get_parent()) {
+        c._renderer.get_parent().remove_child(c._renderer);
+      }
+      if (c._image && c._image.get_parent()) {
+        c._image.get_parent().remove_child(c._image);
+      }
+      if (c._badge && c._badge.get_parent()) {
+        c._badge.get_parent().remove_child(c._badge);
+      }
+      if (c._label) {
+        let p = c._label.get_parent();
+        if (p) {
+          p.remove_child(c._label);
+        }
+      }
+      if (c._menu && c._menu.actor) {
+        Main.uiGroup.remove_child(c._menu.actor);
+        c._menu = null;
+      }
+    }
+
     _findIcons() {
       if (this._icons) {
-        let iconsLength = this.dash._box.get_children().length;
+        let _boxIconsLength = this.dash._box.get_children().length;
+        if (_boxIconsLength != this._boxIconsLength) {
+          this._icons = null;
+        }
+        this._boxIconsLength = _boxIconsLength;
         if (this._extraIcons) {
-          iconsLength += this._extraIcons.get_children().length;
+          let _extraIconsLength = this._extraIcons.get_children().length;
+          if (_extraIconsLength != this._extraIconsLength) {
+            this._icons = null;
+          }
+          this._extraIconsLength = _extraIconsLength;
         }
-        if (this._icons.length + 2 >= iconsLength) {
-          // use icons cache
-          return this._icons;
-        }
+      }
+
+      if (this._icons) {
+        // use icons cache
+        return this._icons;
       }
 
       this._dashItems = [];
@@ -671,17 +692,7 @@ export let Dock = GObject.registerClass(
         let icon = c._icon;
         if (icon && !icon._destroyConnectId) {
           icon._destroyConnectId = icon.connect('destroy', () => {
-            //! move to a 'cleanup' function
-            if (c._renderer && c._renderer.get_parent()) {
-              c._renderer.get_parent().remove_child(c._renderer);
-            }
-            if (c._image && c._image.get_parent()) {
-              c._image.get_parent().remove_child(c._image);
-            }
-            if (c._badge && c._badge.get_parent()) {
-              c._badge.get_parent().remove_child(c._badge);
-            }
-            this._icons = null;
+            this._cleanupIcon(c);
           });
         }
         let { _draggable } = c.child;

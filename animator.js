@@ -372,6 +372,8 @@ export let Animator = class {
       icon._icon.translationX = (icon._icon.translationX + translationX) / 2;
       icon._icon.translationY = (icon._icon.translationY + translationY) / 2;
 
+      let didCreateRenderer = false;
+
       //--------------
       // renderer
       //--------------
@@ -421,6 +423,7 @@ export let Animator = class {
         let didCreate = false;
         if (!icon._renderer) {
           didCreate = true;
+          didCreateRenderer = true;
           let target = dock.renderArea;
           let renderer = new St.Icon({
             icon_name: icon_name,
@@ -538,7 +541,7 @@ export let Animator = class {
         }
 
         // labels
-        if (icon._label) {
+        if (icon._label && !didCreateRenderer) {
           let tSize = renderer.get_transformed_size();
           let tPos = icon._icon.get_transformed_position();
           if (isNaN(tPos[0]) || isNaN(tPos[1])) {

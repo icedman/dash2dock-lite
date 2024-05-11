@@ -106,6 +106,11 @@
         <summary>Customize the label</summary>
         <description>Customize the label with border and color.</description>
     </key>
+    <key type="b" name="hide-labels">
+        <default>false</default>
+        <summary>Hide the label</summary>
+        <description>Do not show the labels at all.</description>
+    </key>
     <key type="(dddd)" name="label-background-color">
         <default>(0.,0.,0.,0.25)</default>
         <summary>label background color</summary>

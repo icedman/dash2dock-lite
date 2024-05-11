@@ -678,6 +678,17 @@ export let Dock = GObject.registerClass(
       pv.x = 0.5;
       pv.y = 0.5;
       this._icons.forEach((c) => {
+        if (!c._showLabel && c.showLabel) {
+          c._showLabel = c.showLabel;
+          c.showLabel = () => {
+            if (this.extension.hide_labels) {
+              return;
+            }
+            if (c._label) {
+              c._showLabel();
+            }
+          }
+        }
         c._icon.track_hover = true;
         c._icon.reactive = true;
         c._icon.pivot_point = pv;
@@ -719,13 +730,6 @@ export let Dock = GObject.registerClass(
             this._icons = null;
           });
         }
-
-        // icon image quality
-        // if (this._iconSizeScaledDown) {
-        //   c._icon.set_icon_size(
-        //     this._iconSizeScaledDown * this.extension.icon_quality
-        //   );
-        // }
       });
 
       // link list the dash items

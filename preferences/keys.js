@@ -124,6 +124,12 @@ export const SettingsKeys = () => {
       key_maps: {},
       themed: true,
     },
+    'hide-labels': {
+      default_value: false,
+      widget_type: 'switch',
+      key_maps: {},
+      themed: true,
+    },
     'label-border-radius': {
       default_value: 0,
       widget_type: 'scale',

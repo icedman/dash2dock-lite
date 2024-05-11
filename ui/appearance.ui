@@ -584,6 +584,18 @@
             </child>
           </object>
         </child>
+        <child>
+          <object class="AdwActionRow">
+            <property name="title" translatable="yes">Hide Labels</property>
+            <property name="subtitle" translatable="yes">Do not show dock icon labels.</property>
+            <property name="activatable-widget">hide-labels</property>
+            <child>
+              <object class="GtkSwitch" id="hide-labels">
+                <property name="valign">center</property>
+              </object>
+            </child>
+          </object>
+        </child>
       </object>
     </child>
   </object>

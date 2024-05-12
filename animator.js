@@ -29,9 +29,58 @@ const ANIM_ICON_HIT_AREA = 2.5;
 const DOT_CANVAS_SIZE = 96;
 
 export let Animator = class {
-  enable() {}
+  enable() {
+    this._renderers = [];
+    this._dots = [];
+    this._badges = [];
+  }
 
   disable() {}
+
+  _precreateResources(dock) {
+    if (!dock._icons) {
+      return false;
+    }
+
+    let count = dock._icons.length;
+    if (dock.renderArea.get_children().length == 0) {
+      this._renderers = [];
+      this._dots = [];
+      this._badges = [];
+    }
+
+    while (this._renderers.length < count) {
+      // renderer
+      let target = dock.renderArea;
+      let renderer = new St.Icon({
+        icon_name: 'file',
+        style_class: 'renderer_icon',
+        reactive: true,
+      });
+      renderer.visible = false;
+      target.add_child(renderer);
+      this._renderers.push(renderer);
+
+      // dot
+      let dots = new DockItemDotsOverlay(new Dot(DOT_CANVAS_SIZE));
+      dots.visible = false;
+      target.add_child(dots);
+      this._dots.push(dots);
+
+      // badges
+      let badge = new DockItemBadgeOverlay(new Dot(DOT_CANVAS_SIZE));
+      badge.visible = false;
+      target.add_child(badge);
+      this._badges.push(badge);
+    }
+
+    for (let i = dock._icons.length; i < this._renderers.length; i++) {
+      this._renderers[i].visible = false;
+      this._dots[i].visible = false;
+    }
+
+    return true;
+  }
 
   //! begin optimization
   animate(dt) {
@@ -44,6 +93,10 @@ export let Animator = class {
 
     if (!dock.layout()) {
       console.log('unable to layout()');
+      return;
+    }
+
+    if (!this._precreateResources(dock)) {
       return;
     }
 
@@ -150,7 +203,7 @@ export let Animator = class {
       icon._target = pos;
       icon._targetScale = 1;
 
-      idx++;
+      icon._idx = idx++;
     });
 
     let noAnimation = !dock.extension.animate_icons_unmute;
@@ -424,21 +477,8 @@ export let Animator = class {
         }
 
         let didCreate = false;
-        if (!icon._renderer) {
-          didCreate = true;
-          let target = dock.renderArea;
-          let renderer = new St.Icon({
-            icon_name: icon_name,
-            style_class: 'renderer_icon',
-            reactive: true,
-          });
-          renderer.opacity = 0;
-          icon._renderer = renderer;
-          target.add_child(renderer);
-          console.log(`Icon created: ${icon_name} [${app_name}]`);
-        } else {
-          icon._renderer.opacity = 255;
-        }
+        icon._renderer = this._renderers[icon._idx];
+        icon._renderer._icon = icon._icon;
 
         let renderer = icon._renderer;
         if (gicon) {
@@ -529,17 +569,21 @@ export let Animator = class {
         //-------------------
         if (!isNaN(p[0]) && !isNaN(p[1])) {
           let iconContainer = icon._icon.get_parent();
-          if (vertical) {
-            iconContainer.translationX = adjustX / 2;
-          } else {
-            iconContainer.translationY = adjustY / 2;
+          // iconContainer can be null when dragging icons
+          if (iconContainer) {
+            if (vertical) {
+              iconContainer.translationX = adjustX / 2;
+            } else {
+              iconContainer.translationY = adjustY / 2;
+            }
+            renderer.set_position(
+              p[0] + adjustX + icon._icon.translationX - renderOffset[0],
+              p[1] + adjustY + icon._icon.translationY - renderOffset[1]
+            );
+            renderer.visible = true;
           }
-
-          renderer.set_position(
-            p[0] + adjustX + icon._icon.translationX - renderOffset[0],
-            p[1] + adjustY + icon._icon.translationY - renderOffset[1]
-          );
-          renderer.visible = true;
+          icon._px = p[0] - renderOffset[0];
+          icon._py = p[1] - renderOffset[1];
         }
 
         // labels
@@ -606,7 +650,7 @@ export let Animator = class {
 
       // badges
       //! ***badge location at scaling is messed up***
-      {
+      if (icon != dock._dragged) {
         let appNotices = icon._appwell
           ? dock.extension.services._appNotices[icon._appwell.app.get_id()]
           : null;
@@ -616,13 +660,7 @@ export let Animator = class {
         }
         // noticesCount = 1;
         let target = dock.renderArea;
-        let badge = icon._badge;
-
-        if (!badge && icon._appwell && target) {
-          badge = new DockItemBadgeOverlay(new Dot(DOT_CANVAS_SIZE));
-          icon._badge = badge;
-          target.add_child(badge);
-        }
+        let badge = this._badges[icon._idx];
         if (badge && noticesCount > 0) {
           badge.update(icon, {
             noticesCount,
@@ -644,19 +682,14 @@ export let Animator = class {
       // dots
       //! ***dot requires a little more aligning at dock position other than bottom***
       if (
+        icon != dock._dragged &&
         icon._appwell &&
         icon._appwell.app &&
         icon._appwell.app.get_n_windows
       ) {
         let appCount = icon._appwell.app.get_n_windows();
-        // appCount = 2;
-        let target = icon._dot?.get_parent();
-        let dots = target?._dots;
-        if (!dots && icon._appwell && target) {
-          dots = new DockItemDotsOverlay(new Dot(DOT_CANVAS_SIZE));
-          target._dots = dots;
-          target.add_child(dots);
-        }
+        // appCount = 1;
+        let dots = this._dots[icon._idx];
         if (dots && appCount > 0) {
           dots.update(icon, {
             appCount,
@@ -665,7 +698,9 @@ export let Animator = class {
             extension: dock.extension,
             dock,
           });
-          dots.set_position(0, 2);
+
+          dots.x = icon._px ?? 0;
+          dots.y = icon._py ?? 0;
           dots.show();
         } else {
           dots?.hide();
@@ -852,6 +887,7 @@ export let Animator = class {
 
   bounceIcon(appwell) {
     let dock = this.dock;
+    let app_id = appwell._id;
 
     // let scaleFactor = dock.getMonitor().geometry_scale;
     //! why not scaleFactor?
@@ -860,8 +896,17 @@ export let Animator = class {
     // * scaleFactor;
     appwell.translation_y = 0;
 
-    let container = appwell.get_parent();
-    let icon = container._icon;
+    const getTarget = (app_id) => {
+      if (dock._dragging) return [null, null];
+      let icons = dock._findIcons();
+      let icon = icons.find((icon) => {
+        return icon._appwell && icon._appwell._id == app_id;
+      });
+      if (!icon) {
+        return [null, null];
+      }
+      return [icon._appwell, icon._appwell.get_parent()];
+    };
 
     const translateDecor = (container, appwell) => {
       if (container._renderer) {
@@ -881,6 +926,8 @@ export let Animator = class {
         _duration: t,
         _func: (f, s) => {
           let res = Linear.easeNone(f._time, 0, travel, f._duration);
+          let [container, appwell] = getTarget(app_id);
+          if (!appwell) return;
           if (dock.isVertical()) {
             appwell.translation_x =
               dock._position == DockPosition.LEFT ? res : -res;
@@ -901,6 +948,8 @@ export let Animator = class {
         _duration: t * 3,
         _func: (f, s) => {
           let res = Bounce.easeOut(f._time, travel, -travel, f._duration);
+          let [container, appwell] = getTarget(app_id);
+          if (!appwell) return;
           if (dock.isVertical()) {
             appwell.translation_x = appwell.translation_x =
               dock._position == DockPosition.LEFT ? res : -res;
@@ -933,6 +982,8 @@ export let Animator = class {
       {
         _duration: 10,
         _func: (f, s) => {
+          let [container, appwell] = getTarget(app_id);
+          if (!appwell) return;
           appwell.translation_y = 0;
           translateDecor(container, appwell);
         },

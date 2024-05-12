@@ -122,7 +122,6 @@ export let Dock = GObject.registerClass(
 
     destroyDash() {
       if (this.dash) {
-        // cleanup renderers
         {
           this._icons = null;
           this._findIcons();
@@ -134,7 +133,6 @@ export let Dock = GObject.registerClass(
 
         this.remove_child(this.dash);
         this.dash = null;
-
         this._trashIcon = null;
         this._recentFilesIcon = null;
         this._downloadsIcon = null;
@@ -145,7 +143,6 @@ export let Dock = GObject.registerClass(
     recreateDash() {
       this._hidden = false;
       this.opacity = 0;
-      this.renderArea.remove_all_children();
       this.renderArea.opacity = 0;
       this.add_child(this.createDash());
       this._icons = null;
@@ -522,7 +519,9 @@ export let Dock = GObject.registerClass(
         c._label = c.label;
 
         if (c._label && !c._destroyLabelConnectId) {
-          c._destroyLabelConnectId = c._label.connect('destroy', () => { c._label = null; });
+          c._destroyLabelConnectId = c._label.connect('destroy', () => {
+            c._label = null;
+          });
         }
 
         // limitation: vertical layout cannot do apps_icon_front
@@ -544,14 +543,12 @@ export let Dock = GObject.registerClass(
     }
 
     _cleanupIcon(c) {
-      if (c._renderer && c._renderer.get_parent()) {
-        c._renderer.get_parent().remove_child(c._renderer);
-      }
       if (c._image && c._image.get_parent()) {
         c._image.get_parent().remove_child(c._image);
       }
-      if (c._badge && c._badge.get_parent()) {
-        c._badge.get_parent().remove_child(c._badge);
+      if (c._menu && c._menu.actor) {
+        Main.uiGroup.remove_child(c._menu.actor);
+        c._menu = null;
       }
       if (c._label) {
         let p = c._label.get_parent();
@@ -559,14 +556,10 @@ export let Dock = GObject.registerClass(
           p.remove_child(c._label);
         }
       }
-      if (c._menu && c._menu.actor) {
-        Main.uiGroup.remove_child(c._menu.actor);
-        c._menu = null;
-      }
     }
 
     _findIcons() {
-      if (this._icons) {
+      if (this._icons && !this._dragging) {
         let _boxIconsLength = this.dash._box.get_children().length;
         if (_boxIconsLength != this._boxIconsLength) {
           this._icons = null;
@@ -687,7 +680,7 @@ export let Dock = GObject.registerClass(
             if (c._label) {
               c._showLabel();
             }
-          }
+          };
         }
         c._icon.track_hover = true;
         c._icon.reactive = true;
@@ -767,9 +760,6 @@ export let Dock = GObject.registerClass(
           }
           if (!mounted.includes(extra._mountPath)) {
             this._extraIcons.remove_child(extra);
-            if (extra._renderer) {
-              this.renderArea.remove_child(extra._renderer);
-            }
             this._icons = null;
           }
         });
@@ -828,9 +818,6 @@ export let Dock = GObject.registerClass(
         } else if (this[f.icon] && !f.show) {
           // unpin downloads icon
           this._extraIcons.remove_child(this[f.icon]);
-          if (this[f.icon]._renderer) {
-            this.renderArea.remove_child(this[f.icon]._renderer);
-          }
           this[f.icon] = null;
           this._icons = null;
         }
@@ -848,9 +835,6 @@ export let Dock = GObject.registerClass(
       } else if (this._trashIcon && !this.extension.trash_icon) {
         // unpin trash icon
         this._extraIcons.remove_child(this._trashIcon);
-        if (this._trashIcon._renderer) {
-          this.renderArea.remove_child(this._trashIcon._renderer);
-        }
         this._trashIcon = null;
         this._icons = null;
       } else if (this._trashIcon && this.extension.trash_icon) {
@@ -1189,6 +1173,7 @@ export let Dock = GObject.registerClass(
       }
       this.autohider._debounceCheckHide();
       this._icons = null;
+      this._dragged = null;
     }
 
     _destroyList() {

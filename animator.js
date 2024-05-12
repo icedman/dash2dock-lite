@@ -35,7 +35,14 @@ export let Animator = class {
     this._badges = [];
   }
 
-  disable() {}
+  disable() {
+    if (this._target) {
+      this._target.remove_all_children();
+      this._renderers = [];
+      this._dots = [];
+      this._badges = [];
+    }
+  }
 
   _precreateResources(dock) {
     if (!dock._icons) {
@@ -48,6 +55,7 @@ export let Animator = class {
       this._dots = [];
       this._badges = [];
     }
+    this._target = dock.renderArea;
 
     while (this._renderers.length < count) {
       // renderer
@@ -77,6 +85,7 @@ export let Animator = class {
     for (let i = dock._icons.length; i < this._renderers.length; i++) {
       this._renderers[i].visible = false;
       this._dots[i].visible = false;
+      this._badges[i].visible = false;
     }
 
     return true;
@@ -162,20 +171,6 @@ export let Animator = class {
     let iconCenterOffset = (iconSize * scaleFactor) / 2;
     let hitArea = iconSize * ANIM_ICON_HIT_AREA * scaleFactor;
     hitArea *= hitArea;
-
-    /*
-    if (this._prevPointer && isWithin) {
-      let dst = get_distance_sqr(pointer, this._prevPointer);
-      if (dst < 10) {
-        if (this._frameSkip++ > 20) {
-          return;
-        }
-      }
-    } else {
-      this._frameSkip = 0;
-    }
-    this._prevPointer = pointer;
-    */
 
     let idx = 0;
     animateIcons.forEach((icon) => {

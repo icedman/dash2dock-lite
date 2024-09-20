@@ -112,7 +112,6 @@ export const Services = class {
     this.getUserPath('DOWNLOAD')
       .then((path) => {
         this._downloadsUserDir = path;
-
         if (this._downloadsUserDir) {
           this._downloadsDir = Gio.File.new_for_path(this._downloadsUserDir);
         } else {
@@ -419,6 +418,10 @@ export const Services = class {
   }
 
   async getUserPath(user_path) {
+    // another Gnome Release... another breakage
+    // '/usr/bin/xdg-user-dir'
+
+    /*
     try {
       let [res, pid, in_fd, out_fd, err_fd] = GLib.spawn_async_with_pipes(
         null,
@@ -437,6 +440,7 @@ export const Services = class {
     } catch (err) {
       //
     }
+    */
   }
 
   async checkRecentFilesInFolder(path) {

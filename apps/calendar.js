@@ -56,10 +56,10 @@ const CalendarCanvas = GObject.registerClass(
 
       let size = width;
 
-      const hd_color = 'red';
-      const bg_color = 'white';
-      const day_color = 'black';
-      const date_color = 'red';
+      const hd_color = '#ff0000';
+      const bg_color = '#dddddd';
+      const day_color = '#000000';
+      const date_color = '#ff0000';
 
       ctx.setOperator(Cairo.Operator.CLEAR);
       ctx.paint();

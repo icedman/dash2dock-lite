@@ -277,7 +277,7 @@ export default class Dash2DockLiteExt extends Extension {
     let compiz = Main.extensionManager.lookup(
       'compiz-alike-magic-lamp-effect@hermes83.github.com'
     );
-    if (compiz) {
+    if (compiz && compiz.stateObj) {
       let stateObj = compiz.stateObj;
       this._compiz = stateObj;
       if (stateObj._getIcon && !hook) {

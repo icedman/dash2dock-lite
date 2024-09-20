@@ -194,11 +194,15 @@ export const DockIcon = GObject.registerClass(
       icon.connectObject(
         'enter-event',
         () => {
-          container.showLabel();
+					if (container.app) {
+						container.showLabel();
+					}
         },
         'leave-event',
         () => {
-          container.hideLabel();
+					if (container.app) {
+         		container.hideLabel();
+					}
         },
         'button-press-event',
         (actor, evt) => {
@@ -240,6 +244,7 @@ export const DockItemContainer = GObject.registerClass(
         if (!desktopApp.get_icon) {
           desktopApp.can_open_new_window = () => false;
           desktopApp.create_icon_texture = () => null;
+					desktopApp.get_windows = () => null;;
           desktopApp.get_icon = () => {
             return {
               get_names: () => [],

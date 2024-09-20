@@ -168,6 +168,7 @@ export let Dock = GObject.registerClass(
       if (!this.dash) {
         this.add_child(this.createDash());
       }
+      this.animator.enable();
       this.addToChrome();
       this.layout();
       this._beginAnimation();
@@ -179,6 +180,7 @@ export let Dock = GObject.registerClass(
       this.dash._box.remove_effect_by_name('icon-effect');
       this.autohider.disable();
       this.removeFromChrome();
+      this.animator.disable();
     }
 
     _onButtonPressEvent(evt) {
@@ -805,7 +807,7 @@ export let Dock = GObject.registerClass(
           items: '_downloadFiles',
           itemsLength: '_downloadFilesLength',
           prepare: (() => {
-            this.extension.services.checkDownloads();
+            this.extension.services._debounceCheckDownloads();
           }).bind(this),
           cleanup: () => {},
         },

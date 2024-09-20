@@ -30,14 +30,18 @@ const DOT_CANVAS_SIZE = 96;
 
 export let Animator = class {
   enable() {
-    this._renderers = [];
-    this._dots = [];
-    this._badges = [];
+    if (!this._renderers) {
+      this._renderers = [];
+      this._dots = [];
+      this._badges = [];
+    }
   }
 
   disable() {
     if (this._target) {
       this._target.remove_all_children();
+    }
+    if (!this._renderers) {
       this._renderers = [];
       this._dots = [];
       this._badges = [];
@@ -210,7 +214,9 @@ export let Animator = class {
       nearestIcon = null;
     }
     dock._nearestIcon = nearestIcon;
+
     let didScale = false;
+		let didBounce = false;
 
     //------------------------
     // animation behavior
@@ -424,6 +430,14 @@ export let Animator = class {
 
       icon._icon.translationX = (icon._icon.translationX + translationX) / 2;
       icon._icon.translationY = (icon._icon.translationY + translationY) / 2;
+
+      // clear bounce animation
+      if (icon._appwell) {
+        icon._appwell.translationY = 0;
+        if (icon._appwell._bounce) {
+          didBounce = true;
+        }
+      }
 
       //--------------
       // renderer
@@ -645,6 +659,8 @@ export let Animator = class {
 
       // badges
       //! ***badge location at scaling is messed up***
+      let badge = this._badges[icon._idx];
+      badge.hide();
       if (icon != dock._dragged) {
         let appNotices = icon._appwell
           ? dock.extension.services._appNotices[icon._appwell.app.get_id()]
@@ -655,7 +671,6 @@ export let Animator = class {
         }
         // noticesCount = 1;
         let target = dock.renderArea;
-        let badge = this._badges[icon._idx];
         if (badge && noticesCount > 0) {
           badge.update(icon, {
             noticesCount,
@@ -669,13 +684,13 @@ export let Animator = class {
           badge.set_scale(icon._scale, icon._scale);
 
           badge.show();
-        } else {
-          badge?.hide();
         }
       }
 
       // dots
       //! ***dot requires a little more aligning at dock position other than bottom***
+      let dots = this._dots[icon._idx];
+      dots.hide();
       if (
         icon != dock._dragged &&
         icon._appwell &&
@@ -684,7 +699,6 @@ export let Animator = class {
       ) {
         let appCount = icon._appwell.app.get_n_windows();
         // appCount = 1;
-        let dots = this._dots[icon._idx];
         if (dots && appCount > 0) {
           dots.update(icon, {
             appCount,
@@ -697,8 +711,6 @@ export let Animator = class {
           dots.x = icon._px ?? 0;
           dots.y = icon._py ?? 0;
           dots.show();
-        } else {
-          dots?.hide();
         }
       }
 
@@ -874,7 +886,7 @@ export let Animator = class {
       didScale = true;
     }
 
-    if (didFadeIn || didScale || dock._dragging) {
+    if (didFadeIn || didScale || dock._dragging || didBounce) {
       dock.autohider._debounceCheckHide();
       dock._debounceEndAnimation();
     }
@@ -900,7 +912,7 @@ export let Animator = class {
       if (!icon) {
         return [null, null];
       }
-      return [icon._appwell, icon._appwell.get_parent()];
+      return [icon._appwell.get_parent(), icon._appwell];
     };
 
     const translateDecor = (container, appwell) => {
@@ -923,6 +935,7 @@ export let Animator = class {
           let res = Linear.easeNone(f._time, 0, travel, f._duration);
           let [container, appwell] = getTarget(app_id);
           if (!appwell) return;
+          appwell._bounce = true;
           if (dock.isVertical()) {
             appwell.translation_x =
               dock._position == DockPosition.LEFT ? res : -res;
@@ -983,6 +996,15 @@ export let Animator = class {
           translateDecor(container, appwell);
         },
       },
+      {
+        _duration: 10,
+        _func: (f, s) => {
+          let [container, appwell] = getTarget(app_id);
+          if (appwell) {
+            appwell._bounce = false;
+          }
+        }
+      }
     ]);
   }
 };

@@ -123,13 +123,16 @@ export default class Dash2DockLiteExt extends Extension {
     Main.overview.dash._background.style = show
       ? ''
       : 'background: transparent !important;';
-    Main.overview.dash.__box.get_children().forEach((c) => {
+
+    let box = Main.overview.dash.__box || Main.overview.dash._box;
+    box.get_children().forEach((c) => {
       c.opacity = show ? 255 : 0;
       if (c.child) {
         c.child.reactive = show;
         c.child.track_hover = show;
       }
     });
+    
     Main.overview.dash._showAppsIcon.opacity = show ? 255 : 0;
     Main.overview.dash._showAppsIcon.child.reactive = show;
     Main.overview.dash._showAppsIcon.child.track_hover = show;
@@ -476,7 +479,7 @@ export default class Dash2DockLiteExt extends Extension {
           this._updateWidgetStyle();
           break;
         case 'max-recent-items':
-          this.services.checkDownloads();
+          this.services._debounceCheckDownloads();
           break;
         case 'apps-icon':
         case 'apps-icon-front':

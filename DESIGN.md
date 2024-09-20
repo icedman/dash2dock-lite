@@ -80,3 +80,12 @@ class DockWidget {
 ```
 
 # Animator
+
+
+# Services
+
+```js
+class Services {
+
+}
+```

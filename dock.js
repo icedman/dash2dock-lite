@@ -1019,7 +1019,8 @@ export let Dock = GObject.registerClass(
         let style = [];
 
         let blur = !(
-          (Main.overview.visible || this.extension._inOverview) && this.extension.disable_blur_at_overview
+          (Main.overview.visible || this.extension._inOverview) &&
+          this.extension.disable_blur_at_overview
         );
 
         if (this.extension.topbar_blur_background && blur) {

@@ -3,6 +3,7 @@
 import PangoCairo from 'gi://PangoCairo';
 import Pango from 'gi://Pango';
 import Cogl from 'gi://Cogl';
+import Clutter from 'gi://Clutter';
 
 function draw_rotated_line(ctx, color, width, angle, len, offset) {
   offset = offset || 0;
@@ -114,7 +115,8 @@ function draw_text(ctx, showtext, font = 'DejaVuSans 42') {
 
 function set_color(ctx, clr, alpha) {
   if (typeof clr === 'string') {
-    const [, cc] = Cogl.Color.from_string(clr);
+    const fn = Cogl?.Color.from_string || Clutter?.Color.from_string;
+    const [, cc] = fn(clr);
     ctx.setSourceRGBA(cc.red, cc.green, cc.blue, alpha);
   } else {
     if (clr.red) {

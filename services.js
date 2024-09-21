@@ -109,39 +109,37 @@ export const Services = class {
       this
     );
 
-    this.getUserPath('DOWNLOAD')
-      .then((path) => {
-        this._downloadsUserDir = path;
+    {
+      this._downloadsUserDir = this.extension.downloads_path;
+      let fn = Gio.File.new_for_path(this._downloadsUserDir);
+      if (!fn.query_exists(null)) {
+        this._downloadsUserDir = null;
+      }
+      if (this._downloadsUserDir) {
+        this._downloadsDir = Gio.File.new_for_path(this._downloadsUserDir);
+      } else {
+        // fallback
+        this._downloadsDir = Gio.File.new_for_path('Downloads');
+      }
 
-        if (this._downloadsUserDir) {
-          this._downloadsDir = Gio.File.new_for_path(this._downloadsUserDir);
-        } else {
-          // fallback
-          this._downloadsDir = Gio.File.new_for_path('Downloads');
-        }
-
-        this._downloadsMonitor = this._downloadsDir.monitor(
-          Gio.FileMonitorFlags.WATCH_MOVES,
-          null
-        );
-        this._downloadsMonitor.connectObject(
-          'changed',
-          (fileMonitor, file, otherFile, eventType) => {
-            switch (eventType) {
-              case Gio.FileMonitorEvent.CHANGED:
-              case Gio.FileMonitorEvent.CREATED:
-              case Gio.FileMonitorEvent.MOVED_IN:
-                return;
-            }
-            this._debounceCheckDownloads();
-          },
-          this
-        );
-      })
-      .catch((err) => {
-        console.log('--------------------');
-        console.log(err);
-      });
+      this._downloadsMonitor = this._downloadsDir.monitor(
+        Gio.FileMonitorFlags.WATCH_MOVES,
+        null
+      );
+      this._downloadsMonitor.connectObject(
+        'changed',
+        (fileMonitor, file, otherFile, eventType) => {
+          switch (eventType) {
+            case Gio.FileMonitorEvent.CHANGED:
+            case Gio.FileMonitorEvent.CREATED:
+            case Gio.FileMonitorEvent.MOVED_IN:
+              return;
+          }
+          this._debounceCheckDownloads();
+        },
+        this
+      );
+    }
 
     //! ***services startup function are blocking calls. async these***
     this.checkTrash();
@@ -416,27 +414,6 @@ export const Services = class {
       this.extension.animate({ refresh: true });
     }
     return this.trashFull;
-  }
-
-  async getUserPath(user_path) {
-    try {
-      let [res, pid, in_fd, out_fd, err_fd] = GLib.spawn_async_with_pipes(
-        null,
-        ['/usr/bin/xdg-user-dir', user_path],
-        null,
-        0,
-        null
-      );
-
-      let out_reader = new Gio.DataInputStream({
-        base_stream: new Gio.UnixInputStream({ fd: out_fd }),
-      });
-
-      let [line, size] = out_reader.read_line_utf8(null);
-      return line;
-    } catch (err) {
-      //
-    }
   }
 
   async checkRecentFilesInFolder(path) {

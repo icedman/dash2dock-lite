@@ -100,12 +100,49 @@ export default class Preferences extends ExtensionPreferences {
     // window.remove(menu_util);
   }
 
+  updateFolders(window, builder, settings) {
+    let row = builder.get_object('downloads-folder-row');
+    let val = settings.get_string('downloads-path') || '';
+    console.log(`=======${val}`);
+    row.title = `${val}`;
+  }
+
+  async selectFolder(window, builder, settings, target) {
+    const dialog = new Gtk.FileDialog();
+    dialog.select_folder(window, null, (dialog, task) => {
+      let folder = dialog.select_folder_finish(task);
+      if (folder instanceof Gio.File) {
+        let path = folder.get_path();
+        console.log(`${target} = ${path}`);
+        settings.set_string(target, path);
+        this.updateFolders(window, builder, settings);
+      } else {
+        console.log('No valid folder selected.');
+      }
+    });
+    return null;
+  }
+
   addButtonEvents(window, builder, settings) {
     // builder.get_object('static-animation').connect('clicked', () => {
     //   builder.get_object('animation-spread').set_value(0);
     //   builder.get_object('animation-rise').set_value(0);
     //   builder.get_object('animation-magnify').set_value(0);
     // });
+
+    if (builder.get_object('downloads-folder')) {
+      builder.get_object('downloads-folder').connect('clicked', () => {
+        settings.set_string('downloads-path', '');
+        this.selectFolder(window, builder, settings, 'downloads-path')
+          .then((path) => {
+            console.log(path);
+          })
+          .catch((err) => {
+            console.log(err);
+          });
+      });
+      this.updateFolders(window, builder, settings);
+    }
 
     if (builder.get_object('reset')) {
       builder.get_object('reset').connect('clicked', () => {

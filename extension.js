@@ -594,6 +594,7 @@ export default class Dash2DockLiteExt extends Extension {
       let key = this._settingsKeys.getKey(k);
       let name = k.replace(/-/g, '_');
       this[name] = key.value;
+      console.log(`${name} = ${key.value}`);
       if (key.options) {
         this[`${name}_options`] = key.options;
       }

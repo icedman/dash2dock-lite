@@ -176,9 +176,17 @@ export const SettingsKeys = () => {
       default_value: false,
       widget_type: 'switch',
     },
+    'downloads-path': {
+      default_value: '',
+      widget_type: 'string',
+    },
     'documents-icon': {
       default_value: false,
       widget_type: 'switch',
+    },
+    'documents-path': {
+      default_value: '',
+      widget_type: 'string',
     },
     'max-recent-items': {
       default_value: 0,

@@ -144,6 +144,11 @@ export let PrefKeys = class {
           if (key.object) key.object.set_value(key.value);
           break;
         }
+        case 'string': {
+          key.value = settings.get_string(name);
+          if (key.object) key.object.set_value(key.value);
+          break;
+        }
         case 'color': {
           key.value = settings.get_value(name).deepUnpack();
           try {

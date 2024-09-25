@@ -132,7 +132,7 @@ export default class Dash2DockLiteExt extends Extension {
         c.child.track_hover = show;
       }
     });
-    
+
     Main.overview.dash._showAppsIcon.opacity = show ? 255 : 0;
     Main.overview.dash._showAppsIcon.child.reactive = show;
     Main.overview.dash._showAppsIcon.child.track_hover = show;
@@ -489,6 +489,9 @@ export default class Dash2DockLiteExt extends Extension {
           this.animate({ refresh: true });
           break;
         }
+        case 'downloads-path':
+          this.services.setupDownloads();
+          break;
         // problematic settings needing animator restart
         case 'dock-location':
           this.recreateAllDocks();

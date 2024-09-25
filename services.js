@@ -109,41 +109,10 @@ export const Services = class {
       this
     );
 
-    {
-      this._downloadsUserDir = this.extension.downloads_path;
-      let fn = Gio.File.new_for_path(this._downloadsUserDir);
-      if (!fn.query_exists(null)) {
-        this._downloadsUserDir = null;
-      }
-      if (this._downloadsUserDir) {
-        this._downloadsDir = Gio.File.new_for_path(this._downloadsUserDir);
-      } else {
-        // fallback
-        this._downloadsDir = Gio.File.new_for_path('Downloads');
-      }
-
-      this._downloadsMonitor = this._downloadsDir.monitor(
-        Gio.FileMonitorFlags.WATCH_MOVES,
-        null
-      );
-      this._downloadsMonitor.connectObject(
-        'changed',
-        (fileMonitor, file, otherFile, eventType) => {
-          switch (eventType) {
-            case Gio.FileMonitorEvent.CHANGED:
-            case Gio.FileMonitorEvent.CREATED:
-            case Gio.FileMonitorEvent.MOVED_IN:
-              return;
-          }
-          this._debounceCheckDownloads();
-        },
-        this
-      );
-    }
+    this.setupDownloads();
 
     //! ***services startup function are blocking calls. async these***
     this.checkTrash();
-    this._debounceCheckDownloads();
 
     this.checkNotifications();
 
@@ -152,12 +121,52 @@ export const Services = class {
   }
 
   disable() {
+    this._downloadsMonitor.disconnectObject(this);
+    this._downloadsMonitor = null;
     this._services = [];
     this._volumeMonitor.disconnectObject(this);
     this._volumeMonitor = null;
     this._trashMonitor.disconnectObject(this);
     this._trashMonitor = null;
     this._trashDir = null;
+  }
+
+  setupDownloads() {
+    if (this._downloadsMonitor) {
+      this._downloadsMonitor.disconnectObject(this);
+      this._downloadsMonitor = null;
+    }
+    this._downloadsUserDir = this.extension.downloads_path;
+    let fn = Gio.File.new_for_path(this._downloadsUserDir);
+    if (!fn.query_exists(null)) {
+      this._downloadsUserDir = null;
+    }
+    if (this._downloadsUserDir) {
+      this._downloadsDir = Gio.File.new_for_path(this._downloadsUserDir);
+    } else {
+      // fallback
+      this._downloadsDir = Gio.File.new_for_path('Downloads');
+    }
+
+    this._downloadsMonitor = this._downloadsDir.monitor(
+      Gio.FileMonitorFlags.WATCH_MOVES,
+      null
+    );
+    this._downloadsMonitor.connectObject(
+      'changed',
+      (fileMonitor, file, otherFile, eventType) => {
+        switch (eventType) {
+          case Gio.FileMonitorEvent.CHANGED:
+          case Gio.FileMonitorEvent.CREATED:
+          case Gio.FileMonitorEvent.MOVED_IN:
+            return;
+        }
+        this._debounceCheckDownloads();
+      },
+      this
+    );
+
+    this._debounceCheckDownloads();
   }
 
   _commitMounts() {

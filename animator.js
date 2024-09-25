@@ -216,7 +216,7 @@ export let Animator = class {
     dock._nearestIcon = nearestIcon;
 
     let didScale = false;
-		let didBounce = false;
+    let didBounce = false;
 
     //------------------------
     // animation behavior
@@ -1003,8 +1003,8 @@ export let Animator = class {
           if (appwell) {
             appwell._bounce = false;
           }
-        }
-      }
+        },
+      },
     ]);
   }
 };

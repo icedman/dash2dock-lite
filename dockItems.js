@@ -194,14 +194,18 @@ export const DockIcon = GObject.registerClass(
       icon.connectObject(
         'enter-event',
         () => {
-          if (container.app) {
+          try {
             container.showLabel();
+          } catch(err) {
+            console.log(err);
           }
         },
         'leave-event',
         () => {
-          if (container.app) {
+          try {
             container.hideLabel();
+          } catch(err) {
+            console.log(err);
           }
         },
         'button-press-event',
@@ -270,7 +274,7 @@ export const DockItemContainer = GObject.registerClass(
         dashIcon._default_icon_name = desktopApp.get_icon().get_names()[0];
       } catch (err) {
         console.log(err);
-        //   console.log(params);
+        console.log(params);
       }
 
       // menu

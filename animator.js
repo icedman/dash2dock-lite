@@ -518,8 +518,9 @@ export let Animator = class {
                   file: icon._icon.gicon.file,
                 });
               }
+              // #issue 188
+              renderer.gicon = icon._icon.gicon;
             }
-            renderer.gicon = icon._icon.gicon;
           }
         }
 
@@ -708,6 +709,9 @@ export let Animator = class {
             dock,
           });
 
+          dots.width = icon._renderer.width * icon._renderer.scaleX;
+          dots.height = dots.width;
+          
           dots.x = icon._px ?? 0;
           dots.y = icon._py ?? 0;
           dots.show();

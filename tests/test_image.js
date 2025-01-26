@@ -23,7 +23,7 @@ function load_image() {
       const surface = new Cairo.ImageSurface(
         Cairo.Format.ARGB32,
         pixbuf.get_width(),
-        pixbuf.get_height()
+        pixbuf.get_height(),
       );
       const context = new Cairo.Context(surface);
 
@@ -56,7 +56,7 @@ function load_image() {
 
     const file = Gio.File.new_for_path(
       // '/home/iceman/Pictures/9uKBABA.png',
-      '/usr/share/backgrounds/gdm-login-background.jpg'
+      '/usr/share/backgrounds/gdm-login-background.jpg',
       // '/usr/share/icons/hicolor/48x48/apps/spotify.png'
     );
 

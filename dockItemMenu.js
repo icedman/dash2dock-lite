@@ -317,5 +317,5 @@ export const DockItemList = GObject.registerClass(
 
       target._label.hide();
     }
-  }
+  },
 );

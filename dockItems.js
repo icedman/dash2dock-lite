@@ -75,7 +75,7 @@ const DockItemOverlay = GObject.registerClass(
         this.add_child(renderer);
       }
     }
-  }
+  },
 );
 
 export const DockItemDotsOverlay = GObject.registerClass(
@@ -122,11 +122,11 @@ export const DockItemDotsOverlay = GObject.registerClass(
             ? -90
             : 90
           : position == DockPosition.TOP
-          ? 180
-          : 0,
+            ? 180
+            : 0,
       });
     }
-  }
+  },
 );
 
 export const DockItemBadgeOverlay = GObject.registerClass(
@@ -157,7 +157,7 @@ export const DockItemBadgeOverlay = GObject.registerClass(
         translate: [0.4, -0.8],
       });
     }
-  }
+  },
 );
 
 export const DockIcon = GObject.registerClass(
@@ -196,7 +196,7 @@ export const DockIcon = GObject.registerClass(
         () => {
           try {
             container.showLabel();
-          } catch(err) {
+          } catch (err) {
             console.log(err);
           }
         },
@@ -204,7 +204,7 @@ export const DockIcon = GObject.registerClass(
         () => {
           try {
             container.hideLabel();
-          } catch(err) {
+          } catch (err) {
             console.log(err);
           }
         },
@@ -220,12 +220,12 @@ export const DockIcon = GObject.registerClass(
             }
           }
         },
-        this
+        this,
       );
 
       return this._iconActor;
     }
-  }
+  },
 );
 
 export const DockItemContainer = GObject.registerClass(
@@ -257,7 +257,7 @@ export const DockItemContainer = GObject.registerClass(
         }
       } else {
         desktopApp = Gio.DesktopAppInfo.new_from_filename(
-          params.appinfo_filename
+          params.appinfo_filename,
         );
       }
 
@@ -301,7 +301,7 @@ export const DockItemContainer = GObject.registerClass(
     _onClick() {
       this.activateNewWindow();
     }
-  }
+  },
 );
 
 export const DockBackground = GObject.registerClass(
@@ -404,10 +404,10 @@ export const DockBackground = GObject.registerClass(
         if (dock.extension.blur_background && blur) {
           style.push(
             // `background-image: url("${dock.extension.desktop_background}");`
-            `background-image: url("${dock.extension.desktop_background_blurred}");`
+            `background-image: url("${dock.extension.desktop_background_blurred}");`,
           );
           style.push(
-            `background-size: ${dock._monitor.width}px ${dock._monitor.height}px;`
+            `background-size: ${dock._monitor.width}px ${dock._monitor.height}px;`,
           );
           switch (dock._position) {
             case DockPosition.LEFT: {
@@ -418,7 +418,7 @@ export const DockBackground = GObject.registerClass(
               style.push(
                 `background-position: -${dock._monitor.width - this.width}px -${
                   this.y
-                }px;`
+                }px;`,
               );
               break;
             }
@@ -431,14 +431,14 @@ export const DockBackground = GObject.registerClass(
               style.push(
                 `background-position: -${this.x}px -${
                   dock._monitor.height - this.height
-                }px;`
+                }px;`,
               );
               break;
             }
           }
         } else {
           let rgba = dock.extension._style.rgba(
-            dock.extension.background_color
+            dock.extension.background_color,
           );
           style.push(`background: rgba(${rgba});`);
         }
@@ -446,5 +446,5 @@ export const DockBackground = GObject.registerClass(
         this.style = style.join(' ');
       }
     }
-  }
+  },
 );

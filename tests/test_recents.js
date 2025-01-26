@@ -13,7 +13,7 @@ function test() {
       const fileInfo = file.query_info(
         'standard::*,unix::uid',
         Gio.FileQueryInfoFlags.NOFOLLOW_SYMLINKS,
-        null
+        null,
       );
       const icon = fileInfo.get_icon().get_names()[0] ?? 'folder';
       console.log(`|${file.get_path()}|${icon}`);

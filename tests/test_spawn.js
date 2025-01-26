@@ -33,7 +33,7 @@ let [res, pid, in_fd, out_fd, err_fd] = GLib.spawn_async_with_pipes(
   ['/bin/ls', '-lah'],
   null,
   0,
-  null
+  null,
 );
 let out_reader = new Gio.DataInputStream({
   base_stream: new Gio.UnixInputStream({ fd: out_fd }),

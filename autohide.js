@@ -174,7 +174,7 @@ export let AutoHide = class {
         () => {
           this.dock.extension.checkHide();
         },
-        this
+        this,
       );
       window._tracked = true;
     }
@@ -240,7 +240,7 @@ export let AutoHide = class {
     let workspace = global.workspace_manager.get_active_workspace_index();
     windows = windows.filter(
       (w) =>
-        workspace == w.get_workspace().index() && w.showing_on_its_workspace()
+        workspace == w.get_workspace().index() && w.showing_on_its_workspace(),
     );
     windows = windows.filter((w) => w.get_window_type() in handledWindowTypes);
 
@@ -273,7 +273,7 @@ export let AutoHide = class {
             this._checkHide();
           },
           DEBOUNCE_HIDE_TIMEOUT,
-          'debounceCheckHide'
+          'debounceCheckHide',
         );
       } else {
         this.extension._loTimer.runDebounced(this._debounceCheckSeq);

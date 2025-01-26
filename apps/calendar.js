@@ -29,7 +29,7 @@ export const Calendar = GObject.registerClass(
     shouldHideIcon() {
       return true;
     }
-  }
+  },
 );
 
 const CalendarCanvas = GObject.registerClass(
@@ -82,7 +82,7 @@ const CalendarCanvas = GObject.registerClass(
         bgSize,
         bgSize,
         0,
-        16
+        16,
       );
       Drawing.set_color(ctx, date_color, 1.0);
       ctx.moveTo(0, 14);
@@ -95,5 +95,5 @@ const CalendarCanvas = GObject.registerClass(
 
       ctx.$dispose();
     }
-  }
+  },
 );

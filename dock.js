@@ -113,7 +113,7 @@ export let Dock = GObject.registerClass(
         this.autohider._onEnterEvent.bind(this.autohider),
         'leave-event',
         this.autohider._onLeaveEvent.bind(this.autohider),
-        this
+        this,
       );
 
       this._blurEffect = this._createEffect(1);
@@ -212,6 +212,9 @@ export let Dock = GObject.registerClass(
     _onFullScreen() {
       this._beginAnimation();
       this.autohider._debounceCheckHide();
+
+      console.log('_onFullScreen');
+
       return Clutter.EVENT_PROPAGATE;
     }
     _onRestacked() {
@@ -364,7 +367,7 @@ export let Dock = GObject.registerClass(
         this._onLeaveEvent.bind(this),
         'destroy',
         () => {},
-        this
+        this,
       );
 
       this.dash.opacity = 0;
@@ -387,7 +390,7 @@ export let Dock = GObject.registerClass(
       Main.layoutManager.addChrome(this, {
         affectsStruts: false,
         affectsInputRegion: false,
-        trackFullscreen: false,
+        trackFullscreen: true,
       });
 
       Main.layoutManager.addChrome(this.dwell, {
@@ -661,7 +664,7 @@ export let Dock = GObject.registerClass(
               () => {
                 this.dash._showAppsIcon.hideLabel();
               },
-              this
+              this,
             );
           }
         }
@@ -790,7 +793,7 @@ export let Dock = GObject.registerClass(
           // does not work on gnome 43 (debian)
           show: false, // this.extension.documents_icon,
           prepare: this.extension.services.checkRecents.bind(
-            this.extension.services
+            this.extension.services,
           ),
           items: '_recentFiles',
           itemsLength: '_recentFilesLength',
@@ -1061,7 +1064,7 @@ export let Dock = GObject.registerClass(
           topbar_background._blurEffect = this._createEffect(1);
           topbar_background.add_effect_with_name(
             'blur',
-            topbar_background._blurEffect
+            topbar_background._blurEffect,
           );
         }
         let panel = Main.panel.get_parent();
@@ -1081,16 +1084,16 @@ export let Dock = GObject.registerClass(
             this.extension.topbar_background_color;
           style.push(
             // `background-image: url("${dock.extension.desktop_background}");`
-            `background-image: url("${this.extension.desktop_background_blurred}");`
+            `background-image: url("${this.extension.desktop_background_blurred}");`,
           );
           let monitor = Main.layoutManager.primaryMonitor;
           style.push('background-position: 0px 0px;');
           style.push(
-            `background-size: ${monitor.width}px ${monitor.height}px;`
+            `background-size: ${monitor.width}px ${monitor.height}px;`,
           );
         } else {
           let rgba = this.extension._style.rgba(
-            this.extension.topbar_background_color
+            this.extension.topbar_background_color,
           );
           style.push(`background-color: rgba(${rgba});`);
         }
@@ -1156,7 +1159,7 @@ export let Dock = GObject.registerClass(
               this.animate(s._delay);
             },
             this.animationInterval,
-            'animationTimer'
+            'animationTimer',
           );
         } else {
           this.extension._hiTimer.runLoop(this._animationSeq);
@@ -1194,7 +1197,7 @@ export let Dock = GObject.registerClass(
               this._endAnimation();
             },
             ANIM_DEBOUNCE_END_DELAY + this.animationInterval,
-            'debounceEndAnimation'
+            'debounceEndAnimation',
           );
         } else {
           this.extension._loTimer.runDebounced(this.debounceEndSeq);
@@ -1411,5 +1414,5 @@ export let Dock = GObject.registerClass(
         }
       }
     }
-  }
+  },
 );

@@ -17,7 +17,7 @@ for (let i = 0; i < limit && i < items.length; i++) {
     const fileInfo = file.query_info(
       'standard::*,unix::uid',
       Gio.FileQueryInfoFlags.NOFOLLOW_SYMLINKS,
-      null
+      null,
     );
     const icon = fileInfo.get_icon().get_names()[0] ?? 'folder';
     content += `|${file.get_path()}|${icon}\n`;
@@ -30,5 +30,5 @@ const [, etag] = fn.replace_contents(
   null,
   false,
   Gio.FileCreateFlags.REPLACE_DESTINATION,
-  null
+  null,
 );

@@ -35,12 +35,12 @@ export const MonitorsConfig = GObject.registerClass(
       this._monitorsConfigProxy = new MonitorsConfig.ProxyWrapper(
         Gio.DBus.session,
         'org.gnome.Mutter.DisplayConfig',
-        '/org/gnome/Mutter/DisplayConfig'
+        '/org/gnome/Mutter/DisplayConfig',
       );
 
       // Connecting to a D-Bus signal
       this._monitorsConfigProxy.connectSignal('MonitorsChanged', () =>
-        this._updateResources()
+        this._updateResources(),
       );
 
       this._updateResources();
@@ -84,7 +84,7 @@ export const MonitorsConfig = GObject.registerClass(
                 m.connector === connector &&
                 m.vendor === vendor &&
                 m.product === product &&
-                m.serial === serial
+                m.serial === serial,
             );
 
             if (monitor) {
@@ -116,5 +116,5 @@ export const MonitorsConfig = GObject.registerClass(
     get monitors() {
       return this._monitors;
     }
-  }
+  },
 );

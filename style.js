@@ -48,7 +48,7 @@ export const Style = class {
       null,
       false,
       Gio.FileCreateFlags.REPLACE_DESTINATION,
-      null
+      null,
     );
 
     theme.load_stylesheet(fn);

@@ -588,7 +588,7 @@ export let Animator = class {
             }
             renderer.set_position(
               p[0] + adjustX + icon._icon.translationX - renderOffset[0],
-              p[1] + adjustY + icon._icon.translationY - renderOffset[1]
+              p[1] + adjustY + icon._icon.translationY - renderOffset[1],
             );
             renderer.visible = true;
           }
@@ -711,7 +711,7 @@ export let Animator = class {
 
           dots.width = icon._renderer.width * icon._renderer.scaleX;
           dots.height = dots.width;
-          
+
           dots.x = icon._px ?? 0;
           dots.y = icon._py ?? 0;
           dots.show();

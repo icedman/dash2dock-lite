@@ -92,7 +92,7 @@ export default class Preferences extends ExtensionPreferences {
     actions.forEach((action) => {
       let act = new Gio.SimpleAction({ name: action.name });
       act.connect('activate', (_) =>
-        Gtk.show_uri(window, action.link, Gdk.CURRENT_TIME)
+        Gtk.show_uri(window, action.link, Gdk.CURRENT_TIME),
       );
       actionGroup.add_action(act);
     });
@@ -219,7 +219,7 @@ export default class Preferences extends ExtensionPreferences {
     this._themed_presets = [];
     this.preloadPresets(`${this.path}/themes`);
     this.preloadPresets(
-      Gio.File.new_for_path('.config/d2da/themes').get_path()
+      Gio.File.new_for_path('.config/d2da/themes').get_path(),
     );
     this._buildThemesMenu(window);
     this.updateMonitors();
@@ -235,7 +235,7 @@ export default class Preferences extends ExtensionPreferences {
     let iter = dir.enumerate_children(
       'standard::*',
       Gio.FileQueryInfoFlags.NONE,
-      null
+      null,
     );
 
     let themed_presets = [];
@@ -305,11 +305,11 @@ export default class Preferences extends ExtensionPreferences {
         null,
         false,
         Gio.FileCreateFlags.REPLACE_DESTINATION,
-        null
+        null,
       );
 
       this.window.add_toast(
-        new Adw.Toast({ title: 'Saved to /tmp/theme.json' })
+        new Adw.Toast({ title: 'Saved to /tmp/theme.json' }),
       );
 
       this._builder.get_object('theme-export-notice').visible = true;

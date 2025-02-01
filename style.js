@@ -1,12 +1,14 @@
 'use strict';
 
 import Gio from 'gi://Gio';
+import GLib from 'gi://GLib';
 import St from 'gi://St';
 
 const CustomStylesPath = '/tmp';
 
 export const Style = class {
   constructor() {
+    this.uId = GLib.uuid_string_random();
     this.styles = {};
     this.style_contents = {};
   }
@@ -17,6 +19,12 @@ export const Style = class {
     Object.keys(this.styles).forEach((k) => {
       let fn = this.styles[k];
       theme.unload_stylesheet(fn);
+
+      try {
+        fn.delete(null);
+      } catch (err) {
+        console.log(err);
+      }
     });
   }
 
@@ -38,7 +46,7 @@ export const Style = class {
     if (fn) {
       theme.unload_stylesheet(fn);
     } else {
-      fn = Gio.File.new_for_path(`${CustomStylesPath}/${name}.css`);
+      fn = Gio.File.new_for_path(`${CustomStylesPath}/${name}_${this.uId}.css`);
       this.styles[name] = fn;
     }
 

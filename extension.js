@@ -27,7 +27,7 @@ import Shell from 'gi://Shell';
 import Graphene from 'gi://Graphene';
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
-import { trySpawnCommandLine } from './utils.js';
+import { tempPath, trySpawnCommandLine } from './utils.js';
 
 import { Timer } from './timer.js';
 import { Style } from './style.js';
@@ -42,7 +42,7 @@ import {
 
 import { schemaId, SettingsKeys } from './preferences/keys.js';
 
-const BLURRED_BG_PATH = '/tmp/d2da-bg-blurred.jpg';
+const BLURRED_BG_PATH = tempPath('d2da-bg-blurred.jpg');
 
 const SERVICES_UPDATE_INTERVAL = 2500;
 

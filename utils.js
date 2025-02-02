@@ -13,6 +13,18 @@ const pointer_wrapper = {
   },
 };
 
+// Use UUID to avoid conflicting with other instances of this extensions (multi user setup)
+const uuid = GLib.uuid_string_random();
+
+/**
+ * Return a path in /tmp folder with a unique name
+ * @param {*} path 
+ * @returns {string}
+ */
+export const tempPath = (path) => {
+  return `/tmp/${uuid}-${path}`
+};
+
 export const getPointer = () => {
   return pointer_wrapper;
 };

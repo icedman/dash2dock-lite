@@ -25,6 +25,7 @@ import {
   get_distance,
   isInRect,
   isOverlapRect,
+  tempPath,
 } from './utils.js';
 
 const Point = Graphene.Point;
@@ -333,7 +334,7 @@ export let Dock = GObject.registerClass(
         this.destroyDash();
       }
       let dash = new Dash();
-      dash._adjustIconSize = () => {};
+      dash._adjustIconSize = () => { };
       this.dash = dash;
       this.dash._background.visible = false;
       this.dash._box.clip_to_allocation = false;
@@ -366,7 +367,7 @@ export let Dock = GObject.registerClass(
         'leave-event',
         this._onLeaveEvent.bind(this),
         'destroy',
-        () => {},
+        () => { },
         this,
       );
 
@@ -805,14 +806,14 @@ export let Dock = GObject.registerClass(
           icon: '_downloadsIcon',
           folder: Gio.File.new_for_path('Downloads').get_path(),
           //! find a way to avoid this
-          path: '/tmp/downloads-dash2dock-lite.desktop',
+          path: tempPath('downloads-dash2dock-lite.desktop'),
           show: this.extension.downloads_icon,
           items: '_downloadFiles',
           itemsLength: '_downloadFilesLength',
           prepare: (() => {
             this.extension.services._debounceCheckDownloads();
           }).bind(this),
-          cleanup: () => {},
+          cleanup: () => { },
         },
       ];
 
@@ -835,7 +836,7 @@ export let Dock = GObject.registerClass(
       if (!this._trashIcon && this.extension.trash_icon) {
         // pin trash icon
         //! avoid creating app_info & /tmp/*.desktop files
-        this._trashIcon = this.createItem(`/tmp/trash-dash2dock-lite.desktop`);
+        this._trashIcon = this.createItem(tempPath('trash-dash2dock-lite.desktop'));
         this._icons = null;
       } else if (this._trashIcon && !this.extension.trash_icon) {
         // unpin trash icon

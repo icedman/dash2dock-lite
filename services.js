@@ -1,7 +1,7 @@
 'use strict';
 
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
-import { trySpawnCommandLine } from './utils.js';
+import { tempPath, trySpawnCommandLine } from './utils.js';
 // import { trySpawnCommandLine } from 'resource:///org/gnome/shell/misc/util.js';
 
 import Gio from 'gi://Gio';
@@ -195,7 +195,7 @@ export const Services = class {
   _onMountRemoved(monitor, mount) {
     let basename = mount.get_default_location().get_basename();
     let appname = `mount-${basename}-dash2dock-lite.desktop`;
-    let mount_id = `/tmp/${appname}`;
+    let mount_id = tempPath(appname);
     delete this._mounts[mount_id];
     this.extension.animate();
   }
@@ -209,7 +209,7 @@ export const Services = class {
   setupTrashIcon() {
     let extension_path = this.extension.path;
     let appname = `trash-dash2dock-lite.desktop`;
-    let app_id = `/tmp/${appname}`;
+    let app_id = tempPath(appname);
     let fn = Gio.File.new_for_path(app_id);
     let open_app = 'nautilus --select';
 
@@ -234,7 +234,7 @@ export const Services = class {
     let full_path = Gio.file_new_for_path(path).get_path();
     let extension_path = this.extension.path;
     let appname = `${name}-dash2dock-lite.desktop`;
-    let app_id = `/tmp/${appname}`;
+    let app_id = tempPath(appname);
     let fn = Gio.File.new_for_path(app_id);
     // let open_app = 'xdg-open';
     let open_app = 'nautilus --select';
@@ -277,7 +277,7 @@ export const Services = class {
     let icon = mount.get_icon().names[0] || 'drive-harddisk-solidstate';
     let mount_exec = 'echo "not implemented"';
     let unmount_exec = `umount ${fullpath}`;
-    let mount_id = `/tmp/${appname}`;
+    let mount_id = tempPath(appname);
     let fn = Gio.File.new_for_path(mount_id);
 
     if (!fn.query_exists(null)) {
@@ -558,7 +558,7 @@ export const Services = class {
       console.log(err);
     }
 
-    let fn = Gio.File.new_for_path('/tmp/recents.txt');
+    let fn = Gio.File.new_for_path(tempPath(appname));
     if (fn.query_exists(null)) {
       try {
         const [success, contents] = fn.load_contents(null);

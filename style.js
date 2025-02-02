@@ -3,7 +3,7 @@
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import St from 'gi://St';
-import { tempPath } from './utils';
+import { tempPath } from './utils.js';
 
 export const Style = class {
   constructor() {

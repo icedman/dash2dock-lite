@@ -1,5 +1,6 @@
 'use strict';
 
+import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import GLib from 'gi://GLib';
 import Gio from 'gi://Gio';
 
@@ -13,16 +14,14 @@ const pointer_wrapper = {
   },
 };
 
-// Use UUID to avoid conflicting with other instances of this extensions (multi user setup)
-const uuid = GLib.uuid_string_random();
-
 /**
  * Return a path in /tmp folder with a unique name
- * @param {*} path 
+ * @param {*} path
  * @returns {string}
  */
 export const tempPath = (path) => {
-  return `/tmp/${uuid}-${path}`
+  let uuid = Main.overview.d2dl.uuid;
+  return `/tmp/${uuid}-${path}`;
 };
 
 export const getPointer = () => {

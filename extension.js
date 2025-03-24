@@ -42,8 +42,6 @@ import {
 
 import { schemaId, SettingsKeys } from './preferences/keys.js';
 
-const BLURRED_BG_PATH = tempPath('d2da-bg-blurred.jpg');
-
 const SERVICES_UPDATE_INTERVAL = 2500;
 
 const ANIM_ICON_QUALITY = 2.0;
@@ -139,6 +137,13 @@ export default class Dash2DockLiteExt extends Extension {
   }
 
   enable() {
+    Main.overview.d2dl = this;
+
+    // Use UUID to avoid conflicting with other instances of this extensions (multi user setup)
+    if (!this.uuid) {
+      this.uuid = GLib.uuid_string_random();
+    }
+
     // for debugging - set to 255
     this._dash_opacity = 0;
 
@@ -198,8 +203,6 @@ export default class Dash2DockLiteExt extends Extension {
     this.startUp();
 
     console.log('dash2dock-lite enabled');
-
-    Main.overview.d2dl = this;
   }
 
   disable() {
@@ -248,6 +251,7 @@ export default class Dash2DockLiteExt extends Extension {
 
     this._hookCompiz(false);
 
+    Main.overview.d2dl = null;
     console.log('dash2dock-lite disabled');
   }
 
@@ -834,6 +838,7 @@ export default class Dash2DockLiteExt extends Extension {
       dock._updateBackgroundEffect();
     });
 
+    const BLURRED_BG_PATH = tempPath('d2da-bg-blurred.jpg');
     this.desktop_background_blurred = BLURRED_BG_PATH;
     if (this.blur_background || this.topbar_blur_background) {
       let file = Gio.File.new_for_uri(this.desktop_background);

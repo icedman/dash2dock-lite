@@ -141,7 +141,7 @@ export default class Dash2DockLiteExt extends Extension {
 
     // Use UUID to avoid conflicting with other instances of this extensions (multi user setup)
     if (!this.uuid) {
-      this.uuid = GLib.uuid_string_random();
+      this.uuid = GLib.get_user_name(); // GLib.uuid_string_random();
     }
 
     // for debugging - set to 255

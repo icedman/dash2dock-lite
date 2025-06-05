@@ -1,6 +1,5 @@
 'use strict';
 
-import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import GLib from 'gi://GLib';
 import Gio from 'gi://Gio';
 
@@ -20,7 +19,7 @@ const pointer_wrapper = {
  * @returns {string}
  */
 export const tempPath = (path) => {
-  let uuid = Main.overview.d2dl.uuid;
+  let uuid = GLib.get_user_name(); // Main.overview.d2dl.uuid;
   return `/tmp/${uuid}-${path}`;
 };
 

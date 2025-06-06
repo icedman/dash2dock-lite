@@ -90,8 +90,8 @@ export const DockItemDotsOverlay = GObject.registerClass(
       renderer.pivot_point = icon._icon.pivot_point;
 
       let canvasScale = renderer.width / renderer._canvas.width;
+      canvasScale *= (dock._monitor.geometry_scale || 1);
       renderer._canvas.set_scale(canvasScale, canvasScale);
-
       if (vertical) {
         let offset = dock._iconSizeScaledDown * 0.1;
         renderer.translationX =

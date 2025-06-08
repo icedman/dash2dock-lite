@@ -227,7 +227,9 @@
   <object class="GtkStringList" id="max-recent-items-model">
     <items>
       <item>5</item>
+      <item>8</item>
       <item>10</item>
+      <item>12</item>
       <item>15</item>
       <item>20</item>
       <item>25</item>

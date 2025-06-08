@@ -90,8 +90,11 @@ export const DockItemDotsOverlay = GObject.registerClass(
       renderer.pivot_point = icon._icon.pivot_point;
 
       let canvasScale = renderer.width / renderer._canvas.width;
+
+      // scaling fix
       canvasScale *= (dock._monitor.geometry_scale || 1);
       renderer._canvas.set_scale(canvasScale, canvasScale);
+
       if (vertical) {
         let offset = dock._iconSizeScaledDown * 0.1;
         renderer.translationX =
@@ -107,6 +110,10 @@ export const DockItemDotsOverlay = GObject.registerClass(
           icon._icon.translationY +
           (position == DockPosition.BOTTOM ? offset : -offset);
       }
+
+      // scaling fix
+      renderer.translationX += (2*canvasScale);
+      renderer.translationY += (2*canvasScale);
 
       let options = extension.running_indicator_style_options;
       let running_indicator_style = options[extension.running_indicator_style];

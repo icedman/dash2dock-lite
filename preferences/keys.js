@@ -191,7 +191,7 @@ export const SettingsKeys = () => {
     'max-recent-items': {
       default_value: 0,
       widget_type: 'dropdown',
-      test: { values: [5, 10, 15, 20, 25] },
+      test: { values: [5, 8, 10, 12, 15, 20, 25] },
     },
     'mounted-icon': {
       default_value: false,

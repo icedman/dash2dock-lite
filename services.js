@@ -427,7 +427,7 @@ export const Services = class {
 
   async checkRecentFilesInFolder(path) {
     console.log(`checking ${path}`);
-    let maxs = [5, 10, 15, 20, 25];
+    let maxs = [5, 8, 10, 12, 15, 20, 25];
     let max_recent_items = maxs[this.extension.max_recent_items || 0];
     let downloadFiles = [];
     let downloadFilesLength = 0;

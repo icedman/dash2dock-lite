@@ -299,6 +299,8 @@ export default class Dash2DockLiteExt extends Extension {
   _getIcon(actor) {
     let [success, icon] = actor.meta_window.get_icon_geometry();
     if (success) {
+      // console.log('compiz-alike-magic-lamp-effect: icon');
+      // console.log(icon);
       return icon;
     }
     let monitor = Main.layoutManager.monitors[actor.meta_window.get_monitor()];
@@ -312,7 +314,29 @@ export default class Dash2DockLiteExt extends Extension {
     }
     Main.overview.dash._box = dock.dash._box;
 
-    return this._compiz._getIcon(actor);
+    // add alignment fix here?
+    let res = this._compiz._getIcon(actor);
+    // console.log('compiz-alike-magic-lamp-effect: getIcon');
+    // console.log(`x:${res.x} y:${res.y} w:${res.width} h:${res.height}`);
+    let x = res.x;
+    let y = res.y;
+    let w = res.width;
+    let h = res.height;
+
+    if (w == 0 && this.docks && this.docks.length > 0) {
+      let sz = this.docks[0]._preferredIconSize();
+      if (sz) {
+        x += (sz/2) * (this.docks[0].getMonitor().geometry_scale || 1);
+        // y += sz/2;
+      }
+    }
+
+    return {
+      x: x,
+      y: y,
+      width: w,
+      height: h
+    };
   }
 
   startUp() {

@@ -92,28 +92,25 @@ export const DockItemDotsOverlay = GObject.registerClass(
       let canvasScale = renderer.width / renderer._canvas.width;
 
       // scaling fix
-      canvasScale *= dock._monitor.geometry_scale || 1;
+      let scale = dock._monitor.geometry_scale || 1;
+      canvasScale *= scale;
       renderer._canvas.set_scale(canvasScale, canvasScale);
 
+      let offsetX = (renderer.width * 0.1) * scale;
+      let offsetY = (renderer.height * 0.25) * scale;
       if (vertical) {
-        let offset = dock._iconSizeScaledDown * 0.1;
-        renderer.translationX =
-          icon._icon.translationX +
-          (position == DockPosition.LEFT
-            ? -offset
-            : dock._iconSizeScaledDown * 0.3);
-        renderer.translationY = icon._icon.translationY + offset / 4;
+        offsetX = 0;
+        if (position == DockPosition.RIGHT) {
+          offsetX = (renderer.width * 0.2) * (scale * scale);
+        }
       } else {
-        let offset = dock._iconSizeScaledDown * 0.2;
-        renderer.translationX = icon._icon.translationX + offset / 4;
-        renderer.translationY =
-          icon._icon.translationY +
-          (position == DockPosition.BOTTOM ? offset : -offset);
+        if (position == DockPosition.TOP) {
+          offsetY = (renderer.height * 1) * scale;
+        }
       }
 
-      // scaling fix
-      renderer.translationX += 2 * canvasScale;
-      renderer.translationY += 2 * canvasScale;
+      renderer.translationX = icon._icon.translationX + offsetX;
+      renderer.translationY = icon._icon.translationY + offsetY;
 
       let options = extension.running_indicator_style_options;
       let running_indicator_style = options[extension.running_indicator_style];

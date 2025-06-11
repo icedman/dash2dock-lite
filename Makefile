@@ -46,9 +46,16 @@ test-prefs:
 	gnome-extensions prefs dash2dock-lite@icedman.github.com
 
 test-shell: install
-	env GNOME_SHELL_SLOWDOWN_FACTOR=2 \
-		MUTTER_DEBUG_DUMMY_MODE_SPECS=1400x800 \
+	env GNOME_SHELL_SLOWDOWN_FACTOR=1 \
+		MUTTER_DEBUG_DUMMY_MODE_SPECS=2560x1600 \
 	 	MUTTER_DEBUG_DUMMY_MONITOR_SCALES=1 \
+		dbus-run-session -- gnome-shell --nested --wayland
+	rm /run/user/1000/gnome-shell-disable-extensions
+
+test-shell2: install
+	env GNOME_SHELL_SLOWDOWN_FACTOR=2 \
+		MUTTER_DEBUG_DUMMY_MODE_SPECS=2560x1600 \
+	 	MUTTER_DEBUG_DUMMY_MONITOR_SCALES=2 \
 		dbus-run-session -- gnome-shell --nested --wayland
 	rm /run/user/1000/gnome-shell-disable-extensions
 

@@ -183,13 +183,6 @@ export default class Preferences extends ExtensionPreferences {
       builder
         .get_object('qr')
         .set_from_file(`${UIFolderPath}/images/qr_icedman.png`);
-      // let gesture = Gtk.GestureClick.new();
-      // gesture.connect('pressed', () => {
-      //   Gio.AppInfo.launch_default_for_uri('https://www.buymeacoffee.com/icedman', null);
-      // });
-      // builder
-      //   .get_object('bmc')
-      //   .add_controller(gesture);
     }
 
     let settings = this.getSettings(schemaId);

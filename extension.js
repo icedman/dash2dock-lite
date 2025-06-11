@@ -326,7 +326,7 @@ export default class Dash2DockLiteExt extends Extension {
     if (w == 0 && this.docks && this.docks.length > 0) {
       let sz = this.docks[0]._preferredIconSize();
       if (sz) {
-        x += (sz/2) * (this.docks[0].getMonitor().geometry_scale || 1);
+        x += (sz / 2) * (this.docks[0].getMonitor().geometry_scale || 1);
         // y += sz/2;
       }
     }
@@ -335,7 +335,7 @@ export default class Dash2DockLiteExt extends Extension {
       x: x,
       y: y,
       width: w,
-      height: h
+      height: h,
     };
   }
 

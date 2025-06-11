@@ -614,14 +614,14 @@ export let Animator = class {
             } else {
               icon._label.x -= sh / 1.5 + icon._label.width / 2;
             }
-            icon._label.y += (2 * (m.geometry_scale || 1));
+            icon._label.y += 2 * (m.geometry_scale || 1);
           } else {
             if (dock._position == DockPosition.BOTTOM) {
               icon._label.y -= sh / 1.5;
             } else {
               icon._label.y += sh / 1.5;
             }
-            icon._label.x += (2 * (m.geometry_scale || 1));
+            icon._label.x += 2 * (m.geometry_scale || 1);
           }
         }
 

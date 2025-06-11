@@ -166,7 +166,6 @@ export default class Preferences extends ExtensionPreferences {
     this._builder = builder;
 
     let UIFolderPath = `${this.path}/ui`;
-
     builder.add_from_file(`${UIFolderPath}/general.ui`);
     builder.add_from_file(`${UIFolderPath}/appearance.ui`);
     builder.add_from_file(`${UIFolderPath}/tweaks.ui`);
@@ -179,6 +178,19 @@ export default class Preferences extends ExtensionPreferences {
     window.set_search_enabled(true);
 
     // this.dump(window, 0);
+    // add buymeacoffee QR
+    if (builder.get_object('qr')) {
+      builder
+        .get_object('qr')
+        .set_from_file(`${UIFolderPath}/images/qr_icedman.png`);
+      // let gesture = Gtk.GestureClick.new();
+      // gesture.connect('pressed', () => {
+      //   Gio.AppInfo.launch_default_for_uri('https://www.buymeacoffee.com/icedman', null);
+      // });
+      // builder
+      //   .get_object('bmc')
+      //   .add_controller(gesture);
+    }
 
     let settings = this.getSettings(schemaId);
     settings.set_string('msg-to-ext', '');

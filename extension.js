@@ -125,6 +125,7 @@ export default class Dash2DockLiteExt extends Extension {
     let box = Main.overview.dash.__box || Main.overview.dash._box;
     box.get_children().forEach((c) => {
       c.opacity = show ? 255 : 0;
+      c.visible = show;
       if (c.child) {
         c.child.reactive = show;
         c.child.track_hover = show;
@@ -523,6 +524,7 @@ export default class Dash2DockLiteExt extends Extension {
         // problematic settings needing animator restart
         case 'dock-location':
           this.recreateAllDocks();
+          this.animate({ preview: true });
           break;
         case 'icon-resolution': {
           this._updateIconResolution();
@@ -577,8 +579,12 @@ export default class Dash2DockLiteExt extends Extension {
         case 'border-radius':
           this._debouncedUpdateStyle();
           break;
-        case 'separator-color':
         case 'separator-thickness':
+          this._updateStyle();
+          this.recreateAllDocks();
+          this.animate({ preview: true });
+          break;
+        case 'separator-color':
         case 'border-color':
         case 'border-thickness':
         case 'customize-topbar':

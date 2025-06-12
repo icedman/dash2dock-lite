@@ -113,11 +113,12 @@ export const DockItemList = GObject.registerClass(
 
       this._box = new St.Widget({ style_class: '-hi' });
       let iconSize = dock.dash._box.first_child._icon.width;
+
       // scaling hack - temporary
       let iconAdjust = 1;
-      if (dock._scaleFactor != 1 && dock._scaleFactor != 2) {
-        iconAdjust += 0.5;
-      }
+      // if (dock._scaleFactor != 1 && dock._scaleFactor != 2) {
+      //   iconAdjust += 0.5;
+      // }
 
       list.forEach((l) => {
         let w = new St.Widget({});
@@ -162,7 +163,7 @@ export const DockItemList = GObject.registerClass(
       let angleInc = 0 + 2.5 * dock.extension.items_pullout_angle;
       let startAngle = 270 + 1 * angleInc;
       let angle = startAngle;
-      let rad = iconSize * dock._scaleFactor;
+      let rad = iconSize; //  * dock._scaleFactor;
 
       let ox = 0;
       let oy = -rad / 4;
@@ -197,7 +198,7 @@ export const DockItemList = GObject.registerClass(
         l._oz = 0;
         l._label.opacity = 0;
         l._x = l.x;
-        l._y = l.y - rad * 0.8;
+        l._y = l.y - rad * 0.9;
         l._rotation_angle_z = l.rotation_angle_z;
         l.x = first.x;
         l.y = first.y;

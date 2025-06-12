@@ -756,7 +756,7 @@ export let Animator = class {
       }
     }
 
-    //! use a more description variable name
+    //! use a more descriptive variable name
     let ed =
       dock._position == DockPosition.BOTTOM ||
       dock._position == DockPosition.RIGHT

@@ -2,7 +2,6 @@
 
 * Panel mode features
 * Apps folder
-* Custom icons UI
 
 # Current Issues
 
@@ -12,6 +11,12 @@
 # Next Release
 
 * Bug fixes
+
+# Release 75
+
+* add Gnome 48 support
+* 2xScaling fix
+* add multi-user support
 
 # Release 65
 

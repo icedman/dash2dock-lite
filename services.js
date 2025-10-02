@@ -297,50 +297,7 @@ export const Services = class {
   checkNotifications() {
     if (this._disableNotifications > 4) return;
 
-    let media;
-    let messages;
-
-    try {
-      let tryBox = [
-        Main.panel._centerBox,
-        Main.panel._leftBox,
-        Main.panel._rightBox,
-      ];
-      for (let i = 0; i < 3; i++) {
-        let cc = tryBox[i].get_children();
-        cc.forEach((c) => {
-          if (media && messages) {
-            return;
-          }
-          if (!c.child._delegate || !c.child._delegate._messageList) {
-            return;
-          }
-          media =
-            c.child._delegate._messageList._scrollView.last_child.get_children()[0];
-          messages =
-            c.child._delegate._messageList._scrollView.last_child.get_children()[1];
-        });
-        if (media && messages) {
-          break;
-        }
-      }
-    } catch (err) {
-      // fail silently - don't crash
-      console.log(err);
-      this._disableNotifications++;
-    }
-
-    if (!media || !messages) {
-      this._notifications = [];
-      this._appNotices = [];
-      return;
-    }
-
-    this._notifications = messages._messages || [];
-    if (!this._notifications.length) {
-      this._notifications = [];
-    }
-
+		let sources = Main.messageTray.getSources();
     this._appNotices = this._appNotices || {};
 
     Object.keys(this._appNotices).forEach((k) => {
@@ -352,17 +309,16 @@ export const Services = class {
       'org.gnome.Evolution-alarm-notify.desktop': 'org.gnome.Calendar.desktop',
     };
 
-    this._notifications.forEach((n) => {
+    sources.forEach((source) => {
       let appId = null;
-      if (!n.notification) return;
-      if (n.notification.source.app) {
-        appId = n.notification.source.app.get_id();
+      if (source.app) {
+        appId = source.app.get_id();
       }
-      if (!appId && n.notification.source._app) {
-        appId = n.notification.source._app.get_id();
+      if (!appId && source._app) {
+        appId = source._app.get_id();
       }
       if (!appId) {
-        appId = n.notification.source._appId;
+        appId = source._appId;
       }
       if (!appId) {
         appId = '?';
@@ -376,13 +332,10 @@ export const Services = class {
           count: 0,
           previous: 0,
           urgency: 0,
-          source: n.notification.source,
+          source: source,
         };
       }
-      this._appNotices[appId].count++;
-      if (this._appNotices[appId].urgency < n.notification.urgency) {
-        this._appNotices[appId].urgency = n.notification.urgency;
-      }
+      this._appNotices[appId].count = source.count;
       this._appNotices[`${appId}`] = this._appNotices[appId];
       if (!appId.endsWith('desktop')) {
         this._appNotices[`${appId}.desktop`] = this._appNotices[appId];

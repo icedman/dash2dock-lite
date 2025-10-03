@@ -1218,7 +1218,8 @@ export let Dock = GObject.registerClass(
     _maybeMinimizeOrMaximize(app) {
       if (!app.get_windows) return;
 
-      let windows = app.get_windows();
+      // let windows = app.get_windows();
+      let windows = this.getAppWindowsFiltered(app);
       if (!windows.length) return;
 
       let event = Clutter.get_current_event();
@@ -1296,6 +1297,12 @@ export let Dock = GObject.registerClass(
       }
     }
 
+		getAppWindowsFiltered(app) {
+			return app.get_windows().filter((w) => {
+				return (w.get_monitor() == this._monitor.index);
+			});
+		}
+
     _onScrollEvent(obj, evt) {
       this._lastScrollEvent = evt;
       let pointer = global.get_pointer();
@@ -1360,7 +1367,8 @@ export let Dock = GObject.registerClass(
       let workspaceManager = global.workspace_manager;
       let activeWs = workspaceManager.get_active_workspace();
 
-      let windows = app.get_windows();
+      // let windows = app.get_windows();
+      let windows = this.getAppWindowsFiltered(app); 
 
       if (evt.modifier_state & Clutter.ModifierType.CONTROL_MASK) {
         windows = windows.filter((w) => {

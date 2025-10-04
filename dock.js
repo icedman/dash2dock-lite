@@ -1298,6 +1298,9 @@ export let Dock = GObject.registerClass(
     }
 
 		getAppWindowsFiltered(app) {
+			if (this.extension.multi_monitor_preference == 0) {
+				return app.get_windows();
+			}
 			return app.get_windows().filter((w) => {
 				return (w.get_monitor() == this._monitor.index);
 			});

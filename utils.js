@@ -91,8 +91,9 @@ export const trySpawnCommandLine = function (cmd) {
   return new Promise((resolve, reject) => {
     try {
       GLib.spawn_command_line_async(cmd);
+      resolve();
     } catch (err) {
-      console.log(err);
+      reject(err);
     }
   });
 };

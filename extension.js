@@ -873,12 +873,34 @@ export default class Dash2DockLiteExt extends Extension {
     if (this.blur_background || this.topbar_blur_background) {
       let file = Gio.File.new_for_uri(this.desktop_background);
       let quality = [250, 250, 500, 1000][this.blur_resolution || 0];
-      let cmd = `convert -scale 10% -blur 0x2.5 -resize ${quality}% "${file.get_path()}" ${BLURRED_BG_PATH}`;
-      console.log(cmd);
-      try {
-        await trySpawnCommandLine(cmd);
-      } catch (err) {
-        console.log(err);
+      let magickBin = GLib.find_program_in_path('magick');
+      let convertBin = GLib.find_program_in_path('convert');
+      let inputPath = file.get_path();
+      let cmd = null;
+
+      if (!inputPath) {
+        console.log('Unable to resolve background path for blur effect');
+      } else {
+        let quotedInput = GLib.shell_quote(inputPath);
+        let quotedOutput = GLib.shell_quote(BLURRED_BG_PATH);
+        let operations = `-scale 10% -blur 0x2.5 -resize ${quality}%`;
+
+        if (magickBin) {
+          cmd = `${magickBin} ${quotedInput} ${operations} ${quotedOutput}`;
+        } else if (convertBin) {
+          cmd = `${convertBin} ${quotedInput} ${operations} ${quotedOutput}`;
+        } else {
+          console.log('Neither magick nor convert command found; blur effect disabled');
+        }
+      }
+
+      if (cmd) {
+        console.log(cmd);
+        try {
+          await trySpawnCommandLine(cmd);
+        } catch (err) {
+          console.log(err);
+        }
       }
     }
 

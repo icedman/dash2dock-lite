@@ -153,7 +153,9 @@ export const DockItemList = GObject.registerClass(
           this.visible = false;
           this.dock._maybeBounce(this._target);
 
-          trySpawnCommandLine(cmd);
+          trySpawnCommandLine(cmd).catch((err) => {
+            console.log(err);
+          });
         });
       });
 

@@ -4,6 +4,7 @@
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 2 of the License, or
  * (at your option) any later version.
+      cache.signature = null;
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -13,6 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
+      cache.signature = null;
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
  */
@@ -169,6 +171,22 @@ export default class Dash2DockLiteExt extends Extension {
 
     this._style = new Style();
 
+    this._backgroundUris = { light: null, dark: null };
+    this._blurredBackgrounds = {
+      light: {
+        path: tempPath('d2da-bg-light-blurred.jpg'),
+        uri: null,
+        signature: null,
+      },
+      dark: {
+        path: tempPath('d2da-bg-dark-blurred.jpg'),
+        uri: null,
+        signature: null,
+      },
+    };
+    this.desktop_background_variant = 'light';
+    this._blurRefreshId = 0;
+
     this._enableSettings();
     this._loadIconMap();
 
@@ -249,6 +267,15 @@ export default class Dash2DockLiteExt extends Extension {
 
     this._style.unloadAll();
     this._style = null;
+
+    if (this._blurRefreshId) {
+      GLib.source_remove(this._blurRefreshId);
+      this._blurRefreshId = 0;
+    }
+
+    this._backgroundUris = null;
+    this._blurredBackgrounds = null;
+    this.desktop_background_variant = null;
 
     this._hookCompiz(false);
 
@@ -444,8 +471,28 @@ export default class Dash2DockLiteExt extends Extension {
       () => {
         this._updateBlurredBackground();
       },
+      'changed::picture-uri-dark',
+      () => {
+        this._updateBlurredBackground();
+      },
       this,
     );
+
+    try {
+      this._interfaceSettings = new Gio.Settings({
+        schema_id: 'org.gnome.desktop.interface',
+      });
+      this._interfaceSettings.connectObject(
+        'changed::color-scheme',
+        () => {
+          this._applyActiveBlurredBackground();
+        },
+        this,
+      );
+    } catch (err) {
+      console.log(err);
+      this._interfaceSettings = null;
+    }
 
     this._settings = this.getSettings(schemaId);
     this._settingsKeys = SettingsKeys();
@@ -644,6 +691,11 @@ export default class Dash2DockLiteExt extends Extension {
 
     this._desktopSettings.disconnectObject(this);
     this._desktopSettings = null;
+
+    if (this._interfaceSettings) {
+      this._interfaceSettings.disconnectObject(this);
+      this._interfaceSettings = null;
+    }
   }
 
   _addEvents() {
@@ -862,49 +914,237 @@ export default class Dash2DockLiteExt extends Extension {
   }
 
   async _updateBlurredBackground() {
-    this.desktop_background = this._desktopSettings.get_string('picture-uri');
-    this.desktop_background_blurred = this.desktop_background;
-    this.docks.forEach((dock) => {
-      dock._updateBackgroundEffect();
-    });
+    this._backgroundUris = this._backgroundUris ?? { light: null, dark: null };
+    this._blurredBackgrounds =
+      this._blurredBackgrounds ??
+      {
+        light: {
+          path: tempPath('d2da-bg-light-blurred.jpg'),
+          uri: null,
+          signature: null,
+        },
+        dark: {
+          path: tempPath('d2da-bg-dark-blurred.jpg'),
+          uri: null,
+          signature: null,
+        },
+      };
 
-    const BLURRED_BG_PATH = tempPath('d2da-bg-blurred.jpg');
-    this.desktop_background_blurred = BLURRED_BG_PATH;
-    if (this.blur_background || this.topbar_blur_background) {
-      let file = Gio.File.new_for_uri(this.desktop_background);
-      let quality = [250, 250, 500, 1000][this.blur_resolution || 0];
-      let magickBin = GLib.find_program_in_path('magick');
-      let convertBin = GLib.find_program_in_path('convert');
-      let inputPath = file.get_path();
-      let cmd = null;
+    const lightUri = this._desktopSettings.get_string('picture-uri');
+    let darkUri = lightUri;
 
-      if (!inputPath) {
-        console.log('Unable to resolve background path for blur effect');
-      } else {
-        let quotedInput = GLib.shell_quote(inputPath);
-        let quotedOutput = GLib.shell_quote(BLURRED_BG_PATH);
-        let operations = `-scale 10% -blur 0x2.5 -resize ${quality}%`;
-
-        if (magickBin) {
-          cmd = `${magickBin} ${quotedInput} ${operations} ${quotedOutput}`;
-        } else if (convertBin) {
-          cmd = `${convertBin} ${quotedInput} ${operations} ${quotedOutput}`;
-        } else {
-          console.log('Neither magick nor convert command found; blur effect disabled');
+    try {
+      if (this._desktopSettings.list_keys().includes('picture-uri-dark')) {
+        const candidate = this._desktopSettings.get_string('picture-uri-dark');
+        if (candidate && candidate !== '') {
+          darkUri = candidate;
         }
       }
+    } catch (err) {
+      console.log(err);
+    }
 
-      if (cmd) {
-        console.log(cmd);
+    this._backgroundUris.light = lightUri;
+    this._backgroundUris.dark = darkUri || lightUri;
+
+    if (this.blur_background || this.topbar_blur_background) {
+      await Promise.all(
+        ['light', 'dark'].map((variant) =>
+          this._ensureBlurredBackground(variant, this._backgroundUris[variant]),
+        ),
+      );
+      this._scheduleBlurRefresh();
+    }
+
+    this._applyActiveBlurredBackground();
+  }
+
+  async _ensureBlurredBackground(variant, uri) {
+    const cache = this._blurredBackgrounds?.[variant];
+    if (!cache) {
+      return;
+    }
+
+    if (!uri || uri === 'none') {
+      cache.uri = null;
+      cache.signature = null;
+      return;
+    }
+
+    const qualityIndex = this.blur_resolution || 0;
+    const signature = `${uri}|${qualityIndex}`;
+
+    if (cache.signature === signature) {
+      try {
+        const existing = Gio.File.new_for_path(cache.path);
+        if (existing.query_exists(null)) {
+          return;
+        }
+      } catch (err) {
+        cache.uri = null;
+        cache.signature = null;
+      }
+    }
+
+    let file = null;
+    try {
+      file = Gio.File.new_for_uri(uri);
+    } catch (err) {
+      console.log(err);
+      cache.uri = null;
+      return;
+    }
+
+    const inputPath = file && file.get_path ? file.get_path() : null;
+    if (!inputPath) {
+      console.log(
+        `Unable to resolve background path for blur effect (${variant})`,
+      );
+      cache.uri = null;
+      cache.signature = null;
+      return;
+    }
+
+    const quality = [250, 250, 500, 1000][qualityIndex];
+    const magickBin = GLib.find_program_in_path('magick');
+    const convertBin = GLib.find_program_in_path('convert');
+    const quotedInput = GLib.shell_quote(inputPath);
+    const quotedOutput = GLib.shell_quote(cache.path);
+    const operations = `-scale 10% -blur 0x2.5 -resize ${quality}%`;
+
+    let cmd = null;
+    if (magickBin) {
+      cmd = `${magickBin} ${quotedInput} ${operations} ${quotedOutput}`;
+    } else if (convertBin) {
+      cmd = `${convertBin} ${quotedInput} ${operations} ${quotedOutput}`;
+    } else {
+      console.log('Neither magick nor convert command found; blur effect disabled');
+      cache.uri = null;
+      cache.signature = null;
+      return;
+    }
+
+    console.log(cmd);
+    try {
+      await trySpawnCommandLine(cmd);
+      cache.uri = uri;
+      cache.signature = signature;
+    } catch (err) {
+      console.log(err);
+      cache.uri = null;
+      cache.signature = null;
+    }
+  }
+
+  _applyActiveBlurredBackground() {
+    const variant = this._getPreferredColorScheme();
+    const fallbackVariant = variant === 'dark' ? 'light' : 'dark';
+    const candidateUri =
+      this._backgroundUris?.[variant] && this._backgroundUris[variant] !== ''
+        ? this._backgroundUris[variant]
+        : this._backgroundUris?.[fallbackVariant];
+    const sanitizedUri =
+      candidateUri && candidateUri !== 'none' ? candidateUri : '';
+
+    this.desktop_background_variant = variant;
+    this.desktop_background = sanitizedUri || this.desktop_background || '';
+
+    let blurredPath = null;
+    if (this.blur_background || this.topbar_blur_background) {
+      const candidates = [
+        this._blurredBackgrounds?.[variant],
+        this._blurredBackgrounds?.[fallbackVariant],
+      ];
+
+      for (const entry of candidates) {
+        if (!entry || !entry.path || !entry.uri) {
+          continue;
+        }
         try {
-          await trySpawnCommandLine(cmd);
+          const file = Gio.File.new_for_path(entry.path);
+          if (file.query_exists(null)) {
+            blurredPath = entry.path;
+            break;
+          }
         } catch (err) {
           console.log(err);
         }
       }
     }
 
+    this.desktop_background_blurred =
+      blurredPath && blurredPath.length ? blurredPath : this.desktop_background;
+
+    (this.docks || []).forEach((dock) => {
+      dock._updateBackgroundEffect();
+    });
+
     this.animate();
+  }
+
+  _scheduleBlurRefresh(attempt = 0) {
+    if (!this.blur_background && !this.topbar_blur_background) {
+      return;
+    }
+
+    if (++attempt > 5) {
+      return;
+    }
+
+    if (this._blurRefreshId) {
+      GLib.source_remove(this._blurRefreshId);
+      this._blurRefreshId = 0;
+    }
+
+    const delay = attempt === 1 ? 500 : 1000;
+    this._blurRefreshId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, delay, () => {
+      this._blurRefreshId = 0;
+
+      const variant = this.desktop_background_variant || 'light';
+      const entry = this._blurredBackgrounds?.[variant];
+      let ready = false;
+
+      if (entry && entry.path && entry.uri) {
+        try {
+          const file = Gio.File.new_for_path(entry.path);
+          ready = file.query_exists(null);
+        } catch (err) {
+          console.log(err);
+        }
+      }
+
+      this._applyActiveBlurredBackground();
+
+      if (!ready) {
+        this._scheduleBlurRefresh(attempt);
+      }
+
+      return GLib.SOURCE_REMOVE;
+    });
+  }
+
+  _getPreferredColorScheme() {
+    let scheme = 'light';
+
+    if (this._interfaceSettings) {
+      try {
+        scheme = this._interfaceSettings.get_string('color-scheme') || 'light';
+      } catch (err) {
+        console.log(err);
+      }
+    } else if (Main.panel?.has_style_pseudo_class?.('dark')) {
+      return 'dark';
+    }
+
+    if (scheme === 'prefer-dark') {
+      return 'dark';
+    }
+
+    if (scheme === 'default' && Main.panel?.has_style_pseudo_class?.('dark')) {
+      return 'dark';
+    }
+
+    return 'light';
   }
 
   _createTopbarBackground() {

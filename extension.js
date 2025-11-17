@@ -4,7 +4,6 @@
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 2 of the License, or
  * (at your option) any later version.
-      cache.signature = null;
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -14,7 +13,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
-      cache.signature = null;
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
  */
@@ -318,9 +316,16 @@ export default class Dash2DockLiteExt extends Extension {
       }
       if (!stateObj._getIcon && hook) {
         stateObj._getIcon = stateObj.getIcon;
-        stateObj.getIcon = this._getIcon.bind(this);
+        if (this.lamp_app_animation) {
+          stateObj.getIcon = this._getIcon.bind(this);
+        }
       }
     }
+  }
+
+  _updateCompizHook() {
+      this._hookCompiz(false);
+      this._hookCompiz(true);
   }
 
   // override compiz getIcon
@@ -376,7 +381,6 @@ export default class Dash2DockLiteExt extends Extension {
         dock._beginAnimation();
         dock._debounceEndAnimation();
       });
-
       this._hookCompiz();
     }, 10);
     this._loTimer.runUntil(() => {
@@ -513,6 +517,10 @@ export default class Dash2DockLiteExt extends Extension {
             }
             this._settings.set_string('msg-to-ext', '');
           }
+          break;
+        }
+        case 'lamp-app-animation': {
+          this._updateCompizHook();
           break;
         }
         case 'animation-fps': {

@@ -204,9 +204,9 @@ export default class Preferences extends ExtensionPreferences {
     let toggle_experimental = () => {
       let exp = false; // settingsKeys.getValue('experimental-features');
       // builder.get_object('dock-location-row').visible = exp;
-      if (builder.get_object('lamp-app-animation-row')) {
-        builder.get_object('lamp-app-animation-row').visible = exp;
-      }
+      // if (builder.get_object('lamp-app-animation-row')) {
+      //   builder.get_object('lamp-app-animation-row').visible = exp;
+      // }
       if (builder.get_object('self-test-row')) {
         builder.get_object('self-test-row').visible = exp;
       }

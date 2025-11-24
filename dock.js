@@ -1223,7 +1223,9 @@ export let Dock = GObject.registerClass(
 
       // let windows = app.get_windows();
       let windows = this.getAppWindowsFiltered(app);
-      if (!windows.length) return;
+      if (!windows.length) {
+        return;
+      }
 
       let event = Clutter.get_current_event();
       let modifiers = event ? event.get_state() : 0;
@@ -1243,7 +1245,7 @@ export let Dock = GObject.registerClass(
       let workspaceManager = global.workspace_manager;
       let activeWs = workspaceManager.get_active_workspace();
       let focusedWindow = null;
-
+      
       windows.forEach((w) => {
         if (w.has_focus()) {
           focusedWindow = w;
@@ -1254,7 +1256,8 @@ export let Dock = GObject.registerClass(
       if (focusedWindow) {
         this.extension._hiTimer.runOnce(() => {
           if (shift) {
-            if (focusedWindow.get_maximized() == 3) {
+            if ((focusedWindow.is_maximized && focusedWindow.is_maximized()) || 
+                (focusedWindow.get_maximized && focusedWindow.get_maximized() == 3)) {
               focusedWindow.unmaximize(3);
             } else {
               focusedWindow.maximize(3);
@@ -1301,12 +1304,41 @@ export let Dock = GObject.registerClass(
     }
 
     getAppWindowsFiltered(app) {
-      if (this.extension.multi_monitor_preference == 0) {
-        return app.get_windows();
+      var apply_filtering = true;
+
+      // no filtering needed for a single dock
+      if (apply_filtering && this.extension.multi_monitor_preference == 0) {
+        apply_filtering = false;
       }
-      return app.get_windows().filter((w) => {
-        return w.get_monitor() == this._monitor.index;
-      });
+
+      // no filtering needed on single monitor desktop
+      if (apply_filtering && Main.layoutManager.monitors.length == 1) {
+        apply_filtering = false;
+      }
+
+      // apply filtering only if app appears on multiple monitors
+      if (apply_filtering) {
+        var on_current_monitor = false;
+        var on_other_monitor = false;
+
+        app.get_windows().forEach((w) => {
+          on_current_monitor =
+            on_current_monitor || w.get_monitor() == this._monitor.index;
+          on_other_monitor =
+            on_other_monitor || w.get_monitor() != this._monitor.index;
+        });
+
+        if (!(on_current_monitor && on_other_monitor)) {
+          apply_filtering = false;
+        }
+      }
+
+      if (apply_filtering) {
+        return app.get_windows().filter((w) => {
+          return w.get_monitor() == this._monitor.index;
+        });
+      }
+      return app.get_windows();
     }
 
     _onScrollEvent(obj, evt) {

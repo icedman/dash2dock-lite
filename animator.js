@@ -451,7 +451,7 @@ export let Animator = class {
           [translationX, translationY] =
             icon._positionCache[icon._positionCache.length - 1];
           icon._locked = true;
-        }  else {
+        } else {
           if (icon._positionCache.length > lockThreshold / 4) {
             var [_translationX, _translationY] =
               icon._positionCache[icon._positionCache.length - 1];

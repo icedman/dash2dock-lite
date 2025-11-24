@@ -136,7 +136,7 @@ export const DockItemList = GObject.registerClass(
         w.add_child(label);
         w._icon = icon;
         w._label = label;
-        label.opacity = 0
+        label.opacity = 0;
 
         icon.connect('button-press-event', () => {
           // let path = Gio.File.new_for_path(`Downloads/${l.name}`).get_path();

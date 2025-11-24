@@ -423,6 +423,11 @@ export const SettingsKeys = () => {
       default_value: false,
       widget_type: 'switch',
     },
+    'multi-monitor-filter': {
+      default_value: 0,
+      widget_type: 'dropdown',
+      test: { pointer: 'slide-through', values: [0, 1, 2] },
+    },
   });
 
   return settingsKeys;

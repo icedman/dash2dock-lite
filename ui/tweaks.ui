@@ -260,6 +260,19 @@
             </child>
           </object>
         </child>
+        <child>
+          <object class="AdwActionRow">
+            <property name="title" translatable="yes">Monitor Filter</property>
+            <property name="subtitle" translatable="yes">Filter actions to current monitor.</property>
+            <property name="activatable-widget">multi-monitor-filter</property>
+            <child>
+              <object class="GtkDropDown" id="multi-monitor-filter">
+                <property name="valign">center</property>
+                <property name="model">multi-monitor-filter-model</property>
+              </object>
+            </child>
+          </object>
+        </child>
       </object>
     </child>
   </object>
@@ -289,6 +302,13 @@
       <!-- 25 40fps -->
       <item translatable="yes">Low</item>
       <!-- 50 20fps -->
+    </items>
+  </object>
+  <object class="GtkStringList" id="multi-monitor-filter-model">
+    <items>
+      <item translatable="yes">No filter</item>
+      <item translatable="yes">Always</item>
+      <item translatable="yes">Whenever applicable</item>
     </items>
   </object>
   <object class="GtkAdjustment" id="scroll-sensitivity-adjust">

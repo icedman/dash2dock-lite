@@ -1284,7 +1284,6 @@ export let Dock = GObject.registerClass(
             return w.get_monitor() == this._monitor.index;
           });
           if (windows.length > 0) {
-            console.log(`candidate ${windows[0]} ${windows[0].get_monitor()}`);
             this.extension._hiTimer.runOnce(() => {
               this._raiseAndFocus(windows[0]);
             }, 50);
@@ -1327,7 +1326,7 @@ export let Dock = GObject.registerClass(
     }
 
     getAppWindowsFiltered(app) {
-      var apply_filtering = true;
+      var apply_filtering = this.extension.multi_monitor_filter != 0;
 
       // no filtering needed for a single dock
       if (apply_filtering && this.extension.multi_monitor_preference == 0) {
@@ -1340,7 +1339,8 @@ export let Dock = GObject.registerClass(
       }
 
       // apply filtering only if app appears on multiple monitors
-      if (apply_filtering) {
+      // 2 - whenever applicable
+      if (apply_filtering && this.extension.multi_monitor_filter == 2) {
         var on_current_monitor = false;
         var on_other_monitor = false;
 

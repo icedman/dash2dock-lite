@@ -436,5 +436,10 @@
         <summary>Enable background blur</summary>
         <description></description>
     </key>
+    <key type="i" name="multi-monitor-filter">
+        <default>0</default>
+        <summary>Multi-Monitor Filter</summary>
+        <description>Filter actions on multi-monitor.</description>
+    </key>
   </schema>
 </schemalist>

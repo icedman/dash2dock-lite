@@ -35,6 +35,7 @@ export let Animator = class {
       this._dots = [];
       this._badges = [];
     }
+    this._computed = null;
   }
 
   disable() {
@@ -248,8 +249,14 @@ export let Animator = class {
       edge_distance = 0;
     }
 
+    let total_scale = 0;
+    let did_scale_count = 0;
+
     // animate
+    let firstIcon = null;
+    let lastIcon = null;
     let iconTable = [];
+
     animateIcons.forEach((icon) => {
       let original_pos = [...icon._pos];
 
@@ -264,6 +271,10 @@ export let Animator = class {
       icon._translateRise = 0;
 
       iconTable.push(icon);
+      if (firstIcon == null) {
+        firstIcon = icon;
+      }
+      lastIcon = null;
 
       let scale = 1;
       let dx = original_pos[0] - px;
@@ -289,6 +300,9 @@ export let Animator = class {
         icon._translateRise = sz * 0.1 * rise;
 
         didScale = true;
+
+        total_scale += scale;
+        did_scale_count += 1;
       }
 
       icon._scale = scale;
@@ -316,8 +330,9 @@ export let Animator = class {
       }
     });
 
-    // spread
     //! use better collision test here?
+    let total_spread_left = 0;
+    let total_spread_right = 0;
     let hoveredIcon = null;
     for (let i = 0; i < iconTable.length; i++) {
       if (iconTable.length < 2) break;
@@ -325,23 +340,24 @@ export let Animator = class {
       if (icon._icon && icon._icon.hover) {
         hoveredIcon = icon;
       }
-      if (icon._scale > 1.1) {
+
+      let scale = icon._scale;
+      if (scale > 1.1) {
         // affect spread
-        let offset =
-          1.25 * (icon._scale - 1) * iconSize * scaleFactor * spread * 0.8;
-        let o = offset;
+        let offset = Math.floor(
+          1.25 * (scale - 1) * iconSize * scaleFactor * spread * 0.8,
+        );
         // left
         for (let j = i - 1; j >= 0; j--) {
           let left = iconTable[j];
           left._translate -= offset;
-          o *= 0.98;
+          total_spread_left += offset;
         }
         // right
-        o = offset;
         for (let j = i + 1; j < iconTable.length; j++) {
           let right = iconTable[j];
           right._translate += offset;
-          o *= 0.98;
+          total_spread_right += offset;
         }
       }
     }
@@ -424,24 +440,30 @@ export let Animator = class {
       // fix jitterness
       if (lockPosition && icon._p == 0) {
         icon._positionCache = icon._positionCache || [];
-        var lockThreshold = 16;
-        if ((icon._prev && icon._prev._locked) ||
-            (icon._next && icon._next._locked)) {
-          lockThreshold = 8;
+        var lockThreshold = 24;
+        if (
+          (icon._prev && icon._prev._locked) ||
+          (icon._next && icon._next._locked)
+        ) {
+          lockThreshold = 16;
         }
         if (icon._positionCache.length > lockThreshold) {
           [translationX, translationY] =
             icon._positionCache[icon._positionCache.length - 1];
           icon._locked = true;
-        } else {
+        }  else {
+          if (icon._positionCache.length > lockThreshold / 4) {
+            var [_translationX, _translationY] =
+              icon._positionCache[icon._positionCache.length - 1];
+            translationX = (translationX + _translationX) / 2;
+            translationY = (translationY + _translationY) / 2;
+          }
           icon._positionCache.push([translationX, translationY]);
         }
       } else {
         icon._positionCache = null;
       }
 
-      // icon._icon.translationX = (icon._icon.translationX + translationX * 4) / 5;
-      // icon._icon.translationY = (icon._icon.translationY + translationY * 4) / 5;
       icon._icon.translationX = translationX;
       icon._icon.translationY = translationY;
 
@@ -452,10 +474,12 @@ export let Animator = class {
           didBounce = true;
         }
       }
+    });
 
-      //--------------
-      // renderer
-      //--------------
+    //--------------
+    // renderer
+    //--------------
+    animateIcons.forEach((icon) => {
       // dock.renderArea.opacity = 100;
       {
         let icon_name = icon._icon.icon_name;

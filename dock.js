@@ -1111,6 +1111,7 @@ export let Dock = GObject.registerClass(
 
     preview() {
       this._preview = PREVIEW_FRAMES;
+      this.animator._computed = null;
     }
 
     animate(dt = 15) {

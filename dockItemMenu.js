@@ -129,14 +129,14 @@ export const DockItemList = GObject.registerClass(
         });
         icon.set_icon_size(iconSize * iconAdjust);
         this._box.add_child(w);
-        let label = new St.Label({ style_class: 'dash-label' });
+        let label = new St.Label({ style_class: 'dash-label-popup' });
         let short = (l.name ?? '').replace(/(.{32})..+/, '$1...');
         label.text = short;
         w.add_child(icon);
         w.add_child(label);
         w._icon = icon;
         w._label = label;
-        label.opacity = 0;
+        label.opacity = 0
 
         icon.connect('button-press-event', () => {
           // let path = Gio.File.new_for_path(`Downloads/${l.name}`).get_path();

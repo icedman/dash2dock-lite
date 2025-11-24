@@ -704,7 +704,9 @@ export let Dock = GObject.registerClass(
           c._appwell._activate = c._appwell.activate;
           c._appwell.activate = () => {
             try {
-              this._maybeBounce(c);
+              if (!c._menu) {
+                this._maybeBounce(c);
+              }
               this._maybeMinimizeOrMaximize(c._appwell.app);
               c._appwell._activate();
             } catch (err) {

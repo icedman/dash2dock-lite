@@ -160,12 +160,11 @@ Please be specific on the errors encountered. Add screenshots whenever possible.
 
 ## Testing Rig
 
-* Arch Linux (Gnome 45.5)
-* Debian 12 (Gnome 43.9)
-* Fedora 39 (Gnome 45.0)
-* Fedora 40 Beta (Gnome 46.0)
-* Manjaro Linux (Gnome 45.3)
-* Opensuse Tumbleweed (Gnome 46.0)
+* ~~Arch Linux (Gnome 45.5)~~
+* ~~Debian 12 (Gnome 43.9)~~
+* Fedora 43 (Gnome 49.1)
+* ~~Manjaro Linux (Gnome 45.3)~~
+* ~~Opensuse Tumbleweed (Gnome 46.0)~~
 * Ubuntu 23 (Gnome 45.0)
 
 ## License

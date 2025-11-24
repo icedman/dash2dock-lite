@@ -324,8 +324,8 @@ export default class Dash2DockLiteExt extends Extension {
   }
 
   _updateCompizHook() {
-      this._hookCompiz(false);
-      this._hookCompiz(true);
+    this._hookCompiz(false);
+    this._hookCompiz(true);
   }
 
   // override compiz getIcon
@@ -923,20 +923,18 @@ export default class Dash2DockLiteExt extends Extension {
 
   async _updateBlurredBackground() {
     this._backgroundUris = this._backgroundUris ?? { light: null, dark: null };
-    this._blurredBackgrounds =
-      this._blurredBackgrounds ??
-      {
-        light: {
-          path: tempPath('d2da-bg-light-blurred.jpg'),
-          uri: null,
-          signature: null,
-        },
-        dark: {
-          path: tempPath('d2da-bg-dark-blurred.jpg'),
-          uri: null,
-          signature: null,
-        },
-      };
+    this._blurredBackgrounds = this._blurredBackgrounds ?? {
+      light: {
+        path: tempPath('d2da-bg-light-blurred.jpg'),
+        uri: null,
+        signature: null,
+      },
+      dark: {
+        path: tempPath('d2da-bg-dark-blurred.jpg'),
+        uri: null,
+        signature: null,
+      },
+    };
 
     const lightUri = this._desktopSettings.get_string('picture-uri');
     let darkUri = lightUri;
@@ -1026,7 +1024,9 @@ export default class Dash2DockLiteExt extends Extension {
     } else if (convertBin) {
       cmd = `${convertBin} ${quotedInput} ${operations} ${quotedOutput}`;
     } else {
-      console.log('Neither magick nor convert command found; blur effect disabled');
+      console.log(
+        'Neither magick nor convert command found; blur effect disabled',
+      );
       cache.uri = null;
       cache.signature = null;
       return;

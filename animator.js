@@ -20,7 +20,7 @@ import {
   isOverlapRect,
 } from './utils.js';
 
-const ANIM_POSITION_PER_SEC = 450 / 1000;
+const ANIM_POSITION_PER_SEC = 550 / 1000;
 const ANIM_SIZE_PER_SEC = 250 / 1000;
 const ANIM_ICON_RAISE = 0.6;
 const ANIM_ICON_SCALE = 1.5;
@@ -177,6 +177,7 @@ export let Animator = class {
     hitArea *= hitArea;
 
     let idx = 0;
+    let prevIcon = null;
     animateIcons.forEach((icon) => {
       let pos = icon.get_transformed_position();
       icon._pos = [...pos];
@@ -203,6 +204,13 @@ export let Animator = class {
       icon._targetScale = 1;
 
       icon._idx = idx++;
+
+      icon._prev = prevIcon;
+      icon._next = null;
+      if (prevIcon) {
+        icon._next = icon;
+      }
+      prevIcon = icon;
     });
 
     let noAnimation = !dock.extension.animate_icons_unmute;
@@ -402,12 +410,10 @@ export let Animator = class {
         if (mag > 0) {
           dst = dst.normalize();
         }
-        let accelVector = new Vector([0, 0, 0]);
         let deltaVector = dst.multiplyScalar(speed * dt);
         let deltaMag = deltaVector.magnitude();
         let appliedVector = new Vector([targetPosition.x, targetPosition.y, 0]);
-        appliedVector = appliedVector.add(accelVector);
-        if (deltaMag < mag && deltaMag > 10) {
+        if (deltaMag < mag) {
           appliedVector = currentPosition.add(deltaVector);
         }
         translationX = appliedVector.x;
@@ -418,9 +424,15 @@ export let Animator = class {
       // fix jitterness
       if (lockPosition && icon._p == 0) {
         icon._positionCache = icon._positionCache || [];
-        if (icon._positionCache.length > 16) {
+        var lockThreshold = 16;
+        if ((icon._prev && icon._prev._locked) ||
+            (icon._next && icon._next._locked)) {
+          lockThreshold = 8;
+        }
+        if (icon._positionCache.length > lockThreshold) {
           [translationX, translationY] =
             icon._positionCache[icon._positionCache.length - 1];
+          icon._locked = true;
         } else {
           icon._positionCache.push([translationX, translationY]);
         }
@@ -428,8 +440,10 @@ export let Animator = class {
         icon._positionCache = null;
       }
 
-      icon._icon.translationX = (icon._icon.translationX + translationX) / 2;
-      icon._icon.translationY = (icon._icon.translationY + translationY) / 2;
+      // icon._icon.translationX = (icon._icon.translationX + translationX * 4) / 5;
+      // icon._icon.translationY = (icon._icon.translationY + translationY * 4) / 5;
+      icon._icon.translationX = translationX;
+      icon._icon.translationY = translationY;
 
       // clear bounce animation
       if (icon._appwell) {

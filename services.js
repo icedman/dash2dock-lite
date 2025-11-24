@@ -297,7 +297,7 @@ export const Services = class {
   checkNotifications() {
     if (this._disableNotifications > 4) return;
 
-		let sources = Main.messageTray.getSources();
+    let sources = Main.messageTray.getSources();
     this._appNotices = this._appNotices || {};
 
     Object.keys(this._appNotices).forEach((k) => {

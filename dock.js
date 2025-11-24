@@ -1219,7 +1219,9 @@ export let Dock = GObject.registerClass(
     }
 
     _maybeMinimizeOrMaximize(app) {
-      if (!app.get_windows) return;
+      if (!app.get_windows) {
+        return;
+      }
 
       // let windows = app.get_windows();
       let windows = this.getAppWindowsFiltered(app);
@@ -1245,7 +1247,7 @@ export let Dock = GObject.registerClass(
       let workspaceManager = global.workspace_manager;
       let activeWs = workspaceManager.get_active_workspace();
       let focusedWindow = null;
-      
+
       windows.forEach((w) => {
         if (w.has_focus()) {
           focusedWindow = w;
@@ -1256,8 +1258,11 @@ export let Dock = GObject.registerClass(
       if (focusedWindow) {
         this.extension._hiTimer.runOnce(() => {
           if (shift) {
-            if ((focusedWindow.is_maximized && focusedWindow.is_maximized()) || 
-                (focusedWindow.get_maximized && focusedWindow.get_maximized() == 3)) {
+            if (
+              (focusedWindow.is_maximized && focusedWindow.is_maximized()) ||
+              (focusedWindow.get_maximized &&
+                focusedWindow.get_maximized() == 3)
+            ) {
               focusedWindow.unmaximize(3);
             } else {
               focusedWindow.maximize(3);
@@ -1269,6 +1274,24 @@ export let Dock = GObject.registerClass(
           }
         }, 50);
       } else {
+        const hidden = windows.filter((w) => {
+          return w.is_hidden();
+        });
+
+        // multi-monitors fix -- where focus can seem to get lost
+        if (!hidden.length) {
+          let windows = app.get_windows().filter((w) => {
+            return w.get_monitor() == this._monitor.index;
+          });
+          if (windows.length > 0) {
+            console.log(`candidate ${windows[0]} ${windows[0].get_monitor()}`);
+            this.extension._hiTimer.runOnce(() => {
+              this._raiseAndFocus(windows[0]);
+            }, 50);
+          }
+          return;
+        }
+
         this.extension._hiTimer.runOnce(() => {
           windows.forEach((w) => {
             if (w.is_hidden()) {
@@ -1386,13 +1409,24 @@ export let Dock = GObject.registerClass(
       }
     }
 
-    // an overly sensitive setting will make window too fast. allow a half second pause after each cycle
+    // an overly sensitive setting will make window cycle too fast. allow a half second pause after each cycle
     _lockCycle() {
       if (this._lockedCycle) return;
       this._lockedCycle = true;
       this.extension._hiTimer.runOnce(() => {
         this._lockedCycle = false;
       }, 150);
+    }
+
+    _raiseAndFocus(w) {
+      let workspaceManager = global.workspace_manager;
+      let activeWs = workspaceManager.get_active_workspace();
+      if (activeWs == w.get_workspace()) {
+        w.raise();
+        w.focus(0);
+      } else {
+        activeWs.activate_with_focus(w, global.get_current_time());
+      }
     }
 
     _cycleWindows(app, evt) {
@@ -1455,12 +1489,7 @@ export let Dock = GObject.registerClass(
       let window = windows[focusId];
       if (window) {
         this._lockCycle();
-        if (activeWs == window.get_workspace()) {
-          window.raise();
-          window.focus(0);
-        } else {
-          activeWs.activate_with_focus(window, global.get_current_time());
-        }
+        this._raiseAndFocus(window);
       }
     }
   },

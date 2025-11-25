@@ -7,6 +7,7 @@ import { trySpawnCommandLine } from './utils.js';
 // import { trySpawnCommandLine } from 'resource:///org/gnome/shell/misc/util.js';
 
 import Gio from 'gi://Gio';
+import GioUnix from 'gi://GioUnix';
 import GObject from 'gi://GObject';
 import Clutter from 'gi://Clutter';
 import St from 'gi://St';
@@ -260,7 +261,7 @@ export const DockItemContainer = GObject.registerClass(
           };
         }
       } else {
-        desktopApp = Gio.DesktopAppInfo.new_from_filename(
+        desktopApp = GioUnix.DesktopAppInfo.new_from_filename(
           params.appinfo_filename,
         );
       }

@@ -26,6 +26,7 @@ import St from 'gi://St';
 import Shell from 'gi://Shell';
 import Graphene from 'gi://Graphene';
 import Gio from 'gi://Gio';
+import GioUnix from 'gi://GioUnix';
 import GLib from 'gi://GLib';
 import { tempPath, trySpawnCommandLine } from './utils.js';
 

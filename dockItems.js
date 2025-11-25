@@ -7,10 +7,17 @@ import { trySpawnCommandLine } from './utils.js';
 // import { trySpawnCommandLine } from 'resource:///org/gnome/shell/misc/util.js';
 
 import Gio from 'gi://Gio';
-import GioUnix from 'gi://GioUnix';
 import GObject from 'gi://GObject';
 import Clutter from 'gi://Clutter';
 import St from 'gi://St';
+
+let GioUnix = null;
+try {
+    GioUnix = await import('gi://GioUnix');
+} catch (e) {
+    console.log('GioUnix not available on this GNOME version');
+}
+const DesktopAppInfo = GioUnix?.DesktopAppInfo || Gio.DesktopAppInfo;
 
 import {
   DashIcon,
@@ -261,10 +268,7 @@ export const DockItemContainer = GObject.registerClass(
           };
         }
       } else {
-        const DesktopAppInfo = GioUnix.DesktopAppInfo || Gio.DesktopAppInfo;
-        desktopApp = DesktopAppInfo.new_from_filename(
-          params.appinfo_filename,
-        );
+        desktopApp = DesktopAppInfo.new_from_filename(params.appinfo_filename);
       }
 
       let dashIcon = new DockIcon(desktopApp, {

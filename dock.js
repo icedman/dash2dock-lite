@@ -520,8 +520,9 @@ export let Dock = GObject.registerClass(
       }
 
       if (c._icon) {
+        this.renderArea.opacity = 0;
         // renderer takes care of displaying an icon
-        c._icon.opacity = 0;
+        c._icon.opacity = 255;
         c._label = c.label;
 
         if (c._label && !c._destroyLabelConnectId) {

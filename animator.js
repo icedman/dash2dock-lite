@@ -479,6 +479,7 @@ export let Animator = class {
     //--------------
     // renderer
     //--------------
+    if (false)
     animateIcons.forEach((icon) => {
       // dock.renderArea.opacity = 100;
       {

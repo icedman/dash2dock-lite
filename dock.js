@@ -503,7 +503,7 @@ export let Dock = GObject.registerClass(
           c._appwell.visible = true;
           c._dot = c._appwell._dot;
           // hide icons if favorites only
-          if (this.extension.favorites_only) {
+          if (this.extension.favorites_only && !c.custom_icon) {
             let app = c._appwell.app;
             let appId = app ? app.get_id() : '';
             if (!this._favorite_ids.includes(appId)) {

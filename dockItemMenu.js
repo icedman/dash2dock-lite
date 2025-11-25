@@ -129,7 +129,7 @@ export const DockItemList = GObject.registerClass(
         });
         icon.set_icon_size(iconSize * iconAdjust);
         this._box.add_child(w);
-        let label = new St.Label({ style_class: 'dash-label-popup' });
+        let label = new St.Label({ style_class: 'dash-label' });
         let short = (l.name ?? '').replace(/(.{32})..+/, '$1...');
         label.text = short;
         w.add_child(icon);

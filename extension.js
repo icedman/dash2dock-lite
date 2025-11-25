@@ -1279,7 +1279,7 @@ export default class Dash2DockLiteExt extends Extension {
         ss.push(`color: rgba(${rgba});`);
       }
 
-      styles.push(`.dash-label, .dash-label-popup { ${ss.join(' ')}}`);
+      styles.push(`.dash-label { ${ss.join(' ')}}`);
     }
 
     // topbar

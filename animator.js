@@ -347,6 +347,9 @@ export let Animator = class {
         let offset = Math.floor(
           1.25 * (scale - 1) * iconSize * scaleFactor * spread * 0.8,
         );
+
+        offset *= 0.5;
+        
         // left
         for (let j = i - 1; j >= 0; j--) {
           let left = iconTable[j];
@@ -479,9 +482,16 @@ export let Animator = class {
     //--------------
     // renderer
     //--------------
-    if (false)
     animateIcons.forEach((icon) => {
-      // dock.renderArea.opacity = 100;
+      icon._icon.opacity = 255;
+      icon.opacity = 255;
+      icon._icon.height = dock._iconSizeScaledDown;
+      icon.translationY = icon._icon.translationY * icon._icon.height * 0.5;
+      icon.translationX = icon._icon.translationX;
+    });
+    dock.renderArea.opacity = 0;
+
+    animateIcons.forEach((icon) => {
       {
         let icon_name = icon._icon.icon_name;
         let app_name =
@@ -562,6 +572,9 @@ export let Animator = class {
             }
           }
         }
+
+        icon._icon.gicon = renderer.gicon;
+        return;
 
         //-------------------
         // animate scaling at renderer

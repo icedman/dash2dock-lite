@@ -261,7 +261,8 @@ export const DockItemContainer = GObject.registerClass(
           };
         }
       } else {
-        desktopApp = GioUnix.DesktopAppInfo.new_from_filename(
+        const DesktopAppInfo = GioUnix.DesktopAppInfo || Gio.DesktopAppInfo;
+        desktopApp = DesktopAppInfo.new_from_filename(
           params.appinfo_filename,
         );
       }

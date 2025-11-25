@@ -839,7 +839,7 @@ export let Animator = class {
       let translationX = targetX;
       let translationY = targetY;
       let speed =
-        ((150 + 300 * dock.extension.autohide_speed * scaleFactor) / 500) *
+        ((150 + 300 * dock.extension.autohide_speed * scaleFactor) / 1000) *
         slowDown;
       let v1 = new Vector([targetX, targetY, 0]);
       let v2 = new Vector([dock.dash.translationX, dock.dash.translationY, 0]);

@@ -3,7 +3,7 @@
   <object class="AdwPreferencesPage" id="others">
     <property name="name">others</property>
     <property name="title" translatable="yes">Icons</property>
-    <property name="icon-name">frame-symbolic</property>
+    <property name="icon-name">overview-symbolic</property>
     <child>
       <object class="AdwPreferencesGroup">
         <property name="title" translatable="yes">Icon Visiblity and Location</property>

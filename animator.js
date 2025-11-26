@@ -736,8 +736,7 @@ export let Animator = class {
         icon._appwell.app &&
         icon._appwell.app.get_n_windows
       ) {
-        // let appCount = icon._appwell.app.get_n_windows();
-        let appCount = dock.getAppWindowsFiltered(icon._appwell.app).length; // .get_n_windows();
+        let appCount = dock.getAppWindowsFiltered(icon._appwell.app).length;
         // appCount = 1;
         if (dots && appCount > 0) {
           dots.update(icon, {

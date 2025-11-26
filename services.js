@@ -274,7 +274,10 @@ export const Services = class {
     let label = mount.get_name();
     let appname = `mount-${basename}-dash2dock-lite.desktop`;
     let fullpath = mount.get_default_location().get_path();
-    let icon = mount.get_icon().names[0] || 'drive-harddisk-solidstate';
+    let icon = 'drive-harddisk-solidstate';
+    if (mount.get_icon() && mount.get_icon().names) {
+        icon = mount.get_icon().names[0] || icon;
+    }
     let mount_exec = 'echo "not implemented"';
     let unmount_exec = `umount ${fullpath}`;
     let mount_id = tempPath(appname);

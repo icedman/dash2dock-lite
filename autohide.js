@@ -143,7 +143,7 @@ export let AutoHide = class {
   }
 
   show() {
-    if (this.dock._monitor.inFullscreen) {
+    if (!this.dock._monitor || this.dock._monitor.inFullscreen) {
       return;
     }
     this._dwell = 0;
@@ -223,7 +223,7 @@ export let AutoHide = class {
       return true;
     }
 
-    if (this.dock._monitor.inFullscreen) {
+    if (this.dock._monitor && this.dock._monitor.inFullscreen) {
       return true;
     }
 

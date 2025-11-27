@@ -217,9 +217,15 @@ export default class Dash2DockLiteExt extends Extension {
 
     this._addEvents();
     this._queryDisplay();
-    this.startUp();
+    // this.startUp();
 
     console.log('dash2dock-lite enabled');
+
+    // to allow dynamic imports
+    this._loTimer.runOnce(() => {
+        this.startUp();
+      }, 250);
+
   }
 
   disable() {

@@ -11,6 +11,14 @@ import GObject from 'gi://GObject';
 import Clutter from 'gi://Clutter';
 import St from 'gi://St';
 
+let GioUnix = null;
+try {
+    GioUnix = await import('gi://GioUnix');
+} catch (e) {
+    console.log('GioUnix not available on this GNOME version');
+}
+const DesktopAppInfo = GioUnix?.DesktopAppInfo || Gio.DesktopAppInfo;
+
 import {
   DashIcon,
   DashItemContainer,
@@ -96,8 +104,8 @@ export const DockItemDotsOverlay = GObject.registerClass(
       canvasScale *= scale;
       renderer._canvas.set_scale(canvasScale, canvasScale);
 
-      let offsetX = renderer.width * 0.1 * scale;
-      let offsetY = renderer.height * 0.25 * scale;
+      let offsetX = renderer.width * 0.075 * scale;
+      let offsetY = renderer.height * 0.175 * scale;
       if (vertical) {
         offsetX = 0;
         if (position == DockPosition.RIGHT) {
@@ -260,9 +268,7 @@ export const DockItemContainer = GObject.registerClass(
           };
         }
       } else {
-        desktopApp = Gio.DesktopAppInfo.new_from_filename(
-          params.appinfo_filename,
-        );
+        desktopApp = DesktopAppInfo.new_from_filename(params.appinfo_filename);
       }
 
       let dashIcon = new DockIcon(desktopApp, {

@@ -12,6 +12,11 @@
 
 * Bug fixes
 
+# Release 83
+
+* add Gnome 49 support
+* Filter icon actions to current monitor
+
 # Release 75
 
 * add Gnome 48 support

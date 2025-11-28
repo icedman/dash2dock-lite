@@ -719,8 +719,13 @@ export let Animator = class {
             vertical,
             extension: dock.extension,
           });
-          badge.x = icon._renderer.x - 6;
-          badge.y = icon._renderer.y - 4;
+          badge.x = icon._renderer.x + 3.5 * icon._scale;
+          badge.y = icon._renderer.y - 3 * icon._scale;
+
+          if (dock._position == DockPosition.TOP) {
+            badge.y = icon._renderer.y + (icon.height - 6) * icon._scale;        
+          }
+
           badge.set_scale(icon._scale, icon._scale);
           badge.show();
         }
@@ -749,8 +754,9 @@ export let Animator = class {
 
           dots.width = icon._renderer.width * icon._renderer.scaleX;
           dots.height = dots.width;
-          dots.x = icon._px ?? 0;
-          dots.y = icon._py ?? 0;
+          dots.x = icon._renderer.x;
+          dots.y = icon._renderer.y;
+          dots.set_scale(icon._scale, icon._scale);
           dots.show();
         }
       }

@@ -80,7 +80,7 @@ export const DebugOverlay = GObject.registerClass(
               d.y - monitor.y,
               d.x2,
               d.y2,
-              true
+              true,
             );
             break;
           case 'circle':
@@ -90,7 +90,7 @@ export const DebugOverlay = GObject.registerClass(
               d.x - monitor.x,
               d.y - monitor.y,
               d.d,
-              true
+              true,
             );
             break;
         }
@@ -98,5 +98,5 @@ export const DebugOverlay = GObject.registerClass(
     }
 
     destroy() {}
-  }
+  },
 );

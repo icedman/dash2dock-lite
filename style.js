@@ -1,9 +1,9 @@
 'use strict';
 
 import Gio from 'gi://Gio';
+import GLib from 'gi://GLib';
 import St from 'gi://St';
-
-const CustomStylesPath = '/tmp';
+import { tempPath } from './utils.js';
 
 export const Style = class {
   constructor() {
@@ -17,6 +17,12 @@ export const Style = class {
     Object.keys(this.styles).forEach((k) => {
       let fn = this.styles[k];
       theme.unload_stylesheet(fn);
+
+      try {
+        fn.delete(null);
+      } catch (err) {
+        console.log(err);
+      }
     });
   }
 
@@ -38,7 +44,7 @@ export const Style = class {
     if (fn) {
       theme.unload_stylesheet(fn);
     } else {
-      fn = Gio.File.new_for_path(`${CustomStylesPath}/${name}.css`);
+      fn = Gio.File.new_for_path(tempPath(`${name}.css`));
       this.styles[name] = fn;
     }
 
@@ -48,7 +54,7 @@ export const Style = class {
       null,
       false,
       Gio.FileCreateFlags.REPLACE_DESTINATION,
-      null
+      null,
     );
 
     theme.load_stylesheet(fn);
@@ -61,5 +67,17 @@ export const Style = class {
     let res = clr.map((r) => Math.floor(255 * r));
     res[3] = clr[3].toFixed(1);
     return res.join(',');
+  }
+
+  hex(color) {
+    let r = Math.floor(color[0] * 255).toString(16);
+    let g = Math.floor(color[1] * 255).toString(16);
+    let b = Math.floor(color[2] * 255).toString(16);
+    if (r.length == 1) r += r;
+    if (g.length == 1) g += g;
+    if (b.length == 1) b += b;
+    let res = `#${r}${g}${b}`;
+    console.log(`${color} ${res}`);
+    return res;
   }
 };

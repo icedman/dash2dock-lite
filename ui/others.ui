@@ -2,8 +2,8 @@
 <interface>
   <object class="AdwPreferencesPage" id="others">
     <property name="name">others</property>
-    <property name="title" translatable="yes">More</property>
-    <property name="icon-name">other-symbolic</property>
+    <property name="title" translatable="yes">Icons</property>
+    <property name="icon-name">overview-symbolic</property>
     <child>
       <object class="AdwPreferencesGroup">
         <property name="title" translatable="yes">Icon Visiblity and Location</property>
@@ -87,10 +87,41 @@
           </object>
         </child>
         <child>
+          <object class="AdwActionRow" id="downloads-folder-row">
+            <property name="visible">true</property>
+            <property name="title" translatable="yes"/>
+            <property name="subtitle" translatable="yes">Select downloads folder to monitor.(optional)</property>
+            <property name="activatable-widget">downloads-folder</property>
+            <child>
+              <object class="GtkButton" id="downloads-folder">
+                <property name="halign">start</property>
+                <property name="valign">center</property>
+                <child>
+                  <object class="GtkBox">
+                    <property name="margin-start">20</property>
+                    <property name="margin-end">20</property>
+                    <property name="margin-top">6</property>
+                    <property name="margin-bottom">6</property>
+                    <child>
+                      <object class="GtkLabel">
+                        <property name="label" translatable="yes">Open</property>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+                <style>
+                  <class name="circular"/>
+                  <!-- <class name="destructive-action"/> -->
+                </style>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
           <object class="AdwActionRow">
             <property name="visible">false</property>
-            <property name="title" translatable="yes">Documents</property>
-            <property name="subtitle" translatable="yes">Show documents folder to access recently edit documents.</property>
+            <property name="title" translatable="yes">Recent Files</property>
+            <property name="subtitle" translatable="yes">Show recently accessed files.</property>
             <property name="activatable-widget">documents-icon</property>
             <child>
               <object class="GtkSwitch" id="documents-icon">
@@ -175,8 +206,6 @@
   </object>
   <object class="GtkStringList" id="clock-style-model">
     <items>
-      <item>Overlay 1</item>
-      <item>Overlay 2</item>
       <item>Round 1</item>
       <item>Round 2</item>
       <item>Round 3</item>
@@ -198,7 +227,9 @@
   <object class="GtkStringList" id="max-recent-items-model">
     <items>
       <item>5</item>
+      <item>8</item>
       <item>10</item>
+      <item>12</item>
       <item>15</item>
       <item>20</item>
       <item>25</item>

@@ -13,6 +13,7 @@ export const Calendar = GObject.registerClass(
 
       let size = x || 400;
 
+      this.settings = settings;
       this._canvas = new CalendarCanvas(settings);
       this._canvas.width = size;
       this._canvas.height = size;
@@ -20,10 +21,15 @@ export const Calendar = GObject.registerClass(
     }
 
     redraw() {
+      this._canvas.settings = this.settings;
       this.visible = true;
       this._canvas.redraw();
     }
-  }
+
+    shouldHideIcon() {
+      return true;
+    }
+  },
 );
 
 const CalendarCanvas = GObject.registerClass(
@@ -50,10 +56,10 @@ const CalendarCanvas = GObject.registerClass(
 
       let size = width;
 
-      const hd_color = 'red';
-      const bg_color = 'white';
-      const day_color = 'black';
-      const date_color = 'red';
+      const hd_color = '#ff0000';
+      const bg_color = '#dddddd';
+      const day_color = '#000000';
+      const date_color = '#ff0000';
 
       ctx.setOperator(Cairo.Operator.CLEAR);
       ctx.paint();
@@ -63,7 +69,7 @@ const CalendarCanvas = GObject.registerClass(
       ctx.setLineCap(Cairo.LineCap.ROUND);
       ctx.setOperator(Cairo.Operator.SOURCE);
 
-      let bgSize = size * 0.7;
+      let bgSize = size * 0.85;
       let offset = size - bgSize;
 
       const d0 = new Date();
@@ -76,18 +82,18 @@ const CalendarCanvas = GObject.registerClass(
         bgSize,
         bgSize,
         0,
-        8
+        16,
       );
       Drawing.set_color(ctx, date_color, 1.0);
-      ctx.moveTo(0, 12);
-      Drawing.draw_text(ctx, `${d0.getDate()}`, 'DejaVuSans 36');
+      ctx.moveTo(0, 14);
+      Drawing.draw_text(ctx, `${d0.getDate()}`, 'DejaVuSans 40');
 
       let dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
       Drawing.set_color(ctx, day_color, 1.0);
-      ctx.moveTo(0, -22);
-      Drawing.draw_text(ctx, `${dayNames[d0.getDay()]}`, 'DejaVuSans 16');
+      ctx.moveTo(0, -24);
+      Drawing.draw_text(ctx, `${dayNames[d0.getDay()]}`, 'DejaVuSans 20');
 
       ctx.$dispose();
     }
-  }
+  },
 );

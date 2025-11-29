@@ -55,3 +55,7 @@ https://github.com/PuruVJ/macos-web-svelte-dock
 ## Preferences improvement
 
 AdwExpanderRow
+
+## Recent files
+
+~/.local/share/recently-used.xbel

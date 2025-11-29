@@ -3,26 +3,30 @@
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as Fav from 'resource:///org/gnome/shell/ui/appFavorites.js';
 
-import Meta from 'gi://Meta';
 import Shell from 'gi://Shell';
 import GObject from 'gi://GObject';
+import Gio from 'gi://Gio';
 import Clutter from 'gi://Clutter';
 import Graphene from 'gi://Graphene';
 import St from 'gi://St';
-import Gio from 'gi://Gio';
 
 import { Dash } from 'resource:///org/gnome/shell/ui/dash.js';
 
 import { TintEffect } from './effects/tint_effect.js';
 import { MonochromeEffect } from './effects/monochrome_effect.js';
+import { BlurEffect } from './effects/blur_effect.js';
 
-import {
-  DockItemList,
-  DockItemContainer,
-  DockBackground,
-} from './dockItems.js';
+import { DockIcon, DockItemContainer, DockBackground } from './dockItems.js';
+import { DockItemList } from './dockItemMenu.js';
 import { AutoHide } from './autohide.js';
 import { Animator } from './animator.js';
+import {
+  get_distance_sqr,
+  get_distance,
+  isInRect,
+  isOverlapRect,
+  tempPath,
+} from './utils.js';
 
 const Point = Graphene.Point;
 
@@ -58,6 +62,7 @@ export let Dock = GObject.registerClass(
         clip_to_allocation: true,
         x_align: Clutter.ActorAlign.CENTER,
         y_align: Clutter.ActorAlign.CENTER,
+        offscreen_redirect: Clutter.OffscreenRedirect.ALWAYS,
       });
 
       this.extension = params.extension;
@@ -65,39 +70,28 @@ export let Dock = GObject.registerClass(
       this._alignment = DockAlignment.CENTER;
       this._monitorIndex = Main.layoutManager.primaryIndex;
 
-      this._background = new DockBackground({ name: 'd2dlBackground' });
+      this._background = new DockBackground({ name: 'd2daBackground' });
       this.add_child(this._background);
 
-      this.addDash();
+      this.renderArea = new St.Widget({
+        name: 'DockRenderArea',
+        offscreen_redirect: Clutter.OffscreenRedirect.ALWAYS,
+        reactive: false,
+        track_hover: false,
+      });
+      this.renderArea.opacity = 0;
+      this.add_child(this.renderArea);
 
-      this.dash.reactive = true;
-      this.dash.track_hover = true;
-      this.dash.connectObject(
-        'scroll-event',
-        this._onScrollEvent.bind(this),
-        'button-press-event',
-        this._onButtonPressEvent.bind(this),
-        'motion-event',
-        this._onMotionEvent.bind(this),
-        'enter-event',
-        this._onEnterEvent.bind(this),
-        'leave-event',
-        this._onLeaveEvent.bind(this),
-        'destroy',
-        () => {},
-        this
-      );
-
-      this.dash.opacity = 0;
+      this.add_child(this.createDash());
       this._scrollCounter = 0;
 
       this.animator = new Animator();
-      this.animator.dashContainer = this;
+      this.animator.dock = this;
       this.animator.extension = this.extension;
       this.animator.enable();
 
       this.autohider = new AutoHide();
-      this.autohider.dashContainer = this;
+      this.autohider.dock = this;
       this.autohider.extension = this.extension;
       if (this.extension.autohide_dash) {
         this.autohider.enable();
@@ -105,11 +99,13 @@ export let Dock = GObject.registerClass(
 
       this.struts = new St.Widget({
         name: 'DockStruts',
+        offscreen_redirect: Clutter.OffscreenRedirect.ALWAYS,
       });
       this.dwell = new St.Widget({
         name: 'DockDwell',
         reactive: true,
         track_hover: true,
+        offscreen_redirect: Clutter.OffscreenRedirect.ALWAYS,
       });
       this.dwell.connectObject(
         'motion-event',
@@ -118,8 +114,43 @@ export let Dock = GObject.registerClass(
         this.autohider._onEnterEvent.bind(this.autohider),
         'leave-event',
         this.autohider._onLeaveEvent.bind(this.autohider),
-        this
+        this,
       );
+
+      this._blurEffect = this._createEffect(1);
+      this._updateBackgroundEffect();
+    }
+
+    destroyDash() {
+      if (this.dash) {
+        {
+          this._icons = null;
+          this._findIcons();
+          this._icons.forEach((i) => {
+            this._cleanupIcon(i);
+          });
+          this._icons = null;
+        }
+
+        this.remove_child(this.dash);
+        this.dash = null;
+        this._trashIcon = null;
+        this._recentFilesIcon = null;
+        this._downloadsIcon = null;
+        // mounted icons?
+      }
+    }
+
+    recreateDash() {
+      this._hidden = false;
+      this.opacity = 0;
+      this.renderArea.opacity = 0;
+      this.add_child(this.createDash());
+      this._icons = null;
+      this._trashIcon = null;
+      this._recentFilesIcon = null;
+      this._downloadsIcon = null;
+      this._beginAnimation();
     }
 
     createItem(appinfo_filename) {
@@ -135,35 +166,38 @@ export let Dock = GObject.registerClass(
     }
 
     dock() {
+      if (!this.dash) {
+        this.add_child(this.createDash());
+      }
+      this.animator.enable();
       this.addToChrome();
       this.layout();
       this._beginAnimation();
     }
 
     undock() {
-      if (this._list) {
-        // todo Main.uiGroup no longer available in gnome 46
-        Main.uiGroup.remove_child(this._list);
-        this._list = null;
-      }
+      this._destroyList();
       this._endAnimation();
       this.dash._box.remove_effect_by_name('icon-effect');
       this.autohider.disable();
       this.removeFromChrome();
-
-      this.restorePanel();
+      this.animator.disable();
     }
 
     _onButtonPressEvent(evt) {
       return Clutter.EVENT_PROPAGATE;
     }
     _onMotionEvent(evt) {
-      this._beginAnimation();
+      if (!this._monitor.inFullscreen) {
+        this._beginAnimation();
+      }
       this.autohider._debounceCheckHide();
       return Clutter.EVENT_PROPAGATE;
     }
     _onEnterEvent(evt) {
-      this._beginAnimation();
+      if (!this._monitor.inFullscreen) {
+        this._beginAnimation();
+      }
       return Clutter.EVENT_PROPAGATE;
     }
     _onLeaveEvent(evt) {
@@ -177,6 +211,14 @@ export let Dock = GObject.registerClass(
       return Clutter.EVENT_PROPAGATE;
     }
     _onFullScreen() {
+      this._beginAnimation();
+      this.autohider._debounceCheckHide();
+
+      console.log('_onFullScreen');
+
+      return Clutter.EVENT_PROPAGATE;
+    }
+    _onRestacked() {
       this._beginAnimation();
       this.autohider._debounceCheckHide();
       return Clutter.EVENT_PROPAGATE;
@@ -213,17 +255,52 @@ export let Dock = GObject.registerClass(
           effect.preload(this.extension.path);
           break;
         }
+        case 3: {
+          effect = new BlurEffect({
+            name: 'color',
+            color: this.extension.icon_effect_color,
+          });
+          effect.preload(this.extension.path);
+          break;
+        }
       }
       return effect;
     }
 
-    _updateIconEffect() {
-      this.dash._box.get_parent().remove_effect_by_name('icon-effect');
-      let effect = this._createEffect(this.extension.icon_effect);
-      if (effect) {
-        this.dash._box.get_parent().add_effect_with_name('icon-effect', effect);
+    _effectTargets() {
+      return [this.renderArea];
+    }
+
+    _updateBackgroundEffect() {
+      this._background.remove_effect_by_name('blur');
+      if (this._blurEffect) {
+        if (this.extension.blur_background) {
+          this._background.add_effect_with_name('blur', this._blurEffect);
+        }
+        this._blurEffect.color = this.extension.background_color;
       }
-      this.iconEffect = effect;
+    }
+
+    _updateIconEffect() {
+      let targets = this._effectTargets();
+      targets.forEach((target) => {
+        target.remove_effect_by_name('icon-effect');
+        let effect = this._createEffect(this.extension.icon_effect);
+        if (effect) {
+          effect.color = this.extension.icon_effect_color;
+          target.add_effect_with_name('icon-effect', effect);
+        }
+        target.iconEffect = effect;
+      });
+    }
+
+    _updateIconEffectColor(color) {
+      let targets = this._effectTargets();
+      targets.forEach((target) => {
+        if (target.iconEffect) {
+          target.iconEffect.color = color;
+        }
+      });
     }
 
     slideIn() {
@@ -252,7 +329,10 @@ export let Dock = GObject.registerClass(
       return m;
     }
 
-    addDash() {
+    createDash() {
+      if (this.dash) {
+        this.destroyDash();
+      }
       let dash = new Dash();
       dash._adjustIconSize = () => {};
       this.dash = dash;
@@ -262,6 +342,9 @@ export let Dock = GObject.registerClass(
       this._extraIcons = new St.BoxLayout();
       this.dash._box.add_child(this._extraIcons);
 
+      // null these - needed when calling recreateDash
+      this._trashIcon = null;
+
       this._separator = new St.Widget({
         style_class: 'dash-separator',
         y_align: Clutter.ActorAlign.CENTER,
@@ -270,7 +353,25 @@ export let Dock = GObject.registerClass(
       this._separator.name = 'separator';
       this._extraIcons.add_child(this._separator);
 
-      this.add_child(dash);
+      this.dash.reactive = true;
+      this.dash.track_hover = true;
+      this.dash.connectObject(
+        'scroll-event',
+        this._onScrollEvent.bind(this),
+        'button-press-event',
+        this._onButtonPressEvent.bind(this),
+        'motion-event',
+        this._onMotionEvent.bind(this),
+        'enter-event',
+        this._onEnterEvent.bind(this),
+        'leave-event',
+        this._onLeaveEvent.bind(this),
+        'destroy',
+        () => {},
+        this,
+      );
+
+      this.dash.opacity = 0;
       return dash;
     }
 
@@ -283,8 +384,8 @@ export let Dock = GObject.registerClass(
 
       Main.layoutManager.addChrome(this.struts, {
         affectsStruts: !this.extension.autohide_dash,
-        affectsInputRegion: false,
-        trackFullscreen: true,
+        affectsInputRegion: true,
+        trackFullscreen: false,
       });
 
       Main.layoutManager.addChrome(this, {
@@ -296,7 +397,7 @@ export let Dock = GObject.registerClass(
       Main.layoutManager.addChrome(this.dwell, {
         affectsStruts: false,
         affectsInputRegion: false,
-        trackFullscreen: true,
+        trackFullscreen: false,
       });
 
       this._onChrome = true;
@@ -325,14 +426,20 @@ export let Dock = GObject.registerClass(
       let iconSize = 64;
       if (!preferredIconSizes) {
         preferredIconSizes = [32];
-        for (let i = 16; i < 128; i += 4) {
+        for (let i = 16; i <= 128; i += 4) {
           preferredIconSizes.push(i);
         }
         this._preferredIconSizes = preferredIconSizes;
       }
 
+      //! why the need for upscaling
+      let upscale = 1 + (2 - this._scaleFactor) || 1;
+      if (upscale < 1) {
+        upscale = 1; // does scaleFactor go beyond 2x?
+      }
+      // console.log(`scaleFactor:${this._scaleFactor} upscale:${upscale}`);
       iconSize =
-        2 *
+        upscale *
         (preferredIconSizes[
           Math.floor(this.extension.icon_size * preferredIconSizes.length)
         ] || 64);
@@ -342,6 +449,7 @@ export let Dock = GObject.registerClass(
       return iconSize;
     }
 
+    // Structure for dash icon container widgets - g42,g43,g44,g45,g46
     /**
      *  DashItemContainer
      *    > child (DashIcon[appwell])
@@ -363,7 +471,13 @@ export let Dock = GObject.registerClass(
       c._cls = c._cls || c.get_style_class_name();
       if (c._cls === 'dash-separator') {
         this._separators.push(c);
-        this._lastSeparator = c;
+        this._dashItems.push(c);
+        if (!c._destroyConnectId) {
+          c._destroyConnectId = c.connect('destroy', () => {
+            this._icons = null;
+            console.log('separator destroyed');
+          });
+        }
         c.visible = true;
         c.style = 'margin-left: 8px; margin-right: 8px;';
         return false;
@@ -406,15 +520,27 @@ export let Dock = GObject.registerClass(
       }
 
       if (c._icon) {
+        // renderer takes care of displaying an icon
+        c._icon.opacity = 0;
         c._label = c.label;
+
+        if (c._label && !c._destroyLabelConnectId) {
+          c._destroyLabelConnectId = c._label.connect('destroy', () => {
+            c._label = null;
+          });
+        }
+
+        // limitation: vertical layout cannot do apps_icon_front
         if (
           c == this.dash._showAppsIcon &&
           this.extension.apps_icon_front &&
           !this.isVertical()
         ) {
           this._icons.unshift(c);
+          this._dashItems.unshift(c);
         } else {
           this._icons.push(c);
+          this._dashItems.push(c);
         }
         return true;
       }
@@ -422,50 +548,94 @@ export let Dock = GObject.registerClass(
       return false;
     }
 
-    _findIcons() {
-      if (this._icons) {
-        let iconsLength = this.dash._box.get_children().length;
-        if (this._extraIcons) {
-          iconsLength += this._extraIcons.get_children().length;
+    _cleanupIcon(c) {
+      if (c._image && c._image.get_parent()) {
+        c._image.get_parent().remove_child(c._image);
+      }
+      if (c._menu && c._menu.actor) {
+        Main.uiGroup.remove_child(c._menu.actor);
+        c._menu = null;
+      }
+      if (c._label) {
+        let p = c._label.get_parent();
+        if (p) {
+          p.remove_child(c._label);
         }
-        if (this._icons.length + 2 >= iconsLength) {
-          // use icons cache
-          return this._icons;
+      }
+    }
+
+    _findIcons() {
+      if (this._icons && !this._dragging) {
+        let _boxIconsLength = this.dash._box.get_children().length;
+        if (_boxIconsLength != this._boxIconsLength) {
+          this._icons = null;
+        }
+        this._boxIconsLength = _boxIconsLength;
+        if (this._extraIcons) {
+          let _extraIconsLength = this._extraIcons.get_children().length;
+          if (_extraIconsLength != this._extraIconsLength) {
+            this._icons = null;
+          }
+          this._extraIconsLength = _extraIconsLength;
         }
       }
 
+      if (this._icons) {
+        // use icons cache
+        return this._icons;
+      }
+
+      this._dashItems = [];
       this._separators = [];
       this._icons = [];
 
       if (!this.dash) return [];
 
+      //--------------------
+      // find favorites and running apps icons
+      //--------------------
       if (this.extension.favorites_only) {
         this._favorite_ids = Fav.getAppFavorites()._getIds();
       }
-
       this.dash._box.get_children().forEach((icon) => {
         this._inspectIcon(icon);
       });
 
+      // hack: sometimes the Dash creates more than one separator
+      // workaround - remove all separators in such situation
+      //! pinpoint the cause of the errors
+      if (this._separators.length > 1) {
+        while (this._separators.length > 0) {
+          this.dash._box.remove_child(this._separators[0]);
+          this._separators.shift();
+        }
+      }
+
+      // hide separator between running apps and favorites - if not needed
       if (this.extension.favorites_only) {
         if (this._separators.length) {
           this._separators[0].visible = false;
           this._separators = [];
         }
+      } else {
+        if (this._separators.length) {
+          this._separators[0].visible = true;
+        }
       }
 
-      let lastFavIcon = this._icons[this._icons.length - 1] ?? null;
-
+      //--------------------
+      // find custom icons (trash, mounts, downloads, etc...)
+      //--------------------
       if (this._extraIcons) {
-        this._lastSeparator = null;
         this._extraIcons.get_children().forEach((icon) => {
           this._inspectIcon(icon);
         });
-        if (this._lastSeparator && lastFavIcon) {
-          this._lastSeparator._prev = lastFavIcon;
-        }
         this._extraIcons.visible = this._extraIcons.get_children().length > 1;
       }
+
+      //--------------------
+      // find the showAppsIcon
+      //--------------------
       if (this.dash._showAppsIcon) {
         this.dash._showAppsIcon.visible = this.extension.apps_icon;
         if (this._inspectIcon(this.dash._showAppsIcon)) {
@@ -495,7 +665,7 @@ export let Dock = GObject.registerClass(
               () => {
                 this.dash._showAppsIcon.hideLabel();
               },
-              this
+              this,
             );
           }
         }
@@ -507,6 +677,17 @@ export let Dock = GObject.registerClass(
       pv.x = 0.5;
       pv.y = 0.5;
       this._icons.forEach((c) => {
+        if (!c._showLabel && c.showLabel) {
+          c._showLabel = c.showLabel;
+          c.showLabel = () => {
+            if (this.extension.hide_labels) {
+              return;
+            }
+            if (c._label) {
+              c._showLabel();
+            }
+          };
+        }
         c._icon.track_hover = true;
         c._icon.reactive = true;
         c._icon.pivot_point = pv;
@@ -516,23 +697,30 @@ export let Dock = GObject.registerClass(
           c.toggle_mode = false;
         }
         if (c._grid) {
-          c._grid.style = noAnimation ? '' : 'background: none !important;';
+          // c._grid.style = noAnimation ? '' : 'background: none !important;';
+          c._grid.style = 'background: none !important;';
         }
         if (c._appwell && !c._appwell._activate) {
           c._appwell._activate = c._appwell.activate;
           c._appwell.activate = () => {
-            this._maybeBounce(c);
-            this._maybeMinimizeOrMaximize(c._appwell.app);
-            c._appwell._activate();
+            try {
+              if (!c._menu) {
+                this._maybeBounce(c);
+              }
+              this._maybeMinimizeOrMaximize(c._appwell.app);
+              c._appwell._activate();
+            } catch (err) {
+              // happens with dummy DashIcons
+            }
           };
         }
         let icon = c._icon;
-        if (!icon._destroyConnectId) {
+        if (icon && !icon._destroyConnectId) {
           icon._destroyConnectId = icon.connect('destroy', () => {
-            this._icons = null;
+            this._cleanupIcon(c);
           });
         }
-        let { _draggable } = icon;
+        let { _draggable } = c.child;
         if (_draggable && !_draggable._dragBeginId) {
           _draggable._dragBeginId = _draggable.connect('drag-begin', () => {
             this._dragging = true;
@@ -543,13 +731,17 @@ export let Dock = GObject.registerClass(
             this._icons = null;
           });
         }
+      });
 
-        // icon image quality
-        if (this._iconSizeScaledDown) {
-          icon.set_icon_size(
-            this._iconSizeScaledDown * this.extension.icon_quality
-          );
+      // link list the dash items
+      //! optimize this. there has to be a better way to get the separators _prev and _next
+      let prev = null;
+      this._dashItems.forEach((c) => {
+        if (prev) {
+          prev._next = c;
         }
+        c._prev = prev;
+        prev = c;
       });
 
       return this._icons;
@@ -565,24 +757,26 @@ export let Dock = GObject.registerClass(
       // the mount icons
       //---------------
       {
+        //! avoid creating app_info & /tmp/*.desktop files
         let extras = [...this._extraIcons.get_children()];
-        let extraNames = extras.map((e) => e.name);
+        let extraMountPaths = extras.map((e) => e._mountPath);
         let mounted = Object.keys(this.extension.services._mounts);
 
         extras.forEach((extra) => {
           if (!extra._mountType) {
             return;
           }
-          if (!mounted.includes(extra.name)) {
+          if (!mounted.includes(extra._mountPath)) {
             this._extraIcons.remove_child(extra);
             this._icons = null;
           }
         });
 
         mounted.forEach((mount) => {
-          if (!extraNames.includes(mount)) {
+          if (!extraMountPaths.includes(mount)) {
             let mountedIcon = this.createItem(mount);
             mountedIcon._mountType = true;
+            mountedIcon._mountPath = mount;
             this._icons = null;
           }
         });
@@ -591,78 +785,51 @@ export let Dock = GObject.registerClass(
       //---------------
       // the folder icons
       //---------------
+      //! add explanations
       let folders = [
         {
-          icon: '_downloadsIcon',
-          path: '/tmp/downloads-dash2dock-lite.desktop',
-          show: this.extension.downloads_icon, // && this._position == DockPosition.BOTTOM
+          icon: '_recentFilesIcon',
+          folder: 'recent:///',
+          //! find a way to avoid this
+          path: `${this.extension.path}/apps/recents-dash2dock-lite.desktop`,
+          // not ready for prime time
+          // does not work on gnome 43 (debian)
+          show: false, // this.extension.documents_icon,
+          prepare: this.extension.services.checkRecents.bind(
+            this.extension.services,
+          ),
+          items: '_recentFiles',
+          itemsLength: '_recentFilesLength',
+          cleanup: (() => {
+            this.extension.services._recentFiles = null;
+          }).bind(this),
         },
-        // {
-        //   icon: '_documentsIcon',
-        //   path: '/tmp/documents-dash2dock-lite.desktop',
-        //   show: this.extension.documents_icon // && this._position == DockPosition.BOTTOM
-        // }
+        {
+          icon: '_downloadsIcon',
+          folder: Gio.File.new_for_path('Downloads').get_path(),
+          //! find a way to avoid this
+          path: tempPath('downloads-dash2dock-lite.desktop'),
+          show: this.extension.downloads_icon,
+          items: '_downloadFiles',
+          itemsLength: '_downloadFilesLength',
+          prepare: (() => {
+            this.extension.services._debounceCheckDownloads();
+          }).bind(this),
+          cleanup: () => {},
+        },
       ];
+
       folders.forEach((f) => {
         if (!this[f.icon] && f.show) {
-          // pin downloads icon
-          this[f.icon] = this.createItem(f.path);
-
-          let target = this[f.icon];
-
-          target._onClick = () => {
-            if (this._position != DockPosition.BOTTOM) {
-              target.activateNewWindow();
-              return;
-            }
-            if (!this.extension.services._downloadFiles) {
-              this.extension.services.checkDownloads();
-            }
-            let files = [...this.extension.services._downloadFiles];
-            if (files.length < this.extension.services._downloadFilesLength) {
-              files = [
-                {
-                  index: -1,
-                  name: 'More...',
-                  path: 'Downloads',
-                  icon: target._icon.icon_name,
-                  type: 'directory',
-                },
-                ...files,
-              ];
-            }
-            files = files.sort(function (a, b) {
-              return a.index > b.index ? 1 : -1;
-            });
-
-            if (!this._list) {
-              this._list = new DockItemList();
-              this._list.dock = this;
-              Main.uiGroup.add_child(this._list);
-            } else if (this._list.visible) {
-              this._list.slideOut();
-            } else {
-              // remove and re-add so that it is repositioned to topmost
-              Main.uiGroup.remove_child(this._list);
-              Main.uiGroup.add_child(this._list);
-              this._list.visible = true;
-            }
-
-            if (this._list.visible && !this._list._hidden) {
-              this._list.slideIn(target, files);
-              let pv = new Point();
-              pv.x = 0.5;
-              pv.y = 1;
-            }
-          };
-
+          this[f.icon] = DockItemList.createItem(this, f);
           this._icons = null;
         } else if (this[f.icon] && !f.show) {
           // unpin downloads icon
           this._extraIcons.remove_child(this[f.icon]);
-          this._downloadsIcon = null;
+          this[f.icon] = null;
           this._icons = null;
         }
+        f.cleanup();
       });
 
       //---------------
@@ -670,7 +837,10 @@ export let Dock = GObject.registerClass(
       //---------------
       if (!this._trashIcon && this.extension.trash_icon) {
         // pin trash icon
-        this._trashIcon = this.createItem(`/tmp/trash-dash2dock-lite.desktop`);
+        //! avoid creating app_info & /tmp/*.desktop files
+        this._trashIcon = this.createItem(
+          tempPath('trash-dash2dock-lite.desktop'),
+        );
         this._icons = null;
       } else if (this._trashIcon && !this.extension.trash_icon) {
         // unpin trash icon
@@ -686,7 +856,28 @@ export let Dock = GObject.registerClass(
       }
     }
 
+    _snapToContainerEdge(container, child, edge = true) {
+      child.x = container.width / 2 - child.width / 2;
+      child.y = container.height / 2 - child.height / 2;
+      if (edge) {
+        if (this.isVertical()) {
+          if (this._position == DockPosition.LEFT) {
+            child.x = 0;
+          } else {
+            child.x = container.width - child.width;
+          }
+        } else {
+          if (this._position == DockPosition.TOP) {
+            child.y = 0;
+          } else {
+            child.y = container.height - child.height;
+          }
+        }
+      }
+    }
+
     layout() {
+      if (!this.dash) return;
       if (this.extension.apps_icon_front) {
         this.dash.last_child.text_direction = 2; // RTL
         this.dash._box.text_direction = 1; // LTR
@@ -706,55 +897,52 @@ export let Dock = GObject.registerClass(
 
       this._updateExtraIcons();
 
-      this._icons = this._findIcons();
-
       let m = this.getMonitor();
+      if (!m) {
+        return false;
+      }
+
       let scaleFactor = m.geometry_scale;
       let vertical = this.isVertical();
-
       this._scaleFactor = scaleFactor;
 
+      this._icons = this._findIcons();
+
+      //! add explanation
       let flags = {
         top: {
           edgeX: 0,
           edgeY: 0,
           offsetX: 0,
           offsetY: 0,
-          centerX: 1,
-          centerY: 0,
         },
         bottom: {
           edgeX: 0,
           edgeY: 1,
           offsetX: 0,
           offsetY: -1,
-          centerX: 1,
-          centerY: 0,
         },
         left: {
           edgeX: 0,
           edgeY: 0,
           offsetX: 0,
           offsetY: 0,
-          centerX: 0,
-          centerY: 1,
         },
         right: {
           edgeX: 1,
           edgeY: 0,
           offsetX: -1,
           offsetY: 0,
-          centerX: 0,
-          centerY: 1,
         },
       };
       let f = flags[this._position];
 
       let width = 1200;
       let height = 140;
+      //! use dock size limit - add preferences
       let dock_size_limit = 1;
       let animation_spread = this.extension.animation_spread;
-      let animation_magnify = this.extension.animation_magnify;
+      // let animation_magnify = this.extension.animation_magnify;
 
       let iconMargins = 0;
       let iconStyle = '';
@@ -769,18 +957,18 @@ export let Dock = GObject.registerClass(
       }
 
       let iconSize = this._preferredIconSize();
+      //! why not use icon_spacing? animation spread should only be when animated
       let iconSizeSpaced = iconSize + 2 + 8 * animation_spread;
 
       let projectedWidth =
         iconSize +
+        // (this.animated ? iconSizeSpaced : 0) +
         iconSizeSpaced * (this._icons.length > 3 ? this._icons.length : 3);
       projectedWidth += iconMargins;
 
       let scaleDown = 1.0;
-      let limit = vertical ? 0.96 : 0.98;
-
+      let limit = vertical ? 0.96 : 0.98; // use dock_size_limit
       let maxWidth = (vertical ? m.height : m.width) * limit;
-
       if (projectedWidth * scaleFactor > maxWidth * 0.98) {
         scaleDown = (maxWidth - iconSize / 2) / (projectedWidth * scaleFactor);
       }
@@ -788,6 +976,12 @@ export let Dock = GObject.registerClass(
       iconSize *= scaleDown;
       iconSizeSpaced *= scaleDown;
       projectedWidth *= scaleDown;
+
+      // make multiple of 2
+      iconSize = Math.floor(iconSize / 2) * 2;
+      iconSizeSpaced = Math.floor(iconSizeSpaced / 2) * 2;
+      projectedWidth = Math.floor(projectedWidth / 2) * 2;
+
       this._projectedWidth = projectedWidth;
 
       this._edge_distance =
@@ -805,193 +999,145 @@ export let Dock = GObject.registerClass(
         }
       });
 
-      width = this._projectedWidth * scaleFactor;
-      height = iconSizeSpaced * 1.5 * scaleFactor;
+      //! check with multi-monitor and scaled displays
+      this.x = m.x;
+      this.y = m.y;
+      this.width = m.width;
+      this.height = m.height;
 
-      this.width = vertical ? height : width;
-      this.height = vertical ? width : height;
-
-      if (this.animated) {
-        let adjust = 3.0;
-        this.width *= vertical ? adjust : 1;
-        this.height *= !vertical ? adjust : 1;
-        this.width += !vertical * iconSizeSpaced * adjust * scaleFactor;
-        this.height += vertical * iconSizeSpaced * adjust * scaleFactor;
-
-        if (this.width > m.width) {
-          this.width = m.width;
-        }
-        if (this.height > m.height) {
-          this.height = m.height;
-        }
-      }
-
-      // console.log(`${width} ${height}`);
-
-      // reposition the dash
+      // reorient and reposition the dash
       this.dash.last_child.layout_manager.orientation = vertical;
       this.dash._box.layout_manager.orientation = vertical;
       if (this._extraIcons) {
         this._extraIcons.layout_manager.orientation = vertical;
       }
 
-      this.x =
-        m.x +
-        m.width * f.edgeX +
-        this.width * f.offsetX +
-        (m.width / 2 - this.width / 2) * f.centerX;
-
-      this.y =
-        m.y +
-        m.height * f.edgeY +
-        this.height * f.offsetY +
-        (m.height / 2 - this.height / 2) * f.centerY;
-
-      // todo vertical
-      if (this.extension.panel_mode) {
-        if (vertical) {
-          this.y = m.y;
-          this.height = m.height;
-        } else {
-          this.x = m.x;
-          this.width = m.width;
-        }
-      }
-
-      // center the dash
-      this.dash.x = this.width / 2 - this.dash.width / 2;
-      this.dash.y = this.height / 2 - this.dash.height / 2;
-
       // hug the edge
+      // if (vertical) {
+      //   this.dash.x = this.width * f.edgeX + this.dash.width * f.offsetX;
+      //   this.dash.y = this.height / 2 - this.dash.height / 2;
+      // } else {
+      //   this.dash.x = this.width / 2 - this.dash.width / 2;
+      //   this.dash.y = this.height * f.edgeY + this.dash.height * f.offsetY;
+      // }
+
+      // computation derived from animation scale
+      let magnify = this.extension.animation_magnify * 1.8;
+      let fp = iconSize * 2 + iconSize * (0.6 * (1 + magnify));
       if (vertical) {
-        this.dash.x = this.width * f.edgeX + this.dash.width * f.offsetX;
+        this.width = fp * scaleFactor;
       } else {
-        this.dash.y = this.height * f.edgeY + this.dash.height * f.offsetY;
+        this.height = fp * scaleFactor;
       }
+      this._snapToContainerEdge(m, this, true);
+      this.x += m.x;
+      this.y += m.y;
+      this._snapToContainerEdge(this, this.dash, true);
 
       this._iconSizeScaledDown = iconSize;
       this._scaledDown = scaleDown;
 
-      // resize dash icons
-      // console.log(this.dash.height);
-      // console.log('---------------');
-
-      // this.acquirePanel();
-    }
-
-    acquirePanel() {
-      // panel
-      if (!this.panel && Main.panel) {
-        this.panel = Main.panel;
-        this.panelLeft = this.panel._leftBox;
-        this.panelRight = this.panel._rightBox;
-        this.panelCenter = this.panel._centerBox;
+      // dwell
+      //! add scaleFactor?
+      let dwellHeight = 2;
+      if (vertical) {
+        this.dwell.width = dwellHeight;
+        this.dwell.height = this.height;
+        this.dwell.x = m.x;
+        this.dwell.y = this.y;
+        if (this._position == DockPosition.RIGHT) {
+          this.dwell.x = m.x + m.width - dwellHeight;
+        }
+      } else {
+        this.dwell.width = this.width;
+        this.dwell.height = dwellHeight;
+        this.dwell.x = this.x;
+        this.dwell.y = this.y + this.height - this.dwell.height;
+        if (this._position == DockPosition.TOP) {
+          this.dwell.y = this.y;
+        }
       }
 
-      if (!this.panel) return;
-
-      // W: breakable
-      let reparent = [this.panelLeft, this.panelRight, this.panelCenter];
-      reparent.forEach((c) => {
-        if (c.get_parent()) {
-          c._parent = c.get_parent();
-          c.get_parent().remove_child(c);
+      // take care of panel background
+      let topbar_background = this.extension._topbar_background;
+      if (
+        this == this.extension.docks[0] &&
+        topbar_background &&
+        this.extension.customize_topbar
+      ) {
+        if (!topbar_background._blurEffect) {
+          topbar_background._blurEffect = this._createEffect(1);
+          topbar_background.add_effect_with_name(
+            'blur',
+            topbar_background._blurEffect,
+          );
         }
-        this._background.add_child(c);
-      });
-      this.panel.visible = false;
+        let panel = Main.panel.get_parent();
+        topbar_background.x = panel.x;
+        topbar_background.y = panel.y;
+        topbar_background.width = panel.width;
+        topbar_background.height = panel.height;
+        let style = [];
 
-      this.panelLeft.height = this.panel.height - 8;
-      this.panelLeft.x = 20;
-      this.panelLeft.y =
-        this.height - this.struts.height + this.panelLeft.height / 2;
-      this.panelRight.track_hover = false;
+        let blur = !(
+          (Main.overview.visible || this.extension._inOverview) &&
+          this.extension.disable_blur_at_overview
+        );
 
-      this.panelRight.height = this.panel.height - 8;
-      this.panelRight.x = this.struts.width - this.panelRight.width - 20;
-      this.panelRight.y = this.panelRight.height / 2;
-
-      this.panelCenter.height = this.panel.height - 8;
-      this.panelCenter.x = this.struts.width - this.panelCenter.width - 20;
-      this.panelCenter.y = this.panelRight.y + this.panelRight.height;
-    }
-
-    restorePanel() {
-      if (!this.panel) return;
-
-      // W: breakable
-      let reparent = [this.panelLeft, this.panelRight, this.panelCenter];
-      reparent.forEach((c) => {
-        if (c.get_parent()) {
-          c.get_parent().remove_child(c);
+        if (this.extension.topbar_blur_background && blur) {
+          topbar_background._blurEffect.color =
+            this.extension.topbar_background_color;
+          style.push(
+            // `background-image: url("${dock.extension.desktop_background}");`
+            `background-image: url("${this.extension.desktop_background_blurred}");`,
+          );
+          let monitor = Main.layoutManager.primaryMonitor;
+          style.push('background-position: 0px 0px;');
+          style.push(
+            `background-size: ${monitor.width}px ${monitor.height}px;`,
+          );
+        } else {
+          let rgba = this.extension._style.rgba(
+            this.extension.topbar_background_color,
+          );
+          style.push(`background-color: rgba(${rgba});`);
         }
-        c._parent.add_child(c);
-      });
-      this.panel.visible = true;
+
+        topbar_background.style = style.join('');
+        topbar_background._blurEffect.enabled =
+          this.extension.topbar_blur_background;
+      }
+
+      return true;
     }
 
     preview() {
       this._preview = PREVIEW_FRAMES;
+      this.animator._computed = null;
     }
 
-    animate() {
+    animate(dt = 15) {
       if (this._preview) {
-        let p = this._get_position(this.dash);
+        let p = this.dash.get_transformed_position();
         p[0] += this.dash.width / 2;
         p[1] += this.dash.height / 2;
         this.simulated_pointer = p;
         this._preview--;
       }
-      this.animator.animate();
+      //! add layout here instead of at the
+      this.animator.animate(dt);
       this.simulated_pointer = null;
     }
 
-    _get_position(obj) {
-      return [...obj.get_transformed_position()];
-    }
-
-    _get_distance_sqr(pos1, pos2) {
-      let a = pos1[0] - pos2[0];
-      let b = pos1[1] - pos2[1];
-      return a * a + b * b;
-    }
-
-    _get_distance(pos1, pos2) {
-      return Math.sqrt(this._get_distance_sqr(pos1, pos2));
-    }
-
-    _isOverlapRect(r1, r2) {
-      let [r1x, r1y, r1w, r1h] = r1;
-      let [r2x, r2y, r2w, r2h] = r2;
-      // are the sides of one rectangle touching the other?
-      if (
-        r1x + r1w >= r2x && // r1 right edge past r2 left
-        r1x <= r2x + r2w && // r1 left edge past r2 right
-        r1y + r1h >= r2y && // r1 top edge past r2 bottom
-        r1y <= r2y + r2h
-      ) {
-        // r1 bottom edge past r2 top
-        return true;
-      }
-      return false;
-    }
-
-    _isInRect(r, p, pad) {
-      let [x1, y1, w, h] = r;
-      let x2 = x1 + w;
-      let y2 = y1 + h;
-      let [px, py] = p;
-      return px + pad >= x1 && px - pad < x2 && py + pad >= y1 && py - pad < y2;
-    }
-
+    //! move these generic functions outside of this class
     _isWithinDash(p) {
       if (this._hidden) {
         return false;
       }
       if (this._hoveredIcon) return true;
-      let xy = this._get_position(this.struts);
+      let xy = this.struts.get_transformed_position();
       let wh = [this.struts.width, this.struts.height];
-      if (this._isInRect([xy[0], xy[1], wh[0], wh[1]], p, 20)) {
+      if (isInRect([xy[0], xy[1], wh[0], wh[1]], p, 20)) {
         return true;
       }
       return false;
@@ -1015,11 +1161,11 @@ export let Dock = GObject.registerClass(
       if (this.extension._hiTimer) {
         if (!this._animationSeq) {
           this._animationSeq = this.extension._hiTimer.runLoop(
-            () => {
-              this.animate();
+            (s) => {
+              this.animate(s._delay);
             },
             this.animationInterval,
-            'animationTimer'
+            'animationTimer',
           );
         } else {
           this.extension._hiTimer.runLoop(this._animationSeq);
@@ -1039,6 +1185,14 @@ export let Dock = GObject.registerClass(
       }
       this.autohider._debounceCheckHide();
       this._icons = null;
+      this._dragged = null;
+    }
+
+    _destroyList() {
+      if (this._list) {
+        Main.uiGroup.remove_child(this._list);
+        this._list = null;
+      }
     }
 
     _debounceEndAnimation() {
@@ -1049,7 +1203,7 @@ export let Dock = GObject.registerClass(
               this._endAnimation();
             },
             ANIM_DEBOUNCE_END_DELAY + this.animationInterval,
-            'debounceEndAnimation'
+            'debounceEndAnimation',
           );
         } else {
           this.extension._loTimer.runDebounced(this.debounceEndSeq);
@@ -1065,8 +1219,15 @@ export let Dock = GObject.registerClass(
     }
 
     _maybeMinimizeOrMaximize(app) {
-      let windows = app.get_windows();
-      if (!windows.length) return;
+      if (!app.get_windows) {
+        return;
+      }
+
+      // let windows = app.get_windows();
+      let windows = this.getAppWindowsFiltered(app);
+      if (!windows.length) {
+        return;
+      }
 
       let event = Clutter.get_current_event();
       let modifiers = event ? event.get_state() : 0;
@@ -1097,7 +1258,11 @@ export let Dock = GObject.registerClass(
       if (focusedWindow) {
         this.extension._hiTimer.runOnce(() => {
           if (shift) {
-            if (focusedWindow.get_maximized() == 3) {
+            if (
+              (focusedWindow.is_maximized && focusedWindow.is_maximized()) ||
+              (focusedWindow.get_maximized &&
+                focusedWindow.get_maximized() == 3)
+            ) {
               focusedWindow.unmaximize(3);
             } else {
               focusedWindow.maximize(3);
@@ -1109,6 +1274,23 @@ export let Dock = GObject.registerClass(
           }
         }, 50);
       } else {
+        const hidden = windows.filter((w) => {
+          return w.is_hidden();
+        });
+
+        // multi-monitors fix -- where focus can seem to get lost
+        if (!hidden.length) {
+          let windows = app.get_windows().filter((w) => {
+            return w.get_monitor() == this._monitor.index;
+          });
+          if (windows.length > 0) {
+            this.extension._hiTimer.runOnce(() => {
+              this._raiseAndFocus(windows[0]);
+            }, 50);
+          }
+          return;
+        }
+
         this.extension._hiTimer.runOnce(() => {
           windows.forEach((w) => {
             if (w.is_hidden()) {
@@ -1128,24 +1310,72 @@ export let Dock = GObject.registerClass(
       }
       if (
         !container.child.app ||
-        (container.child.app && !container.child.app.get_n_windows())
+        (container.child.app &&
+          container.child.app.get_n_windows &&
+          !container.child.app.get_n_windows())
       ) {
         if (container.child) {
           this.animator.bounceIcon(container.child);
+          return;
         }
       }
+      // bounce the custom icons
+      if (container.custom_icon) {
+        this.animator.bounceIcon(container.child);
+      }
+    }
+
+    getAppWindowsFiltered(app) {
+      var apply_filtering = this.extension.multi_monitor_filter != 0;
+
+      // no filtering needed for a single dock
+      if (apply_filtering && this.extension.multi_monitor_preference == 0) {
+        apply_filtering = false;
+      }
+
+      // no filtering needed on single monitor desktop
+      if (apply_filtering && Main.layoutManager.monitors.length == 1) {
+        apply_filtering = false;
+      }
+
+      // apply filtering only if app appears on multiple monitors
+      // 2 - whenever applicable
+      if (apply_filtering && this.extension.multi_monitor_filter == 2) {
+        var on_current_monitor = false;
+        var on_other_monitor = false;
+
+        app.get_windows().forEach((w) => {
+          on_current_monitor =
+            on_current_monitor || w.get_monitor() == this._monitor.index;
+          on_other_monitor =
+            on_other_monitor || w.get_monitor() != this._monitor.index;
+        });
+
+        if (!(on_current_monitor && on_other_monitor)) {
+          apply_filtering = false;
+        }
+      }
+
+      if (apply_filtering) {
+        return app.get_windows().filter((w) => {
+          return w.get_monitor() == this._monitor.index;
+        });
+      }
+      return app.get_windows();
     }
 
     _onScrollEvent(obj, evt) {
       this._lastScrollEvent = evt;
       let pointer = global.get_pointer();
-      if (this._nearestIcon) {
+      let target = this._nearestIcon; // this._hoveredIcon;
+      // console.log(`${target == this._hoveredIcon}`);
+      if (target) {
         if (this._scrollCounter < -2 || this._scrollCounter > 2)
           this._scrollCounter = 0;
 
-        let icon = this._nearestIcon;
+        let icon = target;
 
-        // add scrollwheel vs touchpad differentiation
+        // adjustment for touch scroll (much more sensitive) and mouse scrollwheel
         let multiplier = 1;
         if (
           evt.get_source_device().get_device_type() == 5 ||
@@ -1156,12 +1386,11 @@ export let Dock = GObject.registerClass(
           multiplier = 5;
         }
 
-        // console.log(this._scrollCounter);
-
         let SCROLL_RESOLUTION =
           MIN_SCROLL_RESOLUTION +
           MAX_SCROLL_RESOLUTION -
           (MAX_SCROLL_RESOLUTION * this.extension.scroll_sensitivity || 0);
+
         if (icon._appwell && icon._appwell.app) {
           this._lastScrollObject = icon;
           let direction = evt.get_scroll_direction();
@@ -1180,12 +1409,24 @@ export let Dock = GObject.registerClass(
       }
     }
 
+    // an overly sensitive setting will make window cycle too fast. allow a half second pause after each cycle
     _lockCycle() {
       if (this._lockedCycle) return;
       this._lockedCycle = true;
       this.extension._hiTimer.runOnce(() => {
         this._lockedCycle = false;
-      }, 500);
+      }, 150);
+    }
+
+    _raiseAndFocus(w) {
+      let workspaceManager = global.workspace_manager;
+      let activeWs = workspaceManager.get_active_workspace();
+      if (activeWs == w.get_workspace()) {
+        w.raise();
+        w.focus(0);
+      } else {
+        activeWs.activate_with_focus(w, global.get_current_time());
+      }
     }
 
     _cycleWindows(app, evt) {
@@ -1198,7 +1439,8 @@ export let Dock = GObject.registerClass(
       let workspaceManager = global.workspace_manager;
       let activeWs = workspaceManager.get_active_workspace();
 
-      let windows = app.get_windows();
+      // let windows = app.get_windows();
+      let windows = this.getAppWindowsFiltered(app);
 
       if (evt.modifier_state & Clutter.ModifierType.CONTROL_MASK) {
         windows = windows.filter((w) => {
@@ -1211,6 +1453,7 @@ export let Dock = GObject.registerClass(
         return w1.get_id() > w2.get_id() ? -1 : 1;
       });
 
+      //! add explanations
       if (nw > 1) {
         for (let i = 0; i < nw; i++) {
           if (windows[i].has_focus()) {
@@ -1246,13 +1489,8 @@ export let Dock = GObject.registerClass(
       let window = windows[focusId];
       if (window) {
         this._lockCycle();
-        if (activeWs == window.get_workspace()) {
-          window.raise();
-          window.focus(0);
-        } else {
-          activeWs.activate_with_focus(window, global.get_current_time());
-        }
+        this._raiseAndFocus(window);
       }
     }
-  }
+  },
 );

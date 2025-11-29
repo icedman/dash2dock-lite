@@ -26,7 +26,7 @@ function _drawFrame(ctx, size, settings) {
     bgSize,
     bgSize,
     0,
-    18
+    18,
   );
   // frame border
   if (borderWidth) {
@@ -38,7 +38,7 @@ function _drawFrame(ctx, size, settings) {
       bgSize,
       bgSize,
       borderWidth,
-      18
+      18,
     );
   }
   ctx.restore();
@@ -78,7 +78,7 @@ function _drawMarks(ctx, size, settings) {
       // size / 33,
       a * (Math.PI / 180),
       -Math.floor((size * 0.9) / 2.7),
-      -Math.floor(mark / 2.7)
+      -Math.floor(mark / 2.7),
     );
   }
   ctx.restore();
@@ -96,7 +96,7 @@ function _drawHands(ctx, size, date, settings) {
     minute,
     size / 20,
     (h0 * 30 + (m0 * 30) / 60) * (Math.PI / 180),
-    -Math.floor(size / 3.7)
+    -Math.floor(size / 3.7),
   );
   Drawing.draw_circle(ctx, minute, 0, 0, size / 12);
   Drawing.draw_rotated_line(
@@ -104,7 +104,7 @@ function _drawHands(ctx, size, date, settings) {
     hour,
     size / 33,
     m0 * 6 * (Math.PI / 180),
-    -Math.floor(size / 2.7)
+    -Math.floor(size / 2.7),
   );
 }
 

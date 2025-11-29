@@ -17,8 +17,8 @@
 
 ### Notice
 
-* Gnome 45 port is ready for testing
-* Gnome 44 and prior will be under g44 branch - and will largely be unsupported.
+* Supports Gnome 42, 43, 44, 45, 46, 47, 48, 49
+* Prior versions are largely unsupported
 
 ### Features
 
@@ -39,6 +39,8 @@
 * Mounted devices
 * Downloads icon with fan animation (new!)
 * Icon color effects(Tint, Monochrome)
+* Blurred background
+* Custom icons
 
 ### Prerequisites
 
@@ -76,22 +78,59 @@ Export your settings under Style > Themes Button > "Export"...
 
 This will be saved to ```/tmp/theme.json```. Edit this json file and save under ```~/.config/d2da/themes``` or at ```{extension_path}/dash2dock-animated/themes``` so that it becomes available at the extension settings app.
 
-## Dynamic Icons
+## Custom Icons
 
-Dynamic trash icon is supported (beta). The first time this is enabled, a GNOME shell restart is required.
+Create a folder under ```sh~/.config/d2da/icons``` and place here your SVG icons. Then create a file under ```sh~/.config/d2da/icons.json``` and create a mapping file with the following format:
 
-The trash icon has an action "Empty Trash" which requires a script *{EXTENSION_PATH}/apps/empty-trash.sh* with the content:
-
-```sh
-#!/usr/bin/sh
-rm -rf ~/.local/share/Trash/*
+```json
+{
+  "icons": {
+     "view-app-grid-symbolic": "icons/show-apps-icon.svg",
+     "user-trash": "icons/my-own-trash.svg",
+     "user-trash-full": "icons/my-own-trash-full.svg"
+  }
+}
 ```
 
-Modify the script to match your system if necessary. And make sure that the script is executable:
+You may also use **icon names** from your favorite icon theme. And use the following format:
+
+```json
+{
+  "icons": {
+     "view-app-grid-symbolic": "show-apps-icon",
+     "user-trash": "trash",
+     "user-trash-full": "trash-full"
+  }
+}
+```
+
+The icons ```show-apps-icon, trash, trash-full``` must be available on your icons theme folder. 
+
+Alternatively, you may override icons via app id:
+
+```json
+{
+   "apps": {
+      "spotify_spotify": "icons/spotify.svg"
+   }
+}
+```
+
+Check the log to see the icon names currently being used by Dash2Dock Animated. Search for log text such assets
 
 ```sh
-chmod +x {EXTENSION_PATH}/apps/empty-trash.sh
+Icon created "user-trash"
 ```
+
+## Blurred Background
+
+Blurred background feature requires **imagemagick** to be install in the system. This generates the blurred image based of the desktop wallpaper.
+
+## Gnome 42, 43, 44
+
+Build and install Dash2Dock Animated for prior versions (before Gnome 45)
+
+```make g44```
 
 ## Bug Reporting
 
@@ -121,11 +160,13 @@ Please be specific on the errors encountered. Add screenshots whenever possible.
 
 ## Testing Rig
 
-* Arch Linux (Primary development machine)
-* Ubuntu 23.10 (Gnome 45)
-* Debian 12.x (Gnome 43.9)
-* Gnome OS Nightly (virtual, Gnome 46)
-* Fedora 39 (virtual)
+* Arch Linux (Gnome 45.5)
+* Debian 12 (Gnome 43.9)
+* Fedora 39 (Gnome 45.0)
+* Fedora 40 Beta (Gnome 46.0)
+* Manjaro Linux (Gnome 45.3)
+* Opensuse Tumbleweed (Gnome 46.0)
+* Ubuntu 23 (Gnome 45.0)
 
 ## License
 

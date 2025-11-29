@@ -6,7 +6,7 @@
 
 import { PrefKeys } from './prefKeys.js';
 
-export let schemaId = 'org.gnome.shell.extensions.dash2dock-lite';
+export const schemaId = 'org.gnome.shell.extensions.dash2dock-lite';
 
 export const SettingsKeys = () => {
   let settingsKeys = new PrefKeys();
@@ -114,7 +114,17 @@ export const SettingsKeys = () => {
       widget_type: 'color',
       themed: true,
     },
+    'topbar-blur-background': {
+      default_value: false,
+      widget_type: 'switch',
+    },
     'customize-label': {
+      default_value: false,
+      widget_type: 'switch',
+      key_maps: {},
+      themed: true,
+    },
+    'hide-labels': {
       default_value: false,
       widget_type: 'switch',
       key_maps: {},
@@ -166,14 +176,22 @@ export const SettingsKeys = () => {
       default_value: false,
       widget_type: 'switch',
     },
+    'downloads-path': {
+      default_value: '',
+      widget_type: 'string',
+    },
     'documents-icon': {
       default_value: false,
       widget_type: 'switch',
     },
+    'documents-path': {
+      default_value: '',
+      widget_type: 'string',
+    },
     'max-recent-items': {
       default_value: 0,
       widget_type: 'dropdown',
-      test: { values: [5, 10, 15, 20, 25] },
+      test: { values: [5, 8, 10, 12, 15, 20, 25] },
     },
     'mounted-icon': {
       default_value: false,
@@ -205,6 +223,11 @@ export const SettingsKeys = () => {
       test: { pointer: 'slide-through', values: [0, 1, 2] },
     },
     'animation-bounce': {
+      default_value: 0,
+      widget_type: 'scale',
+      test: { pointer: 'slide-through', values: [0, 0.5, 1] },
+    },
+    'items-pullout-angle': {
       default_value: 0,
       widget_type: 'scale',
       test: { pointer: 'slide-through', values: [0, 0.5, 1] },
@@ -272,6 +295,10 @@ export const SettingsKeys = () => {
       default_value: false,
       widget_type: 'switch',
     },
+    'running-indicator-size': {
+      default_value: 0,
+      widget_type: 'dropdown',
+    },
     'running-indicator-style': {
       default_value: 0,
       widget_type: 'dropdown',
@@ -296,6 +323,10 @@ export const SettingsKeys = () => {
     'running-indicator-color': {
       default_value: [1, 1, 1, 1],
       widget_type: 'color',
+    },
+    'notification-badge-size': {
+      default_value: 0,
+      widget_type: 'dropdown',
     },
     'notification-badge-style': {
       default_value: 0,
@@ -327,6 +358,14 @@ export const SettingsKeys = () => {
       default_value: 0,
       widget_type: 'dropdown',
       test: { values: [0, 1, 2, 3] },
+    },
+    'blur-resolution': {
+      default_value: 0,
+      widget_type: 'dropdown',
+    },
+    'disable-blur-at-overview': {
+      default_value: true,
+      widget_type: 'switch',
     },
     'icon-effect': {
       default_value: 0,
@@ -379,6 +418,15 @@ export const SettingsKeys = () => {
     'drawing-light-foreground': {
       default_value: [0.3, 0.3, 0.3, 1.0],
       widget_type: 'color',
+    },
+    'blur-background': {
+      default_value: false,
+      widget_type: 'switch',
+    },
+    'multi-monitor-filter': {
+      default_value: 0,
+      widget_type: 'dropdown',
+      test: { pointer: 'slide-through', values: [0, 1, 2] },
     },
   });
 

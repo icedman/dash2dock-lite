@@ -6,6 +6,35 @@
     <property name="icon-name">general-symbolic</property>
     <child>
       <object class="AdwPreferencesGroup">
+        <child>
+          <object class="GtkBox" id="bmc">
+            <property name="spacing">12</property>
+            <property name="margin-top">6</property>
+            <property name="margin-bottom">6</property>
+            <property name="margin-start">24</property>
+            <property name="margin-end">24</property>
+            <property name="orientation">horizontal</property>
+            <child>
+              <object class="GtkLabel">
+                <property name="label">Thank you for using &lt;b&gt;Dash2Dock Animated&lt;/b&gt;! Support development of this extension — &lt;a href="https://www.buymeacoffee.com/icedman"&gt;Buy Me a Coffee&lt;/a&gt;
+                </property>
+                <property name="use-markup">true</property>
+                <property name="xalign">0</property>
+                <property name="wrap">true</property>
+                <property name="hexpand">true</property>
+              </object>
+            </child>
+            <child>
+              <object class="GtkImage" id="qr">
+                <property name="pixel-size">96</property>
+              </object>
+            </child>
+          </object>
+        </child>
+      </object>
+    </child>
+    <child>
+      <object class="AdwPreferencesGroup">
         <property name="title" translatable="yes">Dock</property>
         <property name="description" translatable="yes"/>
         <child>
@@ -92,7 +121,7 @@
           <object class="AdwActionRow" id="lamp-app-animation-row">
             <property name="visible">true</property>
             <property name="title" translatable="yes">Lamp Animation</property>
-            <property name="subtitle" translatable="yes">Add genie on a lamp animation on minimizing windows. Credit to https://github.com/hermes83/compiz-alike-magic-lamp-effect</property>
+            <property name="subtitle" translatable="yes">Add genie on a lamp animation on minimizing windows. Requires the [compiz-alike-magic-lamp-effect@hermes83.github.com] extension. WARNING! This feature is still UNSTABLE. Changing this setting may require extension restart.</property>
             <property name="activatable-widget">lamp-app-animation</property>
             <child>
               <object class="GtkSwitch" id="lamp-app-animation">

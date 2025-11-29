@@ -34,7 +34,7 @@ const getMonochromeShaderSource = (extensionDir) => {
 /// https://gjs-docs.gnome.org/clutter10~10_api/clutter.shadereffect
 export const MonochromeEffect = GObject.registerClass(
   {},
-  class MonochromeEffect extends Clutter.ShaderEffect {
+  class D2DAMonochromeEffect extends Clutter.ShaderEffect {
     _init(params) {
       this._red = null;
       this._green = null;
@@ -146,5 +146,5 @@ export const MonochromeEffect = GObject.registerClass(
       else if (paint_node) super.vfunc_paint_target(paint_node);
       else super.vfunc_paint_target();
     }
-  }
+  },
 );

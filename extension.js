@@ -13,17 +13,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
- * SPDX-License-Identifier: GPL-2.0-or-later
+ * SPDX-License-Identifier: GPL-_queryDisplay2.0-or-later
  *
  */
 
-'use strict';
+('use strict');
 
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as Fav from 'resource:///org/gnome/shell/ui/appFavorites.js';
 
 import St from 'gi://St';
 import Shell from 'gi://Shell';
+import Graphene from 'gi://Graphene';
+import Gio from 'gi://Gio';
+import GLib from 'gi://GLib';
+import { tempPath, trySpawnCommandLine } from './utils.js';
 
 import { Timer } from './timer.js';
 import { Style } from './style.js';
@@ -48,6 +52,7 @@ export default class Dash2DockLiteExt extends Extension {
   createDock() {
     let d = new Dock({ extension: this });
     d.extension = this;
+    d.opacity = 0; // animate
     d.dock();
     this.dock = d;
     this.docks.push(this.dock);
@@ -93,25 +98,52 @@ export default class Dash2DockLiteExt extends Extension {
     (this.docks || []).forEach((dock) => {
       dock.undock();
       dock.cancelAnimations();
+      dock.destroyDash();
       this.dock = null;
     });
     this.docks = [];
   }
 
   recreateAllDocks(delay = 750) {
-    // some settings change cause glitches ... recreate all docks (workaround)
-    if (!this._recreateSeq) {
-      this._recreateSeq = this._loTimer.runDebounced(() => {
-        this.destroyDocks();
-        this.createTheDocks();
-      }, delay);
-    } else {
-      this._loTimer.runDebounced(this._recreateSeq);
-    }
+    console.log('recreate all docks');
+
+    // recreate only the dash
+    this.docks.forEach((d) => {
+      d.recreateDash();
+      d._beginAnimation();
+      d._debounceEndAnimation();
+    });
+  }
+
+  _showMainOverviewDash(show) {
+    Main.overview.dash.opacity = show ? 255 : 0;
+    // Main.overview.dash._background.opacity = show ? 255 : 0;
+    Main.overview.dash._background.style = show
+      ? ''
+      : 'background: transparent !important;';
+
+    let box = Main.overview.dash.__box || Main.overview.dash._box;
+    box.get_children().forEach((c) => {
+      c.opacity = show ? 255 : 0;
+      c.visible = show;
+      if (c.child) {
+        c.child.reactive = show;
+        c.child.track_hover = show;
+      }
+    });
+
+    Main.overview.dash._showAppsIcon.opacity = show ? 255 : 0;
+    Main.overview.dash._showAppsIcon.child.reactive = show;
+    Main.overview.dash._showAppsIcon.child.track_hover = show;
   }
 
   enable() {
-    this._enableJitterHack = true;
+    Main.overview.d2dl = this;
+
+    // Use UUID to avoid conflicting with other instances of this extensions (multi user setup)
+    if (!this.uuid) {
+      this.uuid = GLib.get_user_name(); // GLib.uuid_string_random();
+    }
 
     // for debugging - set to 255
     this._dash_opacity = 0;
@@ -137,7 +169,24 @@ export default class Dash2DockLiteExt extends Extension {
 
     this._style = new Style();
 
+    this._backgroundUris = { light: null, dark: null };
+    this._blurredBackgrounds = {
+      light: {
+        path: tempPath('d2da-bg-light-blurred.jpg'),
+        uri: null,
+        signature: null,
+      },
+      dark: {
+        path: tempPath('d2da-bg-dark-blurred.jpg'),
+        uri: null,
+        signature: null,
+      },
+    };
+    this.desktop_background_variant = 'light';
+    this._blurRefreshId = 0;
+
     this._enableSettings();
+    this._loadIconMap();
 
     // no longer needed
     // this._disable_borders = this.border_radius > 0;
@@ -147,9 +196,8 @@ export default class Dash2DockLiteExt extends Extension {
       this._settingsKeys.setValue('animate-icons', true);
     }
 
-    Main.overview.dash.last_child.reactive = false;
-    Main.overview.dash.opacity = 0;
-
+    Main.overview.dash.__box = Main.overview.dash._box;
+    this._showMainOverviewDash(false);
     this.docks = [];
 
     // service
@@ -161,25 +209,23 @@ export default class Dash2DockLiteExt extends Extension {
     this.services.enable();
     this._onCheckServices();
 
-    // this._updateAnimationFPS();
-    // this._updateShrink();
-    // this._updateIconResolution();
-    // this._updateLayout();
-    // this._updateAutohide();
-    // this._updateWidgetStyle();
-    // this._updateStyle();
+    this._updateAnimationFPS();
+    this._updateShrink();
+    this._updateIconResolution();
+    this._updateStyle();
+    this._updateBlurredBackground();
 
     this._addEvents();
-
     this._queryDisplay();
+    // this.startUp();
 
-    // this._updateStyle();
+    console.log('dash2dock-lite enabled');
 
-    this.startUp();
+    // to allow dynamic imports
+    this._loTimer.runOnce(() => {
+        this.startUp();
+      }, 250);
 
-    log('dash2dock-lite enabled');
-
-    Main.overview.d2dl = this;
   }
 
   disable() {
@@ -195,16 +241,25 @@ export default class Dash2DockLiteExt extends Extension {
     this._updateShrink(true);
     this._updateLayout(true);
     this._updateAutohide(true);
+    this._unloadIconMap();
 
-    Main.overview.dash.last_child.visible = true;
-    Main.overview.dash.opacity = 255;
+    this._showMainOverviewDash(true);
 
-    this.docks.forEach((container) => {
-      container.undock();
-    });
-    this.docks = [];
+    if (Main.overview.dash.__box) {
+      Main.overview.dash._box = Main.overview.dash.__box;
+    }
 
     this.destroyDocks();
+    this.docks = [];
+
+    if (this._topbar_background) {
+      if (this._topbar_background.get_parent()) {
+        this._topbar_background
+          .get_parent()
+          .remove_child(this._topbar_background);
+      }
+      this._topbar_background = null;
+    }
 
     this.services.disable();
     this.services = null;
@@ -217,7 +272,19 @@ export default class Dash2DockLiteExt extends Extension {
     this._style.unloadAll();
     this._style = null;
 
-    log('dash2dock-lite disabled');
+    if (this._blurRefreshId) {
+      GLib.source_remove(this._blurRefreshId);
+      this._blurRefreshId = 0;
+    }
+
+    this._backgroundUris = null;
+    this._blurredBackgrounds = null;
+    this.desktop_background_variant = null;
+
+    this._hookCompiz(false);
+
+    Main.overview.d2dl = null;
+    console.log('dash2dock-lite disabled');
   }
 
   animate(settings = {}) {
@@ -233,6 +300,7 @@ export default class Dash2DockLiteExt extends Extension {
     });
   }
 
+  // unused?
   checkHide() {
     this.docks.forEach((dock) => {
       if (dock.autohider) {
@@ -241,22 +309,89 @@ export default class Dash2DockLiteExt extends Extension {
     });
   }
 
+  _hookCompiz(hook = true) {
+    let compiz = Main.extensionManager.lookup(
+      'compiz-alike-magic-lamp-effect@hermes83.github.com',
+    );
+    if (compiz && compiz.stateObj) {
+      let stateObj = compiz.stateObj;
+      this._compiz = stateObj;
+      if (stateObj._getIcon && !hook) {
+        stateObj.getIcon = stateObj._getIcon;
+        stateObj._getIcon = null;
+      }
+      if (!stateObj._getIcon && hook) {
+        stateObj._getIcon = stateObj.getIcon;
+        if (this.lamp_app_animation) {
+          stateObj.getIcon = this._getIcon.bind(this);
+        }
+      }
+    }
+  }
+
+  _updateCompizHook() {
+    this._hookCompiz(false);
+    this._hookCompiz(true);
+  }
+
+  // override compiz getIcon
+  _getIcon(actor) {
+    let [success, icon] = actor.meta_window.get_icon_geometry();
+    if (success) {
+      // console.log('compiz-alike-magic-lamp-effect: icon');
+      // console.log(icon);
+      return icon;
+    }
+    let monitor = Main.layoutManager.monitors[actor.meta_window.get_monitor()];
+    let dock = this.docks.find((d) => d._monitorIndex == monitor.index);
+
+    if (!dock) {
+      return { x: monitor.x, y: monitor.y, width: 0, height: 0 };
+    }
+    if (!Main.overview.dash.__box) {
+      Main.overview.dash.__box = Main.overview.dash._box;
+    }
+    Main.overview.dash._box = dock.dash._box;
+
+    // add alignment fix here?
+    let res = this._compiz._getIcon(actor);
+    // console.log('compiz-alike-magic-lamp-effect: getIcon');
+    // console.log(`x:${res.x} y:${res.y} w:${res.width} h:${res.height}`);
+    let x = res.x;
+    let y = res.y;
+    let w = res.width;
+    let h = res.height;
+
+    if (w == 0 && this.docks && this.docks.length > 0) {
+      let sz = this.docks[0]._preferredIconSize();
+      if (sz) {
+        x += (sz / 2) * (this.docks[0].getMonitor().geometry_scale || 1);
+        // y += sz/2;
+      }
+    }
+
+    return {
+      x: x,
+      y: y,
+      width: w,
+      height: h,
+    };
+  }
+
   startUp() {
     this.createTheDocks();
     this._loTimer.runOnce(() => {
-      this._updateAnimationFPS();
-      this._updateShrink();
-      this._updateIconResolution();
-      // this._updateLayout();
-      // this._updateAutohide();
       this._updateWidgetStyle();
-      this._updateStyle();
-
       this.animate({ refresh: true });
       this.docks.forEach((dock) => {
+        dock._beginAnimation();
         dock._debounceEndAnimation();
       });
+      this._hookCompiz();
     }, 10);
+    this._loTimer.runUntil(() => {
+      return this._createTopbarBackground();
+    }, 150);
   }
 
   _autohiders() {
@@ -271,7 +406,7 @@ export default class Dash2DockLiteExt extends Extension {
       Main.layoutManager.monitors.length > 0 &&
       this.multi_monitor_preference > 0
     ) {
-      // if multi-monitor ... left _updateLayout take care of updating the docks
+      // if multi-monitor ... let _updateLayout take care of updating the docks
       return currentMonitorIndex;
     }
 
@@ -289,7 +424,86 @@ export default class Dash2DockLiteExt extends Extension {
     return idx;
   }
 
+  _loadIconMap() {
+    let fn = Gio.File.new_for_path('.config/d2da/icons.json');
+    if (fn.query_exists(null)) {
+      const [success, contents] = fn.load_contents(null);
+      const decoder = new TextDecoder();
+      let contentsString = decoder.decode(contents);
+      try {
+        let json = JSON.parse(contentsString);
+        if (json['icons']) {
+          this.icon_map = json['icons'];
+          this.icon_map_cache = {};
+          Object.keys(this.icon_map).forEach((k) => {
+            let path = this.icon_map[k];
+            if (path.toLowerCase().endsWith('.svg')) {
+              let file = Gio.File.new_for_path(`.config/d2da/${path}`);
+              if (file.query_exists(null)) {
+                console.log(`loading icon ${file.get_path()}`);
+                this.icon_map_cache[k] = new Gio.FileIcon({ file: file });
+              }
+            }
+          });
+        }
+        if (json['apps']) {
+          this.app_map = json['apps'];
+          this.app_map_cache = {};
+          Object.keys(this.app_map).forEach((k) => {
+            let path = this.app_map[k];
+            if (path.toLowerCase().endsWith('.svg')) {
+              let file = Gio.File.new_for_path(`.config/d2da/${path}`);
+              if (file.query_exists(null)) {
+                console.log(`loading icon ${file.get_path()}`);
+                this.app_map_cache[k] = new Gio.FileIcon({ file: file });
+              }
+            }
+          });
+        }
+      } catch (err) {
+        console.log(err);
+      }
+    }
+  }
+
+  _unloadIconMap() {
+    this.icon_map = {};
+    this.icon_map_cache = {};
+    this.app_map_cache = {};
+  }
+
   _enableSettings() {
+    this._desktopSettings = new Gio.Settings({
+      schema_id: 'org.gnome.desktop.background',
+    });
+    this._desktopSettings.connectObject(
+      'changed::picture-uri',
+      () => {
+        this._updateBlurredBackground();
+      },
+      'changed::picture-uri-dark',
+      () => {
+        this._updateBlurredBackground();
+      },
+      this,
+    );
+
+    try {
+      this._interfaceSettings = new Gio.Settings({
+        schema_id: 'org.gnome.desktop.interface',
+      });
+      this._interfaceSettings.connectObject(
+        'changed::color-scheme',
+        () => {
+          this._applyActiveBlurredBackground();
+        },
+        this,
+      );
+    } catch (err) {
+      console.log(err);
+      this._interfaceSettings = null;
+    }
+
     this._settings = this.getSettings(schemaId);
     this._settingsKeys = SettingsKeys();
 
@@ -297,7 +511,7 @@ export default class Dash2DockLiteExt extends Extension {
       let n = name.replace(/-/g, '_');
       this[n] = value;
 
-      // log(`${n} ${value}`);
+      // console.log(`${n} ${value}`);
 
       switch (name) {
         case 'msg-to-ext': {
@@ -305,10 +519,14 @@ export default class Dash2DockLiteExt extends Extension {
             try {
               eval(value);
             } catch (err) {
-              log(err);
+              console.log(err);
             }
             this._settings.set_string('msg-to-ext', '');
           }
+          break;
+        }
+        case 'lamp-app-animation': {
+          this._updateCompizHook();
           break;
         }
         case 'animation-fps': {
@@ -337,8 +555,10 @@ export default class Dash2DockLiteExt extends Extension {
           }
           break;
         }
+        case 'notification-badge-size':
         case 'notification-badge-color':
         case 'notification-badge-style':
+        case 'running-indicator-size':
         case 'running-indicator-color':
         case 'running-indicator-style': {
           this.animate();
@@ -349,7 +569,7 @@ export default class Dash2DockLiteExt extends Extension {
           this._updateWidgetStyle();
           break;
         case 'max-recent-items':
-          this.services.checkDownloads();
+          this.services._debounceCheckDownloads();
           break;
         case 'apps-icon':
         case 'apps-icon-front':
@@ -359,8 +579,14 @@ export default class Dash2DockLiteExt extends Extension {
           this.animate({ refresh: true });
           break;
         }
+        case 'downloads-path':
+          this.services.setupDownloads();
+          break;
         // problematic settings needing animator restart
         case 'dock-location':
+          this.recreateAllDocks();
+          this.animate({ preview: true });
+          break;
         case 'icon-resolution': {
           this._updateIconResolution();
           this._updateStyle();
@@ -377,9 +603,7 @@ export default class Dash2DockLiteExt extends Extension {
         }
         case 'icon-effect-color': {
           this.docks.forEach((dock) => {
-            if (dock.iconEffect) {
-              dock.iconEffect.color = this.icon_effect_color;
-            }
+            dock._updateIconEffectColor(this.icon_effect_color);
           });
           this.animate();
           break;
@@ -394,7 +618,7 @@ export default class Dash2DockLiteExt extends Extension {
         case 'icon-size':
         case 'preferred-monitor': {
           this._updateLayout();
-          this.animate();
+          this.animate({ refresh: true });
           break;
         }
         case 'autohide-dodge':
@@ -416,15 +640,18 @@ export default class Dash2DockLiteExt extends Extension {
         case 'border-radius':
           this._debouncedUpdateStyle();
           break;
-        case 'separator-color':
         case 'separator-thickness':
+          this._updateStyle();
+          this.recreateAllDocks();
+          this.animate({ preview: true });
+          break;
+        case 'separator-color':
         case 'border-color':
         case 'border-thickness':
         case 'customize-topbar':
         case 'icon-shadow':
         case 'topbar-border-color':
         case 'topbar-border-thickness':
-        case 'topbar-background-color':
         case 'topbar-foreground-color':
         case 'customize-label':
         case 'label-border-radius':
@@ -432,13 +659,22 @@ export default class Dash2DockLiteExt extends Extension {
         case 'label-border-thickness':
         case 'label-background-color':
         case 'label-foreground-color':
-        case 'background-color':
         case 'panel-mode': {
           this._updateStyle();
           this._updateLayout();
           this.animate();
           break;
         }
+        case 'topbar-background-color':
+        case 'topbar-blur-background':
+        case 'background-color':
+        case 'blur-resolution':
+        case 'blur-background':
+          this._updateBlurredBackground();
+          this._updateStyle();
+          this._updateLayout();
+          this.animate();
+          break;
         case 'pressure-sense': {
           break;
         }
@@ -446,7 +682,7 @@ export default class Dash2DockLiteExt extends Extension {
         case 'documents-icon':
         case 'trash-icon': {
           this._updateLayout();
-          this.animate();
+          this.animate({ refresh: true });
           break;
         }
       }
@@ -456,6 +692,7 @@ export default class Dash2DockLiteExt extends Extension {
       let key = this._settingsKeys.getKey(k);
       let name = k.replace(/-/g, '_');
       this[name] = key.value;
+      // console.log(`${name} = ${key.value}`);
       if (key.options) {
         this[`${name}_options`] = key.options;
       }
@@ -465,6 +702,14 @@ export default class Dash2DockLiteExt extends Extension {
   _disableSettings() {
     this._settingsKeys.disconnectSettings();
     this._settingsKeys = null;
+
+    this._desktopSettings.disconnectObject(this);
+    this._desktopSettings = null;
+
+    if (this._interfaceSettings) {
+      this._interfaceSettings.disconnectObject(this);
+      this._interfaceSettings = null;
+    }
   }
 
   _addEvents() {
@@ -479,7 +724,7 @@ export default class Dash2DockLiteExt extends Extension {
       () => {
         this._onAppsChanged();
       },
-      this
+      this,
     );
 
     this._appFavorites = Fav.getAppFavorites();
@@ -488,23 +733,29 @@ export default class Dash2DockLiteExt extends Extension {
       () => {
         this._onAppsChanged();
       },
-      this
+      this,
     );
 
     Main.sessionMode.connectObject(
       'updated',
       this._onSessionUpdated.bind(this),
-      this
+      this,
     );
 
     Main.layoutManager.connectObject(
-      // 'startup-complete',
+      'startup-complete',
+      () => {
+        Main.overview.dash.last_child.visible = false;
+        Main.overview.dash.opacity = 0;
+        // fix for topbar not blurring
+        this._updateBlurredBackground();
+      },
       // this.startUp.bind(this),
       'monitors-changed',
       () => {
         this._updateMultiMonitorPreference();
       },
-      this
+      this,
     );
 
     Main.messageTray.connectObject(
@@ -513,7 +764,7 @@ export default class Dash2DockLiteExt extends Extension {
         this.services.checkNotifications();
         this.animate();
       },
-      this
+      this,
     );
 
     global.display.connectObject(
@@ -521,21 +772,35 @@ export default class Dash2DockLiteExt extends Extension {
       this._onFocusWindow.bind(this),
       'in-fullscreen-changed',
       this._onFullScreen.bind(this),
-      this
+      'restacked',
+      this._onRestacked.bind(this),
+      this,
     );
+
+    // global.stage.connectObject(
+    //   'key-press-event',
+    //   this._onKeyPressed.bind(this),
+    //   this
+    // );
 
     Main.overview.connectObject(
       'showing',
       this._onOverviewShowing.bind(this),
       'hidden',
       this._onOverviewHidden.bind(this),
-      this
+      this,
     );
 
     St.TextureCache.get_default().connectObject(
       'icon-theme-changed',
       this._onIconThemeChanged.bind(this),
-      this
+      this,
+    );
+
+    St.ThemeContext.get_for_stage(global.stage).connectObject(
+      'notify::scale-factor',
+      this.recreateAllDocks.bind(this),
+      this,
     );
 
     // move to services.js
@@ -544,7 +809,7 @@ export default class Dash2DockLiteExt extends Extension {
         this._onCheckServices();
       },
       SERVICES_UPDATE_INTERVAL,
-      'services'
+      'services',
     );
   }
 
@@ -554,9 +819,20 @@ export default class Dash2DockLiteExt extends Extension {
     Main.messageTray.disconnectObject(this);
     Main.overview.disconnectObject(this);
     Main.layoutManager.disconnectObject(this);
+    Main.sessionMode.disconnectObject(this);
     global.display.disconnectObject(this);
     global.stage.disconnectObject(this);
     St.TextureCache.get_default().disconnectObject(this);
+    St.ThemeContext.get_for_stage(global.stage).disconnectObject(this);
+  }
+
+  _onKeyPressed(evt) {
+    this.docks.forEach((d) => {
+      if (d._list && d._list.visible) {
+        d._list.slideOut();
+      }
+    });
+    return Clutter.EVENT_PROPAGATE;
   }
 
   _onIconThemeChanged() {
@@ -565,13 +841,32 @@ export default class Dash2DockLiteExt extends Extension {
       this.services.enable();
     }
     this._updateStyle();
-    this.animate();
+    this.recreateAllDocks();
   }
 
   _onFocusWindow() {
     let listeners = [...this.listeners];
     listeners.forEach((l) => {
       if (l._onFocusWindow) l._onFocusWindow();
+    });
+  }
+
+  _onFullScreen(display) {
+    let listeners = [...this.listeners];
+    listeners.forEach((l) => {
+      if (l._onFullScreen) l._onFullScreen();
+    });
+
+    if (this._topbar_background) {
+      this._topbar_background.visible = !display.get_monitor_in_fullscreen(0);
+    }
+    // console.log(`_onFullScreen ${f}`);
+  }
+
+  _onRestacked() {
+    let listeners = [...this.listeners];
+    listeners.forEach((l) => {
+      if (l._onRestacked) l._onRestacked();
     });
   }
 
@@ -582,21 +877,18 @@ export default class Dash2DockLiteExt extends Extension {
     });
   }
 
-  _onFullScreen() {
-    let listeners = [...this.listeners];
-    listeners.forEach((l) => {
-      if (l._onFullScreen) l._onFullScreen();
-    });
-  }
-
   _onOverviewShowing() {
+    this._showMainOverviewDash(false);
+    //this._loTimer.runOnce(() => { Main.overview.dash.set_height(1); }, 50);
     this._inOverview = true;
     this._autohiders().forEach((autohider) => {
       autohider._debounceCheckHide();
     });
+    this.animate();
   }
 
   _onOverviewHidden() {
+    //Main.overview.dash.set_height(1);
     this._inOverview = false;
     this._autohiders().forEach((autohider) => {
       autohider._debounceCheckHide();
@@ -635,6 +927,259 @@ export default class Dash2DockLiteExt extends Extension {
     this.animate();
   }
 
+  async _updateBlurredBackground() {
+    this._backgroundUris = this._backgroundUris ?? { light: null, dark: null };
+    this._blurredBackgrounds = this._blurredBackgrounds ?? {
+      light: {
+        path: tempPath('d2da-bg-light-blurred.jpg'),
+        uri: null,
+        signature: null,
+      },
+      dark: {
+        path: tempPath('d2da-bg-dark-blurred.jpg'),
+        uri: null,
+        signature: null,
+      },
+    };
+
+    const lightUri = this._desktopSettings.get_string('picture-uri');
+    let darkUri = lightUri;
+
+    try {
+      if (this._desktopSettings.list_keys().includes('picture-uri-dark')) {
+        const candidate = this._desktopSettings.get_string('picture-uri-dark');
+        if (candidate && candidate !== '') {
+          darkUri = candidate;
+        }
+      }
+    } catch (err) {
+      console.log(err);
+    }
+
+    this._backgroundUris.light = lightUri;
+    this._backgroundUris.dark = darkUri || lightUri;
+
+    if (this.blur_background || this.topbar_blur_background) {
+      await Promise.all(
+        ['light', 'dark'].map((variant) =>
+          this._ensureBlurredBackground(variant, this._backgroundUris[variant]),
+        ),
+      );
+      this._scheduleBlurRefresh();
+    }
+
+    this._applyActiveBlurredBackground();
+  }
+
+  async _ensureBlurredBackground(variant, uri) {
+    const cache = this._blurredBackgrounds?.[variant];
+    if (!cache) {
+      return;
+    }
+
+    if (!uri || uri === 'none') {
+      cache.uri = null;
+      cache.signature = null;
+      return;
+    }
+
+    const qualityIndex = this.blur_resolution || 0;
+    const signature = `${uri}|${qualityIndex}`;
+
+    if (cache.signature === signature) {
+      try {
+        const existing = Gio.File.new_for_path(cache.path);
+        if (existing.query_exists(null)) {
+          return;
+        }
+      } catch (err) {
+        cache.uri = null;
+        cache.signature = null;
+      }
+    }
+
+    let file = null;
+    try {
+      file = Gio.File.new_for_uri(uri);
+    } catch (err) {
+      console.log(err);
+      cache.uri = null;
+      return;
+    }
+
+    const inputPath = file && file.get_path ? file.get_path() : null;
+    if (!inputPath) {
+      console.log(
+        `Unable to resolve background path for blur effect (${variant})`,
+      );
+      cache.uri = null;
+      cache.signature = null;
+      return;
+    }
+
+    const quality = [250, 250, 500, 1000][qualityIndex];
+    const magickBin = GLib.find_program_in_path('magick');
+    const convertBin = GLib.find_program_in_path('convert');
+    const quotedInput = GLib.shell_quote(inputPath);
+    const quotedOutput = GLib.shell_quote(cache.path);
+    const operations = `-scale 10% -blur 0x2.5 -resize ${quality}%`;
+
+    let cmd = null;
+    if (magickBin) {
+      cmd = `${magickBin} ${quotedInput} ${operations} ${quotedOutput}`;
+    } else if (convertBin) {
+      cmd = `${convertBin} ${quotedInput} ${operations} ${quotedOutput}`;
+    } else {
+      console.log(
+        'Neither magick nor convert command found; blur effect disabled',
+      );
+      cache.uri = null;
+      cache.signature = null;
+      return;
+    }
+
+    console.log(cmd);
+    try {
+      await trySpawnCommandLine(cmd);
+      cache.uri = uri;
+      cache.signature = signature;
+    } catch (err) {
+      console.log(err);
+      cache.uri = null;
+      cache.signature = null;
+    }
+  }
+
+  _applyActiveBlurredBackground() {
+    const variant = this._getPreferredColorScheme();
+    const fallbackVariant = variant === 'dark' ? 'light' : 'dark';
+    const candidateUri =
+      this._backgroundUris?.[variant] && this._backgroundUris[variant] !== ''
+        ? this._backgroundUris[variant]
+        : this._backgroundUris?.[fallbackVariant];
+    const sanitizedUri =
+      candidateUri && candidateUri !== 'none' ? candidateUri : '';
+
+    this.desktop_background_variant = variant;
+    this.desktop_background = sanitizedUri || this.desktop_background || '';
+
+    let blurredPath = null;
+    if (this.blur_background || this.topbar_blur_background) {
+      const candidates = [
+        this._blurredBackgrounds?.[variant],
+        this._blurredBackgrounds?.[fallbackVariant],
+      ];
+
+      for (const entry of candidates) {
+        if (!entry || !entry.path || !entry.uri) {
+          continue;
+        }
+        try {
+          const file = Gio.File.new_for_path(entry.path);
+          if (file.query_exists(null)) {
+            blurredPath = entry.path;
+            break;
+          }
+        } catch (err) {
+          console.log(err);
+        }
+      }
+    }
+
+    this.desktop_background_blurred =
+      blurredPath && blurredPath.length ? blurredPath : this.desktop_background;
+
+    (this.docks || []).forEach((dock) => {
+      dock._updateBackgroundEffect();
+    });
+
+    this.animate();
+  }
+
+  _scheduleBlurRefresh(attempt = 0) {
+    if (!this.blur_background && !this.topbar_blur_background) {
+      return;
+    }
+
+    if (++attempt > 5) {
+      return;
+    }
+
+    if (this._blurRefreshId) {
+      GLib.source_remove(this._blurRefreshId);
+      this._blurRefreshId = 0;
+    }
+
+    const delay = attempt === 1 ? 500 : 1000;
+    this._blurRefreshId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, delay, () => {
+      this._blurRefreshId = 0;
+
+      const variant = this.desktop_background_variant || 'light';
+      const entry = this._blurredBackgrounds?.[variant];
+      let ready = false;
+
+      if (entry && entry.path && entry.uri) {
+        try {
+          const file = Gio.File.new_for_path(entry.path);
+          ready = file.query_exists(null);
+        } catch (err) {
+          console.log(err);
+        }
+      }
+
+      this._applyActiveBlurredBackground();
+
+      if (!ready) {
+        this._scheduleBlurRefresh(attempt);
+      }
+
+      return GLib.SOURCE_REMOVE;
+    });
+  }
+
+  _getPreferredColorScheme() {
+    let scheme = 'light';
+
+    if (this._interfaceSettings) {
+      try {
+        scheme = this._interfaceSettings.get_string('color-scheme') || 'light';
+      } catch (err) {
+        console.log(err);
+      }
+    } else if (Main.panel?.has_style_pseudo_class?.('dark')) {
+      return 'dark';
+    }
+
+    if (scheme === 'prefer-dark') {
+      return 'dark';
+    }
+
+    if (scheme === 'default' && Main.panel?.has_style_pseudo_class?.('dark')) {
+      return 'dark';
+    }
+
+    return 'light';
+  }
+
+  _createTopbarBackground() {
+    if (
+      !this._topbar_background &&
+      Main.panel &&
+      Main.panel.get_parent() &&
+      Main.panel.get_parent().get_parent()
+    ) {
+      this._topbar_background = new St.Widget({
+        name: 'd2daTopbarBackground',
+        clip_to_allocation: true,
+      });
+      Main.uiGroup.insert_child_below(
+        this._topbar_background,
+        Main.panel.get_parent(),
+      );
+    }
+    return this._topbar_background;
+  }
+
   _updateAnimationFPS() {
     this.docks.forEach((dock) => {
       dock.cancelAnimations();
@@ -651,7 +1196,6 @@ export default class Dash2DockLiteExt extends Extension {
     } else {
       this.scale = 1.0; // * rescale_modifier;
     }
-
     if (this.animate_icons) {
       // this._animators().forEach((animator) => {
       //   animator.relayout();
@@ -660,9 +1204,11 @@ export default class Dash2DockLiteExt extends Extension {
   }
 
   _updateMultiMonitorPreference() {
-    this.createTheDocks();
-    this._updateLayout();
-    this.animate();
+    console.log('update monitors');
+    this.destroyDocks();
+    this._loTimer.runOnce(() => {
+      this.startUp();
+    }, 500);
   }
 
   _updateIconResolution(disable) {
@@ -677,7 +1223,7 @@ export default class Dash2DockLiteExt extends Extension {
           this._updateStyle();
         },
         500,
-        'debounceStyle'
+        'debounceStyle',
       );
     } else {
       this._hiTimer.runDebounced(this._debounceStyleSeq);
@@ -687,16 +1233,16 @@ export default class Dash2DockLiteExt extends Extension {
   _updateStyle(disable) {
     let styles = [];
 
-    let rads = [0, 8, 16, 20, 24, 28, 32];
+    let rads = [0, 8, 16, 20, 24, 28, 32, 36, 40, 42];
 
     // icons-shadow
     if (this.icon_shadow) {
       styles.push(
-        '#dash StIcon, #DockItemList StIcon {icon-shadow: rgba(0, 0, 0, 0.24) 0 2px 6px;}'
+        '.renderer_icon, #DockItemList StIcon {icon-shadow: rgba(0, 0, 0, 0.32) 0 2px 6px;}',
       );
-      styles.push(
-        '#dash StIcon:hover, #DockItemList StIcon:hover {icon-shadow: rgba(0, 0, 0, 0.24) 0 2px 8px;}'
-      );
+      // styles.push(
+      //   '#dash StIcon:hover, #DockItemList StIcon:hover {icon-shadow: rgba(0, 0, 0, 0.24) 0 2px 8px;}'
+      // );
     }
 
     // dash
@@ -707,13 +1253,13 @@ export default class Dash2DockLiteExt extends Extension {
         r = 0;
       }
       ss.push(`border-radius: ${r}px;`);
-
-      {
+      /*
+      if (!this.blur_background) {
         let rgba = this._style.rgba(this.background_color);
         ss.push(`background: rgba(${rgba});`);
       }
-
-      styles.push(`#d2dlBackground { ${ss.join(' ')}}`);
+      */
+      styles.push(`#d2daBackground { ${ss.join(' ')}}`);
     }
 
     // dash label
@@ -739,7 +1285,7 @@ export default class Dash2DockLiteExt extends Extension {
         ss.push(`color: rgba(${rgba});`);
       }
 
-      styles.push(`.dash-label { ${ss.join(' ')}}`);
+      styles.push(`.dash-label, .dash-label-popup { ${ss.join(' ')}}`);
     }
 
     // topbar
@@ -749,16 +1295,12 @@ export default class Dash2DockLiteExt extends Extension {
       if (this.topbar_border_thickness) {
         let rgba = this._style.rgba(this.topbar_border_color);
         ss.push(
-          `border: ${this.topbar_border_thickness}px solid rgba(${rgba}); border-top: 0px; border-left: 0px; border-right: 0px;`
+          `border: ${this.topbar_border_thickness}px solid rgba(${rgba}); border-top: 0px; border-left: 0px; border-right: 0px;`,
         );
       }
 
       // background
-      {
-        let rgba = this._style.rgba(this.topbar_background_color);
-        ss.push(`background: rgba(${rgba});`);
-      }
-
+      ss.push('background: transparent;');
       styles.push(`#panelBox #panel {${ss.join(' ')}}`);
 
       // foreground

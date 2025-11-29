@@ -1,19 +1,15 @@
 'use strict';
 
-import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import Meta from 'gi://Meta';
-import Shell from 'gi://Shell';
-import GObject from 'gi://GObject';
-import Clutter from 'gi://Clutter';
-import Graphene from 'gi://Graphene';
-import St from 'gi://St';
 
 import { DockPosition } from './dock.js';
+import {
+  get_distance_sqr,
+  get_distance,
+  isInRect,
+  isOverlapRect,
+} from './utils.js';
 
-const Point = Graphene.Point;
-
-const HIDE_ANIMATION_INTERVAL = 15;
-const HIDE_ANIMATION_INTERVAL_PAD = 15;
 const DEBOUNCE_HIDE_TIMEOUT = 120;
 const PRESSURE_SENSE_DISTANCE = 40;
 
@@ -61,13 +57,14 @@ export let AutoHide = class {
   }
 
   _getScaleFactor() {
-    let scaleFactor = this.dashContainer._monitor.geometry_scale;
+    //! use dock scale factor
+    let scaleFactor = this.dock._monitor.geometry_scale;
     return scaleFactor;
   }
 
   _onMotionEvent() {
     if (this.extension.pressure_sense && !this._shown) {
-      let monitor = this.dashContainer._monitor;
+      let monitor = this.dock._monitor;
       let pointer = global.get_pointer();
       if (this.extension.simulated_pointer) {
         pointer = [...this.extension.simulated_pointer];
@@ -90,14 +87,14 @@ export let AutoHide = class {
       let dwell_count =
         80 - 60 * (this.extension.pressure_sense_sensitivity || 0);
 
-      if (this.dashContainer.isVertical()) {
+      if (this.dock.isVertical()) {
         if (
           // right
-          (this.dashContainer._position == DockPosition.RIGHT &&
+          (this.dock._position == DockPosition.RIGHT &&
             dy < area &&
             pointer[0] > monitor.x + sw - 4) ||
           // left
-          (this.dashContainer._position == DockPosition.LEFT &&
+          (this.dock._position == DockPosition.LEFT &&
             dy < area &&
             pointer[0] < monitor.x + 4)
         ) {
@@ -146,34 +143,38 @@ export let AutoHide = class {
   }
 
   show() {
+    if (!this.dock._monitor || this.dock._monitor.inFullscreen) {
+      return;
+    }
     this._dwell = 0;
     this.frameDelay = 0;
     this._shown = true;
-    this.dashContainer.slideIn();
+    this.dock.slideIn();
   }
 
   hide() {
     this._dwell = 0;
     this.frameDelay = 10;
     this._shown = false;
-    this.dashContainer.slideOut();
+    this.dock.slideOut();
   }
 
   _track(window) {
+    //! window tracking should be made global
     if (!window._tracked) {
       // log('tracking...');
       window.connectObject(
         'position-changed',
         // this._debounceCheckHide.bind(this),
         () => {
-          this.dashContainer.extension.checkHide();
+          this.dock.extension.checkHide();
         },
         'size-changed',
         // this._debounceCheckHide.bind(this),
         () => {
-          this.dashContainer.extension.checkHide();
+          this.dock.extension.checkHide();
         },
-        this
+        this,
       );
       window._tracked = true;
     }
@@ -199,26 +200,22 @@ export let AutoHide = class {
       pointer = [...this.extension.simulated_pointer];
     }
 
-    // inaccurate
-    let pos = this.dashContainer._get_position(this.dashContainer.struts);
+    let pos = this.dock.struts.get_transformed_position();
     let rect = {
       x: pos[0],
       y: pos[1],
-      w: this.dashContainer.struts.width,
-      h: this.dashContainer.struts.height,
+      w: this.dock.struts.width,
+      h: this.dock.struts.height,
     };
+    //! change to struts rect
     let arect = [rect.x, rect.y, rect.w, rect.h];
-    let dash_position = [this.dashContainer.x, this.dashContainer.y];
 
     if (!this.extension.autohide_dash) {
       return false;
     }
 
     // within the dash
-    if (
-      this.dashContainer._isWithinDash(pointer) ||
-      this.dashContainer._isInRect(arect, pointer)
-    ) {
+    if (this.dock._isWithinDash(pointer) || isInRect(arect, pointer)) {
       return false;
     }
 
@@ -226,7 +223,11 @@ export let AutoHide = class {
       return true;
     }
 
-    let monitor = this.dashContainer._monitor;
+    if (this.dock._monitor && this.dock._monitor.inFullscreen) {
+      return true;
+    }
+
+    let monitor = this.dock._monitor;
     let actors = global.get_window_actors();
     let windows = actors.map((a) => {
       let w = a.get_meta_window();
@@ -235,17 +236,18 @@ export let AutoHide = class {
     });
     windows = windows.filter((w) => w.can_close());
     windows = windows.filter((w) => w.get_monitor() == monitor.index);
+    // windows = windows.filter((w) => !w.is_override_redirect());
     let workspace = global.workspace_manager.get_active_workspace_index();
     windows = windows.filter(
       (w) =>
-        workspace == w.get_workspace().index() && w.showing_on_its_workspace()
+        workspace == w.get_workspace().index() && w.showing_on_its_workspace(),
     );
     windows = windows.filter((w) => w.get_window_type() in handledWindowTypes);
 
     let isOverlapped = false;
-    let dock = this.dashContainer._get_position(this.dashContainer.struts);
-    dock.push(this.dashContainer.struts.width);
-    dock.push(this.dashContainer.struts.height);
+    let dockRect = this.dock.struts.get_transformed_position();
+    dockRect.push(this.dock.struts.width);
+    dockRect.push(this.dock.struts.height);
 
     windows.forEach((w) => {
       this._track(w);
@@ -254,7 +256,7 @@ export let AutoHide = class {
       let frame = w.get_frame_rect();
       let win = [frame.x, frame.y, frame.width, frame.height];
 
-      if (this.dashContainer._isOverlapRect(dock, win)) {
+      if (isOverlapRect(dockRect, win)) {
         isOverlapped = true;
       }
     });
@@ -271,7 +273,7 @@ export let AutoHide = class {
             this._checkHide();
           },
           DEBOUNCE_HIDE_TIMEOUT,
-          'debounceCheckHide'
+          'debounceCheckHide',
         );
       } else {
         this.extension._loTimer.runDebounced(this._debounceCheckSeq);

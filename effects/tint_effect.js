@@ -33,7 +33,7 @@ const getTintShaderSource = (extensionDir) => {
 /// https://gjs-docs.gnome.org/clutter10~10_api/clutter.shadereffect
 export const TintEffect = GObject.registerClass(
   {},
-  class TintEffect extends Clutter.ShaderEffect {
+  class D2DATintEffect extends Clutter.ShaderEffect {
     _init(params) {
       this._red = null;
       this._green = null;
@@ -146,5 +146,5 @@ export const TintEffect = GObject.registerClass(
       else if (paint_node) super.vfunc_paint_target(paint_node);
       else super.vfunc_paint_target();
     }
-  }
+  },
 );

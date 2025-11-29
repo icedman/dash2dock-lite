@@ -1,19 +1,19 @@
 'use strict';
 
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
-import { trySpawnCommandLine } from 'resource:///org/gnome/shell/misc/util.js';
+import { tempPath, trySpawnCommandLine } from './utils.js';
+// import { trySpawnCommandLine } from 'resource:///org/gnome/shell/misc/util.js';
 
 import Gio from 'gi://Gio';
-import St from 'gi://St';
+import GLib from 'gi://GLib';
 import Graphene from 'gi://Graphene';
-
-const Point = Graphene.Point;
 
 import { Clock } from './apps/clock.js';
 import { Calendar } from './apps/calendar.js';
 
 // sync with animator
 const CANVAS_SIZE = 120;
+const DEBOUNCE_CHECK_TIMEOUT = 750;
 
 class ServiceCounter {
   constructor(name, interval, callback, advance) {
@@ -51,7 +51,7 @@ export const Services = class {
             d._onClock();
           });
         },
-        -1
+        -1,
       ),
       new ServiceCounter(
         'calendar',
@@ -61,7 +61,7 @@ export const Services = class {
             d._onCalendar();
           });
         },
-        -1
+        -1,
       ),
       new ServiceCounter(
         'ping',
@@ -74,7 +74,7 @@ export const Services = class {
           // notifications
           this.checkNotifications();
         },
-        0
+        0,
       ),
     ];
 
@@ -87,13 +87,13 @@ export const Services = class {
       this._onMountAdded.bind(this),
       'mount-removed',
       this._onMountRemoved.bind(this),
-      this
+      this,
     );
 
     this._trashDir = Gio.File.new_for_uri('trash:///');
     this._trashMonitor = this._trashDir.monitor(
       Gio.FileMonitorFlags.WATCH_MOVES,
-      null
+      null,
     );
     this._trashMonitor.connectObject(
       'changed',
@@ -106,13 +106,51 @@ export const Services = class {
         }
         this.checkTrash();
       },
-      this
+      this,
     );
 
-    this._downloadsDir = Gio.File.new_for_path('Downloads');
+    this.setupDownloads();
+
+    //! ***services startup function are blocking calls. async these***
+    this.checkTrash();
+
+    this.checkNotifications();
+
+    this.checkMounts();
+    this._commitMounts();
+  }
+
+  disable() {
+    this._downloadsMonitor.disconnectObject(this);
+    this._downloadsMonitor = null;
+    this._services = [];
+    this._volumeMonitor.disconnectObject(this);
+    this._volumeMonitor = null;
+    this._trashMonitor.disconnectObject(this);
+    this._trashMonitor = null;
+    this._trashDir = null;
+  }
+
+  setupDownloads() {
+    if (this._downloadsMonitor) {
+      this._downloadsMonitor.disconnectObject(this);
+      this._downloadsMonitor = null;
+    }
+    this._downloadsUserDir = this.extension.downloads_path;
+    let fn = Gio.File.new_for_path(this._downloadsUserDir);
+    if (!fn.query_exists(null)) {
+      this._downloadsUserDir = null;
+    }
+    if (this._downloadsUserDir) {
+      this._downloadsDir = Gio.File.new_for_path(this._downloadsUserDir);
+    } else {
+      // fallback
+      this._downloadsDir = Gio.File.new_for_path('Downloads');
+    }
+
     this._downloadsMonitor = this._downloadsDir.monitor(
       Gio.FileMonitorFlags.WATCH_MOVES,
-      null
+      null,
     );
     this._downloadsMonitor.connectObject(
       'changed',
@@ -123,26 +161,12 @@ export const Services = class {
           case Gio.FileMonitorEvent.MOVED_IN:
             return;
         }
-        this.checkDownloads();
+        this._debounceCheckDownloads();
       },
-      this
+      this,
     );
 
-    this.checkTrash();
-    this.checkDownloads();
-    this.checkNotifications();
-
-    this.checkMounts();
-    this._commitMounts();
-  }
-
-  disable() {
-    this._services = [];
-    this._volumeMonitor.disconnectObject(this);
-    this._volumeMonitor = null;
-    this._trashMonitor.disconnectObject(this);
-    this._trashMonitor = null;
-    this._trashDir = null;
+    this._debounceCheckDownloads();
   }
 
   _commitMounts() {
@@ -162,7 +186,7 @@ export const Services = class {
 
     this.last_mounted = mount;
     let basename = mount.get_default_location().get_basename();
-    let appname = `mount-${basename}-dash2dock-lite.desktop`;
+    // let appname = `mount-${basename}-dash2dock-lite.desktop`;
     this.setupMountIcon(mount);
     this.extension.animate();
     return true;
@@ -171,7 +195,7 @@ export const Services = class {
   _onMountRemoved(monitor, mount) {
     let basename = mount.get_default_location().get_basename();
     let appname = `mount-${basename}-dash2dock-lite.desktop`;
-    let mount_id = `/tmp/${appname}`;
+    let mount_id = tempPath(appname);
     delete this._mounts[mount_id];
     this.extension.animate();
   }
@@ -185,7 +209,7 @@ export const Services = class {
   setupTrashIcon() {
     let extension_path = this.extension.path;
     let appname = `trash-dash2dock-lite.desktop`;
-    let app_id = `/tmp/${appname}`;
+    let app_id = tempPath(appname);
     let fn = Gio.File.new_for_path(app_id);
     let open_app = 'nautilus --select';
 
@@ -201,7 +225,7 @@ export const Services = class {
       null,
       false,
       Gio.FileCreateFlags.REPLACE_DESTINATION,
-      null
+      null,
     );
   }
 
@@ -210,7 +234,7 @@ export const Services = class {
     let full_path = Gio.file_new_for_path(path).get_path();
     let extension_path = this.extension.path;
     let appname = `${name}-dash2dock-lite.desktop`;
-    let app_id = `/tmp/${appname}`;
+    let app_id = tempPath(appname);
     let fn = Gio.File.new_for_path(app_id);
     // let open_app = 'xdg-open';
     let open_app = 'nautilus --select';
@@ -221,7 +245,7 @@ export const Services = class {
       null,
       false,
       Gio.FileCreateFlags.REPLACE_DESTINATION,
-      null
+      null,
     );
   }
 
@@ -231,25 +255,32 @@ export const Services = class {
       'downloads',
       'Downloads',
       'folder-downloads',
-      'Downloads'
+      'Downloads',
     );
     this.setupFolderIcon(
       'documents',
       'Documents',
       'folder-documents',
-      'Documents'
+      'Documents',
     );
   }
 
   setupMountIcon(mount) {
     let basename = mount.get_default_location().get_basename();
+    if (basename.startsWith('/')) {
+      // why does this happen?? issue #125
+      return;
+    }
     let label = mount.get_name();
     let appname = `mount-${basename}-dash2dock-lite.desktop`;
     let fullpath = mount.get_default_location().get_path();
-    let icon = mount.get_icon().names[0] || 'drive-harddisk-solidstate';
+    let icon = 'drive-harddisk-solidstate';
+    if (mount.get_icon() && mount.get_icon().names) {
+        icon = mount.get_icon().names[0] || icon;
+    }
     let mount_exec = 'echo "not implemented"';
     let unmount_exec = `umount ${fullpath}`;
-    let mount_id = `/tmp/${appname}`;
+    let mount_id = tempPath(appname);
     let fn = Gio.File.new_for_path(mount_id);
 
     if (!fn.query_exists(null)) {
@@ -259,7 +290,7 @@ export const Services = class {
         null,
         false,
         Gio.FileCreateFlags.REPLACE_DESTINATION,
-        null
+        null,
       );
     }
 
@@ -269,45 +300,7 @@ export const Services = class {
   checkNotifications() {
     if (this._disableNotifications > 4) return;
 
-    let media;
-    let messages;
-
-    try {
-      let tryBox = [
-        Main.panel._centerBox,
-        Main.panel._leftBox,
-        Main.panel._rightBox,
-      ];
-      for (let i = 0; i < 3; i++) {
-        let cc = tryBox[i].get_children();
-        cc.forEach((c) => {
-          if (media && messages) {
-            return;
-          }
-          media =
-            c.child._delegate._messageList._scrollView.last_child.get_children()[0];
-          messages =
-            c.child._delegate._messageList._scrollView.last_child.get_children()[1];
-        });
-        if (media && messages) {
-          break;
-        }
-      }
-    } catch (err) {
-      // fail silently - don't crash
-      console.log(err);
-      this._disableNotifications++;
-    }
-
-    if (!media || !messages) {
-      return;
-    }
-
-    this._notifications = messages._messages || [];
-    if (!this._notifications.length) {
-      this._notifications = [];
-    }
-
+    let sources = Main.messageTray.getSources();
     this._appNotices = this._appNotices || {};
 
     Object.keys(this._appNotices).forEach((k) => {
@@ -319,17 +312,16 @@ export const Services = class {
       'org.gnome.Evolution-alarm-notify.desktop': 'org.gnome.Calendar.desktop',
     };
 
-    this._notifications.forEach((n) => {
+    sources.forEach((source) => {
       let appId = null;
-      if (!n.notification) return;
-      if (n.notification.source.app) {
-        appId = n.notification.source.app.get_id();
+      if (source.app) {
+        appId = source.app.get_id();
       }
-      if (!appId && n.notification.source._app) {
-        appId = n.notification.source._app.get_id();
+      if (!appId && source._app) {
+        appId = source._app.get_id();
       }
       if (!appId) {
-        appId = n.notification.source._appId;
+        appId = source._appId;
       }
       if (!appId) {
         appId = '?';
@@ -343,13 +335,10 @@ export const Services = class {
           count: 0,
           previous: 0,
           urgency: 0,
-          source: n.notification.source,
+          source: source,
         };
       }
-      this._appNotices[appId].count++;
-      if (this._appNotices[appId].urgency < n.notification.urgency) {
-        this._appNotices[appId].urgency = n.notification.urgency;
-      }
+      this._appNotices[appId].count = source.count;
       this._appNotices[`${appId}`] = this._appNotices[appId];
       if (!appId.endsWith('desktop')) {
         this._appNotices[`${appId}.desktop`] = this._appNotices[appId];
@@ -382,7 +371,7 @@ export const Services = class {
     let iter = this._trashDir.enumerate_children(
       'standard::*',
       Gio.FileQueryInfoFlags.NONE,
-      null
+      null,
     );
     let prev = this.trashFull;
     this.trashFull = iter.next_file(null) != null;
@@ -392,19 +381,140 @@ export const Services = class {
     return this.trashFull;
   }
 
-  async checkDownloads() {
-    this._trySpawnCommandLine = trySpawnCommandLine;
-    if (!this.extension.downloads_icon) return;
+  async checkRecentFilesInFolder(path) {
+    console.log(`checking ${path}`);
+    let maxs = [5, 8, 10, 12, 15, 20, 25];
+    let max_recent_items = maxs[this.extension.max_recent_items || 0];
+    let downloadFiles = [];
+    let downloadFilesLength = 0;
+
+    let directory = Gio.File.new_for_path(path);
+    let enumerator = directory.enumerate_children(
+      [
+        Gio.FILE_ATTRIBUTE_STANDARD_CONTENT_TYPE,
+        Gio.FILE_ATTRIBUTE_STANDARD_NAME,
+        Gio.FILE_ATTRIBUTE_STANDARD_ICON,
+        Gio.FILE_ATTRIBUTE_TIME_MODIFIED,
+      ].join(','),
+      Gio.FileQueryInfoFlags.NONE,
+      null,
+    );
+
+    let fileInfo;
+    while ((fileInfo = enumerator.next_file(null)) !== null) {
+      let fileName = fileInfo.get_name();
+      let fileModified = fileInfo.get_modification_time();
+      downloadFiles.push({
+        index: 0,
+        name: fileName,
+        display: fileName,
+        icon: fileInfo.get_icon().get_names()[0] ?? 'file',
+        type: fileInfo.get_content_type(),
+        path: [path, fileName].join('/'),
+        date: fileModified ?? { tv_sec: 0 },
+      });
+    }
+
+    downloadFilesLength = downloadFiles.length;
+    downloadFiles.sort((a, b) => {
+      return a.date.tv_sec > b.date.tv_sec ? -1 : 1;
+    });
+
+    let index = 0;
+    downloadFiles.forEach((f) => {
+      f.index = index++;
+    });
+
+    downloadFiles.splice(max_recent_items);
+    // console.log(downloadFiles);
+
+    return Promise.resolve([downloadFiles, downloadFilesLength]);
+  }
+
+  /*
+  async _checkRecentFilesInFolder(path) {
+    console.log(`checking ${path}`);
+    let maxs = [5, 10, 15, 20, 25];
+    let max_recent_items = maxs[this.extension.max_recent_items || 0];
+
+    let downloadFiles = [];
+    let downloadFilesLength = 0;
     try {
-      let path = this._downloadsDir.get_path();
-      let cmd = `${this.extension.path}/apps/list-downloads.sh`;
-      await trySpawnCommandLine(cmd);
+      let [res, pid, in_fd, out_fd, err_fd] = GLib.spawn_async_with_pipes(
+        null,
+        ['/bin/ls', '-1t', `${path}`],
+        null,
+        0,
+        null
+      );
+
+      let out_reader = new Gio.DataInputStream({
+        base_stream: new Gio.UnixInputStream({ fd: out_fd }),
+      });
+
+      let idx = 0;
+      for (let i = 0; i < 100 && idx < 30; i++) {
+        let [line, size] = out_reader.read_line_utf8(null);
+        if (line == null) break;
+        // const res =
+        //   /\s([a-zA-Z]{3})\s{1,3}([0-9]{1,3})\s{1,3}([0-9:]{4,8})\s{1,3}(.*)/.exec(
+        //     line
+        //   );
+        // if (res) {
+        let fileName = line.trim();
+        const fileStat = {
+          name: fileName,
+        };
+        if (fileStat.name && (fileStat.name == '.' || fileStat.name == '..'))
+          continue;
+        fileStat.index = idx++;
+
+        const file = Gio.File.new_for_path(`Downloads/${fileName}`);
+        const fileInfo = file.query_info(
+          'standard::*,unix::uid',
+          Gio.FileQueryInfoFlags.NOFOLLOW_SYMLINKS,
+          null
+        );
+
+        if (file && fileInfo && fileStat.index < max_recent_items) {
+          downloadFiles.push({
+            index: fileStat.index,
+            name: fileStat.name,
+            display: fileInfo.get_display_name(),
+            path: file.get_path(),
+            icon: fileInfo.get_icon().get_names()[0] ?? 'file',
+            type: fileInfo.get_content_type(),
+            date: fileStat.date ?? '',
+          });
+        }
+        downloadFilesLength++;
+        // }
+      }
     } catch (err) {
       console.log(err);
     }
 
-    let fileStat = {};
-    let fn = Gio.File.new_for_path('/tmp/downloads.txt');
+    return [downloadFiles, downloadFilesLength];
+  }
+  */
+
+  async checkRecentFilesFromRecentManager() {
+    console.log('checking recent manager');
+    let maxs = [5, 10, 15, 20, 25];
+    let max_recent_items = maxs[this.extension.max_recent_items || 0];
+
+    let recentFiles = [];
+    let recentFilesLength = 0;
+
+    try {
+      await trySpawnCommandLine(
+        `/usr/bin/env -S gjs -m "${this.extension.path}/apps/recents.js"`,
+      );
+    } catch (err) {
+      console.log(err);
+    }
+
+    let fn = Gio.File.new_for_path(tempPath(appname));
     if (fn.query_exists(null)) {
       try {
         const [success, contents] = fn.load_contents(null);
@@ -413,53 +523,63 @@ export const Services = class {
         let idx = 0;
         let lines = contentsString.split('\n');
         lines.forEach((l) => {
-          let res =
-            /\s([a-zA-Z]{3})\s{1,3}([0-9]{1,3})\s{1,3}([0-9:]{4,8})\s{1,3}(.*)/.exec(
-              l
-            );
-          if (res) {
-            fileStat[res[4]] = {
-              index: idx,
-              name: res[4],
-              date: `${res[1]}. ${res[2]}, ${res[3]}`,
-            };
-            idx++;
+          let res = l.split('|');
+          if (res.length != 3) return;
+          const file = Gio.File.new_for_path(res[1]);
+          if (!file.query_exists(null)) {
+            return;
           }
+          if (recentFiles.length < max_recent_items) {
+            const fileStat = {
+              index: idx++,
+              name: file.get_basename(),
+              icon: res[2],
+              path: file.get_path(),
+              type: 'file',
+            };
+            recentFiles.push(fileStat);
+          }
+          recentFilesLength++;
         });
       } catch (err) {
         console.log(err);
       }
     }
+    return [recentFiles, recentFilesLength];
+  }
 
-    let iter = this._downloadsDir.enumerate_children(
-      'standard::*',
-      Gio.FileQueryInfoFlags.NONE,
-      null
-    );
+  async checkRecents() {
+    try {
+      [this._recentFiles, this._recentFilesLength] =
+        await this.checkRecentFilesFromRecentManager();
+    } catch (err) {
+      console.log(err);
+    }
+  }
 
-    // console.log(fileStat);
+  async checkDownloads() {
+    try {
+      let path = this._downloadsDir.get_path();
+      [this._downloadFiles, this._downloadFilesLength] =
+        await this.checkRecentFilesInFolder(path);
+    } catch (err) {
+      console.log(err);
+    }
+  }
 
-    this._downloadFilesLength = Object.keys(fileStat).length;
-    let maxs = [5, 10, 15, 20, 25];
-    let max_recent_items = maxs[this.extension.max_recent_items];
-
-    this._downloadFiles = [];
-    let f = iter.next_file(null);
-    while (f) {
-      if (!f.get_is_hidden()) {
-        let name = f.get_name();
-        if (fileStat[name]?.index <= max_recent_items + 1) {
-          this._downloadFiles.push({
-            index: fileStat[name]?.index,
-            name,
-            display: f.get_display_name(),
-            icon: f.get_icon().get_names()[0] ?? 'folder',
-            type: f.get_content_type(),
-            date: fileStat[name]?.date ?? '',
-          });
-        }
+  _debounceCheckDownloads() {
+    if (this.extension._loTimer) {
+      if (!this._debounceCheckSeq) {
+        this._debounceCheckSeq = this.extension._loTimer.runDebounced(
+          () => {
+            this.checkDownloads();
+          },
+          DEBOUNCE_CHECK_TIMEOUT,
+          'debounceCheckDownloads',
+        );
+      } else {
+        this.extension._loTimer.runDebounced(this._debounceCheckSeq);
       }
-      f = iter.next_file(null);
     }
   }
 
@@ -490,6 +610,7 @@ export const Services = class {
     // added devices will subsequently be on mounted events
   }
 
+  //! this is out of place - services should only do background process - no rendering
   updateIcon(item, settings) {
     if (!item) {
       return;
@@ -519,20 +640,23 @@ export const Services = class {
           clock = new Clock(CANVAS_SIZE, dock.extension._widgetStyle);
           dock._clock = clock;
           item._clock = clock;
-          item._appwell.first_child.add_child(clock);
+          item._image = clock;
+          // item._appwell.first_child.add_child(clock);
+          dock.renderArea.add_child(clock);
         }
         if (clock) {
           clock._icon = icon;
-          clock.width = item._icon.width;
-          clock.height = item._icon.height;
-          clock.set_scale(item._icon.scaleX, item._icon.scaleY);
+          clock.width = item._renderer.width * item._renderer.scaleX;
+          clock.height = clock.width;
+          // let toScale = item._scale;
+          // clock.set_scale(toScale, toScale);
           let canvasScale = clock.width / (clock._canvas.width + 2);
           clock._canvas.set_scale(canvasScale, canvasScale);
-          clock.pivot_point = item._icon.pivot_point;
-          clock.translationX = item._icon.translationX;
-          clock.translationY = item._icon.translationY;
+          clock.x = item._renderer.x;
+          clock.y = item._renderer.y;
+          clock.opacity = item._renderer.opacity;
           clock.show();
-          item._icon.visible = !clock._hideIcon;
+          item._renderer.opacity = clock.shouldHideIcon() ? 0 : 255;
         }
       } else {
         let clock = item._clock;
@@ -544,29 +668,32 @@ export const Services = class {
     // calender
     if (icon.icon_name == 'org.gnome.Calendar') {
       if (this.extension.calendar_icon) {
-        let calender = item._calender;
-        if (!calender) {
-          calender = new Calendar(CANVAS_SIZE, dock.extension._widgetStyle);
-          dock._calender = calender;
-          item._calender = calender;
-          item._appwell.first_child.add_child(calender);
+        let calendar = item._calendar;
+        if (!calendar) {
+          calendar = new Calendar(CANVAS_SIZE, dock.extension._widgetStyle);
+          dock._calendar = calendar;
+          item._calendar = calendar;
+          item._image = calendar;
+          dock.renderArea.add_child(calendar);
         }
-        if (calender) {
-          calender.width = item._icon.width;
-          calender.height = item._icon.height;
-          calender.set_scale(item._icon.scaleX, item._icon.scaleY);
-          let canvasScale = calender.width / (calender._canvas.width + 2);
-          calender._canvas.set_scale(canvasScale, canvasScale);
-          calender.pivot_point = item._icon.pivot_point;
-          calender.translationX = item._icon.translationX;
-          calender.translationY = item._icon.translationY;
-          calender.show();
-          item._icon.visible = !calender._hideIcon;
+        if (calendar) {
+          calendar._icon = icon;
+          calendar.width = item._renderer.width * item._renderer.scaleX;
+          calendar.height = calendar.width;
+          // let toScale = item._scale;
+          // calendar.set_scale(toScale, toScale);
+          let canvasScale = calendar.width / (calendar._canvas.width + 2);
+          calendar._canvas.set_scale(canvasScale, canvasScale);
+          calendar.x = item._renderer.x;
+          calendar.y = item._renderer.y;
+          calendar.opacity = item._renderer.opacity;
+          calendar.show();
+          item._renderer.opacity = calendar.shouldHideIcon() ? 0 : 255;
         }
       } else {
-        let calender = item._calender;
+        let calendar = item._calendar;
         item._icon.visible = true;
-        calender?.hide();
+        calendar?.hide();
       }
     }
   }

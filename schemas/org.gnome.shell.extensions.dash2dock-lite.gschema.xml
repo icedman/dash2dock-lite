@@ -95,11 +95,21 @@
         <default>0</default>
         <summary>Border thickness</summary>
         <description>Border thickness.</description>
+		</key>
+		<key type="b" name="topbar-blur-background">
+        <default>false</default>
+        <summary>Enable background blur</summary>
+        <description></description>
     </key>
     <key type="b" name="customize-label">
         <default>false</default>
         <summary>Customize the label</summary>
         <description>Customize the label with border and color.</description>
+    </key>
+    <key type="b" name="hide-labels">
+        <default>false</default>
+        <summary>Hide the label</summary>
+        <description>Do not show the labels at all.</description>
     </key>
     <key type="(dddd)" name="label-background-color">
         <default>(0.,0.,0.,0.25)</default>
@@ -176,6 +186,16 @@
         <summary>Show documents icon</summary>
         <description>Show a dynamic documents icon.</description>
     </key>
+    <key type="s" name="documents-path">
+        <default>""</default>
+        <summary>Documents path</summary>
+        <description>Path to monitor</description>
+    </key>
+    <key type="s" name="downloads-path">
+        <default>""</default>
+        <summary>Downloads path</summary>
+        <description>Path to monitor</description>
+    </key>
     <key type="i" name="max-recent-items">
         <default>0</default>
         <summary>Maximum recent items</summary>
@@ -241,6 +261,11 @@
         <summary>Icons bounce</summary>
         <description>Icon bounce when clicked.</description>
     </key>
+    <key type="d" name="items-pullout-angle">
+        <default>0.5</default>
+        <summary>Items angle</summary>
+        <description>Folder items pullout angle.</description>
+    </key>
     <key type="d" name="edge-distance">
         <default>0</default>
         <summary>Edge distance</summary>
@@ -291,6 +316,11 @@
         <summary>Running window indicator</summary>
         <description>Customize the running window indicator style.</description>
     </key>
+    <key type="i" name="running-indicator-size">
+        <default>0</default>
+        <summary>Running window indicator size</summary>
+        <description>Customize the running window indicator size.</description>
+    </key>
     <key type="(dddd)" name="running-indicator-color">
         <default>(1.,1.,1.,1.)</default>
         <summary>Running window indicator color</summary>
@@ -300,6 +330,11 @@
         <default>0</default>
         <summary>Notification badge</summary>
         <description>Customize the notification badge style.</description>
+    </key>
+    <key type="i" name="notification-badge-size">
+        <default>0</default>
+        <summary>Notification badge size</summary>
+        <description>Customize the notification badge size.</description>
     </key>
     <key type="(dddd)" name="notification-badge-color">
         <default>(1.,1.,1.,1.)</default>
@@ -315,6 +350,16 @@
         <default>0</default>
         <summary>Icon quality</summary>
         <description>Set icon resolution to improve rendering quality.</description>
+    </key>
+    <key type="i" name="blur-resolution">
+        <default>0</default>
+        <summary>Blur quality</summary>
+        <description>Set blur resolution.</description>
+    </key>
+    <key type="b" name="disable-blur-at-overview">
+        <default>true</default>
+        <summary>Disable blur at overview</summary>
+        <description>Disable blur at overview</description>
     </key>
     <key type="i" name="icon-effect">
         <default>0</default>
@@ -385,6 +430,16 @@
         <default>0</default>
         <summary>Theme</summary>
         <description>Select a theme.</description>
+    </key>
+    <key type="b" name="blur-background">
+        <default>false</default>
+        <summary>Enable background blur</summary>
+        <description></description>
+    </key>
+    <key type="i" name="multi-monitor-filter">
+        <default>0</default>
+        <summary>Multi-Monitor Filter</summary>
+        <description>Filter actions on multi-monitor.</description>
     </key>
   </schema>
 </schemalist>

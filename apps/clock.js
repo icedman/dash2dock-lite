@@ -25,7 +25,7 @@ function _drawFrame(ctx, size, settings) {
     bgSize,
     bgSize,
     0,
-    radius
+    radius,
   );
   // frame border
   if (borderWidth) {
@@ -37,7 +37,7 @@ function _drawFrame(ctx, size, settings) {
       bgSize,
       bgSize,
       borderWidth,
-      radius
+      radius,
     );
   }
   ctx.restore();
@@ -78,7 +78,7 @@ function _drawMarks(ctx, size, settings) {
       // size / 33,
       a * (Math.PI / 180),
       -Math.floor((size * 0.9) / 2.7),
-      -Math.floor(mark / 2.7)
+      -Math.floor(mark / 2.7),
     );
   }
 
@@ -97,7 +97,7 @@ function _drawHands(ctx, size, date, settings) {
     minute,
     size / 20,
     (h0 * 30 + (m0 * 30) / 60) * (Math.PI / 180),
-    -Math.floor(size / 3.7)
+    -Math.floor(size / 3.7),
   );
   Drawing.draw_circle(ctx, minute, 0, 0, size / 12);
   Drawing.draw_rotated_line(
@@ -105,7 +105,7 @@ function _drawHands(ctx, size, date, settings) {
     hour,
     size / 33,
     m0 * 6 * (Math.PI / 180),
-    -Math.floor(size / 2.7)
+    -Math.floor(size / 2.7),
   );
 }
 
@@ -130,6 +130,7 @@ export const Clock = GObject.registerClass(
 
       let size = x || 400;
 
+      this.settings = settings;
       this._canvas = new ClockCanvas(settings);
       this._canvas.width = size;
       this._canvas.height = size;
@@ -137,9 +138,14 @@ export const Clock = GObject.registerClass(
     }
 
     redraw() {
+      this._canvas.settings = this.settings;
       this._canvas.redraw();
     }
-  }
+
+    shouldHideIcon() {
+      return this._canvas && this._canvas._hideIcon;
+    }
+  },
 );
 
 const ClockCanvas = GObject.registerClass(
@@ -209,12 +215,11 @@ const ClockCanvas = GObject.registerClass(
         },
       };
 
-      // clock_style = 4;
-      // console.log(this.settings);
+      clock_style = clock_style % 7;
 
       switch (clock_style) {
         // framed clocks
-        case 9: {
+        case 7: {
           style.dial.size = 0.92;
           style.dial.background = light_color;
           style.hands.minute = dark_color;
@@ -223,14 +228,14 @@ const ClockCanvas = GObject.registerClass(
           style.marks.width = 2;
           break;
         }
-        case 8: {
+        case 6: {
           style.dial.size = 0.92;
           style.frame.background = dark_foreground;
           style.marks.color = dark_foreground;
           style.marks.width = 2;
           break;
         }
-        case 7: {
+        case 5: {
           style.dial.size = 0.92;
           style.dial.background = light_color;
           style.hands.minute = dark_color;
@@ -241,7 +246,7 @@ const ClockCanvas = GObject.registerClass(
           };
           break;
         }
-        case 6: {
+        case 4: {
           style.dial.size = 0.92;
           style.frame.background = dark_foreground;
           style.marks.color = dark_foreground;
@@ -252,9 +257,8 @@ const ClockCanvas = GObject.registerClass(
           };
           break;
         }
-
         // round clocks
-        case 5: {
+        case 3: {
           style.dial.size = 0.95;
           style.dial.border = dark_color;
           style.dial.borderWidth = 3;
@@ -269,7 +273,7 @@ const ClockCanvas = GObject.registerClass(
           hideIcon = true;
           break;
         }
-        case 4: {
+        case 2: {
           style.dial.size = 0.95;
           style.dial.border = light_color;
           style.dial.borderWidth = 3;
@@ -284,7 +288,7 @@ const ClockCanvas = GObject.registerClass(
           break;
         }
 
-        case 3: {
+        case 1: {
           style.dial.size = 0.95;
           style.dial.border = dark_color;
           style.dial.borderWidth = 3;
@@ -298,7 +302,8 @@ const ClockCanvas = GObject.registerClass(
           hideIcon = true;
           break;
         }
-        case 2: {
+        case 0:
+        default: {
           style.dial.size = 0.95;
           style.dial.border = light_color;
           style.dial.borderWidth = 3;
@@ -313,30 +318,31 @@ const ClockCanvas = GObject.registerClass(
         }
 
         // basic clocks
-        case 1: {
-          style.dial.background = light_color;
-          style.hands.minute = dark_color;
-          style = {
-            ...style,
-            marks: null,
-            frame: null,
-          };
-          break;
-        }
-        default:
-        case 0:
-          style = {
-            ...style,
-            marks: null,
-            frame: null,
-          };
-          break;
+        // case 1: {
+        //   style.dial.background = light_color;
+        //   style.hands.minute = dark_color;
+        //   style = {
+        //     ...style,
+        //     marks: null,
+        //     frame: null,
+        //   };
+        //   break;
+        // }
+        // default:
+        // case 0:
+        //   style = {
+        //     ...style,
+        //     marks: null,
+        //     frame: null,
+        //   };
+        //   break;
       }
 
       _drawClock(ctx, new Date(), 0, 0, size, style);
 
-      this._hideIcon = hideIcon;
+      // this._hideIcon = hideIcon;
+      this._hideIcon = true;
       ctx.$dispose();
     }
-  }
+  },
 );

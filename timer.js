@@ -35,7 +35,7 @@ export const Timer = class {
     this._timeoutId = GLib.timeout_add(
       GLib.PRIORITY_DEFAULT,
       this._resolution,
-      this.onUpdate.bind(this)
+      this.onUpdate.bind(this),
     );
     this._hibernating = false;
     this.onStart();
@@ -240,6 +240,30 @@ export const Timer = class {
         s._time += dt;
         if (s._time >= s._delay) {
           s._func(s);
+          s._time -= s._delay;
+        }
+      },
+    };
+    return this.subscribe(obj);
+  }
+
+  runUntil(func, delay, name) {
+    if (typeof func === 'object') {
+      func._time = 0;
+      return this.subscribe(func);
+    }
+    let obj = {
+      _name: name,
+      _type: 'until',
+      _time: 0,
+      _delay: delay,
+      _func: func,
+      onUpdate: (s, dt) => {
+        s._time += dt;
+        if (s._time >= s._delay) {
+          if (s._func(s)) {
+            this.unsubscribe(s);
+          }
           s._time -= s._delay;
         }
       },

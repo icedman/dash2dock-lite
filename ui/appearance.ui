@@ -9,7 +9,7 @@
         <child>
           <object class="AdwActionRow">
             <property name="title" translatable="yes">Theme</property>
-            <property name="subtitle" translatable="yes">Select or Export a theme (/tmp/theme.json'). </property>
+            <property name="subtitle" translatable="yes">Select a theme or Export current settings.</property>
             <property name="activatable-widget">theme</property>
             <child>
               <object class="GtkMenuButton" id="theme">
@@ -18,6 +18,19 @@
                 <!-- <property name="model">theme-model</property> -->
               </object>
             </child>
+          </object>
+        </child>
+      </object>
+    </child>
+    <child>
+      <object class="AdwPreferencesGroup" id="theme-export-notice">
+        <property name="visible">false</property>
+        <property name="title" translatable="yes"/>
+        <property name="description" translatable="yes"/>
+        <child>
+          <object class="AdwActionRow">
+            <property name="title" translatable="yes">Notice</property>
+            <property name="subtitle" translatable="yes">Edit your exported style at /tmp/theme.json and copy them to {HOME}/.config/d2da/themes/.</property>
           </object>
         </child>
       </object>
@@ -270,6 +283,19 @@
             </child>
           </object>
         </child>
+        <child>
+          <object class="AdwActionRow">
+            <property name="visible">true</property>
+            <property name="title" translatable="yes">Background Blur</property>
+            <property name="subtitle" translatable="yes">Add background blur with current wallpaper. Requires imagemagick installed.</property>
+            <property name="activatable-widget">blur-background</property>
+            <child>
+              <object class="GtkSwitch" id="blur-background">
+                <property name="valign">center</property>
+              </object>
+            </child>
+          </object>
+        </child>
       </object>
     </child>
     <child>
@@ -285,6 +311,19 @@
               <object class="GtkDropDown" id="running-indicator-style">
                 <property name="valign">center</property>
                 <property name="model">running-indicator-style-model</property>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="AdwActionRow">
+            <property name="title" translatable="yes">Running Indicator Size</property>
+            <property name="subtitle" translatable="yes">Set running app indicator size.</property>
+            <property name="activatable-widget">running-indicator-size</property>
+            <child>
+              <object class="GtkDropDown" id="running-indicator-size">
+                <property name="valign">center</property>
+                <property name="model">running-indicator-size-model</property>
               </object>
             </child>
           </object>
@@ -315,6 +354,19 @@
               <object class="GtkDropDown" id="notification-badge-style">
                 <property name="valign">center</property>
                 <property name="model">notification-badge-style-model</property>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="AdwActionRow">
+            <property name="title" translatable="yes">Notification Badge Size</property>
+            <property name="subtitle" translatable="yes">Set the notification badge size.</property>
+            <property name="activatable-widget">notification-badge-size</property>
+            <child>
+              <object class="GtkDropDown" id="notification-badge-size">
+                <property name="valign">center</property>
+                <property name="model">notification-badge-size-model</property>
               </object>
             </child>
           </object>
@@ -397,6 +449,19 @@
                 <property name="height-request">45px</property>
                 <property name="show-editor">true</property>
                 <property name="use-alpha">true</property>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="AdwActionRow">
+            <property name="visible">true</property>
+            <property name="title" translatable="yes">Background Blur</property>
+            <property name="subtitle" translatable="yes">Add background blur with current wallpaper. Requires imagemagick installed.</property>
+            <property name="activatable-widget">topbar-blur-background</property>
+            <child>
+              <object class="GtkSwitch" id="topbar-blur-background">
+                <property name="valign">center</property>
               </object>
             </child>
           </object>
@@ -519,6 +584,18 @@
             </child>
           </object>
         </child>
+        <child>
+          <object class="AdwActionRow">
+            <property name="title" translatable="yes">Hide Labels</property>
+            <property name="subtitle" translatable="yes">Do not show dock icon labels.</property>
+            <property name="activatable-widget">hide-labels</property>
+            <child>
+              <object class="GtkSwitch" id="hide-labels">
+                <property name="valign">center</property>
+              </object>
+            </child>
+          </object>
+        </child>
       </object>
     </child>
   </object>
@@ -549,7 +626,7 @@
   </object>
   <object class="GtkAdjustment" id="border-radius-adjust">
     <property name="lower">0</property>
-    <property name="upper">6</property>
+    <property name="upper">8</property>
     <property name="step-increment">1</property>
   </object>
   <object class="GtkAdjustment" id="edge-distance-adjust">
@@ -607,6 +684,20 @@
       <item>1px</item>
       <item>2px</item>
       <item>3px</item>
+    </items>
+  </object>
+  <object class="GtkStringList" id="running-indicator-size-model">
+    <items>
+      <item>Normal</item>
+      <item>Small</item>
+      <item>Big</item>
+    </items>
+  </object>
+  <object class="GtkStringList" id="notification-badge-size-model">
+    <items>
+      <item>Normal</item>
+      <item>Small</item>
+      <item>Big</item>
     </items>
   </object>
   <object class="GtkStringList" id="theme-model">

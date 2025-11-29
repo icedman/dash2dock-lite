@@ -28,7 +28,7 @@ export const Dot = GObject.registerClass(
       this.visible = true;
       this._canvas.redraw();
     }
-  }
+  },
 );
 
 const DotCanvas = GObject.registerClass(
@@ -54,11 +54,18 @@ const DotCanvas = GObject.registerClass(
         this.state.color != s.color ||
         this.state.style != s.style ||
         this.state.rotate != s.rotate ||
-        this.state.translate != s.translate
+        this.state.translate != s.translate ||
+        this.state.scale != s.scale ||
+        this.state.size != s.size
       ) {
         this.state = s;
         this.redraw();
       }
+    }
+
+    dot_size(h) {
+      let sz = [0.8, 0.5, 1.0];
+      return h * (sz[this.state.size] || 1);
     }
 
     vfunc_repaint() {
@@ -84,8 +91,8 @@ const DotCanvas = GObject.registerClass(
       if (this.state.translate) {
         ctx.translate(
           this.state.translate[0] * width,
-          this.state.translate[1]
-        ) * height;
+          this.state.translate[1] * height,
+        );
       }
       if (this.state.rotate) {
         ctx.rotate((this.state.rotate * 3.14) / 180);
@@ -108,9 +115,9 @@ const DotCanvas = GObject.registerClass(
 
       let count = state.count;
       if (count > 4) count = 4;
-      let height = this._barHeight;
+      let height = this.dot_size(this._barHeight);
       let width = size - this._padding * 2;
-      ctx.translate(this._padding, size - height);
+      ctx.translate(this._padding, size - height * 2.5);
 
       let sz = width / 20;
       let spacing = Math.ceil(width / 18); // separation between the dots
@@ -136,7 +143,7 @@ const DotCanvas = GObject.registerClass(
 
       let count = state.count;
       if (count > 4) count = 4;
-      let height = this._barHeight + 2;
+      let height = this.dot_size(this._barHeight + 2);
       let width = size - this._padding * 2;
 
       let sz = width / 14;
@@ -145,7 +152,7 @@ const DotCanvas = GObject.registerClass(
 
       ctx.translate(
         Math.floor((size - count * dashLength - (count - 1) * spacing) / 2),
-        size - height
+        size - height * 1.5,
       );
 
       for (let i = 0; i < count; i++) {
@@ -167,7 +174,7 @@ const DotCanvas = GObject.registerClass(
 
       let count = state.count;
       if (count > 4) count = 4;
-      let height = this._barHeight + 5;
+      let height = this.dot_size(this._barHeight + 5);
       let width = size - this._padding * 2;
 
       let spacing = Math.ceil(width / 18); // separation between the dots
@@ -175,7 +182,7 @@ const DotCanvas = GObject.registerClass(
 
       ctx.translate(
         Math.floor((size - count * dashLength - (count - 1) * spacing) / 2),
-        size - height
+        size - height * 1.5,
       );
 
       for (let i = 0; i < count; i++) {
@@ -197,7 +204,7 @@ const DotCanvas = GObject.registerClass(
 
       let count = state.count;
       if (count > 4) count = 4;
-      let height = this._barHeight + 6;
+      let height = this.dot_size(this._barHeight + 6);
       let width = size - this._padding * 2;
 
       let spacing = Math.ceil(width / 16); // separation between the dots
@@ -205,7 +212,7 @@ const DotCanvas = GObject.registerClass(
 
       ctx.translate(
         Math.floor((size - count * dashLength - (count - 1) * spacing) / 2),
-        size - height
+        size - height * 1.5,
       );
 
       for (let i = 0; i < count; i++) {
@@ -229,7 +236,7 @@ const DotCanvas = GObject.registerClass(
 
       let count = state.count;
       if (count > 4) count = 4;
-      let height = this._barHeight + 10;
+      let height = this.dot_size(this._barHeight + 10);
       let width = size - this._padding * 2;
 
       let spacing = Math.ceil(width / 16); // separation between the dots
@@ -237,7 +244,7 @@ const DotCanvas = GObject.registerClass(
 
       ctx.translate(
         Math.floor((size - count * dashLength - (count - 1) * spacing) / 2),
-        size - height
+        size - height * 1.5,
       );
 
       for (let i = 0; i < count; i++) {
@@ -262,7 +269,7 @@ const DotCanvas = GObject.registerClass(
 
       let count = state.count;
       if (count > 4) count = 4;
-      let height = this._barHeight;
+      let height = this.dot_size(this._barHeight);
       let width = size - this._padding * 2;
 
       let spacing = Math.ceil(width / 18); // separation between the dots
@@ -270,9 +277,9 @@ const DotCanvas = GObject.registerClass(
 
       ctx.translate(
         Math.floor(
-          (size - count * radius - (count - 1) * spacing) / 2 - radius / 2
+          (size - count * radius - (count - 1) * spacing) / 2 - radius / 2,
         ),
-        size - height
+        size - height,
       );
 
       for (let i = 0; i < count; i++) {
@@ -282,7 +289,7 @@ const DotCanvas = GObject.registerClass(
           -radius,
           radius,
           0,
-          2 * Math.PI
+          2 * Math.PI,
         );
       }
 
@@ -298,7 +305,7 @@ const DotCanvas = GObject.registerClass(
       let n = Math.min(15, state.count);
       let binaryValue = String('0000' + (n >>> 0).toString(2)).slice(-4);
 
-      let height = this._barHeight + 2;
+      let height = this.dot_size(this._barHeight + 2);
       let width = size - this._padding * 2;
 
       let spacing = Math.ceil(width / 14); // separation between the dots
@@ -307,7 +314,7 @@ const DotCanvas = GObject.registerClass(
 
       ctx.translate(
         Math.floor((size - count * dashLength - (count - 1) * spacing) / 2),
-        size - height - radius / 2
+        size - height * 1.5 - radius / 2,
       );
 
       for (let i = 0; i < count; i++) {
@@ -318,14 +325,14 @@ const DotCanvas = GObject.registerClass(
             radius / 2,
             radius,
             0,
-            2 * Math.PI
+            2 * Math.PI,
           );
         } else {
           ctx.rectangle(
             i * dashLength + i * spacing,
             0,
             dashLength,
-            height - 2
+            height - 2,
           );
         }
       }
@@ -338,5 +345,5 @@ const DotCanvas = GObject.registerClass(
     _draw_dot(ctx, state) {
       this._draw_dots(ctx, { ...state, count: 1 });
     }
-  }
+  },
 );

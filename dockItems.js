@@ -3,117 +3,32 @@
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as BoxPointer from 'resource:///org/gnome/shell/ui/boxpointer.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
-import { trySpawnCommandLine } from 'resource:///org/gnome/shell/misc/util.js';
-import { BaseIcon } from 'resource:///org/gnome/shell/ui/iconGrid.js';
+import { trySpawnCommandLine } from './utils.js';
+// import { trySpawnCommandLine } from 'resource:///org/gnome/shell/misc/util.js';
 
 import Gio from 'gi://Gio';
 import GObject from 'gi://GObject';
 import Clutter from 'gi://Clutter';
-import Graphene from 'gi://Graphene';
 import St from 'gi://St';
 
-import { ShowAppsIcon } from 'resource:///org/gnome/shell/ui/dash.js';
+let GioUnix = null; 
+// skip next 5 on gnome 44 and prior
+try {
+    GioUnix = await import('gi://GioUnix');
+} catch (e) {
+    console.log('GioUnix not available on this GNOME version');
+}
+const DesktopAppInfo = GioUnix?.DesktopAppInfo || Gio.DesktopAppInfo;
 
-import { Dot } from './apps/dot.js';
+import {
+  DashIcon,
+  DashItemContainer,
+} from 'resource:///org/gnome/shell/ui/dash.js';
+
 import { DockPosition } from './dock.js';
 
-const Point = Graphene.Point;
-
-const DockItemOverlay = GObject.registerClass(
-  {},
-  class DockItemOverlay extends St.Widget {
-    _init(renderer, params) {
-      super._init({
-        name: 'DockItemContainer',
-        ...params,
-      });
-
-      this.renderer = renderer;
-      if (renderer) {
-        this.add_child(renderer);
-      }
-    }
-  }
-);
-
-export const DockItemDotsOverlay = GObject.registerClass(
-  {},
-  class DockItemDotsOverlay extends DockItemOverlay {
-    update(icon, data) {
-      let renderer = this.renderer;
-      let { appCount, position, vertical, extension } = data;
-
-      renderer.width = icon._icon.width;
-      renderer.height = icon._icon.height;
-      renderer.pivot_point = icon._icon.pivot_point;
-
-      let canvasScale = renderer.width / renderer._canvas.width;
-      renderer._canvas.set_scale(canvasScale, canvasScale);
-
-      if (vertical) {
-        renderer.translationX =
-          icon._icon.translationX + (position == DockPosition.LEFT ? -6 : 6);
-        renderer.translationY = icon._icon.translationY;
-      } else {
-        renderer.translationX = icon._icon.translationX;
-        renderer.translationY =
-          icon._icon.translationY + (position == DockPosition.BOTTOM ? 8 : -8);
-      }
-
-      let options = extension.running_indicator_style_options;
-      let running_indicator_style = options[extension.running_indicator_style];
-      let running_indicator_color = extension.running_indicator_color;
-
-      renderer.set_state({
-        count: appCount,
-        color: running_indicator_color || [1, 1, 1, 1],
-        style: running_indicator_style || 'default',
-        rotate: vertical
-          ? position == DockPosition.RIGHT
-            ? -90
-            : 90
-          : position == DockPosition.TOP
-          ? 180
-          : 0,
-      });
-    }
-  }
-);
-
-export const DockItemBadgeOverlay = GObject.registerClass(
-  {},
-  class DockItemBadgeOverlay extends DockItemOverlay {
-    update(icon, data) {
-      let renderer = this.renderer;
-      let { noticesCount, position, vertical, extension } = data;
-
-      renderer.width = icon._icon.width;
-      renderer.height = icon._icon.height;
-      renderer.set_scale(icon._icon.scaleX, icon._icon.scaleY);
-      renderer.pivot_point = icon._icon.pivot_point;
-      renderer.translationX = icon._icon.translationX + 4;
-      renderer.translationY = icon._icon.translationY - 4;
-
-      let canvasScale = renderer.width / renderer._canvas.width;
-      renderer._canvas.set_scale(canvasScale, canvasScale);
-
-      let options = extension.notification_badge_style_options;
-      let notification_badge_style =
-        options[extension.notification_badge_style];
-      let notification_badge_color = extension.notification_badge_color;
-
-      renderer.set_state({
-        count: noticesCount,
-        color: notification_badge_color || [1, 1, 1, 1],
-        style: notification_badge_style || 'default',
-        rotate: position == DockPosition.BOTTOM ? 180 : 0,
-        translate: [0.4, 0],
-      });
-    }
-  }
-);
-
-export class DockItemMenu extends PopupMenu.PopupMenu {
+//! move to dockitemMenu
+class DockItemMenu extends PopupMenu.PopupMenu {
   constructor(sourceActor, side = St.Side.TOP, params = {}) {
     if (Clutter.get_default_text_direction() === Clutter.TextDirection.RTL) {
       if (side === St.Side.LEFT) side = St.Side.RIGHT;
@@ -155,173 +70,237 @@ export class DockItemMenu extends PopupMenu.PopupMenu {
   }
 }
 
-export const DockItemList = GObject.registerClass(
+const DockItemOverlay = GObject.registerClass(
   {},
-  class DockItemList extends St.Widget {
+  class DockItemOverlay extends St.Widget {
     _init(renderer, params) {
       super._init({
-        name: 'DockItemList',
-        reactive: true,
-        // style_class: 'hi',
+        name: 'DockItemContainer',
         ...params,
       });
 
-      this.connect('button-press-event', (obj, evt) => {
-        // this.visible = false;
-        this.slideOut();
-        return Clutter.EVENT_PROPAGATE;
-      });
+      this.renderer = renderer;
+      if (renderer) {
+        this.add_child(renderer);
+      }
     }
+  },
+);
 
-    slideIn(target, list) {
-      if (this._box) {
-        this.remove_child(this._box);
-        this._box = null;
+export const DockItemDotsOverlay = GObject.registerClass(
+  {},
+  class DockItemDotsOverlay extends DockItemOverlay {
+    update(icon, data) {
+      let renderer = this.renderer;
+      let { appCount, position, vertical, extension, dock } = data;
+
+      renderer.width = dock._iconSizeScaledDown || icon._icon.width;
+      renderer.height = dock._iconSizeScaledDown || icon._icon.height;
+      renderer.pivot_point = icon._icon.pivot_point;
+
+      let canvasScale = renderer.width / renderer._canvas.width;
+
+      // scaling fix
+      let scale = dock._monitor.geometry_scale || 1;
+      canvasScale *= scale;
+      renderer._canvas.set_scale(canvasScale, canvasScale);
+
+      let offsetX = renderer.width * 0.075 * scale;
+      let offsetY = renderer.height * 0.175 * scale;
+      if (vertical) {
+        offsetX = 0;
+        if (position == DockPosition.RIGHT) {
+          offsetX = renderer.width * 0.2 * (scale * scale);
+        }
+      } else {
+        if (position == DockPosition.TOP) {
+          offsetY = renderer.height * 1 * scale;
+        }
       }
 
-      if (!list.length) return;
+      renderer.translationX = icon._icon.translationX + offsetX;
+      renderer.translationY = icon._icon.translationY + offsetY;
 
-      this.opacity = 0;
+      let options = extension.running_indicator_style_options;
+      let running_indicator_style = options[extension.running_indicator_style];
+      let running_indicator_color = extension.running_indicator_color;
 
-      let dock = this.dock;
-      this.x = dock._monitor.x;
-      this.y = dock._monitor.y;
-      this.width = dock._monitor.width;
-      this.height = dock._monitor.height;
+      renderer.set_state({
+        count: appCount,
+        color: running_indicator_color || [1, 1, 1, 1],
+        style: running_indicator_style || 'default',
+        size: extension.running_indicator_size || 0,
+        rotate: vertical
+          ? position == DockPosition.RIGHT
+            ? -90
+            : 90
+          : position == DockPosition.TOP
+            ? 180
+            : 0,
+      });
+    }
+  },
+);
 
-      this._target = target;
-      let tp = dock._get_position(target);
+export const DockItemBadgeOverlay = GObject.registerClass(
+  {},
+  class DockItemBadgeOverlay extends DockItemOverlay {
+    update(icon, data) {
+      let renderer = this.renderer;
+      let { noticesCount, position, vertical, extension, scale } = data;
 
-      this._box = new St.Widget({ style_class: '-hi' });
-      list.forEach((l) => {
-        let w = new St.Widget({});
-        let icon = new St.Icon({
-          icon_name: l.icon,
-          reactive: true,
-          track_hover: true,
-        });
-        icon.set_icon_size(
-          this.dock._iconSizeScaledDown * this.dock._scaleFactor
-        );
-        this._box.add_child(w);
-        let label = new St.Label({ style_class: 'dash-label' });
-        let short = (l.name ?? '').replace(/(.{32})..+/, '$1...');
-        label.text = short;
-        w.add_child(icon);
-        w.add_child(label);
-        w._icon = icon;
-        w._label = label;
+      renderer.width = icon._icon.width;
+      renderer.height = icon._icon.height;
+      let canvasScale = renderer.width / renderer._canvas.width;
+      renderer._canvas.set_scale(canvasScale, canvasScale);
 
-        icon.connect('button-press-event', () => {
-          let path = Gio.File.new_for_path(`Downloads/${l.name}`).get_path();
-          let cmd = `xdg-open "${path}"`;
-          if (l.type.includes('directory')) {
-            cmd = `nautilus --select "${path}"`;
-          }
-          this.visible = false;
-          this.dock._maybeBounce(this._target);
+      let options = extension.notification_badge_style_options;
+      let notification_badge_style =
+        options[extension.notification_badge_style];
+      let notification_badge_color = extension.notification_badge_color;
 
+      // renderer.translationX = icon._icon.translationX;
+      // renderer.translationY = icon._icon.translationY;
+
+      renderer.set_state({
+        count: noticesCount,
+        color: notification_badge_color || [1, 1, 1, 1],
+        style: notification_badge_style || 'default',
+        size: extension.notification_badge_size || 0,
+        translate: [0.4, -0.8],
+      });
+    }
+  },
+);
+
+export const DockIcon = GObject.registerClass(
+  {},
+  class DockIcon extends DashIcon {
+    _init(app) {
+      super._init(app);
+      this._dot.visible = false;
+
+      this._draggable._onButtonPress = () => {
+        return Clutter.EVENT_PROPAGATE;
+      };
+      this._draggable._onTouchEvent = () => {
+        return Clutter.EVENT_PROPAGATE;
+      };
+      this._draggable._grabActor = () => {};
+    }
+
+    _createIcon(size) {
+      this._iconActor = new St.Icon({
+        icon_name: this._default_icon_name || 'file',
+        icon_size: size,
+        style_class: this._default_icon_style_class || '',
+        track_hover: true,
+      });
+
+      let container = this.get_parent();
+
+      // attach event
+      let icon = this._iconActor;
+      icon.reactive = true;
+      icon.track_hover = true;
+
+      icon.connectObject(
+        'enter-event',
+        () => {
           try {
-            console.log(cmd);
-            trySpawnCommandLine(cmd);
+            container.showLabel();
           } catch (err) {
             console.log(err);
           }
-        });
-      });
+        },
+        'leave-event',
+        () => {
+          try {
+            container.hideLabel();
+          } catch (err) {
+            console.log(err);
+          }
+        },
+        'button-press-event',
+        (actor, evt) => {
+          if (evt.get_button() != 1) {
+            if (container._menu) {
+              container._menu.popup();
+            }
+          } else {
+            if (container._onClick) {
+              container._onClick();
+            }
+          }
+        },
+        this,
+      );
 
-      let ox = 0;
-      let oy = 0;
-      let angleInc = 2;
-      let startAngle = 268;
-      let angle = startAngle;
-      let rad = dock._iconSize * 1.1 * dock._scaleFactor;
-
-      let children = this._box.get_children();
-      children.reverse();
-      children.forEach((l) => {
-        let hX = Math.cos(angle * 0.0174533);
-        let hY = Math.sin(angle * 0.0174533);
-        let hl = Math.sqrt(hX * hX + hY * hY);
-        hX /= hl;
-        hY /= hl;
-        hX *= rad;
-        hY *= rad;
-
-        l.x = tp[0] - this.x + ox;
-        l.y = tp[1] - this.y + oy;
-
-        ox += hX * 0.85;
-        oy += hY;
-        angle += angleInc;
-
-        l.rotation_angle_z = angle - startAngle;
-      });
-
-      this.add_child(this._box);
-
-      let first = children[0];
-      children.forEach((l) => {
-        l._ox = first.x;
-        l._oy = first.y;
-        l._oz = 0;
-        l._label.opacity = 0;
-        l._x = l.x;
-        l._y = l.y - rad * 0.8;
-        l._rotation_angle_z = l.rotation_angle_z;
-        l.x = first.x;
-        l.y = first.y;
-        l.rotation_angle_z = 0;
-      });
-
-      this._hidden = false;
-      this._hiddenFrames = 0;
+      return this._iconActor;
     }
-
-    slideOut() {
-      this._hidden = true;
-      this._hiddenFrames = 80;
-    }
-  }
+  },
 );
 
 export const DockItemContainer = GObject.registerClass(
   {},
-  class DockItemContainer extends ShowAppsIcon {
+  class DockItemContainer extends DashItemContainer {
     _init(params) {
       super._init({
         name: 'DockItemContainer',
         style_class: 'dash-item-container',
-        ...(params || {}),
+        ...params,
+        scale_x: 1,
+        scale_y: 1,
       });
 
-      this.name = params.appinfo_filename;
-      this.show(false);
+      this.custom_icon = true;
 
-      let desktopApp = Gio.DesktopAppInfo.new_from_filename(
-        params.appinfo_filename
-      );
+      let desktopApp = params.app;
+      if (desktopApp) {
+        // monkey patch dummy app
+        if (!desktopApp.get_icon) {
+          desktopApp.can_open_new_window = () => false;
+          desktopApp.create_icon_texture = () => null;
+          desktopApp.get_windows = () => null;
+          desktopApp.get_icon = () => {
+            return {
+              get_names: () => [],
+            };
+          };
+        }
+      } else {
+        desktopApp = DesktopAppInfo.new_from_filename(params.appinfo_filename);
+      }
 
-      this._label = this.label;
+      let dashIcon = new DockIcon(desktopApp, {
+        name: 'DockItemContainer',
+        style_class: 'dash-item-container',
+        ...(params || {}),
+      });
+      this.set_scale(1, 1);
+      this.setChild(dashIcon);
 
       try {
-        this._labelText = desktopApp.get_name();
-        this._default_icon_name = desktopApp.get_icon().get_names()[0];
+        this.setLabelText(desktopApp.get_name());
+        dashIcon._default_icon_name = desktopApp.get_icon().get_names()[0];
       } catch (err) {
         console.log(err);
         console.log(params);
       }
 
       // menu
-      this._menu = new DockItemMenu(this, St.Side.TOP, {
-        desktopApp,
-      });
-      this._menu.item = this;
-      this._menuManager = new PopupMenu.PopupMenuManager(this);
-      this._menu._menuManager = this._menuManager;
-      Main.uiGroup.add_child(this._menu.actor);
-      this._menuManager.addMenu(this._menu);
-      this._menu.close();
+      if (params.appinfo_filename) {
+        this._menu = new DockItemMenu(this, St.Side.TOP, {
+          desktopApp,
+        });
+        this._menu.item = this;
+        this._menuManager = new PopupMenu.PopupMenuManager(this);
+        this._menu._menuManager = this._menuManager;
+        Main.uiGroup.add_child(this._menu.actor);
+        this._menuManager.addMenu(this._menu);
+        this._menu.close();
+        dashIcon._menu = this._menu;
+      }
     }
 
     activateNewWindow() {
@@ -333,52 +312,7 @@ export const DockItemContainer = GObject.registerClass(
     _onClick() {
       this.activateNewWindow();
     }
-
-    _createIcon(size) {
-      this._iconActor = new St.Icon({
-        icon_name: this._default_icon_name,
-        icon_size: size,
-        style_class: 'show-apps-icon',
-        track_hover: true,
-      });
-
-      // attach event
-      let button = this.first_child;
-      button.reactive = false;
-      let icon = this._iconActor;
-
-      icon.reactive = true;
-      icon.track_hover = true;
-      [icon].forEach((btn) => {
-        if (btn._connected) return;
-        btn._connected = true;
-        btn.button_mask = St.ButtonMask.ONE | St.ButtonMask.TWO;
-        btn.connectObject(
-          'enter-event',
-          () => {
-            this.showLabel();
-          },
-          'leave-event',
-          () => {
-            this.hideLabel();
-          },
-          'button-press-event',
-          (actor, evt) => {
-            if (evt.get_button() != 1) {
-              if (this._menu) {
-                this._menu.popup();
-              }
-            } else {
-              this._onClick();
-            }
-          },
-          this
-        );
-      });
-
-      return this._iconActor;
-    }
-  }
+  },
 );
 
 export const DockBackground = GObject.registerClass(
@@ -400,39 +334,47 @@ export const DockBackground = GObject.registerClass(
         vertical,
         position,
         panel_mode,
-        dashContainer,
+        dock,
       } = params;
 
-      if (!first || !last) return;
+      this._padding = 0;
 
-      let p1 = first.get_transformed_position();
-      let p2 = last.get_transformed_position();
+      if (!first || !last || first == last) {
+        this.opacity = 0;
+        return;
+      }
+
+      let dp = dock.dash.get_transformed_position();
+      if (isNaN(dp[0]) || isNaN(dp[1])) return;
 
       let padding =
-        4 +
-        iconSize *
-          scaleFactor *
-          0.15 *
-          (dashContainer.extension.dock_padding || 0);
+        iconSize * 0.1 * (dock.extension.dock_padding || 0) * scaleFactor;
 
-      if (!isNaN(p1[0]) && !isNaN(p1[1])) {
+      if (first && last) {
         let tx = first._icon.translationX;
         let ty = first._icon.translationY;
         let tx2 = last._icon.translationX;
         let ty2 = last._icon.translationY;
 
         // bottom
-        this.x = p1[0] + tx;
-        this.y = first._fixedPosition[1];
-        let width = dashContainer.dash.width + Math.abs(tx) + tx2 - padding;
-        let height = dashContainer.dash.height;
+        this.x = dp[0];
+        this.y = dp[1];
+        let width = dock.dash.width;
+        let height = dock.dash.height;
 
-        if (dashContainer.isVertical()) {
-          this.x = first._fixedPosition[0];
-          this.y = first._fixedPosition[1] + ty;
-          width = dashContainer.dash.width;
-          height = dashContainer.dash.height + Math.abs(ty) + ty2 - padding;
+        if (dock.isVertical()) {
+          this.y += ty;
+          height += ty2 - ty;
+        } else {
+          this.x += tx;
+          width += tx2 - tx;
         }
+
+        // padding
+        this.x -= padding;
+        width += padding * 2;
+        this.y -= padding;
+        height += padding * 2;
 
         if (!isNaN(width)) {
           this.width = width;
@@ -441,8 +383,8 @@ export const DockBackground = GObject.registerClass(
           this.height = height;
         }
 
-        this.x -= dashContainer.x;
-        this.y -= dashContainer.y;
+        this.x -= dock.x;
+        this.y -= dock.y;
         this._padding = padding;
 
         // adjust padding
@@ -454,91 +396,66 @@ export const DockBackground = GObject.registerClass(
 
         if (panel_mode) {
           if (vertical) {
-            this.y = dashContainer.y;
-            this.height = dashContainer.height;
+            this.y = dock.y;
+            this.height = dock.height;
           } else {
-            this.x = dashContainer.x;
-            this.width = dashContainer.width;
+            this.x = dock.x;
+            this.width = dock.width;
           }
         }
-      }
-    }
-  }
-);
 
-export const DockPanelOverlay = GObject.registerClass(
-  {},
-  class DockPanelOverlay extends St.Widget {
-    _init(params) {
-      super._init({
-        name: 'DockOverlay',
-        ...(params || {}),
-      });
-    }
+        this.opacity = 255;
+        dock.dash.opacity = this.opacity;
 
-    update(params) {
-      let {
-        background,
-        left,
-        right,
-        center,
-        panel_mode,
-        vertical,
-        dashContainer,
-        combine_top_bar,
-      } = params;
-
-      if (!combine_top_bar || !panel_mode || vertical) {
-        if (this.visible) {
-          dashContainer.restorePanel();
+        let style = [dock.extension._backgroundStyle];
+        let blur = !(
+          (Main.overview.visible || dock.extension._inOverview) &&
+          dock.extension.disable_blur_at_overview
+        );
+        if (dock.extension.blur_background && blur) {
+          style.push(
+            // `background-image: url("${dock.extension.desktop_background}");`
+            `background-image: url("${dock.extension.desktop_background_blurred}");`,
+          );
+          style.push(
+            `background-size: ${dock._monitor.width}px ${dock._monitor.height}px;`,
+          );
+          switch (dock._position) {
+            case DockPosition.LEFT: {
+              style.push(`background-position: -${this.x}px -${this.y}px;`);
+              break;
+            }
+            case DockPosition.RIGHT: {
+              style.push(
+                `background-position: -${dock._monitor.width - this.width}px -${
+                  this.y
+                }px;`,
+              );
+              break;
+            }
+            case DockPosition.TOP: {
+              style.push(`background-position: -${this.x}px -${this.y}px;`);
+              break;
+            }
+            default: {
+              // bottom
+              style.push(
+                `background-position: -${this.x}px -${
+                  dock._monitor.height - this.height
+                }px;`,
+              );
+              break;
+            }
+          }
+        } else {
+          let rgba = dock.extension._style.rgba(
+            dock.extension.background_color,
+          );
+          style.push(`background: rgba(${rgba});`);
         }
-        this.visible = false;
-        return;
-      }
 
-      this.visible = true;
-      dashContainer.panel.visible = false;
-
-      // this.style = 'border: 2px solid red;';
-      this.x = background.x;
-      this.y = background.y;
-      this.width = background.width;
-      this.height = background.height;
-
-      let margin = 20;
-
-      // left
-      if (left.get_parent() != this) {
-        left.get_parent().remove_child(left);
-        this.add_child(left);
-      }
-      left.x = margin;
-      left.y = this.height / 2 - left.height / 2;
-
-      // center
-      if (center.get_parent() != this) {
-        center.get_parent().remove_child(center);
-        this.add_child(center);
-      }
-      center.x = this.width - margin / 2 - center.width;
-      center.y = this.height / 2 - center.height / 2;
-
-      // right
-      if (right.get_parent() != this) {
-        right.get_parent().remove_child(right);
-        this.add_child(right);
-      }
-      right.height = center.height;
-      right.x = this.width - margin - right.width;
-      right.y = this.height / 2 - right.height / 2;
-
-      // align
-      if (center.height * 3 < this.height) {
-        right.y -= right.height / 1.5;
-        center.y += center.height / 1.5;
-      } else {
-        right.x -= center.width;
+        this.style = style.join(' ');
       }
     }
-  }
+  },
 );

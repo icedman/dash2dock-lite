@@ -6,131 +6,17 @@ import Gtk from 'gi://Gtk';
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import Adw from 'gi://Adw';
-import GObject from 'gi://GObject';
 
 const GETTEXT_DOMAIN = 'dash2dock-light';
 
 import { schemaId, SettingsKeys } from './preferences/keys.js';
+import { MonitorsConfig } from './monitors.js';
 
 import {
   ExtensionPreferences,
   gettext as _,
 } from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
-
-// from Dock-to-Dock
-const MonitorsConfig = GObject.registerClass(
-  {
-    Signals: {
-      updated: {},
-    },
-  },
-  class MonitorsConfig extends GObject.Object {
-    static get XML_INTERFACE() {
-      return '<node>\
-            <interface name="org.gnome.Mutter.DisplayConfig">\
-                <method name="GetCurrentState">\
-                <arg name="serial" direction="out" type="u" />\
-                <arg name="monitors" direction="out" type="a((ssss)a(siiddada{sv})a{sv})" />\
-                <arg name="logical_monitors" direction="out" type="a(iiduba(ssss)a{sv})" />\
-                <arg name="properties" direction="out" type="a{sv}" />\
-                </method>\
-                <signal name="MonitorsChanged" />\
-            </interface>\
-        </node>';
-    }
-
-    static get ProxyWrapper() {
-      return Gio.DBusProxy.makeProxyWrapper(MonitorsConfig.XML_INTERFACE);
-    }
-
-    constructor() {
-      super();
-
-      this._monitorsConfigProxy = new MonitorsConfig.ProxyWrapper(
-        Gio.DBus.session,
-        'org.gnome.Mutter.DisplayConfig',
-        '/org/gnome/Mutter/DisplayConfig'
-      );
-
-      // Connecting to a D-Bus signal
-      this._monitorsConfigProxy.connectSignal('MonitorsChanged', () =>
-        this._updateResources()
-      );
-
-      this._primaryMonitor = null;
-      this._monitors = [];
-      this._logicalMonitors = [];
-
-      this._updateResources();
-    }
-
-    _updateResources() {
-      this._monitorsConfigProxy.GetCurrentStateRemote((resources, err) => {
-        if (err) {
-          logError(err);
-          return;
-        }
-
-        const [serial_, monitors, logicalMonitors] = resources;
-        let index = 0;
-        for (const monitor of monitors) {
-          const [monitorSpecs, modes_, props] = monitor;
-          const [connector, vendor, product, serial] = monitorSpecs;
-          this._monitors.push({
-            index: index++,
-            active: false,
-            connector,
-            vendor,
-            product,
-            serial,
-            displayName: props['display-name'].unpack(),
-          });
-        }
-
-        for (const logicalMonitor of logicalMonitors) {
-          const [x_, y_, scale_, transform_, isPrimary, monitorsSpecs] =
-            logicalMonitor;
-
-          // We only care about the first one really
-          for (const monitorSpecs of monitorsSpecs) {
-            const [connector, vendor, product, serial] = monitorSpecs;
-            const monitor = this._monitors.find(
-              (m) =>
-                m.connector === connector &&
-                m.vendor === vendor &&
-                m.product === product &&
-                m.serial === serial
-            );
-
-            if (monitor) {
-              monitor.active = true;
-              monitor.isPrimary = isPrimary;
-              if (monitor.isPrimary) this._primaryMonitor = monitor;
-              break;
-            }
-          }
-        }
-
-        const activeMonitors = this._monitors.filter((m) => m.active);
-        if (activeMonitors.length > 1 && logicalMonitors.length === 1) {
-          // We're in cloning mode, so let's just activate the primary monitor
-          this._monitors.forEach((m) => (m.active = false));
-          this._primaryMonitor.active = true;
-        }
-
-        this.emit('updated');
-      });
-    }
-
-    get primaryMonitor() {
-      return this._primaryMonitor;
-    }
-
-    get monitors() {
-      return this._monitors;
-    }
-  }
-);
+import { tempPath } from './utils.js';
 
 export default class Preferences extends ExtensionPreferences {
   constructor(metadata) {
@@ -207,12 +93,35 @@ export default class Preferences extends ExtensionPreferences {
     actions.forEach((action) => {
       let act = new Gio.SimpleAction({ name: action.name });
       act.connect('activate', (_) =>
-        Gtk.show_uri(window, action.link, Gdk.CURRENT_TIME)
+        Gtk.show_uri(window, action.link, Gdk.CURRENT_TIME),
       );
       actionGroup.add_action(act);
     });
 
     // window.remove(menu_util);
+  }
+
+  updateFolders(window, builder, settings) {
+    let row = builder.get_object('downloads-folder-row');
+    let val = settings.get_string('downloads-path') || '';
+    console.log(`=======${val}`);
+    row.title = `${val}`;
+  }
+
+  async selectFolder(window, builder, settings, target) {
+    const dialog = new Gtk.FileDialog();
+    dialog.select_folder(window, null, (dialog, task) => {
+      let folder = dialog.select_folder_finish(task);
+      if (folder instanceof Gio.File) {
+        let path = folder.get_path();
+        console.log(`${target} = ${path}`);
+        settings.set_string(target, path);
+        this.updateFolders(window, builder, settings);
+      } else {
+        console.log('No valid folder selected.');
+      }
+    });
+    return null;
   }
 
   addButtonEvents(window, builder, settings) {
@@ -221,6 +130,20 @@ export default class Preferences extends ExtensionPreferences {
     //   builder.get_object('animation-rise').set_value(0);
     //   builder.get_object('animation-magnify').set_value(0);
     // });
+
+    if (builder.get_object('downloads-folder')) {
+      builder.get_object('downloads-folder').connect('clicked', () => {
+        settings.set_string('downloads-path', '');
+        this.selectFolder(window, builder, settings, 'downloads-path')
+          .then((path) => {
+            console.log(path);
+          })
+          .catch((err) => {
+            console.log(err);
+          });
+      });
+      this.updateFolders(window, builder, settings);
+    }
 
     if (builder.get_object('reset')) {
       builder.get_object('reset').connect('clicked', () => {
@@ -243,7 +166,6 @@ export default class Preferences extends ExtensionPreferences {
     this._builder = builder;
 
     let UIFolderPath = `${this.path}/ui`;
-
     builder.add_from_file(`${UIFolderPath}/general.ui`);
     builder.add_from_file(`${UIFolderPath}/appearance.ui`);
     builder.add_from_file(`${UIFolderPath}/tweaks.ui`);
@@ -251,11 +173,17 @@ export default class Preferences extends ExtensionPreferences {
     builder.add_from_file(`${UIFolderPath}/menu.ui`);
     window.add(builder.get_object('general'));
     window.add(builder.get_object('appearance'));
-    window.add(builder.get_object('tweaks'));
     window.add(builder.get_object('others'));
+    window.add(builder.get_object('tweaks'));
     window.set_search_enabled(true);
 
     // this.dump(window, 0);
+    // add buymeacoffee QR
+    if (builder.get_object('qr')) {
+      builder
+        .get_object('qr')
+        .set_from_file(`${UIFolderPath}/images/qr_icedman.png`);
+    }
 
     let settings = this.getSettings(schemaId);
     settings.set_string('msg-to-ext', '');
@@ -276,9 +204,9 @@ export default class Preferences extends ExtensionPreferences {
     let toggle_experimental = () => {
       let exp = false; // settingsKeys.getValue('experimental-features');
       // builder.get_object('dock-location-row').visible = exp;
-      if (builder.get_object('lamp-app-animation-row')) {
-        builder.get_object('lamp-app-animation-row').visible = exp;
-      }
+      // if (builder.get_object('lamp-app-animation-row')) {
+      //   builder.get_object('lamp-app-animation-row').visible = exp;
+      // }
       if (builder.get_object('self-test-row')) {
         builder.get_object('self-test-row').visible = exp;
       }
@@ -297,7 +225,7 @@ export default class Preferences extends ExtensionPreferences {
     this._themed_presets = [];
     this.preloadPresets(`${this.path}/themes`);
     this.preloadPresets(
-      Gio.File.new_for_path('.config/d2da/themes').get_path()
+      Gio.File.new_for_path('.config/d2da/themes').get_path(),
     );
     this._buildThemesMenu(window);
     this.updateMonitors();
@@ -313,7 +241,7 @@ export default class Preferences extends ExtensionPreferences {
     let iter = dir.enumerate_children(
       'standard::*',
       Gio.FileQueryInfoFlags.NONE,
-      null
+      null,
     );
 
     let themed_presets = [];
@@ -376,19 +304,21 @@ export default class Preferences extends ExtensionPreferences {
         title: 'My Theme',
       };
 
-      let fn = Gio.File.new_for_path(`/tmp/theme.json`);
+      let fn = Gio.File.new_for_path(tempPath('theme.json'));
       let content = JSON.stringify(json, null, 4);
       const [, etag] = fn.replace_contents(
         content,
         null,
         false,
         Gio.FileCreateFlags.REPLACE_DESTINATION,
-        null
+        null,
       );
 
       this.window.add_toast(
-        new Adw.Toast({ title: 'Saved to /tmp/theme.json' })
+        new Adw.Toast({ title: `Saved to ${tempPath('theme.json')}` }),
       );
+
+      this._builder.get_object('theme-export-notice').visible = true;
       return;
     }
 
@@ -428,6 +358,7 @@ export default class Preferences extends ExtensionPreferences {
     list.append('Primary Monitor');
     for (let i = 0; i < count; i++) {
       let m = monitors[i];
+      if (!m.active) continue;
       list.append(m.displayName);
     }
     this._builder.get_object('preferred-monitor').set_model(list);

@@ -28,6 +28,7 @@ importMap = [
     [ "import Gio", "const Gio = imports.gi.Gio;" ],
     [ "import GObject", "const GObject = imports.gi.GObject;" ],
     [ "import Clutter", "const Clutter = imports.gi.Clutter;" ],
+    [ "import Cogl", "const Cogl = imports.gi.Cogl;" ],
     [ "import Graphene", "const Graphene = imports.gi.Graphene;" ],
     [ "import St", "const St = imports.gi.St;" ],
     [ "import PangoCairo", "const PangoCairo = imports.gi.PangoCairo;" ],

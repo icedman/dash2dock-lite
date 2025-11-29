@@ -645,6 +645,10 @@ export default class Dash2DockLiteExt extends Extension {
           this.recreateAllDocks();
           this.animate({ preview: true });
           break;
+        case 'icon-border-color':
+        case 'icon-border-thickness':
+        case 'icon-border-radius':
+        case 'icon-background-color':
         case 'separator-color':
         case 'border-color':
         case 'border-thickness':
@@ -1260,6 +1264,28 @@ export default class Dash2DockLiteExt extends Extension {
       }
       */
       styles.push(`#d2daBackground { ${ss.join(' ')}}`);
+    }
+
+    // icon backgrounds
+    {
+      let ss = [];
+      ss.push(`margin: 2px;`);
+      
+      let r = rads[Math.floor(this.icon_border_radius)];
+      ss.push(`border-radius: ${r}px;`);
+
+      {
+        let rgba = this._style.rgba(this.icon_background_color);
+        ss.push(`background: rgba(${rgba});`);
+      }
+
+      // {
+      //   let rgba = this._style.rgba(this.icon_border_color);
+      //   let t = this.icon_border_thickness;
+      //   ss.push(`border: ${t}px rgba(${rgba});`);
+      // }
+
+      styles.push(`.icon-rendered { ${ss.join(' ')}}`);
     }
 
     // dash label

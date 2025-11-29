@@ -213,9 +213,7 @@ export let Dock = GObject.registerClass(
     _onFullScreen() {
       this._beginAnimation();
       this.autohider._debounceCheckHide();
-
       console.log('_onFullScreen');
-
       return Clutter.EVENT_PROPAGATE;
     }
     _onRestacked() {
@@ -1180,20 +1178,7 @@ export let Dock = GObject.registerClass(
         this.dwell.remove_style_class_name('hi');
       }
 
-      // apply focus
-      this._icons?.forEach((icon) => {
-        if (!icon._renderer) return;
-          if (icon._appwell?.app) {
-            let app = icon._appwell?.app;
-            if (!app.get_windows) return;
-            let windows = this.getAppWindowsFiltered(app);
-            windows.forEach((w) => {
-              if (w.has_focus()) {
-                icon._renderer.style = 'background-color: rgba(255,0,0,0.2); border-radius: 8px;'
-              }
-            });
-          }
-      });
+      // this._updateFocusedIcon();
       
       if (this.extension._hiTimer) {
         this.extension._hiTimer.cancel(this._animationSeq);
@@ -1232,6 +1217,23 @@ export let Dock = GObject.registerClass(
       this._animationSeq = null;
       this.extension._hiTimer.cancel(this.autohider._animationSeq);
       this.autohider._animationSeq = null;
+    }
+
+    _updateFocusedIcon() {
+      // apply focus
+      this._icons?.forEach((icon) => {
+        if (!icon._renderer) return;
+          if (icon._appwell?.app) {
+            let app = icon._appwell?.app;
+            if (!app.get_windows) return;
+            let windows = this.getAppWindowsFiltered(app);
+            windows.forEach((w) => {
+              if (w.has_focus()) {
+                // icon._renderer.style = 'background-color: rgba(255,0,0,0.2); border-radius: 8px;'
+              }
+            });
+          }
+      });
     }
 
     _maybeMinimizeOrMaximize(app) {

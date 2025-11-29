@@ -470,9 +470,9 @@ export let Animator = class {
       // clear bounce animation
       if (icon._appwell) {
         icon._appwell.translationY = 0;
-        if (icon._appwell._bounce) {
-          didBounce = true;
-        }
+        didBounce = icon._appwell._bounce;
+        // clear bounce
+        icon._appwell._bounce = false;
       }
     });
 
@@ -995,6 +995,7 @@ export let Animator = class {
           let res = Bounce.easeOut(f._time, travel, -travel, f._duration);
           let [container, appwell] = getTarget(app_id);
           if (!appwell) return;
+          appwell._bounce = true;
           if (dock.isVertical()) {
             appwell.translation_x = appwell.translation_x =
               dock._position == DockPosition.LEFT ? res : -res;
@@ -1029,6 +1030,7 @@ export let Animator = class {
         _func: (f, s) => {
           let [container, appwell] = getTarget(app_id);
           if (!appwell) return;
+          appwell._bounce = true;
           appwell.translation_y = 0;
           translateDecor(container, appwell);
         },
@@ -1037,9 +1039,8 @@ export let Animator = class {
         _duration: 10,
         _func: (f, s) => {
           let [container, appwell] = getTarget(app_id);
-          if (appwell) {
-            appwell._bounce = false;
-          }
+          if (!appwell) return;
+          appwell._bounce = false;
         },
       },
     ]);

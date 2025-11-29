@@ -523,10 +523,10 @@ export let Animator = class {
           }
         }
 
-        // let didCreate = false;
         icon._renderer = this._renderers[icon._idx];
         icon._renderer._icon = icon._icon;
-
+        icon._renderer.style = '';
+        
         let renderer = icon._renderer;
         if (gicon) {
           // apply override
@@ -580,10 +580,6 @@ export let Animator = class {
           if (Math.abs(appliedSize) > mag) {
             appliedSize = dst * 0.5;
           }
-          // if (didCreate) {
-          //   appliedSize = 0;
-          //   currentSize = targetSize;
-          // }
           targetSize = currentSize + appliedSize;
           icon._deltaSize = appliedSize;
           icon._targetSize = targetSize;

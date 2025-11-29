@@ -1179,6 +1179,22 @@ export let Dock = GObject.registerClass(
         this.struts.remove_style_class_name('hi');
         this.dwell.remove_style_class_name('hi');
       }
+
+      // apply focus
+      this._icons?.forEach((icon) => {
+        if (!icon._renderer) return;
+          if (icon._appwell?.app) {
+            let app = icon._appwell?.app;
+            if (!app.get_windows) return;
+            let windows = this.getAppWindowsFiltered(app);
+            windows.forEach((w) => {
+              if (w.has_focus()) {
+                icon._renderer.style = 'background-color: rgba(255,0,0,0.2); border-radius: 8px;'
+              }
+            });
+          }
+      });
+      
       if (this.extension._hiTimer) {
         this.extension._hiTimer.cancel(this._animationSeq);
         this.extension._loTimer.cancel(this.debounceEndSeq);

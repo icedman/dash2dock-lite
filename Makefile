@@ -85,7 +85,7 @@ g44: build-g44
 publish-g44: g44
 	echo "publishing..."
 	cd build ; \
-	zip -qr ../dash2dock-lite@icedman.github.com.zip .
+	zip -qr ../dash2dock-lite-g44@icedman.github.com.zip .
 
 test-prefs-g44: g44
 	gnome-extensions prefs dash2dock-lite@icedman.github.com

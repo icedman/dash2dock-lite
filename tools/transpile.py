@@ -70,6 +70,7 @@ importMap = [
     # [ "import { trySpawnCommandLine }", "const { trySpawnCommandLine } = imports.misc.util;" ],
     [ "import { trySpawnCommandLine }", "const { trySpawnCommandLine } = Me.imports.utils;" ],
     [ "import { tempPath, trySpawnCommandLine }", "const { tempPath, trySpawnCommandLine } = Me.imports.utils;" ],
+    [ "import { tempPath }", "const { tempPath } = Me.imports.utils;" ],
 ]
 
 def dump(f):

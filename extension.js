@@ -1339,8 +1339,8 @@ export default class Dash2DockLiteExt extends Extension {
         ss.push(`color: rgba(${rgba});`);
       }
 
-      ss.push(`padding: 8px;`);
-      styles.push(`.dash-label, .dash-label-popup { ${ss.join(' ')}}`);
+      // ss.push(`padding: 8px;`);
+      styles.push(`.dash-label { ${ss.join(' ')}}`);
     }
 
     // topbar
@@ -1477,5 +1477,13 @@ export default class Dash2DockLiteExt extends Extension {
       }
     }
     return null;
+  }
+
+  file_explorer() {
+    let fe = 'nautilus --select';
+    if (this._config && this._config['file-explorer']) {
+      fe = this._config['file-explorer'];
+    }
+    return fe;
   }
 }

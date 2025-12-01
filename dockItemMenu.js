@@ -29,6 +29,8 @@ export const DockItemList = GObject.registerClass(
         ...params,
       });
 
+      this._box = null;
+
       this.connect('button-press-event', (obj, evt) => {
         if (!this._box || !this._box.get_children().length) {
           return Clutter.EVENT_PROPAGATE;
@@ -39,10 +41,7 @@ export const DockItemList = GObject.registerClass(
     }
 
     static createItem(dock, f) {
-      let file_explorer = 'nautilus --select';
-      if (dock.extension._config && dock.extension._config['file-explorer']) {
-        file_explorer = dock.extension._config['file-explorer'];
-      }
+      let file_explorer = dock.extension.file_explorer();
       let target = dock.createItem(f.path);
       target._onClick = () => {
         if (dock._position != DockPosition.BOTTOM) {
@@ -85,9 +84,6 @@ export const DockItemList = GObject.registerClass(
 
         if (dock._list.visible && !dock._list._hidden) {
           dock._list.slideIn(target, files);
-          let pv = new Point();
-          pv.x = 0.5;
-          pv.y = 1;
         }
       };
 
@@ -99,7 +95,7 @@ export const DockItemList = GObject.registerClass(
         this.remove_child(this._box);
         this._box = null;
       }
-
+      
       if (!list.length) return;
 
       this.opacity = 0;
@@ -115,7 +111,7 @@ export const DockItemList = GObject.registerClass(
 
       this._target = target;
 
-      this._box = new St.Widget({ style_class: '-hi' });
+      this._box = new St.Widget({ name: 'box', style_class: '-hi' });
       let iconSize = dock.dash._box.first_child._icon.width;
 
       // scaling hack - temporary
@@ -124,21 +120,19 @@ export const DockItemList = GObject.registerClass(
       //   iconAdjust += 0.5;
       // }
 
-      let file_explorer = 'nautilus --select';
-      if (dock.extension._config && dock.extension._config['file-explorer']) {
-        file_explorer = dock.extension._config['file-explorer'];
-      }
+      let file_explorer = dock.extension.file_explorer();
 
       list.forEach((l) => {
-        let w = new St.Widget({});
+        let w = new St.Widget({ name: 'widget' });
         let icon = new St.Icon({
+          name: 'icon',
           icon_name: l.icon,
           reactive: true,
           track_hover: true,
         });
         icon.set_icon_size(iconSize * iconAdjust);
         this._box.add_child(w);
-        let label = new St.Label({ style_class: 'dash-label-popup' });
+        let label = new St.Label({ name: 'label', style_class: 'dash-label' });
         let short = (l.name ?? '').replace(/(.{32})..+/, '$1...');
         label.text = short;
         w.add_child(icon);
@@ -252,7 +246,6 @@ export const DockItemList = GObject.registerClass(
     }
 
     _animate(dt) {
-      // dt /= 8;
       let dock = this.dock;
       let list = dock._list;
       if (!list) return;

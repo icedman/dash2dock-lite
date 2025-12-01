@@ -438,8 +438,8 @@ export default class Dash2DockLiteExt extends Extension {
       let contentsString = decoder.decode(contents);
       try {
         this._config = JSON.parse(contentsString);
-      } catch {
-        // fail silently
+      } catch (err) {
+        console.log(err);
       }
     }
   }
@@ -590,6 +590,7 @@ export default class Dash2DockLiteExt extends Extension {
           break;
         case 'max-recent-items':
           this.services._debounceCheckDownloads();
+          this.services._debounceCheckRecents();
           break;
         case 'apps-icon':
         case 'apps-icon-front':
@@ -1470,7 +1471,7 @@ export default class Dash2DockLiteExt extends Extension {
   }
 
   lookup_icon_from_names(names) {
-    for(let i=0; i<names.length; i++) {
+    for (let i = 0; i < names.length; i++) {
       if (this.icon_theme.lookup_icon(names[i], 16, 1)) {
         return names[i];
       }

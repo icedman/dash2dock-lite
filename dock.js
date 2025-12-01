@@ -213,7 +213,6 @@ export let Dock = GObject.registerClass(
     _onFullScreen() {
       this._beginAnimation();
       this.autohider._debounceCheckHide();
-      console.log('_onFullScreen');
       return Clutter.EVENT_PROPAGATE;
     }
     _onRestacked() {
@@ -445,7 +444,7 @@ export let Dock = GObject.registerClass(
 
       if (this.extension._config && this.extension._config['icon-size']) {
         iconSize = this.extension._config['icon-size'];
-        if (typeof(iconSize) == 'string') {
+        if (typeof iconSize == 'string') {
           iconSize = parseInt(iconSize);
         }
       }
@@ -799,14 +798,14 @@ export let Dock = GObject.registerClass(
           path: `${this.extension.path}/apps/recents-dash2dock-lite.desktop`,
           // not ready for prime time
           // does not work on gnome 43 (debian)
-          show: false, // this.extension.documents_icon,
+          show: this.extension.documents_icon,
           prepare: this.extension.services.checkRecents.bind(
             this.extension.services,
           ),
           items: '_recentFiles',
           itemsLength: '_recentFilesLength',
           cleanup: (() => {
-            this.extension.services._recentFiles = null;
+            // this.extension.services._recentFiles = null;
           }).bind(this),
         },
         {

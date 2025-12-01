@@ -318,7 +318,7 @@ export let Animator = class {
       if (
         icon._icon.gicon &&
         icon._icon.gicon.file != null &&
-        !icon._icon.gicon.file.get_path()?.toLowerCase().endsWith('svg')
+        !icon._icon.gicon.file?.get_path()?.toLowerCase().endsWith('svg')
       ) {
         // skip scaling image files!... too costly
       } else {

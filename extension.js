@@ -201,6 +201,8 @@ export default class Dash2DockLiteExt extends Extension {
     this._showMainOverviewDash(false);
     this.docks = [];
 
+    this.icon_theme = St.IconTheme.new();
+
     // service
     this.services = new Services();
     this.services.extension = this;
@@ -280,6 +282,9 @@ export default class Dash2DockLiteExt extends Extension {
     this._backgroundUris = null;
     this._blurredBackgrounds = null;
     this.desktop_background_variant = null;
+
+    delete this.icon_theme;
+    this.icon_theme = null;
 
     this._hookCompiz(false);
 
@@ -859,6 +864,7 @@ export default class Dash2DockLiteExt extends Extension {
       this.services.disable();
       this.services.enable();
     }
+    this._iconTheme = St.IconTheme.new();
     this._updateStyle();
     this.recreateAllDocks();
   }
@@ -1461,5 +1467,14 @@ export default class Dash2DockLiteExt extends Extension {
     if (this._diagnosticTimer) {
       this._diagnosticTimer.dumpSubscribers();
     }
+  }
+
+  lookup_icon_from_names(names) {
+    for(let i=0; i<names.length; i++) {
+      if (this.icon_theme.lookup_icon(names[i], 16, 1)) {
+        return names[i];
+      }
+    }
+    return null;
   }
 }

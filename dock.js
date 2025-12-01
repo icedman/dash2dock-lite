@@ -187,6 +187,7 @@ export let Dock = GObject.registerClass(
     _onButtonPressEvent(evt) {
       return Clutter.EVENT_PROPAGATE;
     }
+
     _onMotionEvent(evt) {
       if (!this._monitor.inFullscreen) {
         this._beginAnimation();
@@ -205,23 +206,47 @@ export let Dock = GObject.registerClass(
       this._debounceEndAnimation();
       return Clutter.EVENT_PROPAGATE;
     }
+
+    _debouncedBeginAnimation() {
+      this.dash.opacity = 1;
+
+      // this elaborate hack - mitigates nvim's "create window when deleting! hmmp"
+      if (!this._debounceBeginAnimateSeq) {
+        this._debounceBeginAnimateSeq = this.extension._loTimer.runDebounced(
+          () => {
+            this._beginAnimation();
+            this.autohider._debounceCheckHide();
+          },
+          400,
+          'debounceBeginAnimate',
+        );
+      } else {
+        this.extension._loTimer.runDebounced(this._debounceBeginAnimateSeq);
+      }
+    }
+
     _onFocusWindow(evt) {
+      // this._debouncedBeginAnimation();
       this._beginAnimation();
       this.autohider._debounceCheckHide();
       return Clutter.EVENT_PROPAGATE;
     }
     _onFullScreen() {
+      // this._debouncedBeginAnimation();
       this._beginAnimation();
       this.autohider._debounceCheckHide();
       return Clutter.EVENT_PROPAGATE;
     }
     _onRestacked() {
+      // this._debouncedBeginAnimation();
       this._beginAnimation();
       this.autohider._debounceCheckHide();
       return Clutter.EVENT_PROPAGATE;
     }
     _onAppsChanged(evt) {
       this._icons = null;
+      this._fastForward = 20;
+      // this._debouncedBeginAnimation();
       this._beginAnimation();
       this.autohider._debounceCheckHide();
       return Clutter.EVENT_PROPAGATE;
@@ -330,8 +355,20 @@ export let Dock = GObject.registerClass(
       if (this.dash) {
         this.destroyDash();
       }
+
+      this.Dash = Dash;
       let dash = new Dash();
+
       dash._adjustIconSize = () => {};
+      let con = console;
+      let orig = dash._createAppItem;
+      orig = orig.bind(dash);
+      dash._createAppItem = function (app) {
+        let item = orig.call(this, app);
+        item.child.visible = false;
+        return item;
+      };
+
       this.dash = dash;
       this.dash._background.visible = false;
       this.dash._box.clip_to_allocation = false;
@@ -987,6 +1024,7 @@ export let Dock = GObject.registerClass(
       projectedWidth = Math.floor(projectedWidth / 2) * 2;
 
       this._projectedWidth = projectedWidth;
+      this._margin = iconMargins;
 
       this._edge_distance =
         (this.extension.edge_distance || 0) * 20 * scaleFactor;
@@ -1146,6 +1184,9 @@ export let Dock = GObject.registerClass(
       }
       //! add layout here instead of at the
       this.animator.animate(dt);
+      while (this._fastForward && this._fastForward-- > 0) {
+        this.animate(dt);
+      }
       this.simulated_pointer = null;
     }
 

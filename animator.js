@@ -181,6 +181,7 @@ export let Animator = class {
     let prevIcon = null;
     animateIcons.forEach((icon) => {
       let pos = icon.get_transformed_position();
+
       icon._pos = [...pos];
       icon._fixedPosition = [...pos];
 
@@ -629,9 +630,19 @@ export let Animator = class {
             } else {
               iconContainer.translationY = adjustY / 2;
             }
+
+            let ry = p[1] + adjustY + icon._icon.translationY - renderOffset[1];
+            // if (!dock._hidden) {
+            // // dash-independent computation
+            //   let margin = 8 * dock.extension.icon_spacing * m.geometry_scale * 4;
+            //   ry = dock.height - iconSize * m.geometry_scale;
+            //   ry += adjustY + icon._icon.translationY;
+            //   ry -= margin;
+            //   ry -= edge_distance;
+            // }
             renderer.set_position(
               p[0] + adjustX + icon._icon.translationX - renderOffset[0],
-              p[1] + adjustY + icon._icon.translationY - renderOffset[1],
+              ry,
             );
             renderer.visible = true;
           }
@@ -660,7 +671,7 @@ export let Animator = class {
             }
             icon._label.y += 2 * (m.geometry_scale || 1);
           } else {
-            if (magnify == 0 || dock._iconSize < 32) {
+            if (magnify == 0 || dock._iconSize <= 4) {
               sh *= 1.5;
             }
             if (dock._position == DockPosition.BOTTOM) {
@@ -933,6 +944,7 @@ export let Animator = class {
 
       dock._updateTransparenies();
     }
+
     dock.struts.visible = !dock._hidden;
     dock.dash.opacity = 255;
 

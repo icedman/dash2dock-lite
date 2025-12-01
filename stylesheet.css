@@ -22,9 +22,8 @@
 }
 
 #d2daDock.hi #dash .dash-item-container {
-  border: 2px solid magenta;
 }
 
-#d2daDock #dash {
-  /* border: 2px solid yellow; */
+#dash .dash-item-container {
+  /*border: 2px solid magenta;*/
 }

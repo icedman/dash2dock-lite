@@ -95,7 +95,7 @@ export const DockItemList = GObject.registerClass(
         this.remove_child(this._box);
         this._box = null;
       }
-      
+
       if (!list.length) return;
 
       this.opacity = 0;

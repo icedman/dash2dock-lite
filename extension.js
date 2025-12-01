@@ -433,7 +433,6 @@ export default class Dash2DockLiteExt extends Extension {
       let contentsString = decoder.decode(contents);
       try {
         this._config = JSON.parse(contentsString);
-        console.log(this._config);
       } catch {
         // fail silently
       }

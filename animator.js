@@ -660,7 +660,7 @@ export let Animator = class {
             }
             icon._label.y += 2 * (m.geometry_scale || 1);
           } else {
-            if (magnify == 0) {
+            if (magnify == 0 || dock._iconSize < 32) {
               sh *= 1.5;
             }
             if (dock._position == DockPosition.BOTTOM) {

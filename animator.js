@@ -468,8 +468,8 @@ export let Animator = class {
         icon._icon.translationX = translationX;
         icon._icon.translationY = translationY;
       } else {
-        icon._icon.translationX = (icon._icon.translationX + translationX)/2;
-        icon._icon.translationY = (icon._icon.translationY + translationY)/2;
+        icon._icon.translationX = (icon._icon.translationX + translationX) / 2;
+        icon._icon.translationY = (icon._icon.translationY + translationY) / 2;
       }
 
       // clear bounce animation
@@ -531,7 +531,7 @@ export let Animator = class {
         icon._renderer = this._renderers[icon._idx];
         icon._renderer._icon = icon._icon;
         icon._renderer.set_style_class_name('');
-        
+
         let renderer = icon._renderer;
         if (gicon) {
           // apply override
@@ -728,7 +728,7 @@ export let Animator = class {
           badge.y = icon._renderer.y - 3 * icon._scale;
 
           if (dock._position == DockPosition.TOP) {
-            badge.y = icon._renderer.y + (icon.height - 6) * icon._scale;        
+            badge.y = icon._renderer.y + (icon.height - 6) * icon._scale;
           }
 
           badge.set_scale(icon._scale, icon._scale);
@@ -926,6 +926,8 @@ export let Animator = class {
           dock.struts.y = dock.y;
         }
       }
+
+      dock._updateTransparenies();
     }
     dock.struts.visible = !dock._hidden;
     dock.dash.opacity = 255;

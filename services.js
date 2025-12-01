@@ -276,7 +276,7 @@ export const Services = class {
     let fullpath = mount.get_default_location().get_path();
     let icon = 'drive-harddisk-solidstate';
     if (mount.get_icon() && mount.get_icon().names) {
-        icon = mount.get_icon().names[0] || icon;
+      icon = mount.get_icon().names[0] || icon;
     }
     let mount_exec = 'echo "not implemented"';
     let unmount_exec = `umount ${fullpath}`;

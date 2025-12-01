@@ -461,5 +461,15 @@
         <summary>Multi-Monitor Filter</summary>
         <description>Filter actions on multi-monitor.</description>
     </key>
+    <key type="b" name="overview-transparent-background">
+        <default>false</default>
+        <summary>Transparent background</summary>
+        <description>Transparent background on overview.</description>
+    </key>
+    <key type="b" name="overview-transparent-topbar-background">
+        <default>false</default>
+        <summary>Transparent background</summary>
+        <description>Transparent background on overview.</description>
+    </key>
   </schema>
 </schemalist>

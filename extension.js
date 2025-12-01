@@ -223,9 +223,8 @@ export default class Dash2DockLiteExt extends Extension {
 
     // to allow dynamic imports
     this._loTimer.runOnce(() => {
-        this.startUp();
-      }, 250);
-
+      this.startUp();
+    }, 250);
   }
 
   disable() {
@@ -889,6 +888,9 @@ export default class Dash2DockLiteExt extends Extension {
       autohider._debounceCheckHide();
     });
     this.animate();
+    this.docks.forEach((dock) => {
+      dock._updateTransparenies();      
+    });
   }
 
   _onOverviewHidden() {
@@ -896,6 +898,9 @@ export default class Dash2DockLiteExt extends Extension {
     this._inOverview = false;
     this._autohiders().forEach((autohider) => {
       autohider._debounceCheckHide();
+    });
+    this.docks.forEach((dock) => {
+      dock._updateTransparenies();      
     });
   }
 
@@ -1270,7 +1275,7 @@ export default class Dash2DockLiteExt extends Extension {
     {
       let ss = [];
       ss.push(`margin: 2px;`);
-      
+
       let r = rads[Math.floor(this.icon_border_radius)];
       ss.push(`border-radius: ${r}px;`);
 

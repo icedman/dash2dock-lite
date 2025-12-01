@@ -163,14 +163,11 @@
         </child>
       </object>
     </child>
-
-
     <child>
       <object class="AdwPreferencesGroup">
         <property name="visible">true</property>
         <property name="title" translatable="yes">Focused Icon Background</property>
         <property name="description" translatable="yes"/>
-
         <child>
           <object class="AdwActionRow">
             <property name="title" translatable="yes">Background Color</property>
@@ -188,7 +185,6 @@
             </child>
           </object>
         </child>
-
         <child>
           <object class="AdwActionRow">
             <property name="title" translatable="yes">Border Radius</property>
@@ -238,11 +234,8 @@
             </child>
           </object>
         </child>
-
       </object>
     </child>
-
-
     <child>
       <object class="AdwPreferencesGroup">
         <property name="title" translatable="yes">Dash</property>
@@ -371,6 +364,18 @@
             <property name="activatable-widget">blur-background</property>
             <child>
               <object class="GtkSwitch" id="blur-background">
+                <property name="valign">center</property>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="AdwActionRow">
+            <property name="title" translatable="yes">Transparent Background on Overview</property>
+            <property name="subtitle" translatable="yes">Remove background on overview.</property>
+            <property name="activatable-widget">overview-transparent-background</property>
+            <child>
+              <object class="GtkSwitch" id="overview-transparent-background">
                 <property name="valign">center</property>
               </object>
             </child>
@@ -559,6 +564,18 @@
                 <property name="height-request">45px</property>
                 <property name="show-editor">true</property>
                 <property name="use-alpha">true</property>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="AdwActionRow">
+            <property name="title" translatable="yes">Transparent Background on Overview</property>
+            <property name="subtitle" translatable="yes">Remove background on overview.</property>
+            <property name="activatable-widget">overview-transparent-topbar-background</property>
+            <child>
+              <object class="GtkSwitch" id="overview-transparent-topbar-background">
+                <property name="valign">center</property>
               </object>
             </child>
           </object>

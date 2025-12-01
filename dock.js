@@ -1105,8 +1105,26 @@ export let Dock = GObject.registerClass(
         topbar_background._blurEffect.enabled =
           this.extension.topbar_blur_background;
       }
-
       return true;
+    }
+
+    _updateTransparenies() {
+      let transparent = (
+        (Main.overview.visible || this.extension._inOverview) &&
+        this.extension.overview_transparent_background
+      );
+
+      this._background.opacity = transparent ? 0 : 255;
+
+      let transparent_topbar = (
+        (Main.overview.visible || this.extension._inOverview) &&
+        this.extension.overview_transparent_topbar_background
+      );
+
+      let topbar_background = this.extension._topbar_background;
+      if (topbar_background) {
+        topbar_background.opacity = transparent_topbar ? 0 : 255;
+      }
     }
 
     preview() {
@@ -1179,7 +1197,8 @@ export let Dock = GObject.registerClass(
       }
 
       this._updateFocusedIcon();
-      
+      this._updateTransparenies();
+
       if (this.extension._hiTimer) {
         this.extension._hiTimer.cancel(this._animationSeq);
         this.extension._loTimer.cancel(this.debounceEndSeq);
@@ -1223,17 +1242,17 @@ export let Dock = GObject.registerClass(
       // apply focus
       this._icons?.forEach((icon) => {
         if (!icon._renderer) return;
-          if (icon._appwell?.app) {
-            let app = icon._appwell?.app;
-            if (!app.get_windows) return;
-            let windows = this.getAppWindowsFiltered(app);
-            windows.forEach((w) => {
-              if (w.has_focus()) {
-                icon._renderer.set_style_class_name('icon-focused');
-                // icon._renderer.style = 'background-color: rgba(255,0,0,0.2); border-radius: 8px;'
-              }
-            });
-          }
+        if (icon._appwell?.app) {
+          let app = icon._appwell?.app;
+          if (!app.get_windows) return;
+          let windows = this.getAppWindowsFiltered(app);
+          windows.forEach((w) => {
+            if (w.has_focus()) {
+              icon._renderer.set_style_class_name('icon-focused');
+              // icon._renderer.style = 'background-color: rgba(255,0,0,0.2); border-radius: 8px;'
+            }
+          });
+        }
       });
     }
 

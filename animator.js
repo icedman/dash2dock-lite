@@ -656,6 +656,9 @@ export let Animator = class {
             }
             icon._label.y += 2 * (m.geometry_scale || 1);
           } else {
+            if (magnify == 0) {
+              sh *= 1.5;
+            }
             if (dock._position == DockPosition.BOTTOM) {
               icon._label.y -= sh / 1.25;
             } else {

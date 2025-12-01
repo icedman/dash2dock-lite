@@ -464,8 +464,13 @@ export let Animator = class {
         icon._positionCache = null;
       }
 
-      icon._icon.translationX = translationX;
-      icon._icon.translationY = translationY;
+      if (dock.extension.animation_fps > 0) {
+        icon._icon.translationX = translationX;
+        icon._icon.translationY = translationY;
+      } else {
+        icon._icon.translationX = (icon._icon.translationX + translationX)/2;
+        icon._icon.translationY = (icon._icon.translationY + translationY)/2;
+      }
 
       // clear bounce animation
       if (icon._appwell) {

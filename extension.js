@@ -1311,6 +1311,7 @@ export default class Dash2DockLiteExt extends Extension {
         ss.push(`color: rgba(${rgba});`);
       }
 
+      ss.push(`padding: 8px;`);
       styles.push(`.dash-label, .dash-label-popup { ${ss.join(' ')}}`);
     }
 

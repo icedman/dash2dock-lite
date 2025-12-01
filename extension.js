@@ -187,6 +187,7 @@ export default class Dash2DockLiteExt extends Extension {
 
     this._enableSettings();
     this._loadIconMap();
+    this._loadConfig();
 
     // no longer needed
     // this._disable_borders = this.border_radius > 0;
@@ -421,6 +422,22 @@ export default class Dash2DockLiteExt extends Extension {
     }
 
     return idx;
+  }
+
+  _loadConfig() {
+    this._config = {};
+    let fn = Gio.File.new_for_path('.config/d2da/config.json');
+    if (fn.query_exists(null)) {
+      const [success, contents] = fn.load_contents(null);
+      const decoder = new TextDecoder();
+      let contentsString = decoder.decode(contents);
+      try {
+        this._config = JSON.parse(contentsString);
+        console.log(this._config);
+      } catch {
+        // fail silently
+      }
+    }
   }
 
   _loadIconMap() {
@@ -889,7 +906,7 @@ export default class Dash2DockLiteExt extends Extension {
     });
     this.animate();
     this.docks.forEach((dock) => {
-      dock._updateTransparenies();      
+      dock._updateTransparenies();
     });
   }
 
@@ -900,7 +917,7 @@ export default class Dash2DockLiteExt extends Extension {
       autohider._debounceCheckHide();
     });
     this.docks.forEach((dock) => {
-      dock._updateTransparenies();      
+      dock._updateTransparenies();
     });
   }
 

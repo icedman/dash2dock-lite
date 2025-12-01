@@ -39,6 +39,10 @@ export const DockItemList = GObject.registerClass(
     }
 
     static createItem(dock, f) {
+      let file_explorer = 'nautilus --select';
+      if (dock.extension._config && dock.extension._config['file-explorer']) {
+        file_explorer = dock.extension._config['file-explorer'];
+      }
       let target = dock.createItem(f.path);
       target._onClick = () => {
         if (dock._position != DockPosition.BOTTOM) {
@@ -55,7 +59,7 @@ export const DockItemList = GObject.registerClass(
             {
               index: -1,
               name: 'More...',
-              exec: `nautilus ${f.folder}`,
+              exec: `${file_explorer} ${f.folder}`,
               icon: target._icon.icon_name,
               type: 'exec',
             },
@@ -120,6 +124,11 @@ export const DockItemList = GObject.registerClass(
       //   iconAdjust += 0.5;
       // }
 
+      let file_explorer = 'nautilus --select';
+      if (dock.extension._config && dock.extension._config['file-explorer']) {
+        file_explorer = dock.extension._config['file-explorer'];
+      }
+
       list.forEach((l) => {
         let w = new St.Widget({});
         let icon = new St.Icon({
@@ -144,7 +153,7 @@ export const DockItemList = GObject.registerClass(
           let cmd = `xdg-open "${path}"`;
 
           if (l.type.includes('directory')) {
-            cmd = `nautilus --select "${path}"`;
+            cmd = `${file_explorer} "${path}"`;
           }
           if (l.type.includes('exec')) {
             cmd = l.exec;

@@ -532,6 +532,10 @@ export let Animator = class {
         icon._renderer._icon = icon._icon;
         icon._renderer.set_style_class_name('');
 
+        if (!icon._appwell?._bounce) {
+          icon._renderer.translationY = 0;
+        }
+
         let renderer = icon._renderer;
         if (gicon) {
           // apply override

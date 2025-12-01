@@ -1109,17 +1109,15 @@ export let Dock = GObject.registerClass(
     }
 
     _updateTransparenies() {
-      let transparent = (
+      let transparent =
         (Main.overview.visible || this.extension._inOverview) &&
-        this.extension.overview_transparent_background
-      );
+        this.extension.overview_transparent_background;
 
       this._background.opacity = transparent ? 0 : 255;
 
-      let transparent_topbar = (
+      let transparent_topbar =
         (Main.overview.visible || this.extension._inOverview) &&
-        this.extension.overview_transparent_topbar_background
-      );
+        this.extension.overview_transparent_topbar_background;
 
       let topbar_background = this.extension._topbar_background;
       if (topbar_background) {

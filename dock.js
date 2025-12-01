@@ -798,7 +798,7 @@ export let Dock = GObject.registerClass(
           path: `${this.extension.path}/apps/recents-dash2dock-lite.desktop`,
           // not ready for prime time
           // does not work on gnome 43 (debian)
-          show: this.extension.documents_icon,
+          show: false, // this.extension.documents_icon,
           prepare: this.extension.services.checkRecents.bind(
             this.extension.services,
           ),

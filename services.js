@@ -567,12 +567,13 @@ export const Services = class {
   }
 
   async checkRecents() {
-    try {
-      [this._recentFiles, this._recentFilesLength] =
-        await this.checkRecentFilesFromRecentManager();
-    } catch (err) {
-      console.log(err);
-    }
+    // NOT YET READY
+    // try {
+    //   [this._recentFiles, this._recentFilesLength] =
+    //     await this.checkRecentFilesFromRecentManager();
+    // } catch (err) {
+    //   console.log(err);
+    // }
   }
 
   _debounceCheckRecents() {

@@ -119,7 +119,7 @@
         </child>
         <child>
           <object class="AdwActionRow">
-            <property name="visible">true</property>
+            <property name="visible">false</property>
             <property name="title" translatable="yes">Recent Files</property>
             <property name="subtitle" translatable="yes">Show recently accessed files.</property>
             <property name="activatable-widget">documents-icon</property>

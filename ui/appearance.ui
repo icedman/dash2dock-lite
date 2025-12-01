@@ -167,14 +167,14 @@
 
     <child>
       <object class="AdwPreferencesGroup">
-        <property name="visible">false</property>
-        <property name="title" translatable="yes">Icon Background</property>
+        <property name="visible">true</property>
+        <property name="title" translatable="yes">Focused Icon Background</property>
         <property name="description" translatable="yes"/>
 
         <child>
           <object class="AdwActionRow">
             <property name="title" translatable="yes">Background Color</property>
-            <property name="subtitle" translatable="yes">Set icons background color.</property>
+            <property name="subtitle" translatable="yes">Set icon background color for focused app.</property>
             <property name="activatable-widget">icon-background-color</property>
             <child>
               <object class="GtkColorButton" id="icon-background-color">

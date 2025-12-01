@@ -1285,7 +1285,7 @@ export default class Dash2DockLiteExt extends Extension {
       //   ss.push(`border: ${t}px rgba(${rgba});`);
       // }
 
-      styles.push(`.icon-rendered { ${ss.join(' ')}}`);
+      styles.push(`.icon-focused { ${ss.join(' ')}}`);
     }
 
     // dash label

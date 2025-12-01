@@ -1178,7 +1178,7 @@ export let Dock = GObject.registerClass(
         this.dwell.remove_style_class_name('hi');
       }
 
-      // this._updateFocusedIcon();
+      this._updateFocusedIcon();
       
       if (this.extension._hiTimer) {
         this.extension._hiTimer.cancel(this._animationSeq);
@@ -1229,6 +1229,7 @@ export let Dock = GObject.registerClass(
             let windows = this.getAppWindowsFiltered(app);
             windows.forEach((w) => {
               if (w.has_focus()) {
+                icon._renderer.set_style_class_name('icon-focused');
                 // icon._renderer.style = 'background-color: rgba(255,0,0,0.2); border-radius: 8px;'
               }
             });

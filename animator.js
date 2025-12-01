@@ -530,7 +530,7 @@ export let Animator = class {
 
         icon._renderer = this._renderers[icon._idx];
         icon._renderer._icon = icon._icon;
-        // icon._renderer.set_style_class_name('icon-rendered');
+        icon._renderer.set_style_class_name('');
         
         let renderer = icon._renderer;
         if (gicon) {

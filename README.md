@@ -121,6 +121,18 @@ Check the log to see the icon names currently being used by Dash2Dock Animated. 
 ```sh
 Icon created "user-trash"
 ```
+## Custom Config
+
+Create a file ```config.json``` under the folder ```sh~/.config/d2da/```
+
+```json
+{
+  "file-explorer": "nemo",
+  "icon-size": "24",
+}
+```
+* file-explorer overrides the default "nautilus"
+* icon-size overrides the icon scale from the preferences panel
 
 ## Blurred Background
 

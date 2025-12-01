@@ -638,7 +638,8 @@ export let Animator = class {
         // labels
         if (icon === hoveredIcon && icon._label) {
           let tSize = renderer.get_transformed_size();
-          let tPos = icon._icon.get_transformed_position();
+          // let tPos = icon._icon.get_transformed_position();
+          let tPos = renderer.get_transformed_position();
           if (isNaN(tPos[0]) || isNaN(tPos[1])) {
             tPos[0] = 0;
             tPos[1] = 0;
@@ -656,9 +657,9 @@ export let Animator = class {
             icon._label.y += 2 * (m.geometry_scale || 1);
           } else {
             if (dock._position == DockPosition.BOTTOM) {
-              icon._label.y -= sh / 1.5;
+              icon._label.y -= sh / 1.25;
             } else {
-              icon._label.y += sh / 1.5;
+              icon._label.y += sh / 1.25;
             }
             icon._label.x += 2 * (m.geometry_scale || 1);
           }

@@ -276,7 +276,7 @@ export const Services = class {
     let fullpath = mount.get_default_location().get_path();
     let icon = 'drive-harddisk-solidstate';
     if (mount.get_icon() && mount.get_icon().names) {
-      icon = this.extension.lookup_icon_from_names(mount.get_icon().names[0]) ?? icon;
+      icon = this.extension.lookup_icon_from_names(mount.get_icon().names) ?? icon;
     }
     let mount_exec = 'echo "not implemented"';
     let unmount_exec = `umount ${fullpath}`;
@@ -404,11 +404,17 @@ export const Services = class {
     while ((fileInfo = enumerator.next_file(null)) !== null) {
       let fileName = fileInfo.get_name();
       let fileModified = fileInfo.get_modification_time();
+
+      let icon = 'file';
+      if (fileInfo.get_icon() && fileInfo.get_icon().names) {
+        icon = this.extension.lookup_icon_from_names(fileInfo.get_icon().names) ?? icon;
+      }
+
       downloadFiles.push({
         index: 0,
         name: fileName,
         display: fileName,
-        icon: this.extension.lookup_icon_from_names(fileInfo.get_icon().get_names()) ?? 'file',
+        icon: icon,
         type: fileInfo.get_content_type(),
         path: [path, fileName].join('/'),
         date: fileModified ?? { tv_sec: 0 },

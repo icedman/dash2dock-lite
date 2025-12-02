@@ -121,6 +121,7 @@
         </child>
         <child>
           <object class="AdwActionRow">
+            <property name="visible">false</property>
             <property name="title" translatable="yes">Icon Shadow</property>
             <property name="subtitle" translatable="yes">Add icon shadow effect.</property>
             <property name="activatable-widget">icon-shadow</property>

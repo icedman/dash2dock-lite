@@ -318,12 +318,19 @@ export default class Dash2DockLiteExt extends Extension {
     if (bms && bms.stateObj) {
       let obj = bms.stateObj;
       if (obj._dash_to_dock_blur) {
-        obj._dash_to_dock_blur.update_size = () => {};
+        if (!obj._dash_to_dock_blur_orig) {
+          obj._dash_to_dock_blur_orig = obj._dash_to_dock_blur;
+        }
+        if (hook && this.blur_background) {
+          obj._dash_to_dock_blur.update_size = () => {};
+        } else if (obj._dash_to_dock_blur_orig) {
+          obj._dash_to_dock_blur = obj._dash_to_dock_blur_orig;
+        }
       }
     }
   }
 
-  _updateCompizBms() {
+  _updateHookBms() {
     this._hookBms(false);
     this._hookBms(true);
   }
@@ -681,11 +688,12 @@ export default class Dash2DockLiteExt extends Extension {
           this.animate();
           break;
         }
-        case 'topbar-background-color':
-        case 'topbar-blur-background':
+        // case 'topbar-background-color':
+        // case 'topbar-blur-background':
         case 'background-color':
         case 'blur-resolution':
         case 'blur-background':
+          this._updateHookBms();
           this._updateBlurredBackground();
           this._updateStyle();
           this._updateLayout();
@@ -1053,7 +1061,7 @@ export default class Dash2DockLiteExt extends Extension {
     // icons-shadow
     if (this.icon_shadow) {
       styles.push(
-        '.renderer_icon, #DockItemList StIcon {icon-shadow: rgba(0, 0, 0, 0.32) 0 2px 6px;}',
+        '.renderer_icon, #DockItemList StIcon {icon-shadow: rgba(0, 0, 0, 0.42) 0 4px 8px;}',
       );
       // styles.push(
       //   '#dash StIcon:hover, #DockItemList StIcon:hover {icon-shadow: rgba(0, 0, 0, 0.24) 0 2px 8px;}'

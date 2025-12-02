@@ -14,7 +14,6 @@ import { Dash } from 'resource:///org/gnome/shell/ui/dash.js';
 
 import { TintEffect } from './effects/tint_effect.js';
 import { MonochromeEffect } from './effects/monochrome_effect.js';
-import { BlurEffect } from './effects/blur_effect.js';
 
 import { DockIcon, DockItemContainer, DockBackground } from './dockItems.js';
 import { DockItemList } from './dockItemMenu.js';
@@ -125,9 +124,6 @@ export let Dock = GObject.registerClass(
         this.autohider._onLeaveEvent.bind(this.autohider),
         this,
       );
-
-      this._blurEffect = this._createEffect(1);
-      this._updateBackgroundEffect();
     }
 
     destroyDash() {
@@ -287,14 +283,6 @@ export let Dock = GObject.registerClass(
           effect.preload(this.extension.path);
           break;
         }
-        case 3: {
-          effect = new BlurEffect({
-            name: 'color',
-            color: this.extension.icon_effect_color,
-          });
-          effect.preload(this.extension.path);
-          break;
-        }
       }
       return effect;
     }
@@ -304,13 +292,7 @@ export let Dock = GObject.registerClass(
     }
 
     _updateBackgroundEffect() {
-      this._background.remove_effect_by_name('blur');
-      if (this._blurEffect) {
-        if (this.extension.blur_background) {
-          this._background.add_effect_with_name('blur', this._blurEffect);
-        }
-        this._blurEffect.color = this.extension.background_color;
-      }
+      // blur-my-shell takes care of us
     }
 
     _updateIconEffect() {
@@ -1124,13 +1106,6 @@ export let Dock = GObject.registerClass(
         topbar_background &&
         this.extension.customize_topbar
       ) {
-        if (!topbar_background._blurEffect) {
-          topbar_background._blurEffect = this._createEffect(1);
-          topbar_background.add_effect_with_name(
-            'blur',
-            topbar_background._blurEffect,
-          );
-        }
         let panel = Main.panel.get_parent();
         topbar_background.x = panel.x;
         topbar_background.y = panel.y;
@@ -1138,33 +1113,11 @@ export let Dock = GObject.registerClass(
         topbar_background.height = panel.height;
         let style = [];
 
-        let blur = !(
-          (Main.overview.visible || this.extension._inOverview) &&
-          this.extension.disable_blur_at_overview
+        let rgba = this.extension._style.rgba(
+          this.extension.topbar_background_color,
         );
-
-        if (this.extension.topbar_blur_background && blur) {
-          topbar_background._blurEffect.color =
-            this.extension.topbar_background_color;
-          style.push(
-            // `background-image: url("${dock.extension.desktop_background}");`
-            `background-image: url("${this.extension.desktop_background_blurred}");`,
-          );
-          let monitor = Main.layoutManager.primaryMonitor;
-          style.push('background-position: 0px 0px;');
-          style.push(
-            `background-size: ${monitor.width}px ${monitor.height}px;`,
-          );
-        } else {
-          let rgba = this.extension._style.rgba(
-            this.extension.topbar_background_color,
-          );
-          style.push(`background-color: rgba(${rgba});`);
-        }
-
+        style.push(`background-color: rgba(${rgba});`);
         topbar_background.style = style.join('');
-        topbar_background._blurEffect.enabled =
-          this.extension.topbar_blur_background;
       }
       return true;
     }

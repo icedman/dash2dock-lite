@@ -362,6 +362,7 @@ export let Dock = GObject.registerClass(
     }
 
     createDash() {
+      this._pauseAllBounce(1500);
       if (this.dash) {
         this.destroyDash();
       }
@@ -1205,11 +1206,18 @@ export let Dock = GObject.registerClass(
       }
       //! add layout here instead of at the
       this.animator.animate(dt);
-      while (this._fast_forward && this._fast_forward-- > 0) {
-        this.animate(dt);
-        this.dash.opacity = 0;
+
+      if (!this._pauseBounce || this._pauseBounce <= 0) {
+        while (this._fast_forward && this._fast_forward-- > 0) {
+          this.animate(dt);
+          this.dash.opacity = 0;
+        }
       }
       this.simulated_pointer = null;
+
+      if (this._pauseBounce && this._pauseBounce > 0) {
+        this._pauseBounce -= dt;
+      }
     }
 
     //! move these generic functions outside of this class
@@ -1412,7 +1420,14 @@ export let Dock = GObject.registerClass(
       }
     }
 
+    _pauseAllBounce(t = 250) {
+      this._pauseBounce = t;
+    }
+
     _maybeBounce(container, just_do_it) {
+      if (this._pauseBounce && this._pauseBounce > 0) {
+        return;
+      }
       if (!this.extension.open_app_animation) {
         return;
       }

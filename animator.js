@@ -827,9 +827,9 @@ export let Animator = class {
 
       let any = next ?? prev;
       if (!vertical && any) {
-        actor.translationY = (any.height/2) - (actor.height/2); 
+        actor.translationY = any.height / 2 - actor.height / 2;
       } else if (vertical && any) {
-        actor.translationX = (any.width/2) - (actor.width/2); 
+        actor.translationX = any.width / 2 - actor.width / 2;
       }
     });
 
@@ -995,8 +995,8 @@ export let Animator = class {
       bms.first_child.set_clip(
         0 + bg_offset_x,
         -bms.first_child.y + bg_offset_y,
-        dock._background.width,
-        dock._background.height,
+        dock._background.width - (dock.extension.border_thickness && 0),
+        dock._background.height - (dock.extension.border_thickness && 0),
       );
 
       let opacity = (dock.extension.background_color[3] ?? 0.5) * 54 + 200;

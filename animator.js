@@ -829,7 +829,7 @@ export let Animator = class {
       if (!vertical && any) {
         actor.translationY = any.height / 2 - actor.height / 2;
       } else if (vertical && any) {
-        actor.translationX = any.width / 2 - actor.width / 2;
+        // actor.translationX = any.width / 2 - actor.width / 2;
       }
     });
 
@@ -983,21 +983,53 @@ export let Animator = class {
     }
 
     // blur my shell
-    if (bms) {
+    if (bms && bms.visible) {
       let bg_offset_x = dock._background.x;
       let bg_offset_y = dock._background.y;
+      let rw = dock.renderArea.width;
       let rh = dock.renderArea.height;
 
-      bms.x = 0;
-      bms.y = 0;
-      bms.first_child.x = 0;
-      bms.first_child.y = -bms.first_child.first_child.height + rh;
-      bms.first_child.set_clip(
-        0 + bg_offset_x,
-        -bms.first_child.y + bg_offset_y,
-        dock._background.width - (dock.extension.border_thickness && 0),
-        dock._background.height - (dock.extension.border_thickness && 0),
-      );
+      // bottom layout
+      switch (dock._position) {
+        case 'left':
+        case 'top':
+          bms.x = 0;
+          bms.y = 0;
+          bms.first_child.x = 0;
+          bms.first_child.y = 0;
+          bms.first_child.set_clip(
+            bg_offset_x,
+            bg_offset_y,
+            dock._background.width - (dock.extension.border_thickness && 0),
+            dock._background.height - (dock.extension.border_thickness && 0),
+          );
+          break;
+        case 'right':
+          bms.x = 0;
+          bms.y = 0;
+          bms.first_child.x = -bms.first_child.first_child.width + rw;
+          bms.first_child.y = 0;
+          bms.first_child.set_clip(
+            -bms.first_child.x + bg_offset_x,
+            0 + bg_offset_y,
+            dock._background.width - (dock.extension.border_thickness && 0),
+            dock._background.height - (dock.extension.border_thickness && 0),
+          );
+          break;
+        case 'bottom':
+        default:
+          bms.x = 0;
+          bms.y = 0;
+          bms.first_child.x = 0;
+          bms.first_child.y = -bms.first_child.first_child.height + rh;
+          bms.first_child.set_clip(
+            0 + bg_offset_x,
+            -bms.first_child.y + bg_offset_y,
+            dock._background.width - (dock.extension.border_thickness && 0),
+            dock._background.height - (dock.extension.border_thickness && 0),
+          );
+          break;
+      }
 
       let opacity = (dock.extension.background_color[3] ?? 0.5) * 54 + 200;
       bms.first_child.first_child.opacity = opacity;

@@ -824,6 +824,13 @@ export let Animator = class {
           : iconSize * 0.75 * scaleFactor;
         actor.visible = thickness > 0;
       }
+
+      let any = next ?? prev;
+      if (!vertical && any) {
+        actor.translationY = (any.height/2) - (actor.height/2); 
+      } else if (vertical && any) {
+        actor.translationX = (any.width/2) - (actor.width/2); 
+      }
     });
 
     let targetX = 0;
@@ -995,10 +1002,10 @@ export let Animator = class {
       let opacity = (dock.extension.background_color[3] ?? 0.5) * 54 + 200;
       bms.first_child.first_child.opacity = opacity;
 
-      // if (this._corner_effect) {
-      //   this._corner_effect.width = bms.width;
-      //   this._corner_effect.height = bms.height;
-      // }
+      this._blur_effects = bms.first_child.get_effects();
+      if (this._blur_effects && this._blur_effects[0]) {
+        this._blur_effects[0].radius = dock.extension.computed_border_radius;
+      }
     }
   }
 

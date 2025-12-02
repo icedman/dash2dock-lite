@@ -650,6 +650,7 @@ export default class Dash2DockLiteExt extends Extension {
         }
         case 'border-radius':
           this._debouncedUpdateStyle();
+          this.animate();
           break;
         case 'separator-thickness':
           this._updateStyle();
@@ -1067,6 +1068,7 @@ export default class Dash2DockLiteExt extends Extension {
         r = 0;
       }
       ss.push(`border-radius: ${r}px;`);
+      this.computed_border_radius = r;
       /*
       if (!this.blur_background) {
         let rgba = this._style.rgba(this.background_color);

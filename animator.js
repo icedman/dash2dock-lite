@@ -182,6 +182,12 @@ export let Animator = class {
     animateIcons.forEach((icon) => {
       let pos = icon.get_transformed_position();
 
+      if (icon._found && !icon._handled) {
+        // console.log('new icon!');
+        icon._handled = true;
+        dock._maybeBounce(icon, true);
+      }
+
       icon._pos = [...pos];
       icon._fixedPosition = [...pos];
 
@@ -803,10 +809,10 @@ export let Animator = class {
         let thickness = dock.extension.separator_thickness || 0;
         //! use ifs for more readability
         actor.width = !vertical
-          ? thickness + 0.5
+          ? thickness + 1.0
           : iconSize * 0.5 * scaleFactor;
         actor.height = vertical
-          ? thickness + 0.5
+          ? thickness + 1.0
           : iconSize * 0.75 * scaleFactor;
         actor.visible = thickness > 0;
       }

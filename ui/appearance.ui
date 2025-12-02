@@ -206,6 +206,7 @@
         </child>
         <child>
           <object class="AdwActionRow">
+            <property name="visible">false</property>
             <property name="title" translatable="yes">Border Thickness</property>
             <property name="subtitle" translatable="yes">Set border thickness.</property>
             <property name="activatable-widget">icon-border-thickness</property>
@@ -219,6 +220,7 @@
         </child>
         <child>
           <object class="AdwActionRow">
+            <property name="visible">false</property>
             <property name="title" translatable="yes">Border Color</property>
             <property name="subtitle" translatable="yes">Select border color.</property>
             <property name="activatable-widget">icon-border-color</property>

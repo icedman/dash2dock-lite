@@ -365,6 +365,7 @@ export let Dock = GObject.registerClass(
       orig = orig.bind(dash);
       dash._createAppItem = function (app) {
         let item = orig.call(this, app);
+        this.opacity = 0;
         item.child.visible = false;
         return item;
       };
@@ -543,15 +544,21 @@ export let Dock = GObject.registerClass(
         if (c._appwell) {
           c._appwell.visible = true;
           c._dot = c._appwell._dot;
+
+          let app = c._appwell.app;
+          let appId = app ? app.get_id() : '';
+          
           // hide icons if favorites only
           if (this.extension.favorites_only && !c.custom_icon) {
-            let app = c._appwell.app;
-            let appId = app ? app.get_id() : '';
             if (!this._favorite_ids.includes(appId)) {
               c._appwell.visible = false;
               c.width = -1;
               c.height = -1;
               return false;
+            }
+          } else {
+            if (!c.custom_icon && !c._found && !this._favorite_ids.includes(appId)) {
+              c._found = true;
             }
           }
         }
@@ -635,9 +642,9 @@ export let Dock = GObject.registerClass(
       //--------------------
       // find favorites and running apps icons
       //--------------------
-      if (this.extension.favorites_only) {
+      // if (this.extension.favorites_only) {
         this._favorite_ids = Fav.getAppFavorites()._getIds();
-      }
+      // }
       this.dash._box.get_children().forEach((icon) => {
         this._inspectIcon(icon);
       });
@@ -1186,6 +1193,7 @@ export let Dock = GObject.registerClass(
       this.animator.animate(dt);
       while (this._fastForward && this._fastForward-- > 0) {
         this.animate(dt);
+        this.dash.opacity = 0;
       }
       this.simulated_pointer = null;
     }
@@ -1387,7 +1395,7 @@ export let Dock = GObject.registerClass(
       }
     }
 
-    _maybeBounce(container) {
+    _maybeBounce(container, just_do_it) {
       if (!this.extension.open_app_animation) {
         return;
       }
@@ -1403,7 +1411,7 @@ export let Dock = GObject.registerClass(
         }
       }
       // bounce the custom icons
-      if (container.custom_icon) {
+      if (container.custom_icon || just_do_it) {
         this.animator.bounceIcon(container.child);
       }
     }

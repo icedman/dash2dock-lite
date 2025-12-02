@@ -8,7 +8,7 @@ uniform vec2 textureSize; // Size of the texture being sampled
 // Function to perform a simple blur
 vec4 blur(sampler2D texture, vec2 texCoord) {
     vec4 sum = vec4(0.0);
-    float blurSize = 0.05; // Adjust this for different blur strengths
+    float blurSize = 0.01; // Adjust this for different blur strengths
 
     // Sample neighboring pixels and average their colors
     sum += texture2D(texture, texCoord + vec2(-blurSize, -blurSize));
@@ -21,7 +21,7 @@ vec4 blur(sampler2D texture, vec2 texCoord) {
     sum += texture2D(texture, texCoord + vec2(0.0, blurSize));
     sum += texture2D(texture, texCoord + vec2(blurSize, blurSize));
 
-    return sum / 9.0; // Adjust divisor for different blur strengths
+    return sum / 2.0; // Adjust divisor for different blur strengths
 }
 
 void main() {

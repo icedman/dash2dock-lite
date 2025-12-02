@@ -4,6 +4,7 @@
      border: 2px solid magenta !important;
 }
 
+#dashtodockcontainer.hi,
 #d2daDock.hi {
   border: 2px solid red; 
 }
@@ -16,6 +17,7 @@
   border: 2px solid yellow; 
 }
 
+#dashtodockcontainer *,
 #d2daDock * {
  margin: 0px !important;
  padding: 0px !important;

@@ -6,6 +6,8 @@ import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 import { trySpawnCommandLine } from './utils.js';
 // import { trySpawnCommandLine } from 'resource:///org/gnome/shell/misc/util.js';
 
+import { Dash } from 'resource:///org/gnome/shell/ui/dash.js';
+
 import Gio from 'gi://Gio';
 import GObject from 'gi://GObject';
 import Clutter from 'gi://Clutter';
@@ -458,6 +460,9 @@ export const DockBackground = GObject.registerClass(
         }
 
         this.style = style.join(' ');
+        // this._bg.width = this.width;
+        // this._bg.height = this.height;
+        // this._bg.style = style.join(' ');
       }
     }
   },

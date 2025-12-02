@@ -103,6 +103,14 @@ export let Animator = class {
       dock._lastHoveredIcon = dock._hoveredIcon;
     }
 
+    let bms = dock.get_children().find((child) => {
+      return child.get_name() === 'bms-dash-backgroundgroup';
+    });
+    this._bms = bms;
+    if (!dock.extension.blur_background) {
+      bms.first_child.visible = false;
+    }
+
     let simulation = false;
 
     if (!dock.layout()) {
@@ -340,7 +348,7 @@ export let Animator = class {
     //! use better collision test here?
     let total_spread_left = 0;
     let total_spread_right = 0;
-    let hoveredIcon = null;
+    let hoveredIcon = dock._lastHoveredIcon;
     for (let i = 0; i < iconTable.length; i++) {
       if (iconTable.length < 2) break;
       let icon = iconTable[i];
@@ -809,10 +817,10 @@ export let Animator = class {
         let thickness = dock.extension.separator_thickness || 0;
         //! use ifs for more readability
         actor.width = !vertical
-          ? thickness + 1.0
+          ? thickness + 0.5
           : iconSize * 0.5 * scaleFactor;
         actor.height = vertical
-          ? thickness + 1.0
+          ? thickness + 0.5
           : iconSize * 0.75 * scaleFactor;
         actor.visible = thickness > 0;
       }
@@ -965,6 +973,32 @@ export let Animator = class {
     if (didFadeIn || didScale || dock._dragging || didBounce) {
       dock.autohider._debounceCheckHide();
       dock._debounceEndAnimation();
+    }
+
+    // blur my shell
+    if (bms) {
+      let bg_offset_x = dock._background.x;
+      let bg_offset_y = dock._background.y;
+      let rh = dock.renderArea.height;
+
+      bms.x = 0;
+      bms.y = 0;
+      bms.first_child.x = 0;
+      bms.first_child.y = -bms.first_child.first_child.height + rh;
+      bms.first_child.set_clip(
+        0 + bg_offset_x,
+        -bms.first_child.y + bg_offset_y,
+        dock._background.width,
+        dock._background.height,
+      );
+
+      let opacity = (dock.extension.background_color[3] ?? 0.5) * 54 + 200;
+      bms.first_child.first_child.opacity = opacity;
+
+      // if (this._corner_effect) {
+      //   this._corner_effect.width = bms.width;
+      //   this._corner_effect.height = bms.height;
+      // }
     }
   }
 

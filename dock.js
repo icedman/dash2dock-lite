@@ -51,10 +51,12 @@ const MAX_SCROLL_RESOLUTION = 10;
 
 export let Dock = GObject.registerClass(
   {},
-  class Dock extends St.Widget {
+  class DashToDock extends St.Widget {
     _init(params) {
       super._init({
-        name: 'd2daDock',
+        // name: 'd2daDock',
+        name: 'dashtodockContainer',
+        style_class: 'bottom',
         reactive: false,
         track_hover: false,
         width: 0,
@@ -72,6 +74,13 @@ export let Dock = GObject.registerClass(
 
       this._background = new DockBackground({ name: 'd2daBackground' });
       this.add_child(this._background);
+
+      // for blur-my-shell
+      this._slider = {
+        get_child: () => {
+          return this;
+        },
+      };
 
       this.renderArea = new St.Widget({
         name: 'DockRenderArea',
@@ -244,8 +253,9 @@ export let Dock = GObject.registerClass(
       return Clutter.EVENT_PROPAGATE;
     }
     _onAppsChanged(evt) {
+      this._favorite_ids = Fav.getAppFavorites()._getIds();
       this._icons = null;
-      this._fastForward = 20;
+      this._fast_forward = 20;
       // this._debouncedBeginAnimation();
       this._beginAnimation();
       this.autohider._debounceCheckHide();
@@ -547,17 +557,19 @@ export let Dock = GObject.registerClass(
 
           let app = c._appwell.app;
           let appId = app ? app.get_id() : '';
-          
+
           // hide icons if favorites only
-          if (this.extension.favorites_only && !c.custom_icon) {
-            if (!this._favorite_ids.includes(appId)) {
+          if (
+            !c.custom_icon &&
+            this._favorite_ids &&
+            !this._favorite_ids.includes(appId)
+          ) {
+            if (this.extension.favorites_only) {
               c._appwell.visible = false;
               c.width = -1;
               c.height = -1;
               return false;
-            }
-          } else {
-            if (!c.custom_icon && !c._found && !this._favorite_ids.includes(appId)) {
+            } else if (!c._found) {
               c._found = true;
             }
           }
@@ -642,9 +654,6 @@ export let Dock = GObject.registerClass(
       //--------------------
       // find favorites and running apps icons
       //--------------------
-      // if (this.extension.favorites_only) {
-        this._favorite_ids = Fav.getAppFavorites()._getIds();
-      // }
       this.dash._box.get_children().forEach((icon) => {
         this._inspectIcon(icon);
       });
@@ -1166,6 +1175,11 @@ export let Dock = GObject.registerClass(
 
       this._background.opacity = transparent ? 0 : 255;
 
+      if (this.animator._bms) {
+        this.animator._bms.first_child.visible =
+          !transparent && this.extension.blur_background;
+      }
+
       let transparent_topbar =
         (Main.overview.visible || this.extension._inOverview) &&
         this.extension.overview_transparent_topbar_background;
@@ -1191,7 +1205,7 @@ export let Dock = GObject.registerClass(
       }
       //! add layout here instead of at the
       this.animator.animate(dt);
-      while (this._fastForward && this._fastForward-- > 0) {
+      while (this._fast_forward && this._fast_forward-- > 0) {
         this.animate(dt);
         this.dash.opacity = 0;
       }
@@ -1218,6 +1232,9 @@ export let Dock = GObject.registerClass(
         this.struts.add_style_class_name('hi');
         this.dwell.add_style_class_name('hi');
       }
+
+      this._favorite_ids = Fav.getAppFavorites()._getIds();
+
       // if (caller) {
       //   console.log(`animation triggered by ${caller}`);
       // }
@@ -1250,7 +1267,6 @@ export let Dock = GObject.registerClass(
       }
 
       this._updateFocusedIcon();
-      this._updateTransparenies();
 
       if (this.extension._hiTimer) {
         this.extension._hiTimer.cancel(this._animationSeq);
@@ -1259,6 +1275,7 @@ export let Dock = GObject.registerClass(
       this.autohider._debounceCheckHide();
       this._icons = null;
       this._dragged = null;
+      this._lastHoveredIcon = null;
     }
 
     _destroyList() {

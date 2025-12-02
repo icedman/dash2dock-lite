@@ -142,11 +142,8 @@ export default class Dash2DockLiteExt extends Extension {
 
     // Use UUID to avoid conflicting with other instances of this extensions (multi user setup)
     if (!this.uuid) {
-      this.uuid = GLib.get_user_name(); // GLib.uuid_string_random();
+      this.uuid = GLib.get_user_name();
     }
-
-    // for debugging - set to 255
-    this._dash_opacity = 0;
 
     // three available timers
     // for persistent runs
@@ -168,22 +165,6 @@ export default class Dash2DockLiteExt extends Extension {
     this.icon_quality = ANIM_ICON_QUALITY;
 
     this._style = new Style();
-
-    this._backgroundUris = { light: null, dark: null };
-    this._blurredBackgrounds = {
-      light: {
-        path: tempPath('d2da-bg-light-blurred.jpg'),
-        uri: null,
-        signature: null,
-      },
-      dark: {
-        path: tempPath('d2da-bg-dark-blurred.jpg'),
-        uri: null,
-        signature: null,
-      },
-    };
-    this.desktop_background_variant = 'light';
-    this._blurRefreshId = 0;
 
     this._enableSettings();
     this._loadIconMap();
@@ -274,19 +255,11 @@ export default class Dash2DockLiteExt extends Extension {
     this._style.unloadAll();
     this._style = null;
 
-    if (this._blurRefreshId) {
-      GLib.source_remove(this._blurRefreshId);
-      this._blurRefreshId = 0;
-    }
-
-    this._backgroundUris = null;
-    this._blurredBackgrounds = null;
-    this.desktop_background_variant = null;
-
     delete this.icon_theme;
     this.icon_theme = null;
 
     this._hookCompiz(false);
+    this._hookBms(false);
 
     Main.overview.d2dl = null;
     console.log('dash2dock-lite disabled');
@@ -337,6 +310,22 @@ export default class Dash2DockLiteExt extends Extension {
   _updateCompizHook() {
     this._hookCompiz(false);
     this._hookCompiz(true);
+  }
+
+  _hookBms(hook = true) {
+    let bms = Main.extensionManager.lookup('blur-my-shell@aunetx');
+    this._bms = bms;
+    if (bms && bms.stateObj) {
+      let obj = bms.stateObj;
+      if (obj._dash_to_dock_blur) {
+        obj._dash_to_dock_blur.update_size = () => {};
+      }
+    }
+  }
+
+  _updateCompizBms() {
+    this._hookBms(false);
+    this._hookBms(true);
   }
 
   // override compiz getIcon
@@ -393,6 +382,7 @@ export default class Dash2DockLiteExt extends Extension {
         dock._debounceEndAnimation();
       });
       this._hookCompiz();
+      this._hookBms();
     }, 10);
     this._loTimer.runUntil(() => {
       return this._createTopbarBackground();
@@ -515,7 +505,7 @@ export default class Dash2DockLiteExt extends Extension {
       this._interfaceSettings.connectObject(
         'changed::color-scheme',
         () => {
-          this._applyActiveBlurredBackground();
+          // this._applyActiveBlurredBackground();
         },
         this,
       );
@@ -959,215 +949,7 @@ export default class Dash2DockLiteExt extends Extension {
     this.animate();
   }
 
-  async _updateBlurredBackground() {
-    this._backgroundUris = this._backgroundUris ?? { light: null, dark: null };
-    this._blurredBackgrounds = this._blurredBackgrounds ?? {
-      light: {
-        path: tempPath('d2da-bg-light-blurred.jpg'),
-        uri: null,
-        signature: null,
-      },
-      dark: {
-        path: tempPath('d2da-bg-dark-blurred.jpg'),
-        uri: null,
-        signature: null,
-      },
-    };
-
-    const lightUri = this._desktopSettings.get_string('picture-uri');
-    let darkUri = lightUri;
-
-    try {
-      if (this._desktopSettings.list_keys().includes('picture-uri-dark')) {
-        const candidate = this._desktopSettings.get_string('picture-uri-dark');
-        if (candidate && candidate !== '') {
-          darkUri = candidate;
-        }
-      }
-    } catch (err) {
-      console.log(err);
-    }
-
-    this._backgroundUris.light = lightUri;
-    this._backgroundUris.dark = darkUri || lightUri;
-
-    if (this.blur_background || this.topbar_blur_background) {
-      await Promise.all(
-        ['light', 'dark'].map((variant) =>
-          this._ensureBlurredBackground(variant, this._backgroundUris[variant]),
-        ),
-      );
-      this._scheduleBlurRefresh();
-    }
-
-    this._applyActiveBlurredBackground();
-  }
-
-  async _ensureBlurredBackground(variant, uri) {
-    const cache = this._blurredBackgrounds?.[variant];
-    if (!cache) {
-      return;
-    }
-
-    if (!uri || uri === 'none') {
-      cache.uri = null;
-      cache.signature = null;
-      return;
-    }
-
-    const qualityIndex = this.blur_resolution || 0;
-    const signature = `${uri}|${qualityIndex}`;
-
-    if (cache.signature === signature) {
-      try {
-        const existing = Gio.File.new_for_path(cache.path);
-        if (existing.query_exists(null)) {
-          return;
-        }
-      } catch (err) {
-        cache.uri = null;
-        cache.signature = null;
-      }
-    }
-
-    let file = null;
-    try {
-      file = Gio.File.new_for_uri(uri);
-    } catch (err) {
-      console.log(err);
-      cache.uri = null;
-      return;
-    }
-
-    const inputPath = file && file.get_path ? file.get_path() : null;
-    if (!inputPath) {
-      console.log(
-        `Unable to resolve background path for blur effect (${variant})`,
-      );
-      cache.uri = null;
-      cache.signature = null;
-      return;
-    }
-
-    const quality = [250, 250, 500, 1000][qualityIndex];
-    const magickBin = GLib.find_program_in_path('magick');
-    const convertBin = GLib.find_program_in_path('convert');
-    const quotedInput = GLib.shell_quote(inputPath);
-    const quotedOutput = GLib.shell_quote(cache.path);
-    const operations = `-scale 10% -blur 0x2.5 -resize ${quality}%`;
-
-    let cmd = null;
-    if (magickBin) {
-      cmd = `${magickBin} ${quotedInput} ${operations} ${quotedOutput}`;
-    } else if (convertBin) {
-      cmd = `${convertBin} ${quotedInput} ${operations} ${quotedOutput}`;
-    } else {
-      console.log(
-        'Neither magick nor convert command found; blur effect disabled',
-      );
-      cache.uri = null;
-      cache.signature = null;
-      return;
-    }
-
-    console.log(cmd);
-    try {
-      await trySpawnCommandLine(cmd);
-      cache.uri = uri;
-      cache.signature = signature;
-    } catch (err) {
-      console.log(err);
-      cache.uri = null;
-      cache.signature = null;
-    }
-  }
-
-  _applyActiveBlurredBackground() {
-    const variant = this._getPreferredColorScheme();
-    const fallbackVariant = variant === 'dark' ? 'light' : 'dark';
-    const candidateUri =
-      this._backgroundUris?.[variant] && this._backgroundUris[variant] !== ''
-        ? this._backgroundUris[variant]
-        : this._backgroundUris?.[fallbackVariant];
-    const sanitizedUri =
-      candidateUri && candidateUri !== 'none' ? candidateUri : '';
-
-    this.desktop_background_variant = variant;
-    this.desktop_background = sanitizedUri || this.desktop_background || '';
-
-    let blurredPath = null;
-    if (this.blur_background || this.topbar_blur_background) {
-      const candidates = [
-        this._blurredBackgrounds?.[variant],
-        this._blurredBackgrounds?.[fallbackVariant],
-      ];
-
-      for (const entry of candidates) {
-        if (!entry || !entry.path || !entry.uri) {
-          continue;
-        }
-        try {
-          const file = Gio.File.new_for_path(entry.path);
-          if (file.query_exists(null)) {
-            blurredPath = entry.path;
-            break;
-          }
-        } catch (err) {
-          console.log(err);
-        }
-      }
-    }
-
-    this.desktop_background_blurred =
-      blurredPath && blurredPath.length ? blurredPath : this.desktop_background;
-
-    (this.docks || []).forEach((dock) => {
-      dock._updateBackgroundEffect();
-    });
-
-    this.animate();
-  }
-
-  _scheduleBlurRefresh(attempt = 0) {
-    if (!this.blur_background && !this.topbar_blur_background) {
-      return;
-    }
-
-    if (++attempt > 5) {
-      return;
-    }
-
-    if (this._blurRefreshId) {
-      GLib.source_remove(this._blurRefreshId);
-      this._blurRefreshId = 0;
-    }
-
-    const delay = attempt === 1 ? 500 : 1000;
-    this._blurRefreshId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, delay, () => {
-      this._blurRefreshId = 0;
-
-      const variant = this.desktop_background_variant || 'light';
-      const entry = this._blurredBackgrounds?.[variant];
-      let ready = false;
-
-      if (entry && entry.path && entry.uri) {
-        try {
-          const file = Gio.File.new_for_path(entry.path);
-          ready = file.query_exists(null);
-        } catch (err) {
-          console.log(err);
-        }
-      }
-
-      this._applyActiveBlurredBackground();
-
-      if (!ready) {
-        this._scheduleBlurRefresh(attempt);
-      }
-
-      return GLib.SOURCE_REMOVE;
-    });
-  }
+  _updateBlurredBackground() {}
 
   _getPreferredColorScheme() {
     let scheme = 'light';
@@ -1313,7 +1095,7 @@ export default class Dash2DockLiteExt extends Extension {
       //   ss.push(`border: ${t}px rgba(${rgba});`);
       // }
 
-      styles.push(`.icon-focused { ${ss.join(' ')}}`);
+      // styles.push(`.icon-focused { ${ss.join(' ')}}`);
     }
 
     // dash label

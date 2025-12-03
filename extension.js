@@ -33,6 +33,7 @@ import { Timer } from './timer.js';
 import { Style } from './style.js';
 import { Dock } from './dock.js';
 import { Services } from './services.js';
+import { Integrations } from './integrations.js';
 import { runTests } from './diagnostics.js';
 
 import {
@@ -184,6 +185,11 @@ export default class Dash2DockLiteExt extends Extension {
 
     this.icon_theme = St.IconTheme.new();
 
+    // integrations
+    this.integrations = new Integrations();
+    this.integrations.extension = this;
+    this.integrations.enable();
+
     // service
     this.services = new Services();
     this.services.extension = this;
@@ -244,6 +250,9 @@ export default class Dash2DockLiteExt extends Extension {
       this._topbar_background = null;
     }
 
+    this.integrations.disable();
+    this.integrations = null;
+
     this.services.disable();
     this.services = null;
 
@@ -258,16 +267,11 @@ export default class Dash2DockLiteExt extends Extension {
     delete this.icon_theme;
     this.icon_theme = null;
 
-    this._hookCompiz(false);
-    this._hookBms(false);
-
     Main.overview.d2dl = null;
     console.log('dash2dock-lite disabled');
   }
 
   animate(settings = {}) {
-    this._checkHooks();
-
     this.docks.forEach((dock) => {
       if (settings && settings.preview) {
         dock.preview();
@@ -291,110 +295,9 @@ export default class Dash2DockLiteExt extends Extension {
     });
   }
 
-  _hookCompiz(hook = true) {
-    let compiz = Main.extensionManager.lookup(
-      'compiz-alike-magic-lamp-effect@hermes83.github.com'
-    );
-    if (compiz && compiz.stateObj) {
-      let stateObj = compiz.stateObj;
-      this._compiz = stateObj;
-      if (stateObj._getIcon && !hook) {
-        stateObj.getIcon = stateObj._getIcon;
-        stateObj._getIcon = null;
-      }
-      if (!stateObj._getIcon && hook) {
-        stateObj._getIcon = stateObj.getIcon;
-        if (this.lamp_app_animation) {
-          stateObj.getIcon = this._getIcon.bind(this);
-        }
-      }
-    }
-  }
-
-  _updateCompizHook() {
-    this._hookCompiz(false);
-    this._hookCompiz(true);
-  }
-
-  _hookBms(hook = true) {
-    let bms = Main.extensionManager.lookup('blur-my-shell@aunetx');
-    this._bms = bms;
-    if (bms && bms.stateObj) {
-      let obj = bms.stateObj;
-      if (obj._dash_to_dock_blur) {
-        if (!obj._dash_to_dock_blur_orig) {
-          obj._dash_to_dock_blur_orig = obj._dash_to_dock_blur;
-        }
-        if (hook && this.blur_background) {
-          obj._dash_to_dock_blur.update_size = () => {};
-        } else if (obj._dash_to_dock_blur_orig) {
-          obj._dash_to_dock_blur = obj._dash_to_dock_blur_orig;
-        }
-      }
-    }
-  }
-
-  _updateHookBms() {
-    this._hookBms(false);
-    this._hookBms(true);
-  }
-
-  _checkHooks() {
-    if (this.blur_background && !this._bms) {
-      this._hookBms();
-    }
-    if (this.lamp_app_animation && !this._compiz) {
-      this._hookCompiz();
-    }
-  }
-
-  // override compiz getIcon
-  _getIcon(actor) {
-    let [success, icon] = actor.meta_window.get_icon_geometry();
-    if (success) {
-      return icon;
-    }
-    let monitor = Main.layoutManager.monitors[actor.meta_window.get_monitor()];
-    let dock = this.docks.find((d) => d._monitorIndex == monitor.index);
-
-    if (!dock) {
-      return { x: monitor.x, y: monitor.y, width: 0, height: 0 };
-    }
-    if (!Main.overview.dash.__box) {
-      Main.overview.dash.__box = Main.overview.dash._box;
-    }
-    Main.overview.dash._box = dock.dash._box;
-
-    // add alignment fix here?
-    let res = this._compiz._getIcon(actor);
-    // console.log('compiz-alike-magic-lamp-effect: getIcon');
-    // console.log(`x:${res.x} y:${res.y} w:${res.width} h:${res.height}`);
-    let x = res.x;
-    let y = res.y;
-    let w = res.width;
-    let h = res.height;
-
-    if (w == 0 && this.docks && this.docks.length > 0) {
-      let sz = this.docks[0]._preferredIconSize();
-      if (sz) {
-        x += (sz / 2) * (this.docks[0].getMonitor().geometry_scale || 1);
-        // y += sz/2;
-      }
-    }
-
-    return {
-      x: x,
-      y: y,
-      width: w,
-      height: h,
-    };
-  }
-
   startUp() {
     this.createTheDocks();
     this._loTimer.runOnce(() => {
-      this._hookCompiz();
-      this._hookBms();
       this._updateWidgetStyle();
       this.animate({ refresh: true });
       this.docks.forEach((dock) => {
@@ -539,7 +442,7 @@ export default class Dash2DockLiteExt extends Extension {
           break;
         }
         case 'lamp-app-animation': {
-          this._updateCompizHook();
+          this.integrations.hookCompiz();
           break;
         }
         case 'animation-fps': {
@@ -689,7 +592,7 @@ export default class Dash2DockLiteExt extends Extension {
         case 'background-color':
         case 'blur-resolution':
         case 'blur-background':
-          this._updateHookBms();
+          this.integrations.hookBms();
           this._updateBlurredBackground();
           this._updateStyle();
           this._updateLayout();
@@ -762,17 +665,17 @@ export default class Dash2DockLiteExt extends Extension {
     Main.extensionManager.connectObject(
       'extensions-loaded',
       (manager) => {
-        this._hookCompiz(true);
-        this._hookBms(true);
+        this.integrations.hookCompiz(true);
+        this.integrations.hookBms(true);
       },
       'extension-state-changed',
       (manager, extension) => {
         switch (extension.uuid) {
           case 'compiz-alike-magic-lamp-effect@hermes83.github.com':
-            this._hookCompiz(extension.state == 1);
+            this.integrations.hookCompiz(extension.state == 1);
             break;
           case 'blur-my-shell@aunetx':
-            this._hookBms(extension.state == 1);
+            this.integrations.hookBms(extension.state == 1);
             if (extension.state == 1) {
               this.animate();
             }
@@ -913,7 +816,6 @@ export default class Dash2DockLiteExt extends Extension {
   }
 
   _onAppsChanged() {
-    this._checkHooks();
     let listeners = [...this.listeners];
     listeners.forEach((l) => {
       if (l._onAppsChanged) l._onAppsChanged();

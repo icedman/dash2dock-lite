@@ -103,22 +103,6 @@ export let Animator = class {
       dock._lastHoveredIcon = dock._hoveredIcon;
     }
 
-    let bms = dock.get_children().find((child) => {
-      let name = child.get_name();
-      return (
-        name === 'bms-dash-backgroundgroup' ||
-        name === 'dash-blurred-background-parent'
-      );
-    });
-    this._bms = bms;
-    if (bms) {
-      bms.visible = dock.extension.blur_background;
-    }
-    // incompatible blur-my-shell version
-    if (dock.extension._bms && dock.extension._bms.metadata.version < 70) {
-      bms.visible = false;
-    }
-
     let simulation = false;
 
     if (!dock.layout()) {
@@ -989,72 +973,7 @@ export let Animator = class {
       dock._debounceEndAnimation();
     }
 
-    // blur my shell
-    if (bms && bms.visible) {
-      let bg_offset_x = dock._background.x;
-      let bg_offset_y = dock._background.y;
-      let rw = dock.renderArea.width;
-      let rh = dock.renderArea.height;
-
-      let meta_background = bms.first_child.first_child;
-      if (!meta_background) {
-        return;
-      }
-
-      // bottom layout
-      switch (dock._position) {
-        case 'left':
-        case 'top':
-          bms.x = 0;
-          bms.y = 0;
-          bms.first_child.x = 0;
-          bms.first_child.y = 0;
-          bms.first_child.set_clip(
-            bg_offset_x,
-            bg_offset_y,
-            dock._background.width - (dock.extension.border_thickness && 0),
-            dock._background.height - (dock.extension.border_thickness && 0)
-          );
-          break;
-        case 'right':
-          bms.x = 0;
-          bms.y = 0;
-          bms.first_child.x = -meta_background.width + rw;
-          bms.first_child.y = 0;
-          bms.first_child.set_clip(
-            -bms.first_child.x + bg_offset_x,
-            0 + bg_offset_y,
-            dock._background.width - (dock.extension.border_thickness && 0),
-            dock._background.height - (dock.extension.border_thickness && 0)
-          );
-          break;
-        case 'bottom':
-        default:
-          bms.x = 0;
-          bms.y = 0;
-          bms.first_child.x = 0;
-          bms.first_child.y = -meta_background.height + rh;
-          bms.first_child.set_clip(
-            0 + bg_offset_x,
-            -bms.first_child.y + bg_offset_y,
-            dock._background.width - (dock.extension.border_thickness && 0),
-            dock._background.height - (dock.extension.border_thickness && 0)
-          );
-          break;
-      }
-
-      let opacity = (dock.extension.background_color[3] ?? 0.5) * 54 + 200;
-      meta_background.opacity = opacity;
-
-      this._blur_effects = bms.first_child.get_effects();
-      if (this._blur_effects) {
-        this._blur_effects.forEach((e) => {
-          if (e.constructor.name == 'CornerEffect') {
-            e.radius = dock.extension.computed_border_radius;
-          }
-        });
-      }
-    }
+    dock.extension.integrations.bms_update_size(this);
   }
 
   bounceIcon(appwell) {

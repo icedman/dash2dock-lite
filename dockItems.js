@@ -412,15 +412,14 @@ export const DockBackground = GObject.registerClass(
         this.opacity = 255;
         dock.dash.opacity = this.opacity;
 
-        let style = [dock.extension._backgroundStyle];
-        {
-          let rgba = dock.extension._style.rgba(
-            dock.extension.background_color
-          );
-          style.push(`background: rgba(${rgba});`);
-        }
-
-        this.style = style.join(' ');
+        // let style = [dock.extension._backgroundStyle];
+        // {
+        //   let rgba = dock.extension._style.rgba(
+        //     dock.extension.background_color
+        //   );
+        //   style.push(`background: rgba(${rgba});`);
+        // }
+        // this.style = style.join(' ');
         // this._bg.width = this.width;
         // this._bg.height = this.height;
         // this._bg.style = style.join(' ');

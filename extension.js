@@ -1008,12 +1008,8 @@ export default class Dash2DockLiteExt extends Extension {
       }
       ss.push(`border-radius: ${r}px;`);
       this.computed_border_radius = r;
-      /*
-      if (!this.blur_background) {
-        let rgba = this._style.rgba(this.background_color);
-        ss.push(`background: rgba(${rgba});`);
-      }
-      */
+      let rgba = this._style.rgba(this.background_color);
+      ss.push(`background: rgba(${rgba});`);
       styles.push(`#d2daBackground { ${ss.join(' ')}}`);
     }
 

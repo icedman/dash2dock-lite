@@ -138,6 +138,12 @@ Create a file ```config.json``` under the folder ```sh~/.config/d2da/```
 * file-explorer overrides the default "nautilus"
 * icon-size overrides the icon scale from the preferences panel
 
+## Custom CSS
+
+Create a file ```style.css``` under the folder ```sh~/.config/d2da/```
+
+For now, you will have to do some little digging with LookingGlass to know the names and style classes.
+
 ## Blurred Background
 
 Blurred background feature requires **imagemagick** to be install in the system. This generates the blurred image based of the desktop wallpaper.
@@ -176,13 +182,10 @@ Please be specific on the errors encountered. Add screenshots whenever possible.
 
 ## Testing Rig
 
-* Arch Linux (Gnome 45.5)
-* Debian 12 (Gnome 43.9)
-* Fedora 39 (Gnome 45.0)
-* Fedora 40 Beta (Gnome 46.0)
-* Manjaro Linux (Gnome 45.3)
-* Opensuse Tumbleweed (Gnome 46.0)
-* Ubuntu 23 (Gnome 45.0)
+* Fedora 43 (Gnome 49)
+* Arch Linux (Gnome 49)
+* Fedora 37 Live (Gnome 42)
+* Ubuntu 23 (Gnome 45)
 
 ## License
 

@@ -104,12 +104,12 @@ export let Animator = class {
     }
 
     let bms = dock.get_children().find((child) => {
-        let name = child.get_name();
-        return (
-          name === 'bms-dash-backgroundgroup' ||
-          name === 'dash-blurred-background-parent'
-        );
-      });
+      let name = child.get_name();
+      return (
+        name === 'bms-dash-backgroundgroup' ||
+        name === 'dash-blurred-background-parent'
+      );
+    });
     this._bms = bms;
     if (bms) {
       bms.visible = dock.extension.blur_background;
@@ -1047,8 +1047,12 @@ export let Animator = class {
       meta_background.opacity = opacity;
 
       this._blur_effects = bms.first_child.get_effects();
-      if (this._blur_effects && this._blur_effects[0]) {
-        this._blur_effects[0].radius = dock.extension.computed_border_radius;
+      if (this._blur_effects) {
+        this._blur_effects.forEach((e) => {
+          if (e.constructor.name == 'CornerEffect') {
+            e.radius = dock.extension.computed_border_radius;
+          }
+        });
       }
     }
   }

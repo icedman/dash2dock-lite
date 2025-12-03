@@ -79,6 +79,9 @@ export let Dock = GObject.registerClass(
         get_child: () => {
           return this;
         },
+        get_parent: () => {
+          return this;
+        },
       };
 
       this.renderArea = new St.Widget({
@@ -1129,7 +1132,7 @@ export let Dock = GObject.registerClass(
 
       this._background.opacity = transparent ? 0 : 255;
 
-      if (this.animator._bms) {
+      if (this.animator._bms && this.animator._bms.first_child) {
         this.animator._bms.first_child.visible =
           !transparent && this.extension.blur_background;
       }

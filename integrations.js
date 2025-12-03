@@ -68,10 +68,10 @@ export const Integrations = class {
     let h = res.height;
 
     // TODO get proper actor monitor
-    if (w == 0 && this.docks && docks.length > 0) {
-      let sz = this.docks[0]._preferredIconSize();
+    if (w == 0) {
+      let sz = dock._preferredIconSize();
       if (sz) {
-        x += (sz / 2) * (this.docks[0].getMonitor().geometry_scale || 1);
+        x += (sz / 2) * (dock._monitor.geometry_scale || 1);
       }
     }
 
@@ -84,6 +84,12 @@ export const Integrations = class {
   }
 
   hookBms(hook = true) {
+    if (!hook) {
+      this.extension.docks.forEach((dock) => {
+        dock.animator._bms = null;
+      });
+    }
+
     let bms = Main.extensionManager.lookup('blur-my-shell@aunetx');
     this._bms = bms;
     if (bms && bms.stateObj) {
@@ -92,7 +98,7 @@ export const Integrations = class {
         if (!obj._dash_to_dock_blur_orig) {
           obj._dash_to_dock_blur_orig = obj._dash_to_dock_blur;
         }
-        if (hook && this.blur_background) {
+        if (hook && this.extension.blur_background) {
           obj._dash_to_dock_blur.update_size = () => {};
         } else if (obj._dash_to_dock_blur_orig) {
           obj._dash_to_dock_blur = obj._dash_to_dock_blur_orig;

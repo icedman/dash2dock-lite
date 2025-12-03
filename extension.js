@@ -266,6 +266,8 @@ export default class Dash2DockLiteExt extends Extension {
   }
 
   animate(settings = {}) {
+    this._checkHooks();
+
     this.docks.forEach((dock) => {
       if (settings && settings.preview) {
         dock.preview();
@@ -278,7 +280,9 @@ export default class Dash2DockLiteExt extends Extension {
     });
   }
 
-  // unused?
+  // This is needed. Each dock has a autohider class.
+  // This informs everyone to re-check overlaps
+  // TODO use signals
   checkHide() {
     this.docks.forEach((dock) => {
       if (dock.autohider) {
@@ -335,12 +339,19 @@ export default class Dash2DockLiteExt extends Extension {
     this._hookBms(true);
   }
 
+  _checkHooks() {
+    if (this.blur_background && !this._bms) {
+      this._hookBms();
+    }
+    if (this.lamp_app_animation && !this._compiz) {
+      this._hookCompiz();
+    }
+  }
+
   // override compiz getIcon
   _getIcon(actor) {
     let [success, icon] = actor.meta_window.get_icon_geometry();
     if (success) {
-      // console.log('compiz-alike-magic-lamp-effect: icon');
-      // console.log(icon);
       return icon;
     }
     let monitor = Main.layoutManager.monitors[actor.meta_window.get_monitor()];
@@ -382,14 +393,14 @@ export default class Dash2DockLiteExt extends Extension {
   startUp() {
     this.createTheDocks();
     this._loTimer.runOnce(() => {
+      this._hookCompiz();
+      this._hookBms();
       this._updateWidgetStyle();
       this.animate({ refresh: true });
       this.docks.forEach((dock) => {
         dock._beginAnimation();
         dock._debounceEndAnimation();
       });
-      this._hookCompiz();
-      this._hookBms();
     }, 10);
     this._loTimer.runUntil(() => {
       return this._createTopbarBackground();
@@ -490,21 +501,6 @@ export default class Dash2DockLiteExt extends Extension {
   }
 
   _enableSettings() {
-    this._desktopSettings = new Gio.Settings({
-      schema_id: 'org.gnome.desktop.background',
-    });
-    this._desktopSettings.connectObject(
-      'changed::picture-uri',
-      () => {
-        this._updateBlurredBackground();
-      },
-      'changed::picture-uri-dark',
-      () => {
-        this._updateBlurredBackground();
-      },
-      this,
-    );
-
     try {
       this._interfaceSettings = new Gio.Settings({
         schema_id: 'org.gnome.desktop.interface',
@@ -512,7 +508,7 @@ export default class Dash2DockLiteExt extends Extension {
       this._interfaceSettings.connectObject(
         'changed::color-scheme',
         () => {
-          // this._applyActiveBlurredBackground();
+          // apply light/dark themeing
         },
         this,
       );
@@ -727,9 +723,6 @@ export default class Dash2DockLiteExt extends Extension {
     this._settingsKeys.disconnectSettings();
     this._settingsKeys = null;
 
-    this._desktopSettings.disconnectObject(this);
-    this._desktopSettings = null;
-
     if (this._interfaceSettings) {
       this._interfaceSettings.disconnectObject(this);
       this._interfaceSettings = null;
@@ -763,6 +756,29 @@ export default class Dash2DockLiteExt extends Extension {
     Main.sessionMode.connectObject(
       'updated',
       this._onSessionUpdated.bind(this),
+      this,
+    );
+
+    Main.extensionManager.connectObject(
+      'extensions-loaded',
+      (manager) => {
+        this._hookCompiz(true);
+        this._hookBms(true);
+      },
+      'extension-state-changed',
+      (manager, extension) => {
+        switch (extension.uuid) {
+          case 'compiz-alike-magic-lamp-effect@hermes83.github.com':
+            this._hookCompiz(extension.state == 1);
+            break;
+          case 'blur-my-shell@aunetx':
+            this._hookBms(extension.state == 1);
+            if (extension.state == 1) {
+              this.animate();
+            }
+            break;
+        }
+      },
       this,
     );
 
@@ -840,6 +856,7 @@ export default class Dash2DockLiteExt extends Extension {
   _removeEvents() {
     this._appSystem.disconnectObject(this);
     this._appFavorites.disconnectObject(this);
+    Main.extensionManager.disconnectObject(this);
     Main.messageTray.disconnectObject(this);
     Main.overview.disconnectObject(this);
     Main.layoutManager.disconnectObject(this);
@@ -896,6 +913,7 @@ export default class Dash2DockLiteExt extends Extension {
   }
 
   _onAppsChanged() {
+    this._checkHooks();
     let listeners = [...this.listeners];
     listeners.forEach((l) => {
       if (l._onAppsChanged) l._onAppsChanged();

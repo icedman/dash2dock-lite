@@ -1157,9 +1157,11 @@ export let Dock = GObject.registerClass(
         this.simulated_pointer = p;
         this._preview--;
       }
+
       //! add layout here instead of at the
       this.animator.animate(dt);
 
+      // hack to mitigate jerkiness when a new icon is inserted
       if (!this._pauseBounce || this._pauseBounce <= 0) {
         while (this._fast_forward && this._fast_forward-- > 0) {
           this.animate(dt);
@@ -1178,7 +1180,6 @@ export let Dock = GObject.registerClass(
       if (this._hidden) {
         return false;
       }
-      if (this._hoveredIcon) return true;
       let xy = this.struts.get_transformed_position();
       let wh = [this.struts.width, this.struts.height];
       if (isInRect([xy[0], xy[1], wh[0], wh[1]], p, 20)) {

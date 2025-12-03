@@ -107,7 +107,7 @@ export let Animator = class {
       return child.get_name() === 'bms-dash-backgroundgroup';
     });
     this._bms = bms;
-    if (!dock.extension.blur_background) {
+    if (bms && !dock.extension.blur_background) {
       bms.first_child.visible = false;
     }
 

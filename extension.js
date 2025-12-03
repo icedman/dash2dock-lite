@@ -395,7 +395,6 @@ export default class Dash2DockLiteExt extends Extension {
 
     let fn_style = Gio.File.new_for_path('.config/d2da/style.css');
     if (fn_style.query_exists(null)) {
-      let fn = this.styles[name];
       let ctx = St.ThemeContext.get_for_stage(global.stage);
       let theme = ctx.get_theme();
       theme.load_stylesheet(fn_style);
@@ -409,7 +408,6 @@ export default class Dash2DockLiteExt extends Extension {
 
     let fn_style = Gio.File.new_for_path('.config/d2da/style.css');
     if (fn_style.query_exists(null)) {
-      let fn = this.styles[name];
       let ctx = St.ThemeContext.get_for_stage(global.stage);
       let theme = ctx.get_theme();
       theme.unload_stylesheet(fn_style);

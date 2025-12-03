@@ -67,7 +67,6 @@ export const Integrations = class {
     let w = res.width;
     let h = res.height;
 
-    // TODO get proper actor monitor
     if (w == 0) {
       let sz = dock._preferredIconSize();
       if (sz) {
@@ -136,6 +135,7 @@ export const Integrations = class {
     }
 
     // compatible blur-my-shell version 70
+    // bms version 70 supports 46,47..up
     if (
       dock.extension.integrations._bms &&
       dock.extension.integrations._bms.metadata.version >= 70

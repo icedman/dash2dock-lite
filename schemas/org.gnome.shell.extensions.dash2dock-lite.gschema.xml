@@ -156,6 +156,26 @@
         <summary>Separator color</summary>
         <description>Set dock separator color.</description>
     </key>
+    <key type="d" name="icon-border-radius">
+        <default>3</default>
+        <summary>Border radius</summary>
+        <description>Set dash background border radius.</description>
+    </key>
+    <key type="(dddd)" name="icon-border-color">
+        <default>(1.,1.,1.,1.)</default>
+        <summary>border color</summary>
+        <description>Set dock border color.</description>
+    </key>
+    <key type="i" name="icon-border-thickness">
+        <default>0</default>
+        <summary>Border thickness</summary>
+        <description>Border thickness.</description>
+    </key>
+    <key type="(dddd)" name="icon-background-color">
+        <default>(1.,1.,1.,0)</default>
+        <summary>Separator color</summary>
+        <description>Set dock separator color.</description>
+    </key>
     <key type="i" name="separator-thickness">
         <default>0</default>
         <summary>Separator thickness</summary>
@@ -440,6 +460,16 @@
         <default>0</default>
         <summary>Multi-Monitor Filter</summary>
         <description>Filter actions on multi-monitor.</description>
+    </key>
+    <key type="b" name="overview-transparent-background">
+        <default>false</default>
+        <summary>Transparent background</summary>
+        <description>Transparent background on overview.</description>
+    </key>
+    <key type="b" name="overview-transparent-topbar-background">
+        <default>false</default>
+        <summary>Transparent background</summary>
+        <description>Transparent background on overview.</description>
     </key>
   </schema>
 </schemalist>

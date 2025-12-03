@@ -111,6 +111,8 @@ export const Services = class {
 
     this.setupDownloads();
 
+    this._debounceCheckRecents();
+
     //! ***services startup function are blocking calls. async these***
     this.checkTrash();
 
@@ -276,7 +278,8 @@ export const Services = class {
     let fullpath = mount.get_default_location().get_path();
     let icon = 'drive-harddisk-solidstate';
     if (mount.get_icon() && mount.get_icon().names) {
-        icon = mount.get_icon().names[0] || icon;
+      icon =
+        this.extension.lookup_icon_from_names(mount.get_icon().names) ?? icon;
     }
     let mount_exec = 'echo "not implemented"';
     let unmount_exec = `umount ${fullpath}`;
@@ -404,14 +407,23 @@ export const Services = class {
     while ((fileInfo = enumerator.next_file(null)) !== null) {
       let fileName = fileInfo.get_name();
       let fileModified = fileInfo.get_modification_time();
+
+      let icon = 'file';
+      if (fileInfo.get_icon() && fileInfo.get_icon().names) {
+        icon =
+          this.extension.lookup_icon_from_names(fileInfo.get_icon().names) ??
+          icon;
+      }
+
       downloadFiles.push({
         index: 0,
         name: fileName,
         display: fileName,
-        icon: fileInfo.get_icon().get_names()[0] ?? 'file',
+        icon: icon,
         type: fileInfo.get_content_type(),
         path: [path, fileName].join('/'),
         date: fileModified ?? { tv_sec: 0 },
+        fileInfo: fileInfo,
       });
     }
 
@@ -482,7 +494,7 @@ export const Services = class {
             name: fileStat.name,
             display: fileInfo.get_display_name(),
             path: file.get_path(),
-            icon: fileInfo.get_icon().get_names()[0] ?? 'file',
+            icon: this.extension.lookup_icon_from_names(fileInfo.get_icon().get_names()) ?? 'file',
             type: fileInfo.get_content_type(),
             date: fileStat.date ?? '',
           });
@@ -500,7 +512,7 @@ export const Services = class {
 
   async checkRecentFilesFromRecentManager() {
     console.log('checking recent manager');
-    let maxs = [5, 10, 15, 20, 25];
+    let maxs = [5, 8, 10, 12, 15, 20, 25];
     let max_recent_items = maxs[this.extension.max_recent_items || 0];
 
     let recentFiles = [];
@@ -514,7 +526,10 @@ export const Services = class {
       console.log(err);
     }
 
-    let fn = Gio.File.new_for_path(tempPath(appname));
+    // const recentsPath = tempPath('recents.txt');
+    const recentsPath = '/tmp/recents.txt';
+
+    let fn = Gio.File.new_for_path(recentsPath);
     if (fn.query_exists(null)) {
       try {
         const [success, contents] = fn.load_contents(null);
@@ -524,16 +539,18 @@ export const Services = class {
         let lines = contentsString.split('\n');
         lines.forEach((l) => {
           let res = l.split('|');
-          if (res.length != 3) return;
-          const file = Gio.File.new_for_path(res[1]);
+          if (res.length != 2) return;
+          const file = Gio.File.new_for_path(res[0]);
           if (!file.query_exists(null)) {
+            console.log('not exists');
             return;
           }
           if (recentFiles.length < max_recent_items) {
             const fileStat = {
               index: idx++,
               name: file.get_basename(),
-              icon: res[2],
+              icon: res[1],
+              // icon: this.extension.lookup_icon_from_names([res[1]]) ?? 'file',
               path: file.get_path(),
               type: 'file',
             };
@@ -545,15 +562,33 @@ export const Services = class {
         console.log(err);
       }
     }
-    return [recentFiles, recentFilesLength];
+
+    return Promise.resolve([recentFiles, recentFilesLength]);
   }
 
   async checkRecents() {
-    try {
-      [this._recentFiles, this._recentFilesLength] =
-        await this.checkRecentFilesFromRecentManager();
-    } catch (err) {
-      console.log(err);
+    // NOT YET READY
+    // try {
+    //   [this._recentFiles, this._recentFilesLength] =
+    //     await this.checkRecentFilesFromRecentManager();
+    // } catch (err) {
+    //   console.log(err);
+    // }
+  }
+
+  _debounceCheckRecents() {
+    if (this.extension._loTimer) {
+      if (!this._debounceCheckSeq) {
+        this._debounceCheckSeq = this.extension._loTimer.runDebounced(
+          () => {
+            this.checkRecents();
+          },
+          DEBOUNCE_CHECK_TIMEOUT,
+          'debounceCheckRecents',
+        );
+      } else {
+        this.extension._loTimer.runDebounced(this._debounceCheckSeq);
+      }
     }
   }
 

@@ -165,6 +165,79 @@
     </child>
     <child>
       <object class="AdwPreferencesGroup">
+        <property name="visible">true</property>
+        <property name="title" translatable="yes">Focused Icon Background</property>
+        <property name="description" translatable="yes"/>
+        <child>
+          <object class="AdwActionRow">
+            <property name="title" translatable="yes">Background Color</property>
+            <property name="subtitle" translatable="yes">Set icon background color for focused app.</property>
+            <property name="activatable-widget">icon-background-color</property>
+            <child>
+              <object class="GtkColorButton" id="icon-background-color">
+                <property name="valign">center</property>
+                <property name="hexpand">false</property>
+                <property name="width-request">70px</property>
+                <property name="height-request">45px</property>
+                <property name="show-editor">true</property>
+                <property name="use-alpha">true</property>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="AdwActionRow">
+            <property name="title" translatable="yes">Border Radius</property>
+            <property name="subtitle" translatable="yes">Set icon border radius.</property>
+            <property name="activatable-widget">icon-border-radius</property>
+            <child>
+              <object class="GtkScale" id="icon-border-radius">
+                <property name="valign">center</property>
+                <property name="hexpand">true</property>
+                <property name="width-request">140px</property>
+                <property name="draw-value">false</property>
+                <property name="value-pos">right</property>
+                <property name="orientation">horizontal</property>
+                <property name="digits">0</property>
+                <property name="adjustment">icon-border-radius-adjust</property>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="AdwActionRow">
+            <property name="title" translatable="yes">Border Thickness</property>
+            <property name="subtitle" translatable="yes">Set border thickness.</property>
+            <property name="activatable-widget">icon-border-thickness</property>
+            <child>
+              <object class="GtkDropDown" id="icon-border-thickness">
+                <property name="valign">center</property>
+                <property name="model">icon-border-thickness-model</property>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="AdwActionRow">
+            <property name="title" translatable="yes">Border Color</property>
+            <property name="subtitle" translatable="yes">Select border color.</property>
+            <property name="activatable-widget">icon-border-color</property>
+            <child>
+              <object class="GtkColorButton" id="icon-border-color">
+                <property name="valign">center</property>
+                <property name="hexpand">false</property>
+                <property name="width-request">70px</property>
+                <property name="height-request">45px</property>
+                <property name="show-editor">true</property>
+                <property name="use-alpha">true</property>
+              </object>
+            </child>
+          </object>
+        </child>
+      </object>
+    </child>
+    <child>
+      <object class="AdwPreferencesGroup">
         <property name="title" translatable="yes">Dash</property>
         <property name="description" translatable="yes"/>
         <child>
@@ -291,6 +364,18 @@
             <property name="activatable-widget">blur-background</property>
             <child>
               <object class="GtkSwitch" id="blur-background">
+                <property name="valign">center</property>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="AdwActionRow">
+            <property name="title" translatable="yes">Transparent Background on Overview</property>
+            <property name="subtitle" translatable="yes">Remove background on overview.</property>
+            <property name="activatable-widget">overview-transparent-background</property>
+            <child>
+              <object class="GtkSwitch" id="overview-transparent-background">
                 <property name="valign">center</property>
               </object>
             </child>
@@ -483,6 +568,18 @@
             </child>
           </object>
         </child>
+        <child>
+          <object class="AdwActionRow">
+            <property name="title" translatable="yes">Transparent Background on Overview</property>
+            <property name="subtitle" translatable="yes">Remove background on overview.</property>
+            <property name="activatable-widget">overview-transparent-topbar-background</property>
+            <child>
+              <object class="GtkSwitch" id="overview-transparent-topbar-background">
+                <property name="valign">center</property>
+              </object>
+            </child>
+          </object>
+        </child>
       </object>
     </child>
     <child>
@@ -624,6 +721,11 @@
     <property name="upper">6</property>
     <property name="step-increment">1</property>
   </object>
+  <object class="GtkAdjustment" id="icon-border-radius-adjust">
+    <property name="lower">0</property>
+    <property name="upper">8</property>
+    <property name="step-increment">1</property>
+  </object>
   <object class="GtkAdjustment" id="border-radius-adjust">
     <property name="lower">0</property>
     <property name="upper">8</property>
@@ -668,6 +770,14 @@
       <item translatable="yes">Tint</item>
       <item translatable="yes">Monochrome</item>
       <!-- <item translatable="yes">(Test)</item> -->
+    </items>
+  </object>
+  <object class="GtkStringList" id="icon-border-thickness-model">
+    <items>
+      <item translatable="yes">None</item>
+      <item>1px</item>
+      <item>2px</item>
+      <item>3px</item>
     </items>
   </object>
   <object class="GtkStringList" id="border-thickness-model">

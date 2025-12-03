@@ -318,7 +318,7 @@ export let Animator = class {
       if (
         icon._icon.gicon &&
         icon._icon.gicon.file != null &&
-        !icon._icon.gicon.file.get_path()?.toLowerCase().endsWith('svg')
+        !icon._icon.gicon.file?.get_path()?.toLowerCase().endsWith('svg')
       ) {
         // skip scaling image files!... too costly
       } else {
@@ -464,15 +464,20 @@ export let Animator = class {
         icon._positionCache = null;
       }
 
-      icon._icon.translationX = translationX;
-      icon._icon.translationY = translationY;
+      if (dock.extension.animation_fps > 0) {
+        icon._icon.translationX = translationX;
+        icon._icon.translationY = translationY;
+      } else {
+        icon._icon.translationX = (icon._icon.translationX + translationX) / 2;
+        icon._icon.translationY = (icon._icon.translationY + translationY) / 2;
+      }
 
       // clear bounce animation
       if (icon._appwell) {
         icon._appwell.translationY = 0;
-        if (icon._appwell._bounce) {
-          didBounce = true;
-        }
+        didBounce = icon._appwell._bounce;
+        // clear bounce
+        icon._appwell._bounce = false;
       }
     });
 
@@ -523,9 +528,13 @@ export let Animator = class {
           }
         }
 
-        // let didCreate = false;
         icon._renderer = this._renderers[icon._idx];
         icon._renderer._icon = icon._icon;
+        icon._renderer.set_style_class_name('');
+
+        if (!icon._appwell?._bounce) {
+          icon._renderer.translationY = 0;
+        }
 
         let renderer = icon._renderer;
         if (gicon) {
@@ -580,10 +589,6 @@ export let Animator = class {
           if (Math.abs(appliedSize) > mag) {
             appliedSize = dst * 0.5;
           }
-          // if (didCreate) {
-          //   appliedSize = 0;
-          //   currentSize = targetSize;
-          // }
           targetSize = currentSize + appliedSize;
           icon._deltaSize = appliedSize;
           icon._targetSize = targetSize;
@@ -637,7 +642,8 @@ export let Animator = class {
         // labels
         if (icon === hoveredIcon && icon._label) {
           let tSize = renderer.get_transformed_size();
-          let tPos = icon._icon.get_transformed_position();
+          // let tPos = icon._icon.get_transformed_position();
+          let tPos = renderer.get_transformed_position();
           if (isNaN(tPos[0]) || isNaN(tPos[1])) {
             tPos[0] = 0;
             tPos[1] = 0;
@@ -654,10 +660,13 @@ export let Animator = class {
             }
             icon._label.y += 2 * (m.geometry_scale || 1);
           } else {
+            if (magnify == 0 || dock._iconSize < 32) {
+              sh *= 1.5;
+            }
             if (dock._position == DockPosition.BOTTOM) {
-              icon._label.y -= sh / 1.5;
+              icon._label.y -= sh / 1.25;
             } else {
-              icon._label.y += sh / 1.5;
+              icon._label.y += sh / 1.25;
             }
             icon._label.x += 2 * (m.geometry_scale || 1);
           }
@@ -719,8 +728,13 @@ export let Animator = class {
             vertical,
             extension: dock.extension,
           });
-          badge.x = icon._renderer.x - 6;
-          badge.y = icon._renderer.y - 4;
+          badge.x = icon._renderer.x + 3.5 * icon._scale;
+          badge.y = icon._renderer.y - 3 * icon._scale;
+
+          if (dock._position == DockPosition.TOP) {
+            badge.y = icon._renderer.y + (icon.height - 6) * icon._scale;
+          }
+
           badge.set_scale(icon._scale, icon._scale);
           badge.show();
         }
@@ -749,8 +763,9 @@ export let Animator = class {
 
           dots.width = icon._renderer.width * icon._renderer.scaleX;
           dots.height = dots.width;
-          dots.x = icon._px ?? 0;
-          dots.y = icon._py ?? 0;
+          dots.x = icon._renderer.x;
+          dots.y = icon._renderer.y;
+          dots.set_scale(icon._scale, icon._scale);
           dots.show();
         }
       }
@@ -915,6 +930,8 @@ export let Animator = class {
           dock.struts.y = dock.y;
         }
       }
+
+      dock._updateTransparenies();
     }
     dock.struts.visible = !dock._hidden;
     dock.dash.opacity = 255;
@@ -999,6 +1016,7 @@ export let Animator = class {
           let res = Bounce.easeOut(f._time, travel, -travel, f._duration);
           let [container, appwell] = getTarget(app_id);
           if (!appwell) return;
+          appwell._bounce = true;
           if (dock.isVertical()) {
             appwell.translation_x = appwell.translation_x =
               dock._position == DockPosition.LEFT ? res : -res;
@@ -1033,6 +1051,7 @@ export let Animator = class {
         _func: (f, s) => {
           let [container, appwell] = getTarget(app_id);
           if (!appwell) return;
+          appwell._bounce = true;
           appwell.translation_y = 0;
           translateDecor(container, appwell);
         },
@@ -1041,9 +1060,8 @@ export let Animator = class {
         _duration: 10,
         _func: (f, s) => {
           let [container, appwell] = getTarget(app_id);
-          if (appwell) {
-            appwell._bounce = false;
-          }
+          if (!appwell) return;
+          appwell._bounce = false;
         },
       },
     ]);

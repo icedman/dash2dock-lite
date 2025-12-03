@@ -213,9 +213,6 @@ export let Dock = GObject.registerClass(
     _onFullScreen() {
       this._beginAnimation();
       this.autohider._debounceCheckHide();
-
-      console.log('_onFullScreen');
-
       return Clutter.EVENT_PROPAGATE;
     }
     _onRestacked() {
@@ -444,6 +441,13 @@ export let Dock = GObject.registerClass(
           Math.floor(this.extension.icon_size * preferredIconSizes.length)
         ] || 64);
       iconSize *= this.extension.scale;
+
+      if (this.extension._config && this.extension._config['icon-size']) {
+        iconSize = this.extension._config['icon-size'];
+        if (typeof iconSize == 'string') {
+          iconSize = parseInt(iconSize);
+        }
+      }
 
       this._iconSize = iconSize;
       return iconSize;
@@ -801,7 +805,7 @@ export let Dock = GObject.registerClass(
           items: '_recentFiles',
           itemsLength: '_recentFilesLength',
           cleanup: (() => {
-            this.extension.services._recentFiles = null;
+            // this.extension.services._recentFiles = null;
           }).bind(this),
         },
         {
@@ -1107,8 +1111,24 @@ export let Dock = GObject.registerClass(
         topbar_background._blurEffect.enabled =
           this.extension.topbar_blur_background;
       }
-
       return true;
+    }
+
+    _updateTransparenies() {
+      let transparent =
+        (Main.overview.visible || this.extension._inOverview) &&
+        this.extension.overview_transparent_background;
+
+      this._background.opacity = transparent ? 0 : 255;
+
+      let transparent_topbar =
+        (Main.overview.visible || this.extension._inOverview) &&
+        this.extension.overview_transparent_topbar_background;
+
+      let topbar_background = this.extension._topbar_background;
+      if (topbar_background) {
+        topbar_background.opacity = transparent_topbar ? 0 : 255;
+      }
     }
 
     preview() {
@@ -1179,6 +1199,10 @@ export let Dock = GObject.registerClass(
         this.struts.remove_style_class_name('hi');
         this.dwell.remove_style_class_name('hi');
       }
+
+      this._updateFocusedIcon();
+      this._updateTransparenies();
+
       if (this.extension._hiTimer) {
         this.extension._hiTimer.cancel(this._animationSeq);
         this.extension._loTimer.cancel(this.debounceEndSeq);
@@ -1216,6 +1240,24 @@ export let Dock = GObject.registerClass(
       this._animationSeq = null;
       this.extension._hiTimer.cancel(this.autohider._animationSeq);
       this.autohider._animationSeq = null;
+    }
+
+    _updateFocusedIcon() {
+      // apply focus
+      this._icons?.forEach((icon) => {
+        if (!icon._renderer) return;
+        if (icon._appwell?.app) {
+          let app = icon._appwell?.app;
+          if (!app.get_windows) return;
+          let windows = this.getAppWindowsFiltered(app);
+          windows.forEach((w) => {
+            if (w.has_focus()) {
+              icon._renderer.set_style_class_name('icon-focused');
+              // icon._renderer.style = 'background-color: rgba(255,0,0,0.2); border-radius: 8px;'
+            }
+          });
+        }
+      });
     }
 
     _maybeMinimizeOrMaximize(app) {

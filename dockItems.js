@@ -13,9 +13,9 @@ import St from 'gi://St';
 
 let GioUnix = null;
 try {
-    GioUnix = await import('gi://GioUnix');
+  GioUnix = await import('gi://GioUnix');
 } catch (e) {
-    console.log('GioUnix not available on this GNOME version');
+  console.log('GioUnix not available on this GNOME version');
 }
 const DesktopAppInfo = GioUnix?.DesktopAppInfo || Gio.DesktopAppInfo;
 
@@ -104,21 +104,25 @@ export const DockItemDotsOverlay = GObject.registerClass(
       canvasScale *= scale;
       renderer._canvas.set_scale(canvasScale, canvasScale);
 
-      let offsetX = renderer.width * 0.075 * scale;
-      let offsetY = renderer.height * 0.175 * scale;
+      let offsetX = 0;
+      let offsetY = renderer.height * 0.125 * scale;
       if (vertical) {
-        offsetX = 0;
+        offsetX = -offsetY;
         if (position == DockPosition.RIGHT) {
-          offsetX = renderer.width * 0.2 * (scale * scale);
+          offsetX = offsetY;
         }
+        offsetY = 0;
       } else {
         if (position == DockPosition.TOP) {
-          offsetY = renderer.height * 1 * scale;
+          offsetY = -offsetY;
         }
       }
 
-      renderer.translationX = icon._icon.translationX + offsetX;
-      renderer.translationY = icon._icon.translationY + offsetY;
+      // renderer.translationX = icon._icon.translationX + offsetX;
+      // renderer.translationY = icon._icon.translationY + offsetY;
+
+      renderer.translationX = offsetX;
+      renderer.translationY = offsetY;
 
       let options = extension.running_indicator_style_options;
       let running_indicator_style = options[extension.running_indicator_style];

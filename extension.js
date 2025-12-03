@@ -187,6 +187,7 @@ export default class Dash2DockLiteExt extends Extension {
 
     this._enableSettings();
     this._loadIconMap();
+    this._loadConfig();
 
     // no longer needed
     // this._disable_borders = this.border_radius > 0;
@@ -199,6 +200,8 @@ export default class Dash2DockLiteExt extends Extension {
     Main.overview.dash.__box = Main.overview.dash._box;
     this._showMainOverviewDash(false);
     this.docks = [];
+
+    this.icon_theme = St.IconTheme.new();
 
     // service
     this.services = new Services();
@@ -223,9 +226,8 @@ export default class Dash2DockLiteExt extends Extension {
 
     // to allow dynamic imports
     this._loTimer.runOnce(() => {
-        this.startUp();
-      }, 250);
-
+      this.startUp();
+    }, 250);
   }
 
   disable() {
@@ -280,6 +282,9 @@ export default class Dash2DockLiteExt extends Extension {
     this._backgroundUris = null;
     this._blurredBackgrounds = null;
     this.desktop_background_variant = null;
+
+    delete this.icon_theme;
+    this.icon_theme = null;
 
     this._hookCompiz(false);
 
@@ -422,6 +427,21 @@ export default class Dash2DockLiteExt extends Extension {
     }
 
     return idx;
+  }
+
+  _loadConfig() {
+    this._config = {};
+    let fn = Gio.File.new_for_path('.config/d2da/config.json');
+    if (fn.query_exists(null)) {
+      const [success, contents] = fn.load_contents(null);
+      const decoder = new TextDecoder();
+      let contentsString = decoder.decode(contents);
+      try {
+        this._config = JSON.parse(contentsString);
+      } catch (err) {
+        console.log(err);
+      }
+    }
   }
 
   _loadIconMap() {
@@ -570,6 +590,7 @@ export default class Dash2DockLiteExt extends Extension {
           break;
         case 'max-recent-items':
           this.services._debounceCheckDownloads();
+          this.services._debounceCheckRecents();
           break;
         case 'apps-icon':
         case 'apps-icon-front':
@@ -645,6 +666,10 @@ export default class Dash2DockLiteExt extends Extension {
           this.recreateAllDocks();
           this.animate({ preview: true });
           break;
+        case 'icon-border-color':
+        case 'icon-border-thickness':
+        case 'icon-border-radius':
+        case 'icon-background-color':
         case 'separator-color':
         case 'border-color':
         case 'border-thickness':
@@ -840,6 +865,7 @@ export default class Dash2DockLiteExt extends Extension {
       this.services.disable();
       this.services.enable();
     }
+    this._iconTheme = St.IconTheme.new();
     this._updateStyle();
     this.recreateAllDocks();
   }
@@ -885,6 +911,9 @@ export default class Dash2DockLiteExt extends Extension {
       autohider._debounceCheckHide();
     });
     this.animate();
+    this.docks.forEach((dock) => {
+      dock._updateTransparenies();
+    });
   }
 
   _onOverviewHidden() {
@@ -892,6 +921,9 @@ export default class Dash2DockLiteExt extends Extension {
     this._inOverview = false;
     this._autohiders().forEach((autohider) => {
       autohider._debounceCheckHide();
+    });
+    this.docks.forEach((dock) => {
+      dock._updateTransparenies();
     });
   }
 
@@ -1262,6 +1294,28 @@ export default class Dash2DockLiteExt extends Extension {
       styles.push(`#d2daBackground { ${ss.join(' ')}}`);
     }
 
+    // icon backgrounds
+    {
+      let ss = [];
+      ss.push(`margin: 2px;`);
+
+      let r = rads[Math.floor(this.icon_border_radius)];
+      ss.push(`border-radius: ${r}px;`);
+
+      {
+        let rgba = this._style.rgba(this.icon_background_color);
+        ss.push(`background: rgba(${rgba});`);
+      }
+
+      // {
+      //   let rgba = this._style.rgba(this.icon_border_color);
+      //   let t = this.icon_border_thickness;
+      //   ss.push(`border: ${t}px rgba(${rgba});`);
+      // }
+
+      styles.push(`.icon-focused { ${ss.join(' ')}}`);
+    }
+
     // dash label
     if (this.customize_label) {
       let rads = [0, 2, 6, 10, 12, 16, 20];
@@ -1285,6 +1339,7 @@ export default class Dash2DockLiteExt extends Extension {
         ss.push(`color: rgba(${rgba});`);
       }
 
+      // ss.push(`padding: 8px;`);
       styles.push(`.dash-label { ${ss.join(' ')}}`);
     }
 
@@ -1413,5 +1468,22 @@ export default class Dash2DockLiteExt extends Extension {
     if (this._diagnosticTimer) {
       this._diagnosticTimer.dumpSubscribers();
     }
+  }
+
+  lookup_icon_from_names(names) {
+    for (let i = 0; i < names.length; i++) {
+      if (this.icon_theme.lookup_icon(names[i], 16, 1)) {
+        return names[i];
+      }
+    }
+    return null;
+  }
+
+  file_explorer() {
+    let fe = 'nautilus --select';
+    if (this._config && this._config['file-explorer']) {
+      fe = this._config['file-explorer'];
+    }
+    return fe;
   }
 }

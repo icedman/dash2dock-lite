@@ -12,6 +12,18 @@
 
 * Bug fixes
 
+# Release 84
+
+* add custom config for overriding file explorer and icon size
+* add background for focused icon
+* add transparent background on Overview
+* adjust badges and dots positions
+
+# Release 83
+
+* add Gnome 49 support
+* Filter icon actions to current monitor
+
 # Release 75
 
 * add Gnome 48 support

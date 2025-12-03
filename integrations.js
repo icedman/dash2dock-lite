@@ -53,24 +53,54 @@ export const Integrations = class {
     if (!dock) {
       return { x: monitor.x, y: monitor.y, width: 0, height: 0 };
     }
-    if (!Main.overview.dash.__box) {
-      Main.overview.dash.__box = Main.overview.dash._box;
-    }
-    Main.overview.dash._box = dock.dash._box;
 
-    // add alignment fix here?
-    let res = this._compiz._getIcon(actor);
+    let dashIcon = null;
+    let pids = null;
+    let pid = actor.get_meta_window()
+      ? actor.get_meta_window().get_pid()
+      : null;
+    if (pid) {
+      dock.dash._box
+        .get_children()
+        .filter(
+          (dashElement) =>
+            dashElement.child &&
+            dashElement.child._delegate &&
+            dashElement.child._delegate.app
+        )
+        .forEach((dashElement) => {
+          pids = dashElement.child._delegate.app.get_pids();
+          if (pids && pids.indexOf(pid) >= 0) {
+            let transformed_position = dashElement.get_transformed_position();
+            if (transformed_position && transformed_position[0]) {
+              dashIcon = {
+                x: transformed_position[0],
+                y: transformed_position[1],
+                width: 0,
+                height: 0,
+              };
+              return;
+            }
+          }
+        });
+    }
+
+    if (!dashIcon) {
+      return { x: monitor.x, y: monitor.y, width: 0, height: 0 };
+    }
+
     // console.log('compiz-alike-magic-lamp-effect: getIcon');
-    // console.log(`x:${res.x} y:${res.y} w:${res.width} h:${res.height}`);
-    let x = res.x;
-    let y = res.y;
-    let w = res.width;
-    let h = res.height;
+    // console.log(`x:${dashIcon.x} y:${dashIcon.y} w:${dashIcon.width} h:${dashIcon.height}`);
+    let x = dashIcon.x;
+    let y = dashIcon.y;
+    let w = dashIcon.width;
+    let h = dashIcon.height;
 
     if (w == 0) {
       let sz = dock._preferredIconSize();
       if (sz) {
         x += (sz / 2) * (dock._monitor.geometry_scale || 1);
+        y += (sz / 2) * (dock._monitor.geometry_scale || 1);
       }
     }
 

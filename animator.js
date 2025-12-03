@@ -104,11 +104,19 @@ export let Animator = class {
     }
 
     let bms = dock.get_children().find((child) => {
-      return child.get_name() === 'bms-dash-backgroundgroup';
-    });
+        let name = child.get_name();
+        return (
+          name === 'bms-dash-backgroundgroup' ||
+          name === 'dash-blurred-background-parent'
+        );
+      });
     this._bms = bms;
-    if (bms && !dock.extension.blur_background) {
-      bms.first_child.visible = false;
+    if (bms) {
+      bms.visible = dock.extension.blur_background;
+    }
+    // incompatible blur-my-shell version
+    if (dock.extension._bms && dock.extension._bms.metadata.version < 70) {
+      bms.visible = false;
     }
 
     let simulation = false;
@@ -191,7 +199,6 @@ export let Animator = class {
       let pos = icon.get_transformed_position();
 
       if (icon._found && !icon._handled) {
-        // console.log('new icon!');
         icon._handled = true;
         dock._maybeBounce(icon, true);
       }
@@ -360,7 +367,7 @@ export let Animator = class {
       if (scale > 1.1) {
         // affect spread
         let offset = Math.floor(
-          1.25 * (scale - 1) * iconSize * scaleFactor * spread * 0.8,
+          1.25 * (scale - 1) * iconSize * scaleFactor * spread * 0.8
         );
         // left
         for (let j = i - 1; j >= 0; j--) {
@@ -656,7 +663,7 @@ export let Animator = class {
             // }
             renderer.set_position(
               p[0] + adjustX + icon._icon.translationX - renderOffset[0],
-              ry,
+              ry
             );
             renderer.visible = true;
           }
@@ -989,6 +996,11 @@ export let Animator = class {
       let rw = dock.renderArea.width;
       let rh = dock.renderArea.height;
 
+      let meta_background = bms.first_child.first_child;
+      if (!meta_background) {
+        return;
+      }
+
       // bottom layout
       switch (dock._position) {
         case 'left':
@@ -1001,19 +1013,19 @@ export let Animator = class {
             bg_offset_x,
             bg_offset_y,
             dock._background.width - (dock.extension.border_thickness && 0),
-            dock._background.height - (dock.extension.border_thickness && 0),
+            dock._background.height - (dock.extension.border_thickness && 0)
           );
           break;
         case 'right':
           bms.x = 0;
           bms.y = 0;
-          bms.first_child.x = -bms.first_child.first_child.width + rw;
+          bms.first_child.x = -meta_background.width + rw;
           bms.first_child.y = 0;
           bms.first_child.set_clip(
             -bms.first_child.x + bg_offset_x,
             0 + bg_offset_y,
             dock._background.width - (dock.extension.border_thickness && 0),
-            dock._background.height - (dock.extension.border_thickness && 0),
+            dock._background.height - (dock.extension.border_thickness && 0)
           );
           break;
         case 'bottom':
@@ -1021,18 +1033,18 @@ export let Animator = class {
           bms.x = 0;
           bms.y = 0;
           bms.first_child.x = 0;
-          bms.first_child.y = -bms.first_child.first_child.height + rh;
+          bms.first_child.y = -meta_background.height + rh;
           bms.first_child.set_clip(
             0 + bg_offset_x,
             -bms.first_child.y + bg_offset_y,
             dock._background.width - (dock.extension.border_thickness && 0),
-            dock._background.height - (dock.extension.border_thickness && 0),
+            dock._background.height - (dock.extension.border_thickness && 0)
           );
           break;
       }
 
       let opacity = (dock.extension.background_color[3] ?? 0.5) * 54 + 200;
-      bms.first_child.first_child.opacity = opacity;
+      meta_background.opacity = opacity;
 
       this._blur_effects = bms.first_child.get_effects();
       if (this._blur_effects && this._blur_effects[0]) {

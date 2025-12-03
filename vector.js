@@ -80,7 +80,7 @@ export const Vector = class {
   crossProduct(otherVector) {
     if (this.components.length !== 3 || otherVector.components.length !== 3) {
       throw new Error(
-        'Cross product is only defined for 3-dimensional vectors.',
+        'Cross product is only defined for 3-dimensional vectors.'
       );
     }
 

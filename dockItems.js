@@ -85,7 +85,7 @@ const DockItemOverlay = GObject.registerClass(
         this.add_child(renderer);
       }
     }
-  },
+  }
 );
 
 export const DockItemDotsOverlay = GObject.registerClass(
@@ -140,11 +140,11 @@ export const DockItemDotsOverlay = GObject.registerClass(
             ? -90
             : 90
           : position == DockPosition.TOP
-            ? 180
-            : 0,
+          ? 180
+          : 0,
       });
     }
-  },
+  }
 );
 
 export const DockItemBadgeOverlay = GObject.registerClass(
@@ -175,7 +175,7 @@ export const DockItemBadgeOverlay = GObject.registerClass(
         translate: [0.4, -0.8],
       });
     }
-  },
+  }
 );
 
 export const DockIcon = GObject.registerClass(
@@ -238,12 +238,12 @@ export const DockIcon = GObject.registerClass(
             }
           }
         },
-        this,
+        this
       );
 
       return this._iconActor;
     }
-  },
+  }
 );
 
 export const DockItemContainer = GObject.registerClass(
@@ -317,7 +317,7 @@ export const DockItemContainer = GObject.registerClass(
     _onClick() {
       this.activateNewWindow();
     }
-  },
+  }
 );
 
 export const DockBackground = GObject.registerClass(
@@ -415,7 +415,7 @@ export const DockBackground = GObject.registerClass(
         let style = [dock.extension._backgroundStyle];
         {
           let rgba = dock.extension._style.rgba(
-            dock.extension.background_color,
+            dock.extension.background_color
           );
           style.push(`background: rgba(${rgba});`);
         }
@@ -426,5 +426,5 @@ export const DockBackground = GObject.registerClass(
         // this._bg.style = style.join(' ');
       }
     }
-  },
+  }
 );

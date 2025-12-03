@@ -293,7 +293,7 @@ export default class Dash2DockLiteExt extends Extension {
 
   _hookCompiz(hook = true) {
     let compiz = Main.extensionManager.lookup(
-      'compiz-alike-magic-lamp-effect@hermes83.github.com',
+      'compiz-alike-magic-lamp-effect@hermes83.github.com'
     );
     if (compiz && compiz.stateObj) {
       let stateObj = compiz.stateObj;
@@ -510,7 +510,7 @@ export default class Dash2DockLiteExt extends Extension {
         () => {
           // apply light/dark themeing
         },
-        this,
+        this
       );
     } catch (err) {
       console.log(err);
@@ -741,7 +741,7 @@ export default class Dash2DockLiteExt extends Extension {
       () => {
         this._onAppsChanged();
       },
-      this,
+      this
     );
 
     this._appFavorites = Fav.getAppFavorites();
@@ -750,13 +750,13 @@ export default class Dash2DockLiteExt extends Extension {
       () => {
         this._onAppsChanged();
       },
-      this,
+      this
     );
 
     Main.sessionMode.connectObject(
       'updated',
       this._onSessionUpdated.bind(this),
-      this,
+      this
     );
 
     Main.extensionManager.connectObject(
@@ -779,7 +779,7 @@ export default class Dash2DockLiteExt extends Extension {
             break;
         }
       },
-      this,
+      this
     );
 
     Main.layoutManager.connectObject(
@@ -795,7 +795,7 @@ export default class Dash2DockLiteExt extends Extension {
       () => {
         this._updateMultiMonitorPreference();
       },
-      this,
+      this
     );
 
     Main.messageTray.connectObject(
@@ -804,7 +804,7 @@ export default class Dash2DockLiteExt extends Extension {
         this.services.checkNotifications();
         this.animate();
       },
-      this,
+      this
     );
 
     global.display.connectObject(
@@ -814,7 +814,7 @@ export default class Dash2DockLiteExt extends Extension {
       this._onFullScreen.bind(this),
       'restacked',
       this._onRestacked.bind(this),
-      this,
+      this
     );
 
     // global.stage.connectObject(
@@ -828,19 +828,19 @@ export default class Dash2DockLiteExt extends Extension {
       this._onOverviewShowing.bind(this),
       'hidden',
       this._onOverviewHidden.bind(this),
-      this,
+      this
     );
 
     St.TextureCache.get_default().connectObject(
       'icon-theme-changed',
       this._onIconThemeChanged.bind(this),
-      this,
+      this
     );
 
     St.ThemeContext.get_for_stage(global.stage).connectObject(
       'notify::scale-factor',
       this.recreateAllDocks.bind(this),
-      this,
+      this
     );
 
     // move to services.js
@@ -849,7 +849,7 @@ export default class Dash2DockLiteExt extends Extension {
         this._onCheckServices();
       },
       SERVICES_UPDATE_INTERVAL,
-      'services',
+      'services'
     );
   }
 
@@ -1015,7 +1015,7 @@ export default class Dash2DockLiteExt extends Extension {
       });
       Main.uiGroup.insert_child_below(
         this._topbar_background,
-        Main.panel.get_parent(),
+        Main.panel.get_parent()
       );
     }
     return this._topbar_background;
@@ -1064,7 +1064,7 @@ export default class Dash2DockLiteExt extends Extension {
           this._updateStyle();
         },
         500,
-        'debounceStyle',
+        'debounceStyle'
       );
     } else {
       this._hiTimer.runDebounced(this._debounceStyleSeq);
@@ -1079,7 +1079,7 @@ export default class Dash2DockLiteExt extends Extension {
     // icons-shadow
     if (this.icon_shadow) {
       styles.push(
-        '.renderer_icon, #DockItemList StIcon {icon-shadow: rgba(0, 0, 0, 0.42) 0 4px 8px;}',
+        '.renderer_icon, #DockItemList StIcon {icon-shadow: rgba(0, 0, 0, 0.42) 0 4px 8px;}'
       );
       // styles.push(
       //   '#dash StIcon:hover, #DockItemList StIcon:hover {icon-shadow: rgba(0, 0, 0, 0.24) 0 2px 8px;}'
@@ -1160,7 +1160,7 @@ export default class Dash2DockLiteExt extends Extension {
       if (this.topbar_border_thickness) {
         let rgba = this._style.rgba(this.topbar_border_color);
         ss.push(
-          `border: ${this.topbar_border_thickness}px solid rgba(${rgba}); border-top: 0px; border-left: 0px; border-right: 0px;`,
+          `border: ${this.topbar_border_thickness}px solid rgba(${rgba}); border-top: 0px; border-left: 0px; border-right: 0px;`
         );
       }
 

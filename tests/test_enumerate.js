@@ -13,7 +13,7 @@ let enumerator = directory.enumerate_children(
     Gio.FILE_ATTRIBUTE_TIME_MODIFIED,
   ].join(','),
   Gio.FileQueryInfoFlags.NONE,
-  null,
+  null
 );
 
 let fileInfo;

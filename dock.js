@@ -122,7 +122,7 @@ export let Dock = GObject.registerClass(
         this.autohider._onEnterEvent.bind(this.autohider),
         'leave-event',
         this.autohider._onLeaveEvent.bind(this.autohider),
-        this,
+        this
       );
     }
 
@@ -223,7 +223,7 @@ export let Dock = GObject.registerClass(
             this.autohider._debounceCheckHide();
           },
           400,
-          'debounceBeginAnimate',
+          'debounceBeginAnimate'
         );
       } else {
         this.extension._loTimer.runDebounced(this._debounceBeginAnimateSeq);
@@ -396,7 +396,7 @@ export let Dock = GObject.registerClass(
         this._onLeaveEvent.bind(this),
         'destroy',
         () => {},
-        this,
+        this
       );
 
       this.dash.opacity = 0;
@@ -705,7 +705,7 @@ export let Dock = GObject.registerClass(
               () => {
                 this.dash._showAppsIcon.hideLabel();
               },
-              this,
+              this
             );
           }
         }
@@ -836,7 +836,7 @@ export let Dock = GObject.registerClass(
           // does not work on gnome 43 (debian)
           show: false, // this.extension.documents_icon,
           prepare: this.extension.services.checkRecents.bind(
-            this.extension.services,
+            this.extension.services
           ),
           items: '_recentFiles',
           itemsLength: '_recentFilesLength',
@@ -879,7 +879,7 @@ export let Dock = GObject.registerClass(
         // pin trash icon
         //! avoid creating app_info & /tmp/*.desktop files
         this._trashIcon = this.createItem(
-          tempPath('trash-dash2dock-lite.desktop'),
+          tempPath('trash-dash2dock-lite.desktop')
         );
         this._icons = null;
       } else if (this._trashIcon && !this.extension.trash_icon) {
@@ -1114,7 +1114,7 @@ export let Dock = GObject.registerClass(
         let style = [];
 
         let rgba = this.extension._style.rgba(
-          this.extension.topbar_background_color,
+          this.extension.topbar_background_color
         );
         style.push(`background-color: rgba(${rgba});`);
         topbar_background.style = style.join('');
@@ -1213,7 +1213,7 @@ export let Dock = GObject.registerClass(
               this.animate(s._delay);
             },
             this.animationInterval,
-            'animationTimer',
+            'animationTimer'
           );
         } else {
           this.extension._hiTimer.runLoop(this._animationSeq);
@@ -1255,7 +1255,7 @@ export let Dock = GObject.registerClass(
               this._endAnimation();
             },
             ANIM_DEBOUNCE_END_DELAY + this.animationInterval,
-            'debounceEndAnimation',
+            'debounceEndAnimation'
           );
         } else {
           this.extension._loTimer.runDebounced(this.debounceEndSeq);
@@ -1569,5 +1569,5 @@ export let Dock = GObject.registerClass(
         this._raiseAndFocus(window);
       }
     }
-  },
+  }
 );

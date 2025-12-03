@@ -20,7 +20,7 @@ export let PrefKeys = class {
         key.test,
         key.callback,
         key.options,
-        key.themed,
+        key.themed
       );
     });
   }
@@ -33,7 +33,7 @@ export let PrefKeys = class {
     test,
     callback,
     options,
-    themed,
+    themed
   ) {
     this._keys[name] = {
       name,
@@ -159,7 +159,7 @@ export let PrefKeys = class {
                   green: key.value[1],
                   blue: key.value[2],
                   alpha: key.value[3],
-                }),
+                })
               );
             }
           } catch (err) {
@@ -207,7 +207,7 @@ export let PrefKeys = class {
             }
           }
           if (callback) callback(name, key.value);
-        }),
+        })
       );
     });
   }

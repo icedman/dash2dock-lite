@@ -28,7 +28,7 @@ export const Dot = GObject.registerClass(
       this.visible = true;
       this._canvas.redraw();
     }
-  },
+  }
 );
 
 const DotCanvas = GObject.registerClass(
@@ -91,7 +91,7 @@ const DotCanvas = GObject.registerClass(
       if (this.state.translate) {
         ctx.translate(
           this.state.translate[0] * width,
-          this.state.translate[1] * height,
+          this.state.translate[1] * height
         );
       }
       if (this.state.rotate) {
@@ -152,7 +152,7 @@ const DotCanvas = GObject.registerClass(
 
       ctx.translate(
         Math.floor((size - count * dashLength - (count - 1) * spacing) / 2),
-        size - height * 1.5,
+        size - height * 1.5
       );
 
       for (let i = 0; i < count; i++) {
@@ -182,7 +182,7 @@ const DotCanvas = GObject.registerClass(
 
       ctx.translate(
         Math.floor((size - count * dashLength - (count - 1) * spacing) / 2),
-        size - height * 1.5,
+        size - height * 1.5
       );
 
       for (let i = 0; i < count; i++) {
@@ -212,7 +212,7 @@ const DotCanvas = GObject.registerClass(
 
       ctx.translate(
         Math.floor((size - count * dashLength - (count - 1) * spacing) / 2),
-        size - height * 1.5,
+        size - height * 1.5
       );
 
       for (let i = 0; i < count; i++) {
@@ -244,7 +244,7 @@ const DotCanvas = GObject.registerClass(
 
       ctx.translate(
         Math.floor((size - count * dashLength - (count - 1) * spacing) / 2),
-        size - height * 1.5,
+        size - height * 1.5
       );
 
       for (let i = 0; i < count; i++) {
@@ -277,9 +277,9 @@ const DotCanvas = GObject.registerClass(
 
       ctx.translate(
         Math.floor(
-          (size - count * radius - (count - 1) * spacing) / 2 - radius / 2,
+          (size - count * radius - (count - 1) * spacing) / 2 - radius / 2
         ),
-        size - height,
+        size - height
       );
 
       for (let i = 0; i < count; i++) {
@@ -289,7 +289,7 @@ const DotCanvas = GObject.registerClass(
           -radius,
           radius,
           0,
-          2 * Math.PI,
+          2 * Math.PI
         );
       }
 
@@ -314,7 +314,7 @@ const DotCanvas = GObject.registerClass(
 
       ctx.translate(
         Math.floor((size - count * dashLength - (count - 1) * spacing) / 2),
-        size - height * 1.5 - radius / 2,
+        size - height * 1.5 - radius / 2
       );
 
       for (let i = 0; i < count; i++) {
@@ -325,14 +325,14 @@ const DotCanvas = GObject.registerClass(
             radius / 2,
             radius,
             0,
-            2 * Math.PI,
+            2 * Math.PI
           );
         } else {
           ctx.rectangle(
             i * dashLength + i * spacing,
             0,
             dashLength,
-            height - 2,
+            height - 2
           );
         }
       }
@@ -345,5 +345,5 @@ const DotCanvas = GObject.registerClass(
     _draw_dot(ctx, state) {
       this._draw_dots(ctx, { ...state, count: 1 });
     }
-  },
+  }
 );

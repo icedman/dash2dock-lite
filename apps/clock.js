@@ -25,7 +25,7 @@ function _drawFrame(ctx, size, settings) {
     bgSize,
     bgSize,
     0,
-    radius,
+    radius
   );
   // frame border
   if (borderWidth) {
@@ -37,7 +37,7 @@ function _drawFrame(ctx, size, settings) {
       bgSize,
       bgSize,
       borderWidth,
-      radius,
+      radius
     );
   }
   ctx.restore();
@@ -78,7 +78,7 @@ function _drawMarks(ctx, size, settings) {
       // size / 33,
       a * (Math.PI / 180),
       -Math.floor((size * 0.9) / 2.7),
-      -Math.floor(mark / 2.7),
+      -Math.floor(mark / 2.7)
     );
   }
 
@@ -97,7 +97,7 @@ function _drawHands(ctx, size, date, settings) {
     minute,
     size / 20,
     (h0 * 30 + (m0 * 30) / 60) * (Math.PI / 180),
-    -Math.floor(size / 3.7),
+    -Math.floor(size / 3.7)
   );
   Drawing.draw_circle(ctx, minute, 0, 0, size / 12);
   Drawing.draw_rotated_line(
@@ -105,7 +105,7 @@ function _drawHands(ctx, size, date, settings) {
     hour,
     size / 33,
     m0 * 6 * (Math.PI / 180),
-    -Math.floor(size / 2.7),
+    -Math.floor(size / 2.7)
   );
 }
 
@@ -145,7 +145,7 @@ export const Clock = GObject.registerClass(
     shouldHideIcon() {
       return this._canvas && this._canvas._hideIcon;
     }
-  },
+  }
 );
 
 const ClockCanvas = GObject.registerClass(
@@ -344,5 +344,5 @@ const ClockCanvas = GObject.registerClass(
       this._hideIcon = true;
       ctx.$dispose();
     }
-  },
+  }
 );

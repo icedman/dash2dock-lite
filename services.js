@@ -51,7 +51,7 @@ export const Services = class {
             d._onClock();
           });
         },
-        -1,
+        -1
       ),
       new ServiceCounter(
         'calendar',
@@ -61,7 +61,7 @@ export const Services = class {
             d._onCalendar();
           });
         },
-        -1,
+        -1
       ),
       new ServiceCounter(
         'ping',
@@ -74,7 +74,7 @@ export const Services = class {
           // notifications
           this.checkNotifications();
         },
-        0,
+        0
       ),
     ];
 
@@ -87,13 +87,13 @@ export const Services = class {
       this._onMountAdded.bind(this),
       'mount-removed',
       this._onMountRemoved.bind(this),
-      this,
+      this
     );
 
     this._trashDir = Gio.File.new_for_uri('trash:///');
     this._trashMonitor = this._trashDir.monitor(
       Gio.FileMonitorFlags.WATCH_MOVES,
-      null,
+      null
     );
     this._trashMonitor.connectObject(
       'changed',
@@ -106,7 +106,7 @@ export const Services = class {
         }
         this.checkTrash();
       },
-      this,
+      this
     );
 
     this.setupDownloads();
@@ -152,7 +152,7 @@ export const Services = class {
 
     this._downloadsMonitor = this._downloadsDir.monitor(
       Gio.FileMonitorFlags.WATCH_MOVES,
-      null,
+      null
     );
     this._downloadsMonitor.connectObject(
       'changed',
@@ -165,7 +165,7 @@ export const Services = class {
         }
         this._debounceCheckDownloads();
       },
-      this,
+      this
     );
 
     this._debounceCheckDownloads();
@@ -227,7 +227,7 @@ export const Services = class {
       null,
       false,
       Gio.FileCreateFlags.REPLACE_DESTINATION,
-      null,
+      null
     );
   }
 
@@ -247,7 +247,7 @@ export const Services = class {
       null,
       false,
       Gio.FileCreateFlags.REPLACE_DESTINATION,
-      null,
+      null
     );
   }
 
@@ -257,13 +257,13 @@ export const Services = class {
       'downloads',
       'Downloads',
       'folder-downloads',
-      'Downloads',
+      'Downloads'
     );
     this.setupFolderIcon(
       'documents',
       'Documents',
       'folder-documents',
-      'Documents',
+      'Documents'
     );
   }
 
@@ -293,7 +293,7 @@ export const Services = class {
         null,
         false,
         Gio.FileCreateFlags.REPLACE_DESTINATION,
-        null,
+        null
       );
     }
 
@@ -374,7 +374,7 @@ export const Services = class {
     let iter = this._trashDir.enumerate_children(
       'standard::*',
       Gio.FileQueryInfoFlags.NONE,
-      null,
+      null
     );
     let prev = this.trashFull;
     this.trashFull = iter.next_file(null) != null;
@@ -400,7 +400,7 @@ export const Services = class {
         Gio.FILE_ATTRIBUTE_TIME_MODIFIED,
       ].join(','),
       Gio.FileQueryInfoFlags.NONE,
-      null,
+      null
     );
 
     let fileInfo;
@@ -520,7 +520,7 @@ export const Services = class {
 
     try {
       await trySpawnCommandLine(
-        `/usr/bin/env -S gjs -m "${this.extension.path}/apps/recents.js"`,
+        `/usr/bin/env -S gjs -m "${this.extension.path}/apps/recents.js"`
       );
     } catch (err) {
       console.log(err);
@@ -584,7 +584,7 @@ export const Services = class {
             this.checkRecents();
           },
           DEBOUNCE_CHECK_TIMEOUT,
-          'debounceCheckRecents',
+          'debounceCheckRecents'
         );
       } else {
         this.extension._loTimer.runDebounced(this._debounceCheckSeq);
@@ -610,7 +610,7 @@ export const Services = class {
             this.checkDownloads();
           },
           DEBOUNCE_CHECK_TIMEOUT,
-          'debounceCheckDownloads',
+          'debounceCheckDownloads'
         );
       } else {
         this.extension._loTimer.runDebounced(this._debounceCheckSeq);

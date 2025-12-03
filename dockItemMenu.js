@@ -132,7 +132,8 @@ export const DockItemList = GObject.registerClass(
         });
         icon.set_icon_size(iconSize * iconAdjust);
         this._box.add_child(w);
-        let label = new St.Label({ name: 'label', style_class: 'dash-label' });
+        let label = new St.Label({ name: 'label', style_class: 'dash-label',
+          offscreen_redirect: Clutter.OffscreenRedirect.ALWAYS });
         let short = (l.name ?? '').replace(/(.{32})..+/, '$1...');
         label.text = short;
         w.add_child(icon);
@@ -140,6 +141,9 @@ export const DockItemList = GObject.registerClass(
         w._icon = icon;
         w._label = label;
         label.opacity = 0;
+
+        // label.style = 'font-size: 32pt';
+        // label.set_scale(0.5, 0.5);
 
         icon.connect('button-press-event', () => {
           // let path = Gio.File.new_for_path(`Downloads/${l.name}`).get_path();
@@ -295,7 +299,9 @@ export const DockItemList = GObject.registerClass(
         c.x = posVector.x;
         c.y = posVector.y;
 
-        c._label.translationX = -c._label.width;
+        let lsz = c._label.get_transformed_size();
+
+        c._label.translationX = -lsz[0]; // c._label.width;
         if (list._hidden) {
           let opacity = c._label.opacity - 15;
           if (opacity < 0) opacity = 0;

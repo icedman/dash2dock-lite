@@ -650,8 +650,13 @@ export let Animator = class {
           }
           let sw = !isNaN(tSize[0]) ? tSize[0] : 0;
           let sh = !isNaN(tSize[1]) ? tSize[1] : 0;
-          icon._label.x = tPos[0] + sw / 2 - icon._label.width / 2;
-          icon._label.y = tPos[1] + sh / 2 - icon._label.height / 2;
+
+          icon._label.style = 'font-size: 32pt';
+          icon._label.set_scale(0.5, 0.5);
+          let lsz = icon._label.get_transformed_size();
+          
+          icon._label.x = tPos[0] + sw / 2 - lsz[0] / 2;
+          icon._label.y = tPos[1] + sh / 2 - lsz[1] / 2;
           if (vertical) {
             if (dock._position == DockPosition.LEFT) {
               icon._label.x += sh / 1.5 + icon._label.width / 2;

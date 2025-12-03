@@ -1270,7 +1270,7 @@ export default class Dash2DockLiteExt extends Extension {
     // icons-shadow
     if (this.icon_shadow) {
       styles.push(
-        '.renderer_icon, #DockItemList StIcon {icon-shadow: rgba(0, 0, 0, 0.32) 0 2px 6px;}',
+        '#d2daIcon, #DockItemList StIcon {icon-shadow: rgba(0, 0, 0, 0.32) 0 2px 6px;}',
       );
       // styles.push(
       //   '#dash StIcon:hover, #DockItemList StIcon:hover {icon-shadow: rgba(0, 0, 0, 0.24) 0 2px 8px;}'

@@ -67,7 +67,7 @@ export let Animator = class {
       let target = dock.renderArea;
       let renderer = new St.Icon({
         icon_name: 'file',
-        style_class: 'renderer_icon',
+        name: 'd2daIcon',
         reactive: true,
       });
       renderer.visible = false;
@@ -651,8 +651,8 @@ export let Animator = class {
           let sw = !isNaN(tSize[0]) ? tSize[0] : 0;
           let sh = !isNaN(tSize[1]) ? tSize[1] : 0;
 
-          icon._label.style = 'font-size: 32pt';
-          icon._label.set_scale(0.5, 0.5);
+          // icon._label.style = 'font-size: 32pt';
+          // icon._label.set_scale(0.5, 0.5);
           let lsz = icon._label.get_transformed_size();
           
           icon._label.x = tPos[0] + sw / 2 - lsz[0] / 2;

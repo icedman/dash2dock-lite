@@ -162,7 +162,6 @@ export let AutoHide = class {
   _track(window) {
     //! window tracking should be made global
     if (!window._tracked) {
-      // log('tracking...');
       window.connectObject(
         'position-changed',
         // this._debounceCheckHide.bind(this),
@@ -174,7 +173,7 @@ export let AutoHide = class {
         () => {
           this.dock.extension.checkHide();
         },
-        this,
+        this
       );
       window._tracked = true;
     }
@@ -192,6 +191,7 @@ export let AutoHide = class {
   }
 
   _checkOverlap() {
+    // console.log("checking overlap...");
     if (this.extension._inOverview) {
       return false;
     }
@@ -199,6 +199,8 @@ export let AutoHide = class {
     if (this.extension.simulated_pointer) {
       pointer = [...this.extension.simulated_pointer];
     }
+
+    // console.log(pointer);
 
     let pos = this.dock.struts.get_transformed_position();
     let rect = {
@@ -210,11 +212,14 @@ export let AutoHide = class {
     //! change to struts rect
     let arect = [rect.x, rect.y, rect.w, rect.h];
 
+    // console.log(arect);
+
     if (!this.extension.autohide_dash) {
       return false;
     }
 
-    // within the dash
+    // console.log("checking pointer location...");
+
     if (this.dock._isWithinDash(pointer) || isInRect(arect, pointer)) {
       return false;
     }
@@ -223,9 +228,13 @@ export let AutoHide = class {
       return true;
     }
 
+    // console.log("checking fullscreen...");
+
     if (this.dock._monitor && this.dock._monitor.inFullscreen) {
       return true;
     }
+
+    // console.log("checking windows...");
 
     let monitor = this.dock._monitor;
     let actors = global.get_window_actors();
@@ -240,7 +249,7 @@ export let AutoHide = class {
     let workspace = global.workspace_manager.get_active_workspace_index();
     windows = windows.filter(
       (w) =>
-        workspace == w.get_workspace().index() && w.showing_on_its_workspace(),
+        workspace == w.get_workspace().index() && w.showing_on_its_workspace()
     );
     windows = windows.filter((w) => w.get_window_type() in handledWindowTypes);
 
@@ -262,6 +271,8 @@ export let AutoHide = class {
     });
 
     this.windows = windows;
+
+    // console.log(isOverlapped);
     return isOverlapped;
   }
 
@@ -273,7 +284,7 @@ export let AutoHide = class {
             this._checkHide();
           },
           DEBOUNCE_HIDE_TIMEOUT,
-          'debounceCheckHide',
+          'debounceCheckHide'
         );
       } else {
         this.extension._loTimer.runDebounced(this._debounceCheckSeq);

@@ -121,6 +121,7 @@
         </child>
         <child>
           <object class="AdwActionRow">
+            <property name="visible">false</property>
             <property name="title" translatable="yes">Icon Shadow</property>
             <property name="subtitle" translatable="yes">Add icon shadow effect.</property>
             <property name="activatable-widget">icon-shadow</property>
@@ -165,7 +166,7 @@
     </child>
     <child>
       <object class="AdwPreferencesGroup">
-        <property name="visible">true</property>
+        <property name="visible">false</property>
         <property name="title" translatable="yes">Focused Icon Background</property>
         <property name="description" translatable="yes"/>
         <child>
@@ -206,6 +207,7 @@
         </child>
         <child>
           <object class="AdwActionRow">
+            <property name="visible">false</property>
             <property name="title" translatable="yes">Border Thickness</property>
             <property name="subtitle" translatable="yes">Set border thickness.</property>
             <property name="activatable-widget">icon-border-thickness</property>
@@ -219,6 +221,7 @@
         </child>
         <child>
           <object class="AdwActionRow">
+            <property name="visible">false</property>
             <property name="title" translatable="yes">Border Color</property>
             <property name="subtitle" translatable="yes">Select border color.</property>
             <property name="activatable-widget">icon-border-color</property>
@@ -360,7 +363,7 @@
           <object class="AdwActionRow">
             <property name="visible">true</property>
             <property name="title" translatable="yes">Background Blur</property>
-            <property name="subtitle" translatable="yes">Add background blur with current wallpaper. Requires imagemagick installed.</property>
+            <property name="subtitle" translatable="yes">Add background blur with current wallpaper. Requires the [blur-my-shell@aunetx] extension. WARNING! This feature is UNSTABLE.</property>
             <property name="activatable-widget">blur-background</property>
             <child>
               <object class="GtkSwitch" id="blur-background">
@@ -540,7 +543,7 @@
         </child>
         <child>
           <object class="AdwActionRow">
-            <property name="visible">true</property>
+            <property name="visible">false</property>
             <property name="title" translatable="yes">Background Blur</property>
             <property name="subtitle" translatable="yes">Add background blur with current wallpaper. Requires imagemagick installed.</property>
             <property name="activatable-widget">topbar-blur-background</property>

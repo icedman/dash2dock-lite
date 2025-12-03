@@ -95,7 +95,7 @@ export const DockItemList = GObject.registerClass(
         this.remove_child(this._box);
         this._box = null;
       }
-      
+
       if (!list.length) return;
 
       this.opacity = 0;
@@ -111,8 +111,9 @@ export const DockItemList = GObject.registerClass(
 
       this._target = target;
 
-      this._box = new St.Widget({ name: 'box', style_class: '-hi' });
-      let iconSize = dock.dash._box.first_child._icon.width;
+      this._box = new St.Widget({ style_class: '-hi' });
+      let iconSize = dock._iconSizeScaledDown * dock._monitor.geometry_scale;
+      // dock.dash._box.first_child._icon.width;
 
       // scaling hack - temporary
       let iconAdjust = 1;
@@ -123,7 +124,7 @@ export const DockItemList = GObject.registerClass(
       let file_explorer = dock.extension.file_explorer();
 
       list.forEach((l) => {
-        let w = new St.Widget({ name: 'widget' });
+        let w = new St.Widget({});
         let icon = new St.Icon({
           name: 'icon',
           icon_name: l.icon,
@@ -132,8 +133,7 @@ export const DockItemList = GObject.registerClass(
         });
         icon.set_icon_size(iconSize * iconAdjust);
         this._box.add_child(w);
-        let label = new St.Label({ name: 'label', style_class: 'dash-label',
-          offscreen_redirect: Clutter.OffscreenRedirect.ALWAYS });
+        let label = new St.Label({ style_class: 'dash-label' });
         let short = (l.name ?? '').replace(/(.{32})..+/, '$1...');
         label.text = short;
         w.add_child(icon);
@@ -172,7 +172,7 @@ export const DockItemList = GObject.registerClass(
       let angleInc = 0 + 2.5 * dock.extension.items_pullout_angle;
       let startAngle = 270 + 1 * angleInc;
       let angle = startAngle;
-      let rad = iconSize; //  * dock._scaleFactor;
+      let rad = iconSize; // * dock._scaleFactor;
 
       let ox = 0;
       let oy = -rad / 4;
@@ -328,5 +328,5 @@ export const DockItemList = GObject.registerClass(
 
       target._label.hide();
     }
-  },
+  }
 );

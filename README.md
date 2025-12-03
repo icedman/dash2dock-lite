@@ -39,14 +39,18 @@
 * Mounted devices
 * Downloads icon with fan animation (new!)
 * Icon color effects(Tint, Monochrome)
-* Blurred background
 * Custom icons
+
+### Third-Party Compatibility
+
+* Compiz Magic Lamp Animation
+* Blur my Shell
 
 ### Prerequisites
 
 Requirements:
 
-* GNOME Shell (version 40+)
+* GNOME Shell (version 42+)
 
 ### Installation
 

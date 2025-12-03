@@ -181,6 +181,12 @@ export let Animator = class {
     let prevIcon = null;
     animateIcons.forEach((icon) => {
       let pos = icon.get_transformed_position();
+
+      if (icon._found && !icon._handled) {
+        icon._handled = true;
+        dock._maybeBounce(icon, true);
+      }
+
       icon._pos = [...pos];
       icon._fixedPosition = [...pos];
 
@@ -333,7 +339,7 @@ export let Animator = class {
     //! use better collision test here?
     let total_spread_left = 0;
     let total_spread_right = 0;
-    let hoveredIcon = null;
+    let hoveredIcon = dock._lastHoveredIcon;
     for (let i = 0; i < iconTable.length; i++) {
       if (iconTable.length < 2) break;
       let icon = iconTable[i];
@@ -345,7 +351,7 @@ export let Animator = class {
       if (scale > 1.1) {
         // affect spread
         let offset = Math.floor(
-          1.25 * (scale - 1) * iconSize * scaleFactor * spread * 0.8,
+          1.25 * (scale - 1) * iconSize * scaleFactor * spread * 0.8
         );
         // left
         for (let j = i - 1; j >= 0; j--) {
@@ -629,9 +635,19 @@ export let Animator = class {
             } else {
               iconContainer.translationY = adjustY / 2;
             }
+
+            let ry = p[1] + adjustY + icon._icon.translationY - renderOffset[1];
+            // if (!dock._hidden) {
+            // // dash-independent computation
+            //   let margin = 8 * dock.extension.icon_spacing * m.geometry_scale * 4;
+            //   ry = dock.height - iconSize * m.geometry_scale;
+            //   ry += adjustY + icon._icon.translationY;
+            //   ry -= margin;
+            //   ry -= edge_distance;
+            // }
             renderer.set_position(
               p[0] + adjustX + icon._icon.translationX - renderOffset[0],
-              p[1] + adjustY + icon._icon.translationY - renderOffset[1],
+              ry
             );
             renderer.visible = true;
           }
@@ -654,7 +670,7 @@ export let Animator = class {
           // icon._label.style = 'font-size: 32pt';
           // icon._label.set_scale(0.5, 0.5);
           let lsz = icon._label.get_transformed_size();
-          
+
           icon._label.x = tPos[0] + sw / 2 - lsz[0] / 2;
           icon._label.y = tPos[1] + sh / 2 - lsz[1] / 2;
           if (vertical) {
@@ -665,7 +681,7 @@ export let Animator = class {
             }
             icon._label.y += 2 * (m.geometry_scale || 1);
           } else {
-            if (magnify == 0 || dock._iconSize < 32) {
+            if (magnify == 0 || dock._iconSize <= 4) {
               sh *= 1.5;
             }
             if (dock._position == DockPosition.BOTTOM) {
@@ -804,6 +820,13 @@ export let Animator = class {
           : iconSize * 0.75 * scaleFactor;
         actor.visible = thickness > 0;
       }
+
+      let any = next ?? prev;
+      if (!vertical && any) {
+        actor.translationY = any.height / 2 - actor.height / 2;
+      } else if (vertical && any) {
+        // actor.translationX = any.width / 2 - actor.width / 2;
+      }
     });
 
     let targetX = 0;
@@ -938,6 +961,7 @@ export let Animator = class {
 
       dock._updateTransparenies();
     }
+
     dock.struts.visible = !dock._hidden;
     dock.dash.opacity = 255;
 
@@ -953,6 +977,8 @@ export let Animator = class {
       dock.autohider._debounceCheckHide();
       dock._debounceEndAnimation();
     }
+
+    dock.extension.integrations.bms_update_size(this);
   }
 
   bounceIcon(appwell) {

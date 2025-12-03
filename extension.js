@@ -33,6 +33,7 @@ import { Timer } from './timer.js';
 import { Style } from './style.js';
 import { Dock } from './dock.js';
 import { Services } from './services.js';
+import { Integrations } from './integrations.js';
 import { runTests } from './diagnostics.js';
 
 import {
@@ -142,11 +143,8 @@ export default class Dash2DockLiteExt extends Extension {
 
     // Use UUID to avoid conflicting with other instances of this extensions (multi user setup)
     if (!this.uuid) {
-      this.uuid = GLib.get_user_name(); // GLib.uuid_string_random();
+      this.uuid = GLib.get_user_name();
     }
-
-    // for debugging - set to 255
-    this._dash_opacity = 0;
 
     // three available timers
     // for persistent runs
@@ -169,24 +167,7 @@ export default class Dash2DockLiteExt extends Extension {
 
     this._style = new Style();
 
-    this._backgroundUris = { light: null, dark: null };
-    this._blurredBackgrounds = {
-      light: {
-        path: tempPath('d2da-bg-light-blurred.jpg'),
-        uri: null,
-        signature: null,
-      },
-      dark: {
-        path: tempPath('d2da-bg-dark-blurred.jpg'),
-        uri: null,
-        signature: null,
-      },
-    };
-    this.desktop_background_variant = 'light';
-    this._blurRefreshId = 0;
-
     this._enableSettings();
-    this._loadIconMap();
     this._loadConfig();
 
     // no longer needed
@@ -202,6 +183,11 @@ export default class Dash2DockLiteExt extends Extension {
     this.docks = [];
 
     this.icon_theme = St.IconTheme.new();
+
+    // integrations
+    this.integrations = new Integrations();
+    this.integrations.extension = this;
+    this.integrations.enable();
 
     // service
     this.services = new Services();
@@ -243,7 +229,7 @@ export default class Dash2DockLiteExt extends Extension {
     this._updateShrink(true);
     this._updateLayout(true);
     this._updateAutohide(true);
-    this._unloadIconMap();
+    this._unloadConfig();
 
     this._showMainOverviewDash(true);
 
@@ -263,6 +249,9 @@ export default class Dash2DockLiteExt extends Extension {
       this._topbar_background = null;
     }
 
+    this.integrations.disable();
+    this.integrations = null;
+
     this.services.disable();
     this.services = null;
 
@@ -274,19 +263,8 @@ export default class Dash2DockLiteExt extends Extension {
     this._style.unloadAll();
     this._style = null;
 
-    if (this._blurRefreshId) {
-      GLib.source_remove(this._blurRefreshId);
-      this._blurRefreshId = 0;
-    }
-
-    this._backgroundUris = null;
-    this._blurredBackgrounds = null;
-    this.desktop_background_variant = null;
-
     delete this.icon_theme;
     this.icon_theme = null;
-
-    this._hookCompiz(false);
 
     Main.overview.d2dl = null;
     console.log('dash2dock-lite disabled');
@@ -305,82 +283,15 @@ export default class Dash2DockLiteExt extends Extension {
     });
   }
 
-  // unused?
+  // This is needed. Each dock has a autohider class.
+  // This informs everyone to re-check overlaps
+  // TODO use signals
   checkHide() {
     this.docks.forEach((dock) => {
       if (dock.autohider) {
         dock.autohider._debounceCheckHide();
       }
     });
-  }
-
-  _hookCompiz(hook = true) {
-    let compiz = Main.extensionManager.lookup(
-      'compiz-alike-magic-lamp-effect@hermes83.github.com',
-    );
-    if (compiz && compiz.stateObj) {
-      let stateObj = compiz.stateObj;
-      this._compiz = stateObj;
-      if (stateObj._getIcon && !hook) {
-        stateObj.getIcon = stateObj._getIcon;
-        stateObj._getIcon = null;
-      }
-      if (!stateObj._getIcon && hook) {
-        stateObj._getIcon = stateObj.getIcon;
-        if (this.lamp_app_animation) {
-          stateObj.getIcon = this._getIcon.bind(this);
-        }
-      }
-    }
-  }
-
-  _updateCompizHook() {
-    this._hookCompiz(false);
-    this._hookCompiz(true);
-  }
-
-  // override compiz getIcon
-  _getIcon(actor) {
-    let [success, icon] = actor.meta_window.get_icon_geometry();
-    if (success) {
-      // console.log('compiz-alike-magic-lamp-effect: icon');
-      // console.log(icon);
-      return icon;
-    }
-    let monitor = Main.layoutManager.monitors[actor.meta_window.get_monitor()];
-    let dock = this.docks.find((d) => d._monitorIndex == monitor.index);
-
-    if (!dock) {
-      return { x: monitor.x, y: monitor.y, width: 0, height: 0 };
-    }
-    if (!Main.overview.dash.__box) {
-      Main.overview.dash.__box = Main.overview.dash._box;
-    }
-    Main.overview.dash._box = dock.dash._box;
-
-    // add alignment fix here?
-    let res = this._compiz._getIcon(actor);
-    // console.log('compiz-alike-magic-lamp-effect: getIcon');
-    // console.log(`x:${res.x} y:${res.y} w:${res.width} h:${res.height}`);
-    let x = res.x;
-    let y = res.y;
-    let w = res.width;
-    let h = res.height;
-
-    if (w == 0 && this.docks && this.docks.length > 0) {
-      let sz = this.docks[0]._preferredIconSize();
-      if (sz) {
-        x += (sz / 2) * (this.docks[0].getMonitor().geometry_scale || 1);
-        // y += sz/2;
-      }
-    }
-
-    return {
-      x: x,
-      y: y,
-      width: w,
-      height: h,
-    };
   }
 
   startUp() {
@@ -392,7 +303,6 @@ export default class Dash2DockLiteExt extends Extension {
         dock._beginAnimation();
         dock._debounceEndAnimation();
       });
-      this._hookCompiz();
     }, 10);
     this._loTimer.runUntil(() => {
       return this._createTopbarBackground();
@@ -431,9 +341,9 @@ export default class Dash2DockLiteExt extends Extension {
 
   _loadConfig() {
     this._config = {};
-    let fn = Gio.File.new_for_path('.config/d2da/config.json');
-    if (fn.query_exists(null)) {
-      const [success, contents] = fn.load_contents(null);
+    let fn_config = Gio.File.new_for_path('.config/d2da/config.json');
+    if (fn_config.query_exists(null)) {
+      const [success, contents] = fn_config.load_contents(null);
       const decoder = new TextDecoder();
       let contentsString = decoder.decode(contents);
       try {
@@ -442,12 +352,10 @@ export default class Dash2DockLiteExt extends Extension {
         console.log(err);
       }
     }
-  }
 
-  _loadIconMap() {
-    let fn = Gio.File.new_for_path('.config/d2da/icons.json');
-    if (fn.query_exists(null)) {
-      const [success, contents] = fn.load_contents(null);
+    let fn_icons = Gio.File.new_for_path('.config/d2da/icons.json');
+    if (fn_icons.query_exists(null)) {
+      const [success, contents] = fn_icons.load_contents(null);
       const decoder = new TextDecoder();
       let contentsString = decoder.decode(contents);
       try {
@@ -484,30 +392,31 @@ export default class Dash2DockLiteExt extends Extension {
         console.log(err);
       }
     }
+
+    let fn_style = Gio.File.new_for_path('.config/d2da/style.css');
+    if (fn_style.query_exists(null)) {
+      let fn = this.styles[name];
+      let ctx = St.ThemeContext.get_for_stage(global.stage);
+      let theme = ctx.get_theme();
+      theme.load_stylesheet(fn_style);
+    }
   }
 
-  _unloadIconMap() {
+  _unloadConfig() {
     this.icon_map = {};
     this.icon_map_cache = {};
     this.app_map_cache = {};
+
+    let fn_style = Gio.File.new_for_path('.config/d2da/style.css');
+    if (fn_style.query_exists(null)) {
+      let fn = this.styles[name];
+      let ctx = St.ThemeContext.get_for_stage(global.stage);
+      let theme = ctx.get_theme();
+      theme.unload_stylesheet(fn_style);
+    }
   }
 
   _enableSettings() {
-    this._desktopSettings = new Gio.Settings({
-      schema_id: 'org.gnome.desktop.background',
-    });
-    this._desktopSettings.connectObject(
-      'changed::picture-uri',
-      () => {
-        this._updateBlurredBackground();
-      },
-      'changed::picture-uri-dark',
-      () => {
-        this._updateBlurredBackground();
-      },
-      this,
-    );
-
     try {
       this._interfaceSettings = new Gio.Settings({
         schema_id: 'org.gnome.desktop.interface',
@@ -515,9 +424,9 @@ export default class Dash2DockLiteExt extends Extension {
       this._interfaceSettings.connectObject(
         'changed::color-scheme',
         () => {
-          this._applyActiveBlurredBackground();
+          // apply light/dark themeing
         },
-        this,
+        this
       );
     } catch (err) {
       console.log(err);
@@ -546,7 +455,7 @@ export default class Dash2DockLiteExt extends Extension {
           break;
         }
         case 'lamp-app-animation': {
-          this._updateCompizHook();
+          this.integrations.hookCompiz();
           break;
         }
         case 'animation-fps': {
@@ -660,6 +569,7 @@ export default class Dash2DockLiteExt extends Extension {
         }
         case 'border-radius':
           this._debouncedUpdateStyle();
+          this.animate();
           break;
         case 'separator-thickness':
           this._updateStyle();
@@ -690,11 +600,12 @@ export default class Dash2DockLiteExt extends Extension {
           this.animate();
           break;
         }
-        case 'topbar-background-color':
-        case 'topbar-blur-background':
+        // case 'topbar-background-color':
+        // case 'topbar-blur-background':
         case 'background-color':
         case 'blur-resolution':
         case 'blur-background':
+          this.integrations.hookBms();
           this._updateBlurredBackground();
           this._updateStyle();
           this._updateLayout();
@@ -728,9 +639,6 @@ export default class Dash2DockLiteExt extends Extension {
     this._settingsKeys.disconnectSettings();
     this._settingsKeys = null;
 
-    this._desktopSettings.disconnectObject(this);
-    this._desktopSettings = null;
-
     if (this._interfaceSettings) {
       this._interfaceSettings.disconnectObject(this);
       this._interfaceSettings = null;
@@ -749,7 +657,7 @@ export default class Dash2DockLiteExt extends Extension {
       () => {
         this._onAppsChanged();
       },
-      this,
+      this
     );
 
     this._appFavorites = Fav.getAppFavorites();
@@ -758,13 +666,36 @@ export default class Dash2DockLiteExt extends Extension {
       () => {
         this._onAppsChanged();
       },
-      this,
+      this
     );
 
     Main.sessionMode.connectObject(
       'updated',
       this._onSessionUpdated.bind(this),
-      this,
+      this
+    );
+
+    Main.extensionManager.connectObject(
+      'extensions-loaded',
+      (manager) => {
+        this.integrations.hookCompiz(true);
+        this.integrations.hookBms(true);
+      },
+      'extension-state-changed',
+      (manager, extension) => {
+        switch (extension.uuid) {
+          case 'compiz-alike-magic-lamp-effect@hermes83.github.com':
+            this.integrations.hookCompiz(extension.state == 1);
+            break;
+          case 'blur-my-shell@aunetx':
+            this.integrations.hookBms(extension.state == 1);
+            if (extension.state == 1) {
+              this.animate();
+            }
+            break;
+        }
+      },
+      this
     );
 
     Main.layoutManager.connectObject(
@@ -780,7 +711,7 @@ export default class Dash2DockLiteExt extends Extension {
       () => {
         this._updateMultiMonitorPreference();
       },
-      this,
+      this
     );
 
     Main.messageTray.connectObject(
@@ -789,7 +720,7 @@ export default class Dash2DockLiteExt extends Extension {
         this.services.checkNotifications();
         this.animate();
       },
-      this,
+      this
     );
 
     global.display.connectObject(
@@ -799,7 +730,7 @@ export default class Dash2DockLiteExt extends Extension {
       this._onFullScreen.bind(this),
       'restacked',
       this._onRestacked.bind(this),
-      this,
+      this
     );
 
     // global.stage.connectObject(
@@ -813,19 +744,19 @@ export default class Dash2DockLiteExt extends Extension {
       this._onOverviewShowing.bind(this),
       'hidden',
       this._onOverviewHidden.bind(this),
-      this,
+      this
     );
 
     St.TextureCache.get_default().connectObject(
       'icon-theme-changed',
       this._onIconThemeChanged.bind(this),
-      this,
+      this
     );
 
     St.ThemeContext.get_for_stage(global.stage).connectObject(
       'notify::scale-factor',
       this.recreateAllDocks.bind(this),
-      this,
+      this
     );
 
     // move to services.js
@@ -834,13 +765,14 @@ export default class Dash2DockLiteExt extends Extension {
         this._onCheckServices();
       },
       SERVICES_UPDATE_INTERVAL,
-      'services',
+      'services'
     );
   }
 
   _removeEvents() {
     this._appSystem.disconnectObject(this);
     this._appFavorites.disconnectObject(this);
+    Main.extensionManager.disconnectObject(this);
     Main.messageTray.disconnectObject(this);
     Main.overview.disconnectObject(this);
     Main.layoutManager.disconnectObject(this);
@@ -959,215 +891,7 @@ export default class Dash2DockLiteExt extends Extension {
     this.animate();
   }
 
-  async _updateBlurredBackground() {
-    this._backgroundUris = this._backgroundUris ?? { light: null, dark: null };
-    this._blurredBackgrounds = this._blurredBackgrounds ?? {
-      light: {
-        path: tempPath('d2da-bg-light-blurred.jpg'),
-        uri: null,
-        signature: null,
-      },
-      dark: {
-        path: tempPath('d2da-bg-dark-blurred.jpg'),
-        uri: null,
-        signature: null,
-      },
-    };
-
-    const lightUri = this._desktopSettings.get_string('picture-uri');
-    let darkUri = lightUri;
-
-    try {
-      if (this._desktopSettings.list_keys().includes('picture-uri-dark')) {
-        const candidate = this._desktopSettings.get_string('picture-uri-dark');
-        if (candidate && candidate !== '') {
-          darkUri = candidate;
-        }
-      }
-    } catch (err) {
-      console.log(err);
-    }
-
-    this._backgroundUris.light = lightUri;
-    this._backgroundUris.dark = darkUri || lightUri;
-
-    if (this.blur_background || this.topbar_blur_background) {
-      await Promise.all(
-        ['light', 'dark'].map((variant) =>
-          this._ensureBlurredBackground(variant, this._backgroundUris[variant]),
-        ),
-      );
-      this._scheduleBlurRefresh();
-    }
-
-    this._applyActiveBlurredBackground();
-  }
-
-  async _ensureBlurredBackground(variant, uri) {
-    const cache = this._blurredBackgrounds?.[variant];
-    if (!cache) {
-      return;
-    }
-
-    if (!uri || uri === 'none') {
-      cache.uri = null;
-      cache.signature = null;
-      return;
-    }
-
-    const qualityIndex = this.blur_resolution || 0;
-    const signature = `${uri}|${qualityIndex}`;
-
-    if (cache.signature === signature) {
-      try {
-        const existing = Gio.File.new_for_path(cache.path);
-        if (existing.query_exists(null)) {
-          return;
-        }
-      } catch (err) {
-        cache.uri = null;
-        cache.signature = null;
-      }
-    }
-
-    let file = null;
-    try {
-      file = Gio.File.new_for_uri(uri);
-    } catch (err) {
-      console.log(err);
-      cache.uri = null;
-      return;
-    }
-
-    const inputPath = file && file.get_path ? file.get_path() : null;
-    if (!inputPath) {
-      console.log(
-        `Unable to resolve background path for blur effect (${variant})`,
-      );
-      cache.uri = null;
-      cache.signature = null;
-      return;
-    }
-
-    const quality = [250, 250, 500, 1000][qualityIndex];
-    const magickBin = GLib.find_program_in_path('magick');
-    const convertBin = GLib.find_program_in_path('convert');
-    const quotedInput = GLib.shell_quote(inputPath);
-    const quotedOutput = GLib.shell_quote(cache.path);
-    const operations = `-scale 10% -blur 0x2.5 -resize ${quality}%`;
-
-    let cmd = null;
-    if (magickBin) {
-      cmd = `${magickBin} ${quotedInput} ${operations} ${quotedOutput}`;
-    } else if (convertBin) {
-      cmd = `${convertBin} ${quotedInput} ${operations} ${quotedOutput}`;
-    } else {
-      console.log(
-        'Neither magick nor convert command found; blur effect disabled',
-      );
-      cache.uri = null;
-      cache.signature = null;
-      return;
-    }
-
-    console.log(cmd);
-    try {
-      await trySpawnCommandLine(cmd);
-      cache.uri = uri;
-      cache.signature = signature;
-    } catch (err) {
-      console.log(err);
-      cache.uri = null;
-      cache.signature = null;
-    }
-  }
-
-  _applyActiveBlurredBackground() {
-    const variant = this._getPreferredColorScheme();
-    const fallbackVariant = variant === 'dark' ? 'light' : 'dark';
-    const candidateUri =
-      this._backgroundUris?.[variant] && this._backgroundUris[variant] !== ''
-        ? this._backgroundUris[variant]
-        : this._backgroundUris?.[fallbackVariant];
-    const sanitizedUri =
-      candidateUri && candidateUri !== 'none' ? candidateUri : '';
-
-    this.desktop_background_variant = variant;
-    this.desktop_background = sanitizedUri || this.desktop_background || '';
-
-    let blurredPath = null;
-    if (this.blur_background || this.topbar_blur_background) {
-      const candidates = [
-        this._blurredBackgrounds?.[variant],
-        this._blurredBackgrounds?.[fallbackVariant],
-      ];
-
-      for (const entry of candidates) {
-        if (!entry || !entry.path || !entry.uri) {
-          continue;
-        }
-        try {
-          const file = Gio.File.new_for_path(entry.path);
-          if (file.query_exists(null)) {
-            blurredPath = entry.path;
-            break;
-          }
-        } catch (err) {
-          console.log(err);
-        }
-      }
-    }
-
-    this.desktop_background_blurred =
-      blurredPath && blurredPath.length ? blurredPath : this.desktop_background;
-
-    (this.docks || []).forEach((dock) => {
-      dock._updateBackgroundEffect();
-    });
-
-    this.animate();
-  }
-
-  _scheduleBlurRefresh(attempt = 0) {
-    if (!this.blur_background && !this.topbar_blur_background) {
-      return;
-    }
-
-    if (++attempt > 5) {
-      return;
-    }
-
-    if (this._blurRefreshId) {
-      GLib.source_remove(this._blurRefreshId);
-      this._blurRefreshId = 0;
-    }
-
-    const delay = attempt === 1 ? 500 : 1000;
-    this._blurRefreshId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, delay, () => {
-      this._blurRefreshId = 0;
-
-      const variant = this.desktop_background_variant || 'light';
-      const entry = this._blurredBackgrounds?.[variant];
-      let ready = false;
-
-      if (entry && entry.path && entry.uri) {
-        try {
-          const file = Gio.File.new_for_path(entry.path);
-          ready = file.query_exists(null);
-        } catch (err) {
-          console.log(err);
-        }
-      }
-
-      this._applyActiveBlurredBackground();
-
-      if (!ready) {
-        this._scheduleBlurRefresh(attempt);
-      }
-
-      return GLib.SOURCE_REMOVE;
-    });
-  }
+  _updateBlurredBackground() {}
 
   _getPreferredColorScheme() {
     let scheme = 'light';
@@ -1206,7 +930,7 @@ export default class Dash2DockLiteExt extends Extension {
       });
       Main.uiGroup.insert_child_below(
         this._topbar_background,
-        Main.panel.get_parent(),
+        Main.panel.get_parent()
       );
     }
     return this._topbar_background;
@@ -1255,7 +979,7 @@ export default class Dash2DockLiteExt extends Extension {
           this._updateStyle();
         },
         500,
-        'debounceStyle',
+        'debounceStyle'
       );
     } else {
       this._hiTimer.runDebounced(this._debounceStyleSeq);
@@ -1270,7 +994,7 @@ export default class Dash2DockLiteExt extends Extension {
     // icons-shadow
     if (this.icon_shadow) {
       styles.push(
-        '#d2daIcon, #DockItemList StIcon {icon-shadow: rgba(0, 0, 0, 0.32) 0 2px 6px;}',
+        '#d2daIcon, #DockItemList StIcon {icon-shadow: rgba(0, 0, 0, 0.32) 0 2px 6px;}'
       );
       // styles.push(
       //   '#dash StIcon:hover, #DockItemList StIcon:hover {icon-shadow: rgba(0, 0, 0, 0.24) 0 2px 8px;}'
@@ -1285,6 +1009,7 @@ export default class Dash2DockLiteExt extends Extension {
         r = 0;
       }
       ss.push(`border-radius: ${r}px;`);
+      this.computed_border_radius = r;
       /*
       if (!this.blur_background) {
         let rgba = this._style.rgba(this.background_color);
@@ -1313,7 +1038,7 @@ export default class Dash2DockLiteExt extends Extension {
       //   ss.push(`border: ${t}px rgba(${rgba});`);
       // }
 
-      styles.push(`.icon-focused { ${ss.join(' ')}}`);
+      // styles.push(`.icon-focused { ${ss.join(' ')}}`);
     }
 
     // dash label
@@ -1350,7 +1075,7 @@ export default class Dash2DockLiteExt extends Extension {
       if (this.topbar_border_thickness) {
         let rgba = this._style.rgba(this.topbar_border_color);
         ss.push(
-          `border: ${this.topbar_border_thickness}px solid rgba(${rgba}); border-top: 0px; border-left: 0px; border-right: 0px;`,
+          `border: ${this.topbar_border_thickness}px solid rgba(${rgba}); border-top: 0px; border-left: 0px; border-right: 0px;`
         );
       }
 

@@ -5,7 +5,7 @@ import GLib from 'gi://GLib';
 import GObject from 'gi://GObject';
 import Clutter from 'gi://Clutter';
 
-const getTintShaderSource = (extensionDir) => {
+const getBlurShaderSource = (extensionDir) => {
   const SHADER_PATH = GLib.build_filenamev([
     extensionDir,
     'effects',
@@ -45,7 +45,7 @@ export const BlurEffect = GObject.registerClass(
 
     preload(path) {
       // set shader source
-      this._source = getTintShaderSource(path);
+      this._source = getBlurShaderSource(path);
       if (this._source) this.set_shader_source(this._source);
 
       this.update_enabled();
@@ -135,5 +135,5 @@ export const BlurEffect = GObject.registerClass(
       else if (paint_node) super.vfunc_paint_target(paint_node);
       else super.vfunc_paint_target();
     }
-  },
+  }
 );

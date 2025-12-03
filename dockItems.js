@@ -6,6 +6,8 @@ import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 import { trySpawnCommandLine } from './utils.js';
 // import { trySpawnCommandLine } from 'resource:///org/gnome/shell/misc/util.js';
 
+import { Dash } from 'resource:///org/gnome/shell/ui/dash.js';
+
 import Gio from 'gi://Gio';
 import GObject from 'gi://GObject';
 import Clutter from 'gi://Clutter';
@@ -83,7 +85,7 @@ const DockItemOverlay = GObject.registerClass(
         this.add_child(renderer);
       }
     }
-  },
+  }
 );
 
 export const DockItemDotsOverlay = GObject.registerClass(
@@ -142,7 +144,7 @@ export const DockItemDotsOverlay = GObject.registerClass(
             : 0,
       });
     }
-  },
+  }
 );
 
 export const DockItemBadgeOverlay = GObject.registerClass(
@@ -173,7 +175,7 @@ export const DockItemBadgeOverlay = GObject.registerClass(
         translate: [0.4, -0.8],
       });
     }
-  },
+  }
 );
 
 export const DockIcon = GObject.registerClass(
@@ -236,12 +238,12 @@ export const DockIcon = GObject.registerClass(
             }
           }
         },
-        this,
+        this
       );
 
       return this._iconActor;
     }
-  },
+  }
 );
 
 export const DockItemContainer = GObject.registerClass(
@@ -315,7 +317,7 @@ export const DockItemContainer = GObject.registerClass(
     _onClick() {
       this.activateNewWindow();
     }
-  },
+  }
 );
 
 export const DockBackground = GObject.registerClass(
@@ -411,54 +413,18 @@ export const DockBackground = GObject.registerClass(
         dock.dash.opacity = this.opacity;
 
         let style = [dock.extension._backgroundStyle];
-        let blur = !(
-          (Main.overview.visible || dock.extension._inOverview) &&
-          dock.extension.disable_blur_at_overview
-        );
-        if (dock.extension.blur_background && blur) {
-          style.push(
-            // `background-image: url("${dock.extension.desktop_background}");`
-            `background-image: url("${dock.extension.desktop_background_blurred}");`,
-          );
-          style.push(
-            `background-size: ${dock._monitor.width}px ${dock._monitor.height}px;`,
-          );
-          switch (dock._position) {
-            case DockPosition.LEFT: {
-              style.push(`background-position: -${this.x}px -${this.y}px;`);
-              break;
-            }
-            case DockPosition.RIGHT: {
-              style.push(
-                `background-position: -${dock._monitor.width - this.width}px -${
-                  this.y
-                }px;`,
-              );
-              break;
-            }
-            case DockPosition.TOP: {
-              style.push(`background-position: -${this.x}px -${this.y}px;`);
-              break;
-            }
-            default: {
-              // bottom
-              style.push(
-                `background-position: -${this.x}px -${
-                  dock._monitor.height - this.height
-                }px;`,
-              );
-              break;
-            }
-          }
-        } else {
+        {
           let rgba = dock.extension._style.rgba(
-            dock.extension.background_color,
+            dock.extension.background_color
           );
           style.push(`background: rgba(${rgba});`);
         }
 
         this.style = style.join(' ');
+        // this._bg.width = this.width;
+        // this._bg.height = this.height;
+        // this._bg.style = style.join(' ');
       }
     }
-  },
+  }
 );

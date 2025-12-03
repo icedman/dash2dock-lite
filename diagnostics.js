@@ -99,7 +99,7 @@ function add_test_values(seqs, extension, settings, name, value, values) {
             y + h / 2,
             20,
             1.0,
-            extension,
+            extension
           );
           add_move_pointer(seqs, 0, 0, 0.5, extension);
           break;
@@ -126,7 +126,7 @@ function add_scale_test(seqs, extension, settings, name, value) {
     settings,
     name,
     value,
-    [0, 0.125, 0.25, 0.5, 0.75, 1],
+    [0, 0.125, 0.25, 0.5, 0.75, 1]
   );
 }
 

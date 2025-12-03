@@ -14,7 +14,6 @@ import { Dash } from 'resource:///org/gnome/shell/ui/dash.js';
 
 import { TintEffect } from './effects/tint_effect.js';
 import { MonochromeEffect } from './effects/monochrome_effect.js';
-import { BlurEffect } from './effects/blur_effect.js';
 
 import { DockIcon, DockItemContainer, DockBackground } from './dockItems.js';
 import { DockItemList } from './dockItemMenu.js';
@@ -51,10 +50,12 @@ const MAX_SCROLL_RESOLUTION = 10;
 
 export let Dock = GObject.registerClass(
   {},
-  class Dock extends St.Widget {
+  class DashToDock extends St.Widget {
     _init(params) {
       super._init({
-        name: 'd2daDock',
+        // name: 'd2daDock',
+        name: 'dashtodockContainer',
+        style_class: 'bottom',
         reactive: false,
         track_hover: false,
         width: 0,
@@ -72,6 +73,16 @@ export let Dock = GObject.registerClass(
 
       this._background = new DockBackground({ name: 'd2daBackground' });
       this.add_child(this._background);
+
+      // for blur-my-shell
+      this._slider = {
+        get_child: () => {
+          return this;
+        },
+        get_parent: () => {
+          return this;
+        },
+      };
 
       this.renderArea = new St.Widget({
         name: 'DockRenderArea',
@@ -114,11 +125,8 @@ export let Dock = GObject.registerClass(
         this.autohider._onEnterEvent.bind(this.autohider),
         'leave-event',
         this.autohider._onLeaveEvent.bind(this.autohider),
-        this,
+        this
       );
-
-      this._blurEffect = this._createEffect(1);
-      this._updateBackgroundEffect();
     }
 
     destroyDash() {
@@ -187,6 +195,7 @@ export let Dock = GObject.registerClass(
     _onButtonPressEvent(evt) {
       return Clutter.EVENT_PROPAGATE;
     }
+
     _onMotionEvent(evt) {
       if (!this._monitor.inFullscreen) {
         this._beginAnimation();
@@ -205,23 +214,48 @@ export let Dock = GObject.registerClass(
       this._debounceEndAnimation();
       return Clutter.EVENT_PROPAGATE;
     }
+
+    _debouncedBeginAnimation() {
+      this.dash.opacity = 1;
+
+      // this elaborate hack - mitigates nvim's "create window when deleting! hmmp"
+      if (!this._debounceBeginAnimateSeq) {
+        this._debounceBeginAnimateSeq = this.extension._loTimer.runDebounced(
+          () => {
+            this._beginAnimation();
+            this.autohider._debounceCheckHide();
+          },
+          400,
+          'debounceBeginAnimate'
+        );
+      } else {
+        this.extension._loTimer.runDebounced(this._debounceBeginAnimateSeq);
+      }
+    }
+
     _onFocusWindow(evt) {
+      // this._debouncedBeginAnimation();
       this._beginAnimation();
       this.autohider._debounceCheckHide();
       return Clutter.EVENT_PROPAGATE;
     }
     _onFullScreen() {
+      // this._debouncedBeginAnimation();
       this._beginAnimation();
       this.autohider._debounceCheckHide();
       return Clutter.EVENT_PROPAGATE;
     }
     _onRestacked() {
+      // this._debouncedBeginAnimation();
       this._beginAnimation();
       this.autohider._debounceCheckHide();
       return Clutter.EVENT_PROPAGATE;
     }
     _onAppsChanged(evt) {
+      this._favorite_ids = Fav.getAppFavorites()._getIds();
       this._icons = null;
+      this._fast_forward = 20;
+      // this._debouncedBeginAnimation();
       this._beginAnimation();
       this.autohider._debounceCheckHide();
       return Clutter.EVENT_PROPAGATE;
@@ -252,14 +286,6 @@ export let Dock = GObject.registerClass(
           effect.preload(this.extension.path);
           break;
         }
-        case 3: {
-          effect = new BlurEffect({
-            name: 'color',
-            color: this.extension.icon_effect_color,
-          });
-          effect.preload(this.extension.path);
-          break;
-        }
       }
       return effect;
     }
@@ -269,13 +295,7 @@ export let Dock = GObject.registerClass(
     }
 
     _updateBackgroundEffect() {
-      this._background.remove_effect_by_name('blur');
-      if (this._blurEffect) {
-        if (this.extension.blur_background) {
-          this._background.add_effect_with_name('blur', this._blurEffect);
-        }
-        this._blurEffect.color = this.extension.background_color;
-      }
+      // blur-my-shell takes care of us
     }
 
     _updateIconEffect() {
@@ -327,11 +347,25 @@ export let Dock = GObject.registerClass(
     }
 
     createDash() {
+      this._pauseAllBounce(1500);
       if (this.dash) {
         this.destroyDash();
       }
+
+      this.Dash = Dash;
       let dash = new Dash();
+
       dash._adjustIconSize = () => {};
+      let con = console;
+      let orig = dash._createAppItem;
+      orig = orig.bind(dash);
+      dash._createAppItem = function (app) {
+        let item = orig.call(this, app);
+        this.opacity = 0;
+        item.child.visible = false;
+        return item;
+      };
+
       this.dash = dash;
       this.dash._background.visible = false;
       this.dash._box.clip_to_allocation = false;
@@ -365,7 +399,7 @@ export let Dock = GObject.registerClass(
         this._onLeaveEvent.bind(this),
         'destroy',
         () => {},
-        this,
+        this
       );
 
       this.dash.opacity = 0;
@@ -506,15 +540,23 @@ export let Dock = GObject.registerClass(
         if (c._appwell) {
           c._appwell.visible = true;
           c._dot = c._appwell._dot;
+
+          let app = c._appwell.app;
+          let appId = app ? app.get_id() : '';
+
           // hide icons if favorites only
-          if (this.extension.favorites_only && !c.custom_icon) {
-            let app = c._appwell.app;
-            let appId = app ? app.get_id() : '';
-            if (!this._favorite_ids.includes(appId)) {
+          if (
+            !c.custom_icon &&
+            this._favorite_ids &&
+            !this._favorite_ids.includes(appId)
+          ) {
+            if (this.extension.favorites_only) {
               c._appwell.visible = false;
               c.width = -1;
               c.height = -1;
               return false;
+            } else if (!c._found) {
+              c._found = true;
             }
           }
         }
@@ -598,9 +640,6 @@ export let Dock = GObject.registerClass(
       //--------------------
       // find favorites and running apps icons
       //--------------------
-      if (this.extension.favorites_only) {
-        this._favorite_ids = Fav.getAppFavorites()._getIds();
-      }
       this.dash._box.get_children().forEach((icon) => {
         this._inspectIcon(icon);
       });
@@ -669,7 +708,7 @@ export let Dock = GObject.registerClass(
               () => {
                 this.dash._showAppsIcon.hideLabel();
               },
-              this,
+              this
             );
           }
         }
@@ -800,7 +839,7 @@ export let Dock = GObject.registerClass(
           // does not work on gnome 43 (debian)
           show: false, // this.extension.documents_icon,
           prepare: this.extension.services.checkRecents.bind(
-            this.extension.services,
+            this.extension.services
           ),
           items: '_recentFiles',
           itemsLength: '_recentFilesLength',
@@ -843,7 +882,7 @@ export let Dock = GObject.registerClass(
         // pin trash icon
         //! avoid creating app_info & /tmp/*.desktop files
         this._trashIcon = this.createItem(
-          tempPath('trash-dash2dock-lite.desktop'),
+          tempPath('trash-dash2dock-lite.desktop')
         );
         this._icons = null;
       } else if (this._trashIcon && !this.extension.trash_icon) {
@@ -987,6 +1026,7 @@ export let Dock = GObject.registerClass(
       projectedWidth = Math.floor(projectedWidth / 2) * 2;
 
       this._projectedWidth = projectedWidth;
+      this._margin = iconMargins;
 
       this._edge_distance =
         (this.extension.edge_distance || 0) * 20 * scaleFactor;
@@ -1069,13 +1109,6 @@ export let Dock = GObject.registerClass(
         topbar_background &&
         this.extension.customize_topbar
       ) {
-        if (!topbar_background._blurEffect) {
-          topbar_background._blurEffect = this._createEffect(1);
-          topbar_background.add_effect_with_name(
-            'blur',
-            topbar_background._blurEffect,
-          );
-        }
         let panel = Main.panel.get_parent();
         topbar_background.x = panel.x;
         topbar_background.y = panel.y;
@@ -1083,33 +1116,11 @@ export let Dock = GObject.registerClass(
         topbar_background.height = panel.height;
         let style = [];
 
-        let blur = !(
-          (Main.overview.visible || this.extension._inOverview) &&
-          this.extension.disable_blur_at_overview
+        let rgba = this.extension._style.rgba(
+          this.extension.topbar_background_color
         );
-
-        if (this.extension.topbar_blur_background && blur) {
-          topbar_background._blurEffect.color =
-            this.extension.topbar_background_color;
-          style.push(
-            // `background-image: url("${dock.extension.desktop_background}");`
-            `background-image: url("${this.extension.desktop_background_blurred}");`,
-          );
-          let monitor = Main.layoutManager.primaryMonitor;
-          style.push('background-position: 0px 0px;');
-          style.push(
-            `background-size: ${monitor.width}px ${monitor.height}px;`,
-          );
-        } else {
-          let rgba = this.extension._style.rgba(
-            this.extension.topbar_background_color,
-          );
-          style.push(`background-color: rgba(${rgba});`);
-        }
-
+        style.push(`background-color: rgba(${rgba});`);
         topbar_background.style = style.join('');
-        topbar_background._blurEffect.enabled =
-          this.extension.topbar_blur_background;
       }
       return true;
     }
@@ -1120,6 +1131,11 @@ export let Dock = GObject.registerClass(
         this.extension.overview_transparent_background;
 
       this._background.opacity = transparent ? 0 : 255;
+
+      if (this.animator._bms && this.animator._bms.first_child) {
+        this.animator._bms.first_child.visible =
+          !transparent && this.extension.blur_background;
+      }
 
       let transparent_topbar =
         (Main.overview.visible || this.extension._inOverview) &&
@@ -1144,9 +1160,22 @@ export let Dock = GObject.registerClass(
         this.simulated_pointer = p;
         this._preview--;
       }
+
       //! add layout here instead of at the
       this.animator.animate(dt);
+
+      // hack to mitigate jerkiness when a new icon is inserted
+      if (!this._pauseBounce || this._pauseBounce <= 0) {
+        while (this._fast_forward && this._fast_forward-- > 0) {
+          this.animate(dt);
+          this.dash.opacity = 0;
+        }
+      }
       this.simulated_pointer = null;
+
+      if (this._pauseBounce && this._pauseBounce > 0) {
+        this._pauseBounce -= dt;
+      }
     }
 
     //! move these generic functions outside of this class
@@ -1154,7 +1183,6 @@ export let Dock = GObject.registerClass(
       if (this._hidden) {
         return false;
       }
-      if (this._hoveredIcon) return true;
       let xy = this.struts.get_transformed_position();
       let wh = [this.struts.width, this.struts.height];
       if (isInRect([xy[0], xy[1], wh[0], wh[1]], p, 20)) {
@@ -1169,6 +1197,9 @@ export let Dock = GObject.registerClass(
         this.struts.add_style_class_name('hi');
         this.dwell.add_style_class_name('hi');
       }
+
+      this._favorite_ids = Fav.getAppFavorites()._getIds();
+
       // if (caller) {
       //   console.log(`animation triggered by ${caller}`);
       // }
@@ -1185,7 +1216,7 @@ export let Dock = GObject.registerClass(
               this.animate(s._delay);
             },
             this.animationInterval,
-            'animationTimer',
+            'animationTimer'
           );
         } else {
           this.extension._hiTimer.runLoop(this._animationSeq);
@@ -1201,7 +1232,6 @@ export let Dock = GObject.registerClass(
       }
 
       this._updateFocusedIcon();
-      this._updateTransparenies();
 
       if (this.extension._hiTimer) {
         this.extension._hiTimer.cancel(this._animationSeq);
@@ -1210,6 +1240,7 @@ export let Dock = GObject.registerClass(
       this.autohider._debounceCheckHide();
       this._icons = null;
       this._dragged = null;
+      this._lastHoveredIcon = null;
     }
 
     _destroyList() {
@@ -1227,7 +1258,7 @@ export let Dock = GObject.registerClass(
               this._endAnimation();
             },
             ANIM_DEBOUNCE_END_DELAY + this.animationInterval,
-            'debounceEndAnimation',
+            'debounceEndAnimation'
           );
         } else {
           this.extension._loTimer.runDebounced(this.debounceEndSeq);
@@ -1346,7 +1377,14 @@ export let Dock = GObject.registerClass(
       }
     }
 
-    _maybeBounce(container) {
+    _pauseAllBounce(t = 250) {
+      this._pauseBounce = t;
+    }
+
+    _maybeBounce(container, just_do_it) {
+      if (this._pauseBounce && this._pauseBounce > 0) {
+        return;
+      }
       if (!this.extension.open_app_animation) {
         return;
       }
@@ -1362,7 +1400,7 @@ export let Dock = GObject.registerClass(
         }
       }
       // bounce the custom icons
-      if (container.custom_icon) {
+      if (container.custom_icon || just_do_it) {
         this.animator.bounceIcon(container.child);
       }
     }
@@ -1534,5 +1572,5 @@ export let Dock = GObject.registerClass(
         this._raiseAndFocus(window);
       }
     }
-  },
+  }
 );

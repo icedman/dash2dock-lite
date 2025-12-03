@@ -16,7 +16,7 @@ class PrefKeys {
         key.value_type,
         key.default_value,
         key.widget_type,
-        key.key_maps,
+        key.key_maps
       );
     });
   }
@@ -234,7 +234,7 @@ app.connect('activate', (me) => {
   actions.forEach((action) => {
     let act = new Gio.SimpleAction({ name: action.name });
     act.connect('activate', (_) =>
-      Gtk.show_uri(w, action.link, Gdk.CURRENT_TIME),
+      Gtk.show_uri(w, action.link, Gdk.CURRENT_TIME)
     );
     actionGroup.add_action(act);
   });

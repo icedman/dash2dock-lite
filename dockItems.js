@@ -140,8 +140,8 @@ export const DockItemDotsOverlay = GObject.registerClass(
             ? -90
             : 90
           : position == DockPosition.TOP
-          ? 180
-          : 0,
+            ? 180
+            : 0,
       });
     }
   }

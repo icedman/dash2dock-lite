@@ -125,12 +125,14 @@ export const Integrations = class {
       let obj = bms.stateObj;
       if (obj._dash_to_dock_blur) {
         if (!obj._dash_to_dock_blur.update_size_orig) {
-          obj._dash_to_dock_blur.update_size_orig = obj._dash_to_dock_blur.update_size;
+          obj._dash_to_dock_blur.update_size_orig =
+            obj._dash_to_dock_blur.update_size;
         }
         if (hook && this.extension.blur_background) {
           obj._dash_to_dock_blur.update_size = () => {};
         } else if (obj._dash_to_dock_blur.update_size_orig) {
-          obj._dash_to_dock_blur.update_size = obj._dash_to_dock_blur.update_size_orig;
+          obj._dash_to_dock_blur.update_size =
+            obj._dash_to_dock_blur.update_size_orig;
         }
       }
     }
@@ -147,9 +149,7 @@ export const Integrations = class {
     // blur my shell
     let bms = dock.get_children().find((child) => {
       let name = child.get_name();
-      return (
-        name === 'bms-dash-backgroundgroup'
-      );
+      return name === 'bms-dash-backgroundgroup';
     });
 
     animator._bms = bms;

@@ -84,6 +84,22 @@ export let Dock = GObject.registerClass(
         },
       };
 
+      // // required by blur-my-shell to find the dash upon disabling
+      // this._get_children = this.get_children;
+      // this.get_children = () => {
+      //   return [...this._get_children(), this.dash];
+      // };
+
+      // pretend to be a dash
+      // required by blur-my-shell to find the dash upon disabling
+      this.fake_dash = new St.Widget({ name: 'dash' });
+      this.add_child(this.fake_dash);
+      this.fake_dash_background = new St.Widget({
+        style_class: 'dash-background',
+      });
+      this.fake_dash.add_child(this.fake_dash_background);
+      this.fake_dash._background = this.fake_dash_background;
+
       this.renderArea = new St.Widget({
         name: 'DockRenderArea',
         offscreen_redirect: Clutter.OffscreenRedirect.ALWAYS,
@@ -127,12 +143,6 @@ export let Dock = GObject.registerClass(
         this.autohider._onLeaveEvent.bind(this.autohider),
         this
       );
-
-      // required by blur-my-shell to find the dash upon disabling
-      this._get_children = this.get_children;
-      this.get_children = () => {
-        return [...this._get_children(), this.dash];
-      };
     }
 
     destroyDash() {

@@ -124,13 +124,13 @@ export const Integrations = class {
     if (bms && bms.stateObj) {
       let obj = bms.stateObj;
       if (obj._dash_to_dock_blur) {
-        if (!obj._dash_to_dock_blur_orig) {
-          obj._dash_to_dock_blur_orig = obj._dash_to_dock_blur;
+        if (!obj._dash_to_dock_blur.update_size_orig) {
+          obj._dash_to_dock_blur.update_size_orig = obj._dash_to_dock_blur.update_size;
         }
         if (hook && this.extension.blur_background) {
           obj._dash_to_dock_blur.update_size = () => {};
-        } else if (obj._dash_to_dock_blur_orig) {
-          obj._dash_to_dock_blur = obj._dash_to_dock_blur_orig;
+        } else if (obj._dash_to_dock_blur.update_size_orig) {
+          obj._dash_to_dock_blur.update_size = obj._dash_to_dock_blur.update_size_orig;
         }
       }
     }

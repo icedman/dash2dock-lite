@@ -82,7 +82,7 @@ export const DockItemList = GObject.registerClass(
           dock._list.visible = true;
         }
 
-        if (dock._list.visible && !dock._list._hidden) {
+        if (dock._list && dock._list.visible && !dock._list._hidden) {
           dock._list.slideIn(target, files);
         }
       };
@@ -112,6 +112,8 @@ export const DockItemList = GObject.registerClass(
       this._target = target;
 
       this._box = new St.Widget({ style_class: '-hi' });
+      this.add_child(this._box);
+
       let iconSize = dock._iconSizeScaledDown * dock._monitor.geometry_scale;
       // dock.dash._box.first_child._icon.width;
 
@@ -123,23 +125,31 @@ export const DockItemList = GObject.registerClass(
 
       let file_explorer = dock.extension.file_explorer();
 
+      let icon_size = iconSize * iconAdjust;
       list.forEach((l) => {
         let w = new St.Widget({});
-        let icon = new St.Icon({
-          name: 'icon',
-          icon_name: l.icon,
+        let icon = new St.Widget({
+          name: 'icon_placeholder',
           reactive: true,
           track_hover: true,
         });
-        icon.set_icon_size(iconSize * iconAdjust);
+        icon.set_size(icon_size, icon_size);
+
         this._box.add_child(w);
-        let label = new St.Label({ style_class: 'dash-label' });
         let short = (l.name ?? '').replace(/(.{32})..+/, '$1...');
-        label.text = short;
+        let label = new St.Label({ style_class: 'dash-label', text: short });
         w.add_child(icon);
         w.add_child(label);
         w._icon = icon;
         w._label = label;
+        w.createActualIcon = () => {
+          let _icon = new St.Icon({
+            name: 'icon',
+            icon_name: l.icon,
+            icon_size: icon_size,
+          });
+          w._icon.add_child(_icon);
+        };
         label.opacity = 0;
 
         // label.style = 'font-size: 32pt';
@@ -165,8 +175,6 @@ export const DockItemList = GObject.registerClass(
           });
         });
       });
-
-      this.add_child(this._box);
 
       let tp = this._target.get_transformed_position();
       let angleInc = 0 + 2.5 * dock.extension.items_pullout_angle;
@@ -197,6 +205,8 @@ export const DockItemList = GObject.registerClass(
 
         l.rotation_angle_z = angle - startAngle;
       });
+
+      if (children.length == 0) return;
 
       let first = children[0];
       let fx = first.x;
@@ -300,7 +310,6 @@ export const DockItemList = GObject.registerClass(
         c.y = posVector.y;
 
         let lsz = c._label.get_transformed_size();
-
         c._label.translationX = -lsz[0]; // c._label.width;
         if (list._hidden) {
           let opacity = c._label.opacity - 15;
@@ -311,6 +320,10 @@ export const DockItemList = GObject.registerClass(
         }
         c.rotation_angle_z =
           (c.rotation_angle_z + (wp.rotation_angle_z || 0)) / 2;
+
+        if (!c._icon.first_child) {
+          c.createActualIcon();
+        }
       });
 
       if (list._hidden) {

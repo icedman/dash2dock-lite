@@ -69,6 +69,7 @@ export let Animator = class {
         icon_name: 'file',
         name: 'd2daIcon',
         reactive: true,
+        icon_size: 16,
       });
       renderer.visible = false;
       target.add_child(renderer);
@@ -474,8 +475,10 @@ export let Animator = class {
         icon._icon.translationX = translationX;
         icon._icon.translationY = translationY;
       } else {
-        icon._icon.translationX = (icon._icon.translationX + translationX * 2) / 3;
-        icon._icon.translationY = (icon._icon.translationY + translationY * 2) / 3;
+        icon._icon.translationX =
+          (icon._icon.translationX + translationX * 2) / 3;
+        icon._icon.translationY =
+          (icon._icon.translationY + translationY * 2) / 3;
       }
 
       // clear bounce animation
@@ -670,26 +673,27 @@ export let Animator = class {
           // icon._label.style = 'font-size: 32pt';
           // icon._label.set_scale(0.5, 0.5);
           let lsz = icon._label.get_transformed_size();
-
-          icon._label.x = tPos[0] + sw / 2 - lsz[0] / 2;
-          icon._label.y = tPos[1] + sh / 2 - lsz[1] / 2;
-          if (vertical) {
-            if (dock._position == DockPosition.LEFT) {
-              icon._label.x += sh / 1.5 + icon._label.width / 2;
+          if (!isNaN(lsz[0]) && !isNaN(lsz[1])) {
+            icon._label.x = tPos[0] + sw / 2 - lsz[0] / 2;
+            icon._label.y = tPos[1] + sh / 2 - lsz[1] / 2;
+            if (vertical) {
+              if (dock._position == DockPosition.LEFT) {
+                icon._label.x += sh / 1.5 + icon._label.width / 2;
+              } else {
+                icon._label.x -= sh / 1.5 + icon._label.width / 2;
+              }
+              icon._label.y += 2 * (m.geometry_scale || 1);
             } else {
-              icon._label.x -= sh / 1.5 + icon._label.width / 2;
+              if (magnify == 0 || dock._iconSize <= 4) {
+                sh *= 1.5;
+              }
+              if (dock._position == DockPosition.BOTTOM) {
+                icon._label.y -= sh / 1.25;
+              } else {
+                icon._label.y += sh / 1.25;
+              }
+              icon._label.x += 2 * (m.geometry_scale || 1);
             }
-            icon._label.y += 2 * (m.geometry_scale || 1);
-          } else {
-            if (magnify == 0 || dock._iconSize <= 4) {
-              sh *= 1.5;
-            }
-            if (dock._position == DockPosition.BOTTOM) {
-              icon._label.y -= sh / 1.25;
-            } else {
-              icon._label.y += sh / 1.25;
-            }
-            icon._label.x += 2 * (m.geometry_scale || 1);
           }
         }
 

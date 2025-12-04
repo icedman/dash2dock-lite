@@ -291,9 +291,6 @@ export default class Dash2DockLiteExt extends Extension {
         dock._debounceEndAnimation();
       });
     }, 10);
-    // this._loTimer.runUntil(() => {
-    //   return this._createTopbarBackground();
-    // }, 150);
   }
 
   _autohiders() {

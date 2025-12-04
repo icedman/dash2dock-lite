@@ -73,7 +73,11 @@ export const Integrations = class {
           pids = dashElement.child._delegate.app.get_pids();
           if (pids && pids.indexOf(pid) >= 0) {
             let transformed_position = dashElement.get_transformed_position();
-            if (transformed_position && transformed_position[0] && transformed_position[1]) {
+            if (
+              transformed_position &&
+              transformed_position[0] &&
+              transformed_position[1]
+            ) {
               dashIcon = {
                 x: transformed_position[0],
                 y: transformed_position[1],
@@ -97,19 +101,19 @@ export const Integrations = class {
     let w = dashIcon.width;
     let h = dashIcon.height;
 
-    switch(dock._position) {
-    case 'left':
-      x = dock._monitor.x;
-      break;
-    case 'right':
-      x = dock._monitor.x + dock._monitor.width;
-      break;
-    case 'top':
-      y = dock._monitor.y;
-      break;
-    case 'bottom':
-      y = dock._monitor.y + dock._monitor.height;
-      break;
+    switch (dock._position) {
+      case 'left':
+        x = dock._monitor.x;
+        break;
+      case 'right':
+        x = dock._monitor.x + dock._monitor.width;
+        break;
+      case 'top':
+        y = dock._monitor.y;
+        break;
+      case 'bottom':
+        y = dock._monitor.y + dock._monitor.height;
+        break;
     }
 
     dashIcon = {

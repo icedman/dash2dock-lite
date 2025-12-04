@@ -131,7 +131,6 @@ export let Dock = GObject.registerClass(
       // required by blur-my-shell to find the dash upon disabling
       this._get_children = this.get_children;
       this.get_children = () => {
-        console.log('here!');
         return [...this._get_children(), this.dash];
       };
     }

@@ -148,8 +148,7 @@ export const Integrations = class {
     let bms = dock.get_children().find((child) => {
       let name = child.get_name();
       return (
-        name === 'bms-dash-backgroundgroup' ||
-        name === 'dash-blurred-background-parent'
+        name === 'bms-dash-backgroundgroup'
       );
     });
 

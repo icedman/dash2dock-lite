@@ -127,6 +127,13 @@ export let Dock = GObject.registerClass(
         this.autohider._onLeaveEvent.bind(this.autohider),
         this
       );
+
+      // required by blur-my-shell to find the dash upon disabling
+      this._get_children = this.get_children;
+      this.get_children = () => {
+        console.log('here!');
+        return [...this._get_children(), this.dash];
+      };
     }
 
     destroyDash() {
@@ -1102,26 +1109,6 @@ export let Dock = GObject.registerClass(
         }
       }
 
-      // take care of panel background
-      let topbar_background = this.extension._topbar_background;
-      if (
-        this == this.extension.docks[0] &&
-        topbar_background &&
-        this.extension.customize_topbar
-      ) {
-        let panel = Main.panel.get_parent();
-        topbar_background.x = panel.x;
-        topbar_background.y = panel.y;
-        topbar_background.width = panel.width;
-        topbar_background.height = panel.height;
-        let style = [];
-
-        let rgba = this.extension._style.rgba(
-          this.extension.topbar_background_color
-        );
-        style.push(`background-color: rgba(${rgba});`);
-        topbar_background.style = style.join('');
-      }
       return true;
     }
 
@@ -1141,9 +1128,10 @@ export let Dock = GObject.registerClass(
         (Main.overview.visible || this.extension._inOverview) &&
         this.extension.overview_transparent_topbar_background;
 
-      let topbar_background = this.extension._topbar_background;
-      if (topbar_background) {
-        topbar_background.opacity = transparent_topbar ? 0 : 255;
+      if (transparent_topbar) {
+        Main.panel.style = 'border: 0px; background: transparent;';
+      } else {
+        Main.panel.style = '';
       }
     }
 

@@ -233,21 +233,8 @@ export default class Dash2DockLiteExt extends Extension {
 
     this._showMainOverviewDash(true);
 
-    if (Main.overview.dash.__box) {
-      Main.overview.dash._box = Main.overview.dash.__box;
-    }
-
     this.destroyDocks();
     this.docks = [];
-
-    if (this._topbar_background) {
-      if (this._topbar_background.get_parent()) {
-        this._topbar_background
-          .get_parent()
-          .remove_child(this._topbar_background);
-      }
-      this._topbar_background = null;
-    }
 
     this.integrations.disable();
     this.integrations = null;
@@ -304,9 +291,9 @@ export default class Dash2DockLiteExt extends Extension {
         dock._debounceEndAnimation();
       });
     }, 10);
-    this._loTimer.runUntil(() => {
-      return this._createTopbarBackground();
-    }, 150);
+    // this._loTimer.runUntil(() => {
+    //   return this._createTopbarBackground();
+    // }, 150);
   }
 
   _autohiders() {
@@ -585,6 +572,7 @@ export default class Dash2DockLiteExt extends Extension {
         case 'icon-shadow':
         case 'topbar-border-color':
         case 'topbar-border-thickness':
+        case 'topbar-background-color':
         case 'topbar-foreground-color':
         case 'customize-label':
         case 'label-border-radius':
@@ -812,10 +800,6 @@ export default class Dash2DockLiteExt extends Extension {
     listeners.forEach((l) => {
       if (l._onFullScreen) l._onFullScreen();
     });
-
-    if (this._topbar_background) {
-      this._topbar_background.visible = !display.get_monitor_in_fullscreen(0);
-    }
     // console.log(`_onFullScreen ${f}`);
   }
 
@@ -913,25 +897,6 @@ export default class Dash2DockLiteExt extends Extension {
     }
 
     return 'light';
-  }
-
-  _createTopbarBackground() {
-    if (
-      !this._topbar_background &&
-      Main.panel &&
-      Main.panel.get_parent() &&
-      Main.panel.get_parent().get_parent()
-    ) {
-      this._topbar_background = new St.Widget({
-        name: 'd2daTopbarBackground',
-        clip_to_allocation: true,
-      });
-      Main.uiGroup.insert_child_below(
-        this._topbar_background,
-        Main.panel.get_parent()
-      );
-    }
-    return this._topbar_background;
   }
 
   _updateAnimationFPS() {
@@ -1074,8 +1039,13 @@ export default class Dash2DockLiteExt extends Extension {
       }
 
       // background
-      ss.push('background: transparent;');
+      // ss.push('background: transparent;');
+      {
+        let rgba = this._style.rgba(this.topbar_background_color);
+        ss.push(`background: rgba(${rgba});`);
+      }
       styles.push(`#panelBox #panel {${ss.join(' ')}}`);
+      ss = [];
 
       // foreground
       if (this.topbar_foreground_color && this.topbar_foreground_color[3] > 0) {
@@ -1133,7 +1103,6 @@ export default class Dash2DockLiteExt extends Extension {
   }
 
   _updateLayout(disable) {
-    // console.log(this.multi_monitor_preference);
     this.docks.forEach((dock) => {
       dock.layout();
     });

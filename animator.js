@@ -474,8 +474,8 @@ export let Animator = class {
         icon._icon.translationX = translationX;
         icon._icon.translationY = translationY;
       } else {
-        icon._icon.translationX = (icon._icon.translationX + translationX) / 2;
-        icon._icon.translationY = (icon._icon.translationY + translationY) / 2;
+        icon._icon.translationX = (icon._icon.translationX + translationX * 2) / 3;
+        icon._icon.translationY = (icon._icon.translationY + translationY * 2) / 3;
       }
 
       // clear bounce animation

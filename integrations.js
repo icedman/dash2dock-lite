@@ -55,6 +55,7 @@ export const Integrations = class {
     }
 
     let dashIcon = null;
+
     let pids = null;
     let pid = actor.get_meta_window()
       ? actor.get_meta_window().get_pid()
@@ -85,6 +86,12 @@ export const Integrations = class {
         });
     }
 
+    // fallback
+    let tmp = Main.overview.dash._box;
+    Main.overview.dash._box = dock.dash._box;
+    dashIcon = this._compiz?._getIcon(actor);
+    Main.overview.dash._box = tmp;
+    
     if (!dashIcon) {
       return { x: monitor.x, y: monitor.y, width: 0, height: 0 };
     }

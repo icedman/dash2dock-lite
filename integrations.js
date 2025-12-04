@@ -73,7 +73,7 @@ export const Integrations = class {
           pids = dashElement.child._delegate.app.get_pids();
           if (pids && pids.indexOf(pid) >= 0) {
             let transformed_position = dashElement.get_transformed_position();
-            if (transformed_position && transformed_position[0]) {
+            if (transformed_position && transformed_position[0] && transformed_position[1]) {
               dashIcon = {
                 x: transformed_position[0],
                 y: transformed_position[1],
@@ -86,12 +86,6 @@ export const Integrations = class {
         });
     }
 
-    // fallback
-    let tmp = Main.overview.dash._box;
-    Main.overview.dash._box = dock.dash._box;
-    dashIcon = this._compiz?._getIcon(actor);
-    Main.overview.dash._box = tmp;
-    
     if (!dashIcon) {
       return { x: monitor.x, y: monitor.y, width: 0, height: 0 };
     }
@@ -103,20 +97,29 @@ export const Integrations = class {
     let w = dashIcon.width;
     let h = dashIcon.height;
 
-    if (w == 0) {
-      let sz = dock._preferredIconSize();
-      if (sz) {
-        x += (sz / 2) * (dock._monitor.geometry_scale || 1);
-        y += (sz / 2) * (dock._monitor.geometry_scale || 1);
-      }
+    switch(dock._position) {
+    case 'left':
+      x = dock._monitor.x;
+      break;
+    case 'right':
+      x = dock._monitor.x + dock._monitor.width;
+      break;
+    case 'top':
+      y = dock._monitor.y;
+      break;
+    case 'bottom':
+      y = dock._monitor.y + dock._monitor.height;
+      break;
     }
 
-    return {
+    dashIcon = {
       x: x,
       y: y,
       width: w,
       height: h,
     };
+
+    return dashIcon;
   }
 
   hookBms(hook = true) {

@@ -25,6 +25,7 @@ const ANIM_SIZE_PER_SEC = 250 / 1000;
 const ANIM_ICON_RAISE = 0.5;
 const ANIM_ICON_SCALE = 1.5;
 const ANIM_ICON_HIT_AREA = 2.5;
+const ANIMATE_CACHE_LOOKUP = 4;
 
 const DOT_CANVAS_SIZE = 96;
 
@@ -403,9 +404,31 @@ export let Animator = class {
     animateIcons.forEach((icon) => {
       // this fixes jittery hovered icon
       if (icon._targetScale > 1.9) icon._targetScale = 2;
+      
+      if (icon._targetScale > 1.0) {
+        icon._scaleCache = icon._scaleCache || [];
+        icon._scaleCache.push(icon._targetScale);
+        let edgeItems = ANIMATE_CACHE_LOOKUP;
+          if (icon._scaleCache.length > edgeItems) {
+            let sc = 0;
+            for (let i = 0; i < edgeItems; i++) {
+              sc +=
+                icon._scaleCache[
+                  icon._scaleCache.length - edgeItems + i
+                ];
+            }
+            icon._targetScale = sc / (edgeItems);
+          }
+      } else {
+        icon._scaleCache = null;
+      }
 
-      icon._scale = icon._targetScale;
-
+      if (didScale) {
+        icon._scale = icon._targetScale;
+      } else {
+        icon._scale = (icon._scale + icon._targetScale)/2;
+      }
+      
       //! make these computation more readable even if more verbose
       let rdir =
         dock._position == DockPosition.TOP ||
@@ -464,10 +487,10 @@ export let Animator = class {
         } else {
           icon._positionCache.push([translationX, translationY]);
 
-          let edgeItems = 4;
+          let edgeItems = ANIMATE_CACHE_LOOKUP;
           if (icon._positionCache.length > edgeItems) {
-            let tx = translationX;
-            let ty = translationY;
+            let tx = 0;//translationX;
+            let ty = 0;//translationY;
             for (let i = 0; i < edgeItems; i++) {
               tx +=
                 icon._positionCache[
@@ -478,16 +501,21 @@ export let Animator = class {
                   icon._positionCache.length - edgeItems + i
                 ][1];
             }
-            translationX = tx / (edgeItems + 1);
-            translationY = ty / (edgeItems + 1);
+            translationX = tx / (edgeItems);
+            translationY = ty / (edgeItems);
           }
         }
       } else {
         icon._positionCache = null;
       }
 
-      icon._icon.translationX = translationX;
-      icon._icon.translationY = translationY;
+      if (didScale) {
+        icon._icon.translationX = translationX;
+        icon._icon.translationY = translationY;
+      } else {
+        icon._icon.translationX = (icon._icon.translationX + translationX)/2;
+        icon._icon.translationY = (icon._icon.translationY + translationY)/2;
+      }
 
       // clear bounce animation
       if (icon._appwell) {
@@ -666,15 +694,13 @@ export let Animator = class {
           icon._py = p[1] - renderOffset[1];
         }
 
-        // labels
-        icon._label.visible = false;
+        // label
         if (
           icon === hoveredIcon &&
           icon._label &&
           icon._label.text &&
           icon._label.text.length
         ) {
-          icon._label.visible = true;
           let tSize = renderer.get_transformed_size();
           // let tPos = icon._icon.get_transformed_position();
           let tPos = renderer.get_transformed_position();

@@ -505,13 +505,14 @@ export let Animator = class {
         icon._positionCache = null;
       }
 
-      // if (didScale) {
-      icon._icon.translationX = translationX;
-      icon._icon.translationY = translationY;
-      // } else {
-      //   icon._icon.translationX = (icon._icon.translationX + translationX) / 2;
-      //   icon._icon.translationY = (icon._icon.translationY + translationY) / 2;
-      // }
+      if (dock.animation_fps > 0) {
+        icon._icon.translationX = translationX;
+        icon._icon.translationY = translationY;
+      } else {
+        //! retain this for smoothness at high fps
+        icon._icon.translationX = (icon._icon.translationX + translationX) / 2;
+        icon._icon.translationY = (icon._icon.translationY + translationY) / 2;
+      }
 
       // clear bounce animation
       if (icon._appwell) {

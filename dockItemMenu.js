@@ -312,9 +312,10 @@ export const DockItemList = GObject.registerClass(
         let lsz = c._label.get_transformed_size();
         c._label.translationX = -lsz[0]; // c._label.width;
         if (list._hidden) {
-          let opacity = c._label.opacity - 15;
-          if (opacity < 0) opacity = 0;
-          c._label.opacity = opacity;
+          // let opacity = c._label.opacity - (dt * 3);
+          // if (opacity < 50) opacity = 0;
+          // c._label.opacity = opacity;
+          c._label.opacity = 0;
         } else {
           c._label.opacity = 255;
         }

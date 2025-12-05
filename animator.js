@@ -70,7 +70,6 @@ export let Animator = class {
         icon_name: 'file',
         name: 'd2daIcon',
         reactive: true,
-        icon_size: 16,
       });
       renderer.visible = false;
       target.add_child(renderer);
@@ -394,6 +393,10 @@ export let Animator = class {
     let last = animateIcons[animateIcons.length - 1];
 
     let slowDown = 1; // !nearestIcon || !animated ? 0.75 : 1;
+    if (!didScale) {
+      slowDown = 0.5;
+    }
+
     let lockPosition =
       didScale && first && last && first._p == 0 && last._p == 0;
 
@@ -420,11 +423,7 @@ export let Animator = class {
         icon._scaleCache = null;
       }
 
-      if (didScale) {
-        icon._scale = icon._targetScale;
-      } else {
-        icon._scale = (icon._scale + icon._targetScale) / 2;
-      }
+      icon._scale = icon._targetScale;
 
       //! make these computation more readable even if more verbose
       let rdir =
@@ -506,13 +505,13 @@ export let Animator = class {
         icon._positionCache = null;
       }
 
-      if (didScale) {
-        icon._icon.translationX = translationX;
-        icon._icon.translationY = translationY;
-      } else {
-        icon._icon.translationX = (icon._icon.translationX + translationX) / 2;
-        icon._icon.translationY = (icon._icon.translationY + translationY) / 2;
-      }
+      // if (didScale) {
+      icon._icon.translationX = translationX;
+      icon._icon.translationY = translationY;
+      // } else {
+      //   icon._icon.translationX = (icon._icon.translationX + translationX) / 2;
+      //   icon._icon.translationY = (icon._icon.translationY + translationY) / 2;
+      // }
 
       // clear bounce animation
       if (icon._appwell) {
@@ -673,18 +672,26 @@ export let Animator = class {
             }
 
             let ry = p[1] + adjustY + icon._icon.translationY - renderOffset[1];
-            // if (!dock._hidden) {
-            // // dash-independent computation
-            //   let margin = 8 * dock.extension.icon_spacing * m.geometry_scale * 4;
-            //   ry = dock.height - iconSize * m.geometry_scale;
-            //   ry += adjustY + icon._icon.translationY;
-            //   ry -= margin;
-            //   ry -= edge_distance;
-            // }
             renderer.set_position(
               p[0] + adjustX + icon._icon.translationX - renderOffset[0],
               ry
             );
+
+            // renderer.ease({
+            //   x: p[0] + adjustX + icon._icon.translationX - renderOffset[0],
+            //   y: ry,
+            //   duration: 100,
+            //   mode: Clutter.AnimationMode.LINEAR,
+            // });
+
+            // renderer.ease({
+            //   width: baseSize,
+            //   height: baseSize,
+            //   icon_size: baseSize,
+            //   duration: 200,
+            //   mode: Clutter.AnimationMode.LINEAR,
+            // });
+
             renderer.visible = true;
           }
           icon._px = p[0] - renderOffset[0];
@@ -920,11 +927,13 @@ export let Animator = class {
 
     // dock translation
     {
+      let autohide_slowDown = 1;
       let translationX = targetX;
       let translationY = targetY;
       let speed =
         ((150 + 300 * dock.extension.autohide_speed * scaleFactor) / 1000) *
-        slowDown;
+        autohide_slowDown;
+
       let v1 = new Vector([targetX, targetY, 0]);
       let v2 = new Vector([dock.dash.translationX, dock.dash.translationY, 0]);
       let dst = v1.subtract(v2);

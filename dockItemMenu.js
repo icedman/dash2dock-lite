@@ -251,15 +251,15 @@ export const DockItemList = GObject.registerClass(
     }
 
     animate(dt) {
-      // let faster
-      for (let i = 0; i < 3; i++) {
-        // more precise animation
-        this._animate(dt / 2);
-        this._animate(dt / 2);
-      }
-    }
+      //   // let faster
+      //   for (let i = 0; i < 3; i++) {
+      //     // more precise animation
+      //     this._animate(dt / 2);
+      //     this._animate(dt / 2);
+      //   }
+      // }
 
-    _animate(dt) {
+      // _animate(dt) {
       let dock = this.dock;
       let list = dock._list;
       if (!list) return;
@@ -269,7 +269,7 @@ export const DockItemList = GObject.registerClass(
       let target = list._target;
       let list_coef = 2;
 
-      let speed = ANIM_POSITION_PER_SEC;
+      let speed = 3 * ANIM_POSITION_PER_SEC;
       let didAnimate = false;
 
       list.translationX = target._icon.translationX;

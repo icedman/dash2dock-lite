@@ -22,7 +22,7 @@ import {
 
 const ANIM_POSITION_PER_SEC = 550 / 1000;
 const ANIM_SIZE_PER_SEC = 250 / 1000;
-const ANIM_ICON_RAISE = 0.6;
+const ANIM_ICON_RAISE = 0.5;
 const ANIM_ICON_SCALE = 1.5;
 const ANIM_ICON_HIT_AREA = 2.5;
 
@@ -247,7 +247,7 @@ export let Animator = class {
       magnify *= 0.8;
     }
     // when too much magnification, increase spreading
-    if (magnify > 0.5 && spread < 0.55) {
+    if (magnify > 0.15 && spread < 0.55) {
       spread = 0.55 + spread * 0.2;
     }
 
@@ -304,8 +304,7 @@ export let Animator = class {
 
         // affect rise
         let sz = iconSize * fp * scaleFactor;
-        icon._translateRise = sz * 0.1 * rise;
-
+        icon._translateRise = sz * rise;
         didScale = true;
 
         total_scale += scale;
@@ -352,7 +351,7 @@ export let Animator = class {
       if (scale > 1.1) {
         // affect spread
         let offset = Math.floor(
-          1.25 * (scale - 1) * iconSize * scaleFactor * spread * 0.8
+          1.25 * (scale - 1) * iconSize * scaleFactor * spread * 0.5
         );
         // left
         for (let j = i - 1; j >= 0; j--) {
@@ -396,6 +395,10 @@ export let Animator = class {
     let slowDown = 1; // !nearestIcon || !animated ? 0.75 : 1;
     let lockPosition =
       didScale && first && last && first._p == 0 && last._p == 0;
+
+    if (dock._preview) {
+      lockPosition = false;
+    }
 
     animateIcons.forEach((icon) => {
       // this fixes jittery hovered icon
@@ -447,39 +450,44 @@ export let Animator = class {
       // fix jitterness
       if (lockPosition && icon._p == 0) {
         icon._positionCache = icon._positionCache || [];
-        var lockThreshold = 24;
+        var lockThreshold = 48;
         if (
           (icon._prev && icon._prev._locked) ||
           (icon._next && icon._next._locked)
         ) {
-          lockThreshold = 16;
+          lockThreshold = 32;
         }
         if (icon._positionCache.length > lockThreshold) {
           [translationX, translationY] =
             icon._positionCache[icon._positionCache.length - 1];
           icon._locked = true;
         } else {
-          if (icon._positionCache.length > lockThreshold / 4) {
-            var [_translationX, _translationY] =
-              icon._positionCache[icon._positionCache.length - 1];
-            translationX = (translationX + _translationX) / 2;
-            translationY = (translationY + _translationY) / 2;
-          }
           icon._positionCache.push([translationX, translationY]);
+
+          let edgeItems = 4;
+          if (icon._positionCache.length > edgeItems) {
+            let tx = translationX;
+            let ty = translationY;
+            for (let i = 0; i < edgeItems; i++) {
+              tx +=
+                icon._positionCache[
+                  icon._positionCache.length - edgeItems + i
+                ][0];
+              ty +=
+                icon._positionCache[
+                  icon._positionCache.length - edgeItems + i
+                ][1];
+            }
+            translationX = tx / (edgeItems + 1);
+            translationY = ty / (edgeItems + 1);
+          }
         }
       } else {
         icon._positionCache = null;
       }
 
-      if (dock.extension.animation_fps > 0) {
-        icon._icon.translationX = translationX;
-        icon._icon.translationY = translationY;
-      } else {
-        icon._icon.translationX =
-          (icon._icon.translationX + translationX * 2) / 3;
-        icon._icon.translationY =
-          (icon._icon.translationY + translationY * 2) / 3;
-      }
+      icon._icon.translationX = translationX;
+      icon._icon.translationY = translationY;
 
       // clear bounce animation
       if (icon._appwell) {
@@ -659,7 +667,14 @@ export let Animator = class {
         }
 
         // labels
-        if (icon === hoveredIcon && icon._label) {
+        icon._label.visible = false;
+        if (
+          icon === hoveredIcon &&
+          icon._label &&
+          icon._label.text &&
+          icon._label.text.length
+        ) {
+          icon._label.visible = true;
           let tSize = renderer.get_transformed_size();
           // let tPos = icon._icon.get_transformed_position();
           let tPos = renderer.get_transformed_position();

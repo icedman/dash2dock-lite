@@ -84,13 +84,7 @@ export let Dock = GObject.registerClass(
         },
       };
 
-      // // required by blur-my-shell to find the dash upon disabling
-      // this._get_children = this.get_children;
-      // this.get_children = () => {
-      //   return [...this._get_children(), this.dash];
-      // };
-
-      // pretend to be a dash
+      // pretend to be Dash-to-Dock
       // required by blur-my-shell to find the dash upon disabling
       this.fake_dash = new St.Widget({ name: 'dash' });
       this.add_child(this.fake_dash);
@@ -1133,14 +1127,16 @@ export let Dock = GObject.registerClass(
           !transparent && this.extension.blur_background;
       }
 
-      let transparent_topbar =
-        (Main.overview.visible || this.extension._inOverview) &&
-        this.extension.overview_transparent_topbar_background;
+      if (this.extension.customize_topbar) {
+        let transparent_topbar =
+          (Main.overview.visible || this.extension._inOverview) &&
+          this.extension.overview_transparent_topbar_background;
 
-      if (transparent_topbar) {
-        Main.panel.style = 'border: 0px; background: transparent;';
-      } else {
-        Main.panel.style = '';
+        if (transparent_topbar) {
+          Main.panel.style = 'border: 0px; background: transparent;';
+        } else {
+          Main.panel.style = '';
+        }
       }
     }
 

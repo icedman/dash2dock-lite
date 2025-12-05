@@ -1132,9 +1132,12 @@ export let Dock = GObject.registerClass(
           (Main.overview.visible || this.extension._inOverview) &&
           this.extension.overview_transparent_topbar_background;
 
-        if (transparent_topbar) {
+        if (
+          transparent_topbar &&
+          (Main.panel.style == '' || Main.panel.style == null)
+        ) {
           Main.panel.style = 'border: 0px; background: transparent;';
-        } else {
+        } else if (!(Main.panel.style == '' || Main.panel.style == null)) {
           Main.panel.style = '';
         }
       }

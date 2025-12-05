@@ -404,21 +404,18 @@ export let Animator = class {
     animateIcons.forEach((icon) => {
       // this fixes jittery hovered icon
       if (icon._targetScale > 1.9) icon._targetScale = 2;
-      
+
       if (icon._targetScale > 1.0) {
         icon._scaleCache = icon._scaleCache || [];
         icon._scaleCache.push(icon._targetScale);
         let edgeItems = ANIMATE_CACHE_LOOKUP;
-          if (icon._scaleCache.length > edgeItems) {
-            let sc = 0;
-            for (let i = 0; i < edgeItems; i++) {
-              sc +=
-                icon._scaleCache[
-                  icon._scaleCache.length - edgeItems + i
-                ];
-            }
-            icon._targetScale = sc / (edgeItems);
+        if (icon._scaleCache.length > edgeItems) {
+          let sc = 0;
+          for (let i = 0; i < edgeItems; i++) {
+            sc += icon._scaleCache[icon._scaleCache.length - edgeItems + i];
           }
+          icon._targetScale = sc / edgeItems;
+        }
       } else {
         icon._scaleCache = null;
       }
@@ -426,9 +423,9 @@ export let Animator = class {
       if (didScale) {
         icon._scale = icon._targetScale;
       } else {
-        icon._scale = (icon._scale + icon._targetScale)/2;
+        icon._scale = (icon._scale + icon._targetScale) / 2;
       }
-      
+
       //! make these computation more readable even if more verbose
       let rdir =
         dock._position == DockPosition.TOP ||
@@ -489,8 +486,8 @@ export let Animator = class {
 
           let edgeItems = ANIMATE_CACHE_LOOKUP;
           if (icon._positionCache.length > edgeItems) {
-            let tx = 0;//translationX;
-            let ty = 0;//translationY;
+            let tx = 0; //translationX;
+            let ty = 0; //translationY;
             for (let i = 0; i < edgeItems; i++) {
               tx +=
                 icon._positionCache[
@@ -501,8 +498,8 @@ export let Animator = class {
                   icon._positionCache.length - edgeItems + i
                 ][1];
             }
-            translationX = tx / (edgeItems);
-            translationY = ty / (edgeItems);
+            translationX = tx / edgeItems;
+            translationY = ty / edgeItems;
           }
         }
       } else {
@@ -513,8 +510,8 @@ export let Animator = class {
         icon._icon.translationX = translationX;
         icon._icon.translationY = translationY;
       } else {
-        icon._icon.translationX = (icon._icon.translationX + translationX)/2;
-        icon._icon.translationY = (icon._icon.translationY + translationY)/2;
+        icon._icon.translationX = (icon._icon.translationX + translationX) / 2;
+        icon._icon.translationY = (icon._icon.translationY + translationY) / 2;
       }
 
       // clear bounce animation

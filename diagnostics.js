@@ -4,7 +4,7 @@ import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import { getPointer, warpPointer } from './utils.js';
 
 var print = (msg) => {
-  log(msg);
+  console.log(msg);
   if (Main.lookingGlass && Main.lookingGlass.isOpen) {
     Main.lookingGlass.close();
     // Main.lookingGlass._pushResult('d2dl', msg);

@@ -93,6 +93,7 @@ export let Dock = GObject.registerClass(
       });
       this.fake_dash.add_child(this.fake_dash_background);
       this.fake_dash._background = this.fake_dash_background;
+      this.fake_dash.visible = false;
 
       this.renderArea = new St.Widget({
         name: 'DockRenderArea',

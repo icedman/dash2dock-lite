@@ -510,8 +510,8 @@ export let Animator = class {
         icon._icon.translationY = translationY;
       } else {
         //! retain this for smoothness at high fps
-        icon._icon.translationX = (icon._icon.translationX + translationX) / 2;
-        icon._icon.translationY = (icon._icon.translationY + translationY) / 2;
+        icon._icon.translationX = (icon._icon.translationX + translationX * 3) / 4;
+        icon._icon.translationY = (icon._icon.translationY + translationY * 3) / 4;
       }
 
       // clear bounce animation

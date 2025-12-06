@@ -392,7 +392,7 @@ export let Animator = class {
     let first = animateIcons[0];
     let last = animateIcons[animateIcons.length - 1];
 
-    let slowDown = 1; // !nearestIcon || !animated ? 0.75 : 1;
+    let slowDown = dock.extension._config.speed_up || 1;
     if (!didScale) {
       slowDown = 0.5;
     }

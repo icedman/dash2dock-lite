@@ -383,6 +383,29 @@ export default class Dash2DockLiteExt extends Extension {
       let theme = ctx.get_theme();
       theme.load_stylesheet(fn_style);
     }
+
+    // precompute
+    {
+      let icon_size = this._config['icon-size'] ?? 0;
+      if (typeof icon_size == 'string') {
+        icon_size = parseInt(icon_size);
+      }
+      this._config.icon_size = icon_size > 0 ? icon_size : null;
+    }
+
+    {
+      let speed_up = this._config['speed_up'] ?? 1;
+      if (typeof speed_up == 'string') {
+        speed_up = parseFloat(speed_up);
+      }
+      if (speed_up > 4) {
+        speed_up = 4;
+      }
+      if (speed_up < 0.5) {
+        speed_up = 0.5;
+      }
+      this._config.speed_up = speed_up;
+    }
   }
 
   _unloadConfig() {
@@ -1047,14 +1070,14 @@ export default class Dash2DockLiteExt extends Extension {
       // foreground
       if (this.topbar_foreground_color && this.topbar_foreground_color[3] > 0) {
         let rgba = this._style.rgba(this.topbar_foreground_color);
-        styles.push(`#panelBox #panel * { color: rgba(${rgba}) }`);
+        styles.push(`.panel-status-indicator-icon, #panelBox #panel * { color: rgba(${rgba}) }`);
       } else {
         let rgba = this._style.rgba([0, 0, 0, 1]);
         let bg = this.topbar_background_color;
         if (0.3 * bg[0] + 0.59 * bg[1] + 0.11 * bg[2] < 0.5) {
           rgba = this._style.rgba([1, 1, 1, 1]);
         }
-        styles.push(`#panelBox #panel * { color: rgba(${rgba}) }`);
+        styles.push(`.panel-status-indicator-icon, #panelBox #panel * { color: rgba(${rgba}) }`);
       }
     }
 

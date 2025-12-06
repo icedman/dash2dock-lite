@@ -487,11 +487,8 @@ export let Dock = GObject.registerClass(
         ] || 64);
       iconSize *= this.extension.scale;
 
-      if (this.extension._config && this.extension._config['icon-size']) {
-        iconSize = this.extension._config['icon-size'];
-        if (typeof iconSize == 'string') {
-          iconSize = parseInt(iconSize);
-        }
+      if (this.extension._config.icon_size) {
+        iconSize = this.extension._config.icon_size;
       }
 
       this._iconSize = iconSize;

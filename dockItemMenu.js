@@ -16,7 +16,7 @@ const Point = Graphene.Point;
 import { DockPosition } from './dock.js';
 import { Vector } from './vector.js';
 
-const ANIM_POSITION_PER_SEC = 750 / 1000;
+const ANIM_POSITION_PER_SEC = 450 / 1000;
 
 export const DockItemList = GObject.registerClass(
   {},
@@ -251,15 +251,15 @@ export const DockItemList = GObject.registerClass(
     }
 
     animate(dt) {
-      //   // let faster
-      //   for (let i = 0; i < 3; i++) {
-      //     // more precise animation
-      //     this._animate(dt / 2);
-      //     this._animate(dt / 2);
-      //   }
-      // }
+        // let faster
+        for (let i = 0; i < 3; i++) {
+          // more precise animation
+          this._animate(dt / 2);
+          this._animate(dt / 2);
+        }
+      }
 
-      // _animate(dt) {
+      _animate(dt) {
       let dock = this.dock;
       let list = dock._list;
       if (!list) return;

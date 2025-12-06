@@ -70,6 +70,7 @@ export let Animator = class {
         icon_name: 'file',
         name: 'd2daIcon',
         reactive: true,
+        icon_size: 24,
       });
       renderer.visible = false;
       target.add_child(renderer);
@@ -408,20 +409,20 @@ export let Animator = class {
       // this fixes jittery hovered icon
       if (icon._targetScale > 1.9) icon._targetScale = 2;
 
-      if (icon._targetScale > 1.0) {
-        icon._scaleCache = icon._scaleCache || [];
-        icon._scaleCache.push(icon._targetScale);
-        let edgeItems = ANIMATE_CACHE_LOOKUP;
-        if (icon._scaleCache.length > edgeItems) {
-          let sc = 0;
-          for (let i = 0; i < edgeItems; i++) {
-            sc += icon._scaleCache[icon._scaleCache.length - edgeItems + i];
-          }
-          icon._targetScale = sc / edgeItems;
-        }
-      } else {
-        icon._scaleCache = null;
-      }
+      // if (icon._targetScale > 1.0) {
+      //   icon._scaleCache = icon._scaleCache || [];
+      //   icon._scaleCache.push(icon._targetScale);
+      //   let edgeItems = ANIMATE_CACHE_LOOKUP;
+      //   if (icon._scaleCache.length > edgeItems) {
+      //     let sc = 0;
+      //     for (let i = 0; i < edgeItems; i++) {
+      //       sc += icon._scaleCache[icon._scaleCache.length - edgeItems + i];
+      //     }
+      //     icon._targetScale = sc / edgeItems;
+      //   }
+      // } else {
+      //   icon._scaleCache = null;
+      // }
 
       icon._scale = icon._targetScale;
 

@@ -45,7 +45,10 @@ export const DockItemList = GObject.registerClass(
       let file_explorer = dock.extension.file_explorer();
       let target = dock.createItem(f.path);
       target._onClick = () => {
-        if (dock._position != DockPosition.BOTTOM) {
+        if (
+          dock._position != DockPosition.BOTTOM &&
+          dock._position != DockPosition.TOP
+        ) {
           target.activateNewWindow();
           return;
         }
@@ -193,14 +196,45 @@ export const DockItemList = GObject.registerClass(
       let angle = startAngle;
       let rad = iconSize; // * dock._scaleFactor;
 
+      if (
+        dock._position == DockPosition.TOP ||
+        dock._position == DockPosition.RIGHT
+      ) {
+        rad = -iconSize;
+      }
+
       let ox = 0;
-      let oy = -rad / 4;
+      let oy = 0;
+
+      this._iconSize = icon_size;
+      let dir_angle = 0;
+
+      switch (dock._position) {
+        case DockPosition.BOTTOM:
+          ox = 0;
+          oy = -icon_size / 4;
+          break;
+        case DockPosition.TOP:
+          ox = 0;
+          oy = icon_size * 2;
+          break;
+        case DockPosition.LEFT:
+          oy = icon_size / 4;
+          ox = icon_size;
+          dir_angle = 90;
+          break;
+        case DockPosition.RIGHT:
+          oy = icon_size / 4;
+          ox = -icon_size;
+          dir_angle = 90;
+          break;
+      }
 
       let children = this._box.get_children();
       children.reverse();
       children.forEach((l) => {
-        let hX = Math.cos(angle * 0.0174533);
-        let hY = Math.sin(angle * 0.0174533);
+        let hX = Math.cos((angle + dir_angle) * 0.0174533);
+        let hY = Math.sin((angle + dir_angle) * 0.0174533);
         let hl = Math.sqrt(hX * hX + hY * hY);
         hX /= hl;
         hY /= hl;
@@ -210,14 +244,25 @@ export const DockItemList = GObject.registerClass(
         l.x = tp[0] - this.x + ox;
         l.y = tp[1] - this.y + oy;
 
-        ox += hX; // * 0.85;
+        ox += hX;
         oy += hY;
-        angle += angleInc;
+
+        if (
+          dock._position == DockPosition.TOP ||
+          dock._position == DockPosition.LEFT
+        ) {
+          angle -= angleInc;
+        } else {
+          angle += angleInc;
+        }
 
         l.rotation_angle_z = angle - startAngle;
 
         l._label_container.x = l.x;
         l._label_container.y = l.y;
+        if (dock._position == DockPosition.TOP) {
+          l._label_container.y = l.y + -rad / 4;
+        }
       });
 
       if (children.length == 0) return;
@@ -231,7 +276,14 @@ export const DockItemList = GObject.registerClass(
         l._oz = 0;
         l._label.opacity = 0;
         l._x = l.x;
-        l._y = l.y - rad * 0.9;
+        l._y = l.y;
+
+        switch (dock._position) {
+          case DockPosition.BOTTOM:
+            l._y = l.y - rad * 0.9;
+            break;
+        }
+
         l._rotation_angle_z = l.rotation_angle_z;
         l.x = first.x;
         l.y = first.y;
@@ -288,10 +340,18 @@ export const DockItemList = GObject.registerClass(
       let speed = 3 * ANIM_POSITION_PER_SEC;
       let didAnimate = false;
 
-      list.translationX = target._icon.translationX;
-      list.translationY =
-        -((dock._iconSizeScaledDown / 4) * target._scale) +
-        target._icon.translationY;
+      if (dock.isVertical()) {
+        list.translationY = target._icon.translationY;
+        list.translationX =
+          -((dock._iconSizeScaledDown / 4) * target._scale) *
+            (dock._position == 'left' ? -1 : 1) +
+          target._icon.translationX;
+      } else {
+        list.translationX = target._icon.translationX;
+        list.translationY =
+          -((dock._iconSizeScaledDown / 4) * target._scale) +
+          target._icon.translationY;
+      }
 
       let tw = target.width * target._icon.scaleX;
       let th = target.height * target._icon.scaleY;
@@ -334,10 +394,32 @@ export const DockItemList = GObject.registerClass(
         c._label_container.x = c.x;
         c._label_container.y = c.y;
 
+        switch (dock._position) {
+          case DockPosition.BOTTOM:
+            c._label_container.y = c.y;
+            break;
+          case DockPosition.TOP:
+            c._label_container.y = c.y + -this._iconSize / 4;
+            break;
+          case DockPosition.RIGHT:
+            c._label_container.x = c.x;
+            break;
+          case DockPosition.LEFT:
+            c._label_container.x = c.x + -this._iconSize / 4;
+            break;
+        }
+
         let lsz = c._label.get_transformed_size();
-        c._label.translationX = -lsz[0]; // c._label.width;
+
+        if (dock.isVertical()) {
+          // c._label.translationY = -lsz[1]; // c._label.height;
+          c._label.translationX = -lsz[0]; // c._label.width;
+        } else {
+          c._label.translationX = -lsz[0]; // c._label.width;
+        }
+
         if (list._hidden) {
-          // let opacity = c._label.opacity - (dt * 3);
+          // let opacity = c._label.opacity - dt;
           // if (opacity < 50) opacity = 0;
           // c._label.opacity = opacity;
           c._label.opacity = 0;
@@ -349,6 +431,9 @@ export const DockItemList = GObject.registerClass(
 
         if (dock.extension.downloads_icon_rotate_labels) {
           c._label_container.rotation_angle_z = c.rotation_angle_z;
+          if (dock.isVertical()) {
+            c._label_container.rotation_angle_z += 90;
+          }
         }
 
         if (!c._icon.first_child) {

@@ -302,16 +302,13 @@ export let Dock = GObject.registerClass(
     }
 
     _effectTargets() {
-      return [this.renderArea];
-    }
-
-    _updateBackgroundEffect() {
-      // blur-my-shell takes care of us
+      return [this.renderArea, this._list?._box];
     }
 
     _updateIconEffect() {
       let targets = this._effectTargets();
       targets.forEach((target) => {
+        if (!target) return;
         target.remove_effect_by_name('icon-effect');
         let effect = this._createEffect(this.extension.icon_effect);
         if (effect) {
@@ -945,6 +942,12 @@ export let Dock = GObject.registerClass(
       ];
       this._position =
         locations[this.extension.dock_location] || DockPosition.BOTTOM;
+
+      if (this._config) {
+        if (this._config['position']) {
+          this._position = this._config['position'];
+        }
+      }
 
       this._updateExtraIcons();
 

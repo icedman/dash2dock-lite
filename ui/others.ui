@@ -87,6 +87,18 @@
           </object>
         </child>
         <child>
+          <object class="AdwActionRow">
+            <property name="title" translatable="yes">Rotate labels</property>
+            <property name="subtitle" translatable="yes">Rotate labels with downloaded file icons.</property>
+            <property name="activatable-widget">downloads-icon-rotate-labels</property>
+            <child>
+              <object class="GtkSwitch" id="downloads-icon-rotate-labels">
+                <property name="valign">center</property>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
           <object class="AdwActionRow" id="downloads-folder-row">
             <property name="visible">true</property>
             <property name="title" translatable="yes"/>

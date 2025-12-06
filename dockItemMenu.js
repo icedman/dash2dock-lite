@@ -30,6 +30,7 @@ export const DockItemList = GObject.registerClass(
       });
 
       this._box = null;
+      this._labels = null;
 
       this.connect('button-press-event', (obj, evt) => {
         if (!this._box || !this._box.get_children().length) {
@@ -94,6 +95,8 @@ export const DockItemList = GObject.registerClass(
       if (this._box) {
         this.remove_child(this._box);
         this._box = null;
+        this.remove_child(this._labels);
+        this._labels = null;
       }
 
       if (!list.length) return;
@@ -111,8 +114,12 @@ export const DockItemList = GObject.registerClass(
 
       this._target = target;
 
-      this._box = new St.Widget({ style_class: '-hi' });
+      this._box = new St.Widget({});
       this.add_child(this._box);
+      this._labels = new St.Widget({});
+      this.add_child(this._labels);
+
+      dock._updateIconEffect();
 
       let iconSize = dock._iconSizeScaledDown * dock._monitor.geometry_scale;
       // dock.dash._box.first_child._icon.width;
@@ -128,6 +135,7 @@ export const DockItemList = GObject.registerClass(
       let icon_size = iconSize * iconAdjust;
       list.forEach((l) => {
         let w = new St.Widget({});
+        let wl = new St.Widget({});
         let icon = new St.Widget({
           name: 'icon_placeholder',
           reactive: true,
@@ -136,10 +144,13 @@ export const DockItemList = GObject.registerClass(
         icon.set_size(icon_size, icon_size);
 
         this._box.add_child(w);
+        this._labels.add_child(wl);
+
         let short = (l.name ?? '').replace(/(.{32})..+/, '$1...');
         let label = new St.Label({ style_class: 'dash-label', text: short });
         w.add_child(icon);
-        w.add_child(label);
+        w._label_container = wl;
+        wl.add_child(label);
         w._icon = icon;
         w._label = label;
         w.createActualIcon = () => {
@@ -204,6 +215,9 @@ export const DockItemList = GObject.registerClass(
         angle += angleInc;
 
         l.rotation_angle_z = angle - startAngle;
+
+        l._label_container.x = l.x;
+        l._label_container.y = l.y;
       });
 
       if (children.length == 0) return;
@@ -221,6 +235,8 @@ export const DockItemList = GObject.registerClass(
         l._rotation_angle_z = l.rotation_angle_z;
         l.x = first.x;
         l.y = first.y;
+        l._label_container.x = l.x;
+        l._label_container.y = l.y;
         l.rotation_angle_z = 0;
       });
 
@@ -251,15 +267,15 @@ export const DockItemList = GObject.registerClass(
     }
 
     animate(dt) {
-        // let faster
-        for (let i = 0; i < 3; i++) {
-          // more precise animation
-          this._animate(dt / 2);
-          this._animate(dt / 2);
-        }
+      // let faster
+      for (let i = 0; i < 3; i++) {
+        // more precise animation
+        this._animate(dt / 2);
+        this._animate(dt / 2);
       }
+    }
 
-      _animate(dt) {
+    _animate(dt) {
       let dock = this.dock;
       let list = dock._list;
       if (!list) return;
@@ -280,6 +296,12 @@ export const DockItemList = GObject.registerClass(
       let tw = target.width * target._icon.scaleX;
       let th = target.height * target._icon.scaleY;
       let prev = null;
+
+      if (list._box) {
+        list._labels.x = list._box.x;
+        list._labels.y = list._box.y;
+      }
+
       list._box?.get_children().forEach((c) => {
         let waypoints = list._hidden ? c._waypointsOut : c._waypointsIn;
         if (!waypoints || !waypoints.length) {
@@ -309,6 +331,9 @@ export const DockItemList = GObject.registerClass(
         c.x = posVector.x;
         c.y = posVector.y;
 
+        c._label_container.x = c.x;
+        c._label_container.y = c.y;
+
         let lsz = c._label.get_transformed_size();
         c._label.translationX = -lsz[0]; // c._label.width;
         if (list._hidden) {
@@ -321,6 +346,10 @@ export const DockItemList = GObject.registerClass(
         }
         c.rotation_angle_z =
           (c.rotation_angle_z + (wp.rotation_angle_z || 0)) / 2;
+
+        if (dock.extension.downloads_icon_rotate_labels) {
+          c._label_container.rotation_angle_z = c.rotation_angle_z;
+        }
 
         if (!c._icon.first_child) {
           c.createActualIcon();

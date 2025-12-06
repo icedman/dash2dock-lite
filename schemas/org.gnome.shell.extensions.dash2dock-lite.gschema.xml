@@ -201,6 +201,11 @@
         <summary>Show downloads icon</summary>
         <description>Show a dynamic downloads icon.</description>
     </key>
+    <key type="b" name="downloads-icon-rotate-labels">
+        <default>false</default>
+        <summary>Rotate labels of downloads icon</summary>
+        <description>Rotate labels of downloads icon.</description>
+    </key>
     <key type="b" name="documents-icon">
         <default>false</default>
         <summary>Show documents icon</summary>

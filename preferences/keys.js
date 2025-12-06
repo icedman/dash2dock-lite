@@ -180,6 +180,10 @@ export const SettingsKeys = () => {
       default_value: '',
       widget_type: 'string',
     },
+    'downloads-icon-rotate-labels': {
+      default_value: false,
+      widget_type: 'switch',
+    },
     'documents-icon': {
       default_value: false,
       widget_type: 'switch',

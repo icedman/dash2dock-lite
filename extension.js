@@ -65,6 +65,30 @@ export default class Dash2DockLiteExt extends Extension {
   createTheDocks() {
     this.docks = this.docks ?? [];
 
+    if (this._config.docks) {
+      let count = this._config['docks'].length;
+      if (count != this.docks.length) {
+        this.destroyDocks();
+      }
+      this._config.docks.forEach((dc) => {
+        let index = -1;
+        let dc_monitor = dc['monitor'] ?? {};
+        for (let i = 0; i < Main.layoutManager.monitors.length; i++) {
+          let m = Main.layoutManager.monitors[i];
+          if (m.x == dc_monitor['x'] && m.y == dc_monitor['y']) {
+            index = m.index;
+            break;
+          }
+        }
+        if (index != -1) {
+          let d = this.createDock();
+          d._monitorIndex = index;
+          d._config = dc;
+        }
+      });
+      return;
+    }
+
     // only one dock
     if (
       Main.layoutManager.monitors.length == 1 ||
@@ -394,7 +418,7 @@ export default class Dash2DockLiteExt extends Extension {
     }
 
     {
-      let speed_up = this._config['speed_up'] ?? 1;
+      let speed_up = this._config['speed-up'] ?? 1;
       if (typeof speed_up == 'string') {
         speed_up = parseFloat(speed_up);
       }
@@ -1070,14 +1094,18 @@ export default class Dash2DockLiteExt extends Extension {
       // foreground
       if (this.topbar_foreground_color && this.topbar_foreground_color[3] > 0) {
         let rgba = this._style.rgba(this.topbar_foreground_color);
-        styles.push(`.panel-status-indicator-icon, #panelBox #panel * { color: rgba(${rgba}) }`);
+        styles.push(
+          `.panel-status-indicator-icon, #panelBox #panel * { color: rgba(${rgba}) }`
+        );
       } else {
         let rgba = this._style.rgba([0, 0, 0, 1]);
         let bg = this.topbar_background_color;
         if (0.3 * bg[0] + 0.59 * bg[1] + 0.11 * bg[2] < 0.5) {
           rgba = this._style.rgba([1, 1, 1, 1]);
         }
-        styles.push(`.panel-status-indicator-icon, #panelBox #panel * { color: rgba(${rgba}) }`);
+        styles.push(
+          `.panel-status-indicator-icon, #panelBox #panel * { color: rgba(${rgba}) }`
+        );
       }
     }
 

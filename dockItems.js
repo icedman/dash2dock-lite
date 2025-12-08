@@ -13,14 +13,6 @@ import GObject from 'gi://GObject';
 import Clutter from 'gi://Clutter';
 import St from 'gi://St';
 
-let GioUnix = null;
-try {
-  GioUnix = await import('gi://GioUnix');
-} catch (e) {
-  console.log('GioUnix not available on this GNOME version');
-}
-const DesktopAppInfo = GioUnix?.DesktopAppInfo || Gio.DesktopAppInfo;
-
 import {
   DashIcon,
   DashItemContainer,
@@ -28,7 +20,9 @@ import {
 
 import { DockPosition } from './dock.js';
 
-//! move to dockitemMenu
+import GioUnix from 'gi://GioUnix';
+const DesktopAppInfo = GioUnix.DesktopAppInfo;
+
 class DockItemMenu extends PopupMenu.PopupMenu {
   constructor(sourceActor, side = St.Side.TOP, params = {}) {
     if (Clutter.get_default_text_direction() === Clutter.TextDirection.RTL) {
@@ -411,18 +405,6 @@ export const DockBackground = GObject.registerClass(
 
         this.opacity = 255;
         dock.dash.opacity = this.opacity;
-
-        // let style = [dock.extension._backgroundStyle];
-        // {
-        //   let rgba = dock.extension._style.rgba(
-        //     dock.extension.background_color
-        //   );
-        //   style.push(`background: rgba(${rgba});`);
-        // }
-        // this.style = style.join(' ');
-        // this._bg.width = this.width;
-        // this._bg.height = this.height;
-        // this._bg.style = style.join(' ');
       }
     }
   }

@@ -26,6 +26,8 @@ importMap = [
     [ "import { ShowAppsIcon }", "const ShowAppsIcon = imports.ui.dash.ShowAppsIcon;" ],
     [ "import GLib", "const GLib = imports.gi.GLib;" ],
     [ "import Gio", "const Gio = imports.gi.Gio;" ],
+    [ "import GioUnix", "" ],
+    [ "const DesktopAppInfo", "const DesktopAppInfo = GioUnix.DesktopAppInfo;" ],
     [ "import GObject", "const GObject = imports.gi.GObject;" ],
     [ "import Clutter", "const Clutter = imports.gi.Clutter;" ],
     [ "import Graphene", "const Graphene = imports.gi.Graphene;" ],

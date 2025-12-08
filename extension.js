@@ -28,6 +28,7 @@ import Graphene from 'gi://Graphene';
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import { tempPath, trySpawnCommandLine } from './utils.js';
+import { loadFile } from './utils.js';
 
 import { Timer } from './timer.js';
 import { Style } from './style.js';
@@ -42,6 +43,9 @@ import {
 } from 'resource:///org/gnome/shell/extensions/extension.js';
 
 import { schemaId, SettingsKeys } from './preferences/keys.js';
+
+import GioUnix from 'gi://GioUnix';
+const DesktopAppInfo = GioUnix.DesktopAppInfo;
 
 const SERVICES_UPDATE_INTERVAL = 2500;
 
@@ -164,6 +168,8 @@ export default class Dash2DockLiteExt extends Extension {
 
   enable() {
     Main.overview.d2dl = this;
+
+    this.DesktopAppInfo = DesktopAppInfo;
 
     // Use UUID to avoid conflicting with other instances of this extensions (multi user setup)
     if (!this.uuid) {
@@ -347,27 +353,46 @@ export default class Dash2DockLiteExt extends Extension {
     return idx;
   }
 
-  _loadConfig() {
+  async _loadConfig() {
     this._config = {};
     let fn_config = Gio.File.new_for_path('.config/d2da/config.json');
     if (fn_config.query_exists(null)) {
-      const [success, contents] = fn_config.load_contents(null);
-      const decoder = new TextDecoder();
-      let contentsString = decoder.decode(contents);
       try {
-        this._config = JSON.parse(contentsString);
+        const contents = await loadFile(fn_config);
+        this._config = JSON.parse(contents);
       } catch (err) {
         console.log(err);
+      }
+
+      // precompute
+      {
+        let icon_size = this._config['icon-size'] ?? 0;
+        if (typeof icon_size == 'string') {
+          icon_size = parseInt(icon_size);
+        }
+        this._config.icon_size = icon_size > 0 ? icon_size : null;
+      }
+
+      {
+        let speed_up = this._config['speed-up'] ?? 1;
+        if (typeof speed_up == 'string') {
+          speed_up = parseFloat(speed_up);
+        }
+        if (speed_up > 4) {
+          speed_up = 4;
+        }
+        if (speed_up < 0.5) {
+          speed_up = 0.5;
+        }
+        this._config.speed_up = speed_up;
       }
     }
 
     let fn_icons = Gio.File.new_for_path('.config/d2da/icons.json');
     if (fn_icons.query_exists(null)) {
-      const [success, contents] = fn_icons.load_contents(null);
-      const decoder = new TextDecoder();
-      let contentsString = decoder.decode(contents);
       try {
-        let json = JSON.parse(contentsString);
+        const contents = await loadFile(fn_icons);
+        let json = JSON.parse(contents);
         if (json['icons']) {
           this.icon_map = json['icons'];
           this.icon_map_cache = {};
@@ -406,29 +431,6 @@ export default class Dash2DockLiteExt extends Extension {
       let ctx = St.ThemeContext.get_for_stage(global.stage);
       let theme = ctx.get_theme();
       theme.load_stylesheet(fn_style);
-    }
-
-    // precompute
-    {
-      let icon_size = this._config['icon-size'] ?? 0;
-      if (typeof icon_size == 'string') {
-        icon_size = parseInt(icon_size);
-      }
-      this._config.icon_size = icon_size > 0 ? icon_size : null;
-    }
-
-    {
-      let speed_up = this._config['speed-up'] ?? 1;
-      if (typeof speed_up == 'string') {
-        speed_up = parseFloat(speed_up);
-      }
-      if (speed_up > 4) {
-        speed_up = 4;
-      }
-      if (speed_up < 0.5) {
-        speed_up = 0.5;
-      }
-      this._config.speed_up = speed_up;
     }
   }
 

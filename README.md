@@ -189,4 +189,4 @@ Please be specific on the errors encountered. Add screenshots whenever possible.
 
 ## License
 
-Distributed under the GPL 3.0 License. See [LICENSE](https://github.com/icedman/dash2dock-lite/blob/main/LICENSE.md) for more information.
+Distributed under the GPL 3.0 License. See [LICENSE](https://github.com/icedman/dash2dock-lite/blob/main/LICENSE) for more information.

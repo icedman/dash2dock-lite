@@ -20,8 +20,13 @@ import {
 
 import { DockPosition } from './dock.js';
 
-import GioUnix from 'gi://GioUnix';
-const DesktopAppInfo = GioUnix.DesktopAppInfo;
+let GioUnix = null;
+try {
+  GioUnix = await import('gi://GioUnix');
+} catch (e) {
+  console.log('GioUnix not available on this GNOME version');
+}
+const DesktopAppInfo = GioUnix?.DesktopAppInfo || Gio.DesktopAppInfo;
 
 class DockItemMenu extends PopupMenu.PopupMenu {
   constructor(sourceActor, side = St.Side.TOP, params = {}) {

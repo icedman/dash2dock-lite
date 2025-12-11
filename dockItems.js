@@ -4,10 +4,12 @@ import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as BoxPointer from 'resource:///org/gnome/shell/ui/boxpointer.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 import { trySpawnCommandLine } from './utils.js';
+
 // import { trySpawnCommandLine } from 'resource:///org/gnome/shell/misc/util.js';
 
 import { Dash } from 'resource:///org/gnome/shell/ui/dash.js';
 
+import Shell from 'gi://Shell';
 import Gio from 'gi://Gio';
 import GObject from 'gi://GObject';
 import Clutter from 'gi://Clutter';
@@ -256,11 +258,10 @@ export const DockItemContainer = GObject.registerClass(
       if (!DesktopAppInfo) {
         try {
           DesktopAppInfo =
-            Main.overview.dash._box.first_child.child.app.app_info.constructor;
+            Shell.AppSystem.get_default().get_installed()[0].constructor;
         } catch (err) {
-          DesktopAppInfo =
-            Main.overview._overview._controls._appDisplay._grid.first_child.app
-              .app_info.constructor;
+          // should be unreachable
+          console.log(err);
         }
         Main.overview.d2dl.DesktopAppInfo = DesktopAppInfo;
       }

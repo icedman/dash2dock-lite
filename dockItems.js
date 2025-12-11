@@ -20,14 +20,6 @@ import {
 
 import { DockPosition } from './dock.js';
 
-let GioUnix = null;
-try {
-  GioUnix = await import('gi://GioUnix');
-} catch (e) {
-  console.log('GioUnix not available on this GNOME version');
-}
-const DesktopAppInfo = GioUnix?.DesktopAppInfo || Gio.DesktopAppInfo;
-
 class DockItemMenu extends PopupMenu.PopupMenu {
   constructor(sourceActor, side = St.Side.TOP, params = {}) {
     if (Clutter.get_default_text_direction() === Clutter.TextDirection.RTL) {
@@ -139,8 +131,8 @@ export const DockItemDotsOverlay = GObject.registerClass(
             ? -90
             : 90
           : position == DockPosition.TOP
-            ? 180
-            : 0,
+          ? 180
+          : 0,
       });
     }
   }
@@ -258,6 +250,20 @@ export const DockItemContainer = GObject.registerClass(
       });
 
       this.custom_icon = true;
+
+      // hack to get DesktopAppInfo class
+      let DesktopAppInfo = Main.overview.d2dl.DesktopAppInfo;
+      if (!DesktopAppInfo) {
+        try {
+          DesktopAppInfo =
+            Main.overview.dash._box.first_child.child.app.app_info.constructor;
+        } catch (err) {
+          DesktopAppInfo =
+            Main.overview._overview._controls._appDisplay._grid.first_child.app
+              .app_info.constructor;
+        }
+        Main.overview.d2dl.DesktopAppInfo = DesktopAppInfo;
+      }
 
       let desktopApp = params.app;
       if (desktopApp) {

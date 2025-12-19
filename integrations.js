@@ -150,7 +150,7 @@ export const Integrations = class {
 
     let bms = Main.extensionManager.lookup('blur-my-shell@aunetx');
     this._bms = bms;
-    if (bms && bms.stateObj) {
+    if (bms && bms.stateObj && bms.metadata.version >= 70) {
       let obj = bms.stateObj;
       if (obj._dash_to_dock_blur) {
         if (!obj._dash_to_dock_blur.update_size_orig) {

@@ -44,9 +44,6 @@ import {
 
 import { schemaId, SettingsKeys } from './preferences/keys.js';
 
-import GioUnix from 'gi://GioUnix';
-const DesktopAppInfo = GioUnix.DesktopAppInfo;
-
 const SERVICES_UPDATE_INTERVAL = 2500;
 
 const ANIM_ICON_QUALITY = 2.0;
@@ -168,8 +165,6 @@ export default class Dash2DockLiteExt extends Extension {
 
   enable() {
     Main.overview.d2dl = this;
-
-    this.DesktopAppInfo = DesktopAppInfo;
 
     // Use UUID to avoid conflicting with other instances of this extensions (multi user setup)
     if (!this.uuid) {

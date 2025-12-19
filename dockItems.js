@@ -4,10 +4,12 @@ import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as BoxPointer from 'resource:///org/gnome/shell/ui/boxpointer.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 import { trySpawnCommandLine } from './utils.js';
+
 // import { trySpawnCommandLine } from 'resource:///org/gnome/shell/misc/util.js';
 
 import { Dash } from 'resource:///org/gnome/shell/ui/dash.js';
 
+import Shell from 'gi://Shell';
 import Gio from 'gi://Gio';
 import GObject from 'gi://GObject';
 import Clutter from 'gi://Clutter';
@@ -19,9 +21,6 @@ import {
 } from 'resource:///org/gnome/shell/ui/dash.js';
 
 import { DockPosition } from './dock.js';
-
-import GioUnix from 'gi://GioUnix';
-const DesktopAppInfo = GioUnix.DesktopAppInfo;
 
 class DockItemMenu extends PopupMenu.PopupMenu {
   constructor(sourceActor, side = St.Side.TOP, params = {}) {
@@ -134,8 +133,8 @@ export const DockItemDotsOverlay = GObject.registerClass(
             ? -90
             : 90
           : position == DockPosition.TOP
-            ? 180
-            : 0,
+          ? 180
+          : 0,
       });
     }
   }
@@ -253,6 +252,19 @@ export const DockItemContainer = GObject.registerClass(
       });
 
       this.custom_icon = true;
+
+      // hack to get DesktopAppInfo class
+      let DesktopAppInfo = Main.overview.d2dl.DesktopAppInfo;
+      if (!DesktopAppInfo) {
+        try {
+          DesktopAppInfo =
+            Shell.AppSystem.get_default().get_installed()[0].constructor;
+        } catch (err) {
+          // should be unreachable
+          console.log(err);
+        }
+        Main.overview.d2dl.DesktopAppInfo = DesktopAppInfo;
+      }
 
       let desktopApp = params.app;
       if (desktopApp) {

@@ -157,7 +157,7 @@ export const DockItemBadgeOverlay = GObject.registerClass(
         options[extension.notification_badge_style];
       let notification_badge_color = extension.notification_badge_color;
 
-      // renderer.translationX = icon._icon.translationX;
+      renderer.translationX = renderer.width / 1.5;
       // renderer.translationY = icon._icon.translationY;
 
       renderer.set_state({
@@ -165,7 +165,7 @@ export const DockItemBadgeOverlay = GObject.registerClass(
         color: notification_badge_color || [1, 1, 1, 1],
         style: notification_badge_style || 'default',
         size: extension.notification_badge_size || 0,
-        translate: [0.4, -0.8],
+        translate: [0, -0.85],
       });
     }
   }

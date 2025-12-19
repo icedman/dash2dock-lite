@@ -802,13 +802,18 @@ export let Animator = class {
             vertical,
             extension: dock.extension,
           });
-          badge.x = icon._renderer.x + 3.5 * icon._scale;
-          badge.y = icon._renderer.y - 3 * icon._scale;
+          // badge.x = icon._renderer.x + 3 * icon._scale;
+          // badge.y = icon._renderer.y - 3 * icon._scale;
 
-          if (dock._position == DockPosition.TOP) {
-            badge.y = icon._renderer.y + (icon.height - 6) * icon._scale;
-          }
+          // if (dock._position == DockPosition.TOP) {
+          //   badge.y = icon._renderer.y + (icon.height - 6) * icon._scale;
+          // }
 
+          badge.width = icon._renderer.width * icon._renderer.scaleX;
+          badge.height = badge.width;
+          badge.x = icon._renderer.x;
+          badge.y = icon._renderer.y;
+          
           badge.set_scale(icon._scale, icon._scale);
           badge.show();
         }

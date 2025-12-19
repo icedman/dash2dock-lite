@@ -178,6 +178,7 @@ export default class Preferences extends ExtensionPreferences {
     window.set_search_enabled(true);
 
     // this.dump(window, 0);
+
     // add buymeacoffee QR
     if (builder.get_object('qr')) {
       builder

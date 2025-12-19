@@ -56,6 +56,13 @@ export const Integrations = class {
 
     let dashIcon = null;
 
+    let sz = dock._preferredIconSize();
+    let ofs = 0;
+    if (sz) {
+      let scale = dock.getMonitor().geometry_scale || 1;
+      ofs = (sz / 2) * scale;
+    }
+
     let pids = null;
     let pid = actor.get_meta_window()
       ? actor.get_meta_window().get_pid()
@@ -72,6 +79,10 @@ export const Integrations = class {
         .forEach((dashElement) => {
           pids = dashElement.child._delegate.app.get_pids();
           if (pids && pids.indexOf(pid) >= 0) {
+            let renderer = dashElement;
+            if (dashElement._renderer) {
+              dashElement = dashElement._renderer;
+            }
             let transformed_position = dashElement.get_transformed_position();
             if (
               transformed_position &&
@@ -98,21 +109,25 @@ export const Integrations = class {
     // console.log(`x:${dashIcon.x} y:${dashIcon.y} w:${dashIcon.width} h:${dashIcon.height}`);
     let x = dashIcon.x;
     let y = dashIcon.y;
-    let w = dashIcon.width;
-    let h = dashIcon.height;
+    let w = 0; //dashIcon.width;
+    let h = 0; //dashIcon.height;
 
     switch (dock._position) {
       case 'left':
         x = dock._monitor.x;
+        y += ofs;
         break;
       case 'right':
         x = dock._monitor.x + dock._monitor.width;
+        y += ofs;
         break;
       case 'top':
         y = dock._monitor.y;
+        x += ofs;
         break;
       case 'bottom':
         y = dock._monitor.y + dock._monitor.height;
+        x += ofs;
         break;
     }
 

@@ -1060,15 +1060,17 @@ export let Animator = class {
     };
 
     const translateDecor = (container, appwell) => {
-      if (container._renderer) {
-        container._renderer.translationY = appwell.translationY;
-      }
-      if (container._image) {
-        container._image.translationY = appwell.translationY;
-      }
-      if (container._badge) {
-        container._badge.translationY = appwell.translationY;
-      }
+      try {
+        if (container._renderer) {
+          container._renderer.translationY = appwell.translationY;
+        }
+        if (container._image) {
+          container._image.translationY = appwell.translationY;
+        }
+        if (container._badge) {
+          container._badge.translationY = appwell.translationY;
+        }
+      } catch (err) {}
     };
 
     let t = 250;
@@ -1080,19 +1082,21 @@ export let Animator = class {
           let [container, appwell] = getTarget(app_id);
           if (!appwell) return;
           appwell._bounce = true;
-          if (dock.isVertical()) {
-            appwell.translation_x =
-              dock._position == DockPosition.LEFT ? res : -res;
-            if (container._renderer) {
-              container._renderer.translationX = appwell.translationX;
+          try {
+            if (dock.isVertical()) {
+              appwell.translation_x =
+                dock._position == DockPosition.LEFT ? res : -res;
+              if (container._renderer) {
+                container._renderer.translationX = appwell.translationX;
+              }
+            } else {
+              appwell.translation_y =
+                dock._position == DockPosition.BOTTOM ? -res : res;
+              if (container._renderer) {
+                container._renderer.translationY = appwell.translationY;
+              }
             }
-          } else {
-            appwell.translation_y =
-              dock._position == DockPosition.BOTTOM ? -res : res;
-            if (container._renderer) {
-              container._renderer.translationY = appwell.translationY;
-            }
-          }
+          } catch (err) {}
           translateDecor(container, appwell);
         },
       },
@@ -1103,19 +1107,21 @@ export let Animator = class {
           let [container, appwell] = getTarget(app_id);
           if (!appwell) return;
           appwell._bounce = true;
-          if (dock.isVertical()) {
-            appwell.translation_x = appwell.translation_x =
-              dock._position == DockPosition.LEFT ? res : -res;
-            if (container._renderer) {
-              container._renderer.translationX = appwell.translationX;
+          try {
+            if (dock.isVertical()) {
+              appwell.translation_x = appwell.translation_x =
+                dock._position == DockPosition.LEFT ? res : -res;
+              if (container._renderer) {
+                container._renderer.translationX = appwell.translationX;
+              }
+            } else {
+              appwell.translation_y =
+                dock._position == DockPosition.BOTTOM ? -res : res;
+              if (container._renderer) {
+                container._renderer.translationY = appwell.translationY;
+              }
             }
-          } else {
-            appwell.translation_y =
-              dock._position == DockPosition.BOTTOM ? -res : res;
-            if (container._renderer) {
-              container._renderer.translationY = appwell.translationY;
-            }
-          }
+          } catch (err) {}
           translateDecor(container, appwell);
         },
       },
@@ -1137,9 +1143,11 @@ export let Animator = class {
         _func: (f, s) => {
           let [container, appwell] = getTarget(app_id);
           if (!appwell) return;
-          appwell._bounce = true;
-          appwell.translation_y = 0;
-          translateDecor(container, appwell);
+          try {
+            appwell._bounce = true;
+            appwell.translation_y = 0;
+            translateDecor(container, appwell);
+          } catch (err) {}
         },
       },
       {
@@ -1147,7 +1155,9 @@ export let Animator = class {
         _func: (f, s) => {
           let [container, appwell] = getTarget(app_id);
           if (!appwell) return;
-          appwell._bounce = false;
+          try {
+            appwell._bounce = false;
+          } catch (err) {}
         },
       },
     ]);

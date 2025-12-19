@@ -391,6 +391,7 @@ export const SettingsKeys = () => {
     'disable-blur-at-overview': {
       default_value: true,
       widget_type: 'switch',
+      themed: true,
     },
     'icon-effect': {
       default_value: 0,
@@ -447,6 +448,7 @@ export const SettingsKeys = () => {
     'blur-background': {
       default_value: false,
       widget_type: 'switch',
+      themed: true,
     },
     'multi-monitor-filter': {
       default_value: 0,
@@ -456,10 +458,12 @@ export const SettingsKeys = () => {
     'overview-transparent-background': {
       default_value: false,
       widget_type: 'switch',
+      themed: true,
     },
     'overview-transparent-topbar-background': {
       default_value: false,
       widget_type: 'switch',
+      themed: true,
     },
   });
 

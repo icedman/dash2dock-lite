@@ -12,7 +12,14 @@ import { DockPosition } from './dock.js';
 import { Vector } from './vector.js';
 
 import { DockItemDotsOverlay, DockItemBadgeOverlay } from './dockItems.js';
-import { Bounce, Linear, AHCubicEaseOut, AHQuadraticEaseOut } from './effects/easing.js';
+import {
+  Bounce,
+  Linear,
+  CubicEaseIn,
+  CubicEaseOut as Ease,
+  QuadraticEaseIn,
+  QuadraticEaseOut,
+} from './effects/easing.js';
 import {
   get_distance_sqr,
   get_distance,
@@ -268,7 +275,7 @@ export let Animator = class {
     let scaleAtMin = 1;
     let scaleAtMax = 1;
     if (magnify != 0) {
-      scaleAtMax += 1 * 0.6 * (1 + magnify);
+      scaleAtMax = 1 + magnify;
     }
 
     animateIcons.forEach((icon) => {
@@ -307,11 +314,9 @@ export let Animator = class {
         // affect scale;
         if (magnify != 0) {
           // scale += fp;
-          // scale = scaleAtMax *AHQuadraticEaseOut(p);
-          scale = scaleAtMax *AHCubicEaseOut(p);
+          scale = scaleAtMax * Ease(p);
           if (scale < 1) scale = 1;
         }
-
 
         // affect rise
         let sz = iconSize * fp * scaleFactor;
@@ -712,6 +717,8 @@ export let Animator = class {
           icon._py = p[1] - renderOffset[1];
         }
 
+        let hideLabel = true;
+
         // label
         if (
           icon === hoveredIcon &&
@@ -728,6 +735,25 @@ export let Animator = class {
           }
           let sw = !isNaN(tSize[0]) ? tSize[0] : 0;
           let sh = !isNaN(tSize[1]) ? tSize[1] : 0;
+
+          if (this._dwellIcon === icon) {
+            this._dwellTick += dt;
+            if (this._dwellTick > 450 && icon._targetScale > 1) {
+              try {
+                hideLabel = false;
+                if (icon._label.opacity < 255) {
+                  icon._label.opacity += 25;
+                } else {
+                  icon._label.opacity = 255;
+                }
+              } catch (err) {
+                // label not ready?
+              }
+            }
+          } else {
+            this._dwellTick = 0;
+          }
+          this._dwellIcon = icon;
 
           // icon._label.style = 'font-size: 32pt';
           // icon._label.set_scale(0.5, 0.5);
@@ -754,6 +780,10 @@ export let Animator = class {
               icon._label.x += 2 * (m.geometry_scale || 1);
             }
           }
+        }
+
+        if (hideLabel && icon._label) {
+          icon._label.opacity = 0;
         }
 
         //! todo... add placeholder opacity when dragging
@@ -823,7 +853,7 @@ export let Animator = class {
           badge.height = badge.width;
           badge.x = icon._renderer.x;
           badge.y = icon._renderer.y;
-          
+
           badge.set_scale(icon._scale, icon._scale);
           badge.show();
         }
@@ -1084,6 +1114,9 @@ export let Animator = class {
         }
         if (container._badge) {
           container._badge.translationY = appwell.translationY;
+        }
+        if (container._label) {
+          container._label.opacity = 0;
         }
       } catch (err) {}
     };

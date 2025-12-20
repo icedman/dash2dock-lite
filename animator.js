@@ -352,6 +352,8 @@ export let Animator = class {
       }
     });
 
+    let largestIconScale = 1;
+
     //! use better collision test here?
     let total_spread_left = 0;
     let total_spread_right = 0;
@@ -359,9 +361,15 @@ export let Animator = class {
     for (let i = 0; i < iconTable.length; i++) {
       if (iconTable.length < 2) break;
       let icon = iconTable[i];
-      if (icon._icon && icon._icon.hover) {
+
+      if (icon._targetScale > largestIconScale) {
+        largestIconScale = icon._targetScale;
         hoveredIcon = icon;
       }
+
+      // if (icon._icon && icon._icon.hover) {
+      //   hoveredIcon = icon;
+      // }
 
       let scale = icon._scale;
       if (scale > 1.1) {

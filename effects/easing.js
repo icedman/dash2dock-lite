@@ -1,5 +1,12 @@
 'use strict';
 
+/*
+t - current time
+b - beginning value
+c - change in value
+d - duration
+*/
+
 /* PennerEasing */
 export const Linear = {
   easeNone: (t, b, c, d) => {
@@ -62,3 +69,13 @@ var Back = {
     return (c / 2) * (postFix * t * (((s *= 1.525) + 1) * t + s) + 2) + b;
   },
 };
+
+
+export const AHQuadraticEaseOut = function(p) {
+  return -(p * (p-2));
+}
+
+export const AHCubicEaseOut = function(p) {
+  let f = p - 1;
+  return f * f * f + 1;
+}

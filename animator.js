@@ -12,7 +12,7 @@ import { DockPosition } from './dock.js';
 import { Vector } from './vector.js';
 
 import { DockItemDotsOverlay, DockItemBadgeOverlay } from './dockItems.js';
-import { Bounce, Linear } from './effects/easing.js';
+import { Bounce, Linear, AHCubicEaseOut, AHQuadraticEaseOut } from './effects/easing.js';
 import {
   get_distance_sqr,
   get_distance,
@@ -265,6 +265,12 @@ export let Animator = class {
     let lastIcon = null;
     let iconTable = [];
 
+    let scaleAtMin = 1;
+    let scaleAtMax = 1;
+    if (magnify != 0) {
+      scaleAtMax += 1 * 0.6 * (1 + magnify);
+    }
+
     animateIcons.forEach((icon) => {
       let original_pos = [...icon._pos];
 
@@ -300,8 +306,12 @@ export let Animator = class {
 
         // affect scale;
         if (magnify != 0) {
-          scale += fp;
+          // scale += fp;
+          // scale = scaleAtMax *AHQuadraticEaseOut(p);
+          scale = scaleAtMax *AHCubicEaseOut(p);
+          if (scale < 1) scale = 1;
         }
+
 
         // affect rise
         let sz = iconSize * fp * scaleFactor;

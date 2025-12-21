@@ -319,7 +319,8 @@ export let Animator = class {
         }
 
         // affect rise
-        let sz = iconSize * fp * scaleFactor;
+        // let sz = iconSize * fp * scaleFactor;
+        let sz = iconSize * (scale - 1) * scaleFactor;
         icon._translateRise = sz * rise;
         didScale = true;
 

@@ -504,6 +504,7 @@ export default class Dash2DockLiteExt extends Extension {
         case 'animation-magnify':
         case 'animation-spread':
         case 'animation-rise':
+        case 'animation-rise-curve':
         case 'animation-bounce': {
           if (this.animate_icons) {
             this.animate({ preview: true });

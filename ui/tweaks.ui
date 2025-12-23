@@ -67,6 +67,19 @@
         </child>
         <child>
           <object class="AdwActionRow">
+            <property name="title" translatable="yes">Rise Curve</property>
+            <property name="subtitle" translatable="yes">Rise curve function.</property>
+            <property name="activatable-widget">animation-rise-curve</property>
+            <child>
+              <object class="GtkDropDown" id="animation-rise-curve">
+                <property name="valign">center</property>
+                <property name="model">animation-rise-curve-model</property>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="AdwActionRow">
             <property name="title" translatable="yes">Bounce</property>
             <property name="subtitle" translatable="yes">Set icons bounce height when clicked and animated.</property>
             <property name="activatable-widget">animation-bounce</property>
@@ -345,5 +358,11 @@
     <property name="lower">0.0</property>
     <property name="upper">1.0</property>
     <property name="step-increment">0.01</property>
+  </object>
+  <object class="GtkStringList" id="animation-rise-curve-model">
+    <items>
+      <item translatable="yes">Quadratic Ease Out</item>
+      <item translatable="yes">Cubic Ease Out</item>
+    </items>
   </object>
 </interface>

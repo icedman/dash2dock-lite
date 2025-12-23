@@ -15,9 +15,7 @@ import { DockItemDotsOverlay, DockItemBadgeOverlay } from './dockItems.js';
 import {
   Bounce,
   Linear,
-  CubicEaseIn,
-  CubicEaseOut as Ease,
-  QuadraticEaseIn,
+  CubicEaseOut,
   QuadraticEaseOut,
 } from './effects/easing.js';
 import {
@@ -278,6 +276,11 @@ export let Animator = class {
       scaleAtMax = 1 + magnify;
     }
 
+    let Ease = QuadraticEaseOut;
+    if (dock.extension.animation_rise_curve == 1) {
+      Ease = CubicEaseOut;
+    }
+
     animateIcons.forEach((icon) => {
       let original_pos = [...icon._pos];
 
@@ -308,7 +311,7 @@ export let Animator = class {
       if (dx * dx < threshold * threshold && nearestIcon) {
         let adx = Math.abs(dx);
         let p = 1.0 - adx / threshold;
-        let fp = p * 0.6 * (1 + magnify);
+        // let fp = p * 0.6 * (1 + magnify);
         icon._p = p;
 
         // affect scale;
@@ -432,21 +435,6 @@ export let Animator = class {
     animateIcons.forEach((icon) => {
       // this fixes jittery hovered icon
       if (icon._targetScale > 1.9) icon._targetScale = 2;
-
-      // if (icon._targetScale > 1.0) {
-      //   icon._scaleCache = icon._scaleCache || [];
-      //   icon._scaleCache.push(icon._targetScale);
-      //   let edgeItems = ANIMATE_CACHE_LOOKUP;
-      //   if (icon._scaleCache.length > edgeItems) {
-      //     let sc = 0;
-      //     for (let i = 0; i < edgeItems; i++) {
-      //       sc += icon._scaleCache[icon._scaleCache.length - edgeItems + i];
-      //     }
-      //     icon._targetScale = sc / edgeItems;
-      //   }
-      // } else {
-      //   icon._scaleCache = null;
-      // }
 
       icon._scale = icon._targetScale;
 
@@ -750,7 +738,7 @@ export let Animator = class {
             if (this._dwellTick > 450 && icon._targetScale > 1) {
               try {
                 hideLabel = false;
-                if (icon._label.opacity < 255) {
+                if (icon._label.opacity < 255-25) {
                   icon._label.opacity += 25;
                 } else {
                   icon._label.opacity = 255;

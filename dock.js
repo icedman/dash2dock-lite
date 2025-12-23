@@ -1151,9 +1151,22 @@ export let Dock = GObject.registerClass(
 
     animate(dt = 15) {
       if (this._preview) {
-        let p = this.dash.get_transformed_position();
-        p[0] += this.dash.width / 2;
-        p[1] += this.dash.height / 2;
+        let p = null;
+        
+        if (this._icons && this._icons.length) {
+          let icon = this._icons[this._icons.length >> 1];
+          p = icon._icon.get_transformed_position();
+          let s = icon._icon.get_transformed_size();
+          p[0] += s[0]/2;
+          p[1] += s[1]/2;
+        }
+
+        if (!p) {
+          p = this.dash.get_transformed_position();
+          p[0] += this.dash.width / 2;
+          p[1] += this.dash.height / 2;
+        }
+
         this.simulated_pointer = p;
         this._preview--;
       }

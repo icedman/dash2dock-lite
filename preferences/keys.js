@@ -251,6 +251,12 @@ export const SettingsKeys = () => {
       widget_type: 'scale',
       test: { pointer: 'slide-through', values: [0, 0.5, 1] },
     },
+    'animation-rise-curve': {
+      default_value: 0,
+      widget_type: 'dropdown',
+      test: { values: [0, 1] },
+      themed: true,
+    },
     'icon-shadow': {
       default_value: true,
       widget_type: 'switch',

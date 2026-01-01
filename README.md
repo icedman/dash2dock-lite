@@ -127,20 +127,21 @@ Icon created "user-trash"
 ```
 ## Custom Config
 
-Create a file ```config.json``` under the folder ```sh~/.config/d2da/```
+Create a file ```config.json``` under the folder ```~/.config/d2da/```
 
 ```json
 {
   "file-explorer": "nemo",
-  "icon-size": "24",
+  "icon-size": "24"
 }
 ```
+* Disable then enable extension to load config
 * file-explorer overrides the default "nautilus"
 * icon-size overrides the icon scale from the preferences panel
 
 ## Custom CSS
 
-Create a file ```style.css``` under the folder ```sh~/.config/d2da/```
+Create a file ```style.css``` under the folder ```~/.config/d2da/```
 
 For now, you will have to do some little digging with LookingGlass to know the names and style classes.
 

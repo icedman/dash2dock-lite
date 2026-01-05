@@ -226,10 +226,15 @@ export const SettingsKeys = () => {
       widget_type: 'dropdown',
       test: { pointer: 'slide-through', values: [0, 1, 2] },
     },
-    'animation-bounce': {
+    'animation-bounce-height': {
       default_value: 0,
       widget_type: 'scale',
       test: { pointer: 'slide-through', values: [0, 0.5, 1] },
+    },
+    'animation-bounce-frequency': {
+      default_value: 0,
+      widget_type: 'dropdown',
+      test: { values: [0, 1, 2, 3] },
     },
     'items-pullout-angle': {
       default_value: 0,

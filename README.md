@@ -18,6 +18,7 @@
 ### Notice
 
 * Supports Gnome 42, 43, 44, 45, 46, 47, 48, 49
+* Initial support for Gnome 50
 * Prior versions are largely unsupported
 
 ### Features

@@ -422,28 +422,23 @@ export let Dock = GObject.registerClass(
 
       this._updateIconEffect();
 
-      //! API breakages as expected
-      // This one is caused by Gnome 50 changes
-      let affectsInputRegion = 'affectsInputRegion';
-      if (Config.PACKAGE_VERSION[0] != '4') {
-        affectsInputRegion = 'reactive';
-      }
-
       Main.layoutManager.addChrome(this.struts, {
         affectsStruts: !this.extension.autohide_dash,
-        [`${affectsInputRegion}`]: true,
+        ...(Config.PACKAGE_VERSION[0] == '4'
+          ? { affectsInputRegion: true }
+          : {}),
         trackFullscreen: false,
       });
 
       Main.layoutManager.addChrome(this, {
         affectsStruts: false,
-        [`${affectsInputRegion}`]: false,
+        // affectsInputRegion: false,
         trackFullscreen: true,
       });
 
       Main.layoutManager.addChrome(this.dwell, {
         affectsStruts: false,
-        [`${affectsInputRegion}`]: false,
+        // affectsInputRegion: false,
         trackFullscreen: false,
       });
 

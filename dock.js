@@ -2,6 +2,7 @@
 
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as Fav from 'resource:///org/gnome/shell/ui/appFavorites.js';
+import * as Config from 'resource:///org/gnome/shell/misc/config.js';
 
 import Shell from 'gi://Shell';
 import GObject from 'gi://GObject';
@@ -421,21 +422,28 @@ export let Dock = GObject.registerClass(
 
       this._updateIconEffect();
 
+      //! API breakages as expected
+      // This one is caused by Gnome 50 changes
+      let affectsInputRegion = 'affectsInputRegion';
+      if (Config.PACKAGE_VERSION[0] != '4') {
+        affectsInputRegion = 'reactive';
+      }
+
       Main.layoutManager.addChrome(this.struts, {
         affectsStruts: !this.extension.autohide_dash,
-        affectsInputRegion: true,
+        [`${affectsInputRegion}`]: true,
         trackFullscreen: false,
       });
 
       Main.layoutManager.addChrome(this, {
         affectsStruts: false,
-        affectsInputRegion: false,
+        [`${affectsInputRegion}`]: false,
         trackFullscreen: true,
       });
 
       Main.layoutManager.addChrome(this.dwell, {
         affectsStruts: false,
-        affectsInputRegion: false,
+        [`${affectsInputRegion}`]: false,
         trackFullscreen: false,
       });
 
@@ -1152,13 +1160,13 @@ export let Dock = GObject.registerClass(
     animate(dt = 15) {
       if (this._preview) {
         let p = null;
-        
+
         if (this._icons && this._icons.length) {
           let icon = this._icons[this._icons.length >> 1];
           p = icon._icon.get_transformed_position();
           let s = icon._icon.get_transformed_size();
-          p[0] += s[0]/2;
-          p[1] += s[1]/2;
+          p[0] += s[0] / 2;
+          p[1] += s[1] / 2;
         }
 
         if (!p) {

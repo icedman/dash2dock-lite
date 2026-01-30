@@ -73,7 +73,7 @@ export default class Dash2DockLiteExt extends Extension {
       }
       this._config.docks.forEach((dc) => {
         let index = -1;
-        let dc_monitor = dc['monitor'] ?? {};
+        let d_monitor = dc['monitor'] ?? {};
         for (let i = 0; i < Main.layoutManager.monitors.length; i++) {
           let m = Main.layoutManager.monitors[i];
           if (m.x == dc_monitor['x'] && m.y == dc_monitor['y']) {

@@ -13,7 +13,7 @@ install: build
 
 clean:
 	rm -rf ./build
-	
+
 publish:
 	echo "publishing..."
 	rm -rf build
@@ -30,7 +30,7 @@ publish:
 	cp -R preferences ./build
 	cp -R effects ./build
 	rm -rf ./*.zip
-	rm -rf build/schemas/gschemas.compiled
+	#rm -rf build/schemas/gschemas.compiled
 	rm -rf build/*_.js
 	rm -rf build/imports*.js
 	rm -rf build/apps/mount-dash2dock-lite.desktop

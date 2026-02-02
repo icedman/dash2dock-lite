@@ -17,6 +17,9 @@
 
 ### Notice
 
+For some reason EGO reviews has become very strict. It seems they're using AI to review the correctness of my code :)
+I cannot update or will not update EGO that this moment. Please use git to update to the latest version.
+
 * Supports Gnome 42, 43, 44, 45, 46, 47, 48, 49
 * Initial support for Gnome 50
 * Prior versions are largely unsupported

@@ -496,29 +496,39 @@ export let Dock = GObject.registerClass(
       return iconSize;
     }
 */
-      _preferredIconSize() {
-        // 1. Prioritize manual input from config
-        if (this.extension._config.icon_size) {
-          return this._iconSize = this.extension._config.icon_size;
-        }
+    _preferredIconSize() {
+      let defaultSize=32; //if there is an error in caculaton, use this value.
+      this._iconSize=defaultSize;
+      
+      //To ensure the extension object and _config object exist (prevent crash system in case the Dock.js is load but the _config.jon hasnot been load because
+      // _loadConfig() is an async function
+      const extExtention = this.extension || {};
+      const extConfig = extExtention._config || {};//This is this.extension._config
   
-        // 2. Get value from UI slider (assuming range 0.0 to 1.0)
-        let sliderVal = this.extension.icon_size; 
-  
-        // 3. Định nghĩa dải kích thước bạn muốn (Ví dụ: từ 16px đến 128px)
-        let min = 8;
-        let max = 128;
-        
-        // alculate base size based on slider position (Linear - prevents sudden jumps)
-        let baseSize = min + (sliderVal * (max - min));
-  
-        // 4. Multiply by screen scale factor (upscale) and extension-specific ratio
-        let upscale = Math.max(1, 1 + (2 - this._scaleFactor) || 1);
-        
-        this._iconSize = baseSize * upscale * this.extension.scale;
-  
-        return this._iconSize;
+      // 1. Prioritize manual input from config
+      if (extConfig.icon_size) {  //this.extension._config.icon_size
+        return this._iconSize = extConfig.icon_size;
       }
+  
+      // 2. Get value from UI slider (assuming range 0.0 to 1.0)
+      let sliderVal = extExtention.icon_size; 
+  
+      // 3. Define the size range you want (e.g., from 16px to 128px)
+      let min = 8;
+      let max = 128;
+      
+      // Calculate base size based on slider position (Linear - prevents sudden jumps)
+      let baseSize = min + (sliderVal * (max - min));
+  
+      // 4. Multiply by screen scale factor (upscale) and extension-specific ratio
+      let scaleFactor = this._scaleFactor || 1;
+      let upscale = Math.max(1, 1 + (2 - scaleFactor))||1;
+      let extExtentionScale = extExtention.scale || 1;
+  
+      this._iconSize = baseSize * upscale * extExtentionScale;
+  
+      return this._iconSize||defaultSize;
+    }
     
     // Structure for dash icon container widgets - g42,g43,g44,g45,g46
     /**

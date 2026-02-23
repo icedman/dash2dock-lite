@@ -469,7 +469,17 @@
     <key type="i" name="multi-monitor-filter">
         <default>0</default>
         <summary>Multi-Monitor Filter</summary>
-        <description>Filter actions on multi-monitor.</description>
+        <description>Filter window cycling and click actions to the current monitor. Does not hide icons.</description>
+    </key>
+    <key type="i" name="isolation-mode">
+        <default>0</default>
+        <summary>Isolation Mode</summary>
+        <description>Isolate running apps by workspace and/or monitor. Hides non-favorite app icons and indicators from other contexts. Monitor isolation requires multi-monitor dock preference enabled.</description>
+    </key>
+    <key type="s" name="isolation-app-overrides">
+        <default>"{}"</default>
+        <summary>Isolation App Overrides</summary>
+        <description>JSON map of favorite app desktop IDs to per-app click behavior overrides when they have no window in the current workspace/monitor.</description>
     </key>
     <key type="b" name="overview-transparent-background">
         <default>false</default>

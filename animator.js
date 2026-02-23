@@ -866,8 +866,28 @@ export let Animator = class {
         icon._appwell.app &&
         icon._appwell.app.get_n_windows
       ) {
-        let appCount = dock.getAppWindowsFiltered(icon._appwell.app).length;
-        // appCount = 1;
+        let app = icon._appwell.app;
+        let appCount = dock.getAppWindowsFiltered(app).length;
+
+        // for favorites with bring/focus override, show dot if app has
+        // windows anywhere (even outside current workspace/monitor)
+        if (appCount === 0 && dock.extension.isolation_mode > 0) {
+          let appId = app.get_id();
+          let isFav = dock._favorite_ids && dock._favorite_ids.includes(appId);
+          if (isFav && app.get_n_windows() > 0) {
+            let overrides = {};
+            try {
+              let raw = dock.extension.isolation_app_overrides;
+              if (typeof raw === 'string') overrides = JSON.parse(raw || '{}');
+              else if (raw && typeof raw === 'object') overrides = raw;
+            } catch (e) {}
+            let action = appId in overrides ? parseInt(overrides[appId], 10) : 0;
+            if (action === 1 || action === 2) {
+              appCount = app.get_n_windows();
+            }
+          }
+        }
+
         if (dots && appCount > 0) {
           dots.update(icon, {
             appCount,

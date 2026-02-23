@@ -246,22 +246,45 @@ export let Dock = GObject.registerClass(
     }
 
     _onFocusWindow(evt) {
-      // this._debouncedBeginAnimation();
+      if (this.extension.isolation_mode > 0) {
+        this._debouncedIsolationRefresh();
+      }
       this._beginAnimation();
       this.autohider._debounceCheckHide();
       return Clutter.EVENT_PROPAGATE;
     }
     _onFullScreen() {
-      // this._debouncedBeginAnimation();
       this._beginAnimation();
       this.autohider._debounceCheckHide();
       return Clutter.EVENT_PROPAGATE;
     }
     _onRestacked() {
-      // this._debouncedBeginAnimation();
+      if (this.extension.isolation_mode > 0) {
+        this._debouncedIsolationRefresh();
+      }
       this._beginAnimation();
       this.autohider._debounceCheckHide();
       return Clutter.EVENT_PROPAGATE;
+    }
+    _debouncedIsolationRefresh() {
+      if (!this._debounceIsolationSeq) {
+        this._debounceIsolationSeq = this.extension._loTimer.runDebounced(
+          () => {
+            this._icons = null;
+            this._beginAnimation();
+          },
+          150,
+          'debounceIsolation'
+        );
+      } else {
+        this.extension._loTimer.runDebounced(this._debounceIsolationSeq);
+      }
+    }
+    _onIsolationChanged() {
+      this._favorite_ids = Fav.getAppFavorites()._getIds();
+      this._icons = null;
+      this._beginAnimation();
+      this.autohider._debounceCheckHide();
     }
     _onAppsChanged(evt) {
       this._favorite_ids = Fav.getAppFavorites()._getIds();
@@ -551,19 +574,34 @@ export let Dock = GObject.registerClass(
 
           let app = c._appwell.app;
           let appId = app ? app.get_id() : '';
+          let isFavorite =
+            this._favorite_ids && this._favorite_ids.includes(appId);
 
           // hide icons if favorites only
-          if (
-            !c.custom_icon &&
-            this._favorite_ids &&
-            !this._favorite_ids.includes(appId)
-          ) {
+          if (!c.custom_icon && !isFavorite) {
             if (this.extension.favorites_only) {
               c._appwell.visible = false;
               c.width = -1;
               c.height = -1;
               return false;
-            } else if (!c._found) {
+            }
+
+            // hide non-favorite running apps outside current workspace/monitor
+            let isolationMode = this.extension.isolation_mode || 0;
+            if (isolationMode > 0 && app) {
+              let visibleWindows = this.getAppWindowsFiltered(app);
+              if (visibleWindows.length === 0) {
+                c._appwell.visible = false;
+                c.width = -1;
+                c.height = -1;
+                // reset so the icon animates when it reappears
+                c._found = false;
+                c._handled = false;
+                return false;
+              }
+            }
+
+            if (!c._found) {
               c._found = true;
             }
           }
@@ -663,7 +701,13 @@ export let Dock = GObject.registerClass(
       }
 
       // hide separator between running apps and favorites - if not needed
-      if (this.extension.favorites_only) {
+      let hasVisibleRunningApps = this._icons.some((icon) => {
+        if (!icon._appwell?.app) return false;
+        let appId = icon._appwell.app.get_id();
+        return !this._favorite_ids?.includes(appId);
+      });
+
+      if (this.extension.favorites_only || !hasVisibleRunningApps) {
         if (this._separators.length) {
           this._separators[0].visible = false;
           this._separators = [];
@@ -755,10 +799,88 @@ export let Dock = GObject.registerClass(
           c._appwell._activate = c._appwell.activate;
           c._appwell.activate = () => {
             try {
+              let app = c._appwell.app;
+              let isolationMode = this.extension.isolation_mode || 0;
+
+              // when isolation is active and the app has no windows in the
+              // current context, perform configured action
+              if (isolationMode > 0 && app) {
+                let filtered = this.getAppWindowsFiltered(app);
+                let allWindows = app.get_windows();
+                if (filtered.length === 0 && allWindows.length > 0) {
+                  let appId = app.get_id();
+                  let overrides = {};
+                  try {
+                    let raw = this.extension.isolation_app_overrides;
+                    if (typeof raw === 'string') {
+                      overrides = JSON.parse(raw || '{}');
+                    } else if (raw && typeof raw === 'object') {
+                      overrides = raw;
+                    }
+                  } catch (e) {}
+
+                  // check per-app override; default is 0 (open new instance)
+                  let action = appId in overrides
+                    ? parseInt(overrides[appId], 10)
+                    : 0;
+
+                  switch (action) {
+                    case 1: {
+                      // focus existing window in its workspace/monitor
+                      let w = allWindows[0];
+                      w.get_workspace().activate_with_focus(
+                        w,
+                        global.get_current_time()
+                      );
+                      break;
+                    }
+                    case 2: {
+                      // bring window to current workspace/monitor, centered
+                      let w = allWindows[0];
+                      let activeWs =
+                        global.workspace_manager.get_active_workspace();
+                      let mon =
+                        Main.layoutManager.monitors[this._monitor.index];
+                      let frame = w.get_frame_rect();
+                      let x = mon.x + Math.round(
+                        (mon.width - frame.width) / 2
+                      );
+                      let y = mon.y + Math.round(
+                        (mon.height - frame.height) / 2
+                      );
+
+                      // minimize first so unminimize triggers the native
+                      // "open window" animation after the move
+                      w.minimize();
+                      w.change_workspace(activeWs);
+                      w.move_resize_frame(false, x, y, frame.width, frame.height);
+                      w.unminimize();
+                      w.raise();
+                      w.focus(0);
+                      break;
+                    }
+                    default: {
+                      // open new instance (with fallback via .desktop launch)
+                      if (app.can_open_new_window()) {
+                        app.open_new_window(-1);
+                      } else {
+                        let appInfo = app.get_app_info();
+                        if (appInfo) {
+                          appInfo.launch([], null);
+                        }
+                      }
+                      break;
+                    }
+                  }
+                  this._maybeBounce(c);
+                  return;
+                }
+              }
+
               if (!c._menu) {
                 this._maybeBounce(c);
               }
-              this._maybeMinimizeOrMaximize(c._appwell.app);
+              this._maybeMinimizeOrMaximize(app);
               c._appwell._activate();
             } catch (err) {
               // happens with dummy DashIcons
@@ -1419,6 +1541,26 @@ export let Dock = GObject.registerClass(
     }
 
     getAppWindowsFiltered(app) {
+      let windows = app.get_windows();
+
+      // --- isolation mode filtering (hides icons + indicators) ---
+      let isolationMode = this.extension.isolation_mode || 0;
+      // 1 = workspace, 2 = monitor, 3 = both
+      let isolateWorkspace = isolationMode === 1 || isolationMode === 3;
+      let isolateMonitor = isolationMode === 2 || isolationMode === 3;
+
+      if (isolateWorkspace) {
+        let activeWs = global.workspace_manager.get_active_workspace();
+        windows = windows.filter((w) => w.get_workspace() === activeWs);
+      }
+
+      if (isolateMonitor && Main.layoutManager.monitors.length > 1) {
+        windows = windows.filter(
+          (w) => w.get_monitor() === this._monitor.index
+        );
+      }
+
+      // --- multi-monitor-filter (click/scroll action filtering only) ---
       var apply_filtering = this.extension.multi_monitor_filter != 0;
 
       // no filtering needed for a single dock
@@ -1437,7 +1579,7 @@ export let Dock = GObject.registerClass(
         var on_current_monitor = false;
         var on_other_monitor = false;
 
-        app.get_windows().forEach((w) => {
+        windows.forEach((w) => {
           on_current_monitor =
             on_current_monitor || w.get_monitor() == this._monitor.index;
           on_other_monitor =
@@ -1450,11 +1592,11 @@ export let Dock = GObject.registerClass(
       }
 
       if (apply_filtering) {
-        return app.get_windows().filter((w) => {
+        return windows.filter((w) => {
           return w.get_monitor() == this._monitor.index;
         });
       }
-      return app.get_windows();
+      return windows;
     }
 
     _onScrollEvent(obj, evt) {

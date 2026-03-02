@@ -20,7 +20,8 @@ const handledWindowTypes = [
   Meta.WindowType.DIALOG,
   Meta.WindowType.MODAL_DIALOG,
   // Meta.WindowType.TOOLBAR,
-  // Meta.WindowType.MENU,
+  Meta.WindowType.MENU, 
+  Meta.WindowType.DROPDOWN_MENU, // to hide the dock in case the right mouse menu and Dropdown menu overlap the dock. 
   Meta.WindowType.UTILITY,
   // Meta.WindowType.SPLASHSCREEN
 ];
@@ -142,8 +143,9 @@ export let AutoHide = class {
     this._debounceCheckHide();
   }
 
+  // The dock will show back in Overview (if open Overview from a state of an opened app with fullcreen status
   show() {
-    if (!this.dock._monitor || this.dock._monitor.inFullscreen) {
+    if (!this.dock._monitor || (this.dock._monitor.inFullscreen && !this.extension._inOverview)) {
       return;
     }
     this._dwell = 0;
@@ -191,6 +193,11 @@ export let AutoHide = class {
   }
 
   _checkOverlap() {
+    // Declare mode of autohide
+    let mode1_allWindows = 1;
+    let mode2_onlyActiveWindows = 2;
+    let mode_selected = mode2_onlyActiveWindows;
+    
     // console.log("checking overlap...");
     if (this.extension._inOverview) {
       return false;
@@ -238,44 +245,137 @@ export let AutoHide = class {
 
     let monitor = this.dock._monitor;
     let actors = global.get_window_actors();
-    let windows = actors.map((a) => {
+
+    // Add popumMenu to hide the dock if the right mouse menu overlap the doc (becasuse this dock is design to be always over everything)
+    let popupMenus = actors
+      .map(a => a.get_meta_window())
+      .filter(w =>
+          w &&
+          (w.get_window_type() === Meta.WindowType.DROPDOWN_MENU ||
+            w.get_window_type() === Meta.WindowType.POPUP_MENU ||
+            w.get_window_type() === Meta.WindowType.MENU)
+      );
+
+    // Hide the dock if any windows overlaps the dock.
+    const _checkOverlap1 = () => {
+      let windows = actors.map((a) => {
       let w = a.get_meta_window();
       w._parent = a;
       return w;
-    });
-    windows = windows.filter((w) => w.can_close());
-    windows = windows.filter((w) => w.get_monitor() == monitor.index);
-    // windows = windows.filter((w) => !w.is_override_redirect());
-    let workspace = global.workspace_manager.get_active_workspace_index();
-    windows = windows.filter(
-      (w) =>
-        workspace == w.get_workspace().index() && w.showing_on_its_workspace()
-    );
-    windows = windows.filter((w) => w.get_window_type() in handledWindowTypes);
+      });
+      
+      windows = windows.filter((w) => w.can_close());
+      windows = windows.filter((w) => w.get_monitor() == monitor.index);
+      // windows = windows.filter((w) => !w.is_override_redirect());
+      let workspace = global.workspace_manager.get_active_workspace_index();
+      windows = windows.filter(
+        (w) =>
+          workspace == w.get_workspace().index() && w.showing_on_its_workspace()
+      );
+      windows = windows.filter((w) => w.get_window_type() in handledWindowTypes);
 
-    let isOverlapped = false;
-    let dockRect = this.dock.struts.get_transformed_position();
-    dockRect.push(this.dock.struts.width);
-    dockRect.push(this.dock.struts.height);
 
-    windows.forEach((w) => {
-      this._track(w);
-      if (isOverlapped) return;
+      // Add popup and right mouse menu to check
+      popupMenus.forEach(m => {
+          if (m && m.get_monitor() === monitor.index) {
+              windows.push(m);
+          }
+      });
+      
 
-      let frame = w.get_frame_rect();
-      let win = [frame.x, frame.y, frame.width, frame.height];
+      let isOverlapped = false;
+      let dockRect = this.dock.struts.get_transformed_position();
+      dockRect.push(this.dock.struts.width);
+      dockRect.push(this.dock.struts.height);
 
-      if (isOverlapRect(dockRect, win)) {
-        isOverlapped = true;
+      windows.forEach((w) => {
+        this._track(w);
+        if (isOverlapped) return;
+  
+        let frame = w.get_frame_rect();
+        let win = [frame.x, frame.y, frame.width, frame.height];
+  
+        if (isOverlapRect(dockRect, win)) {
+          isOverlapped = true;
+        }
+      });
+
+      this.windows = windows;
+
+      // console.log(isOverlapped);
+      return isOverlapped;
+    }
+
+    // Hide the dock if only there is an overlap of active windows on the dock,
+    let focused = global.display.get_focus_window();
+    let checkWindows = [];
+    
+    const _checkOverlap2 = () => {
+      if (focused && focused.get_monitor() === monitor.index) {
+        let winType = focused.get_window_type();
+        let isValidAppWindows = false;
+        for (let i = 0; i < actors.length; i++) {
+            let win = actors[i].get_meta_window();
+  
+            // So sánh đối tượng cửa sổ
+            if (win === focused) {
+                isValidAppWindows = true;
+                break; 
+            }
+        }
+        if (isValidAppWindows && winType !== Meta.WindowType.DESKTOP && focused.can_close()) {
+            checkWindows.push(focused);
+        }
+      }  
+  
+      popupMenus.forEach(w => {
+          if (w.get_monitor() === monitor.index) {
+              checkWindows.push(w);
+          }
+      });
+  
+      this.windows = checkWindows;
+      if (checkWindows.length === 0) {
+          return false;
       }
-    });
-
-    this.windows = windows;
-
-    // console.log(isOverlapped);
-    return isOverlapped;
+  
+      let dockRect = this.dock.struts.get_transformed_position();
+      dockRect.push(this.dock.struts.width);
+      dockRect.push(this.dock.struts.height);
+  
+      let isOverlapped = false;
+  
+      checkWindows.forEach(w => {
+          this._track(w);
+          if (isOverlapped) return;
+  
+          let frame = w.get_frame_rect();
+          let win = [frame.x, frame.y, frame.width, frame.height];
+  
+          if (isOverlapRect(dockRect, win)) {
+              isOverlapped = true;
+          }
+      });
+  
+      return isOverlapped;
+    }
+    
+    let overlap = false;
+  
+    if(mode_selected === mode1_allWindows) {
+      overlap = _checkOverlap1();
+      return overlap;
+    }
+  
+    if(mode_selected === mode2_onlyActiveWindows) {
+      overlap = _checkOverlap2();
+      return overlap;
+    }
+  
+    return overlap;   
   }
-
+    
+    
   _debounceCheckHide() {
     if (this.extension._loTimer) {
       if (!this._debounceCheckSeq) {

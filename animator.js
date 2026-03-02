@@ -1085,7 +1085,7 @@ export let Animator = class {
     // let scaleFactor = dock.getMonitor().geometry_scale;
     //! why not scaleFactor?
     let travel =
-      (dock._iconSize / 3) * ((0.25 + dock.extension.animation_bounce) * 1.5);
+      (dock._iconSize / 3) * ((0.25 + dock.extension.animation_bounce_height) * 1.5);
     // * scaleFactor;
     appwell.translation_y = 0;
 
@@ -1173,7 +1173,7 @@ export let Animator = class {
     ];
 
     let frames = [];
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < [3, 1, 2, 3][dock.extension.animation_bounce_frequency || 0]; i++) {
       _frames.forEach((b) => {
         frames.push({
           ...b,

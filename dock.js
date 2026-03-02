@@ -513,17 +513,21 @@ export let Dock = GObject.registerClass(
     _inspectIcon(c) {
       if (!c.visible) return false;
 
+      /* release any reference once destroyed */
+      if (!c._destroyConnectId) {
+        c._destroyConnectId = c.connect('destroy', () => {
+          this._icons = null;
+          c._label = null;
+          c._icon = null;
+          c._appwell = null;
+        });
+      }
+
       /* separator */
       c._cls = c._cls || c.get_style_class_name();
       if (c._cls === 'dash-separator') {
         this._separators.push(c);
         this._dashItems.push(c);
-        if (!c._destroyConnectId) {
-          c._destroyConnectId = c.connect('destroy', () => {
-            this._icons = null;
-            console.log('separator destroyed');
-          });
-        }
         c.visible = true;
         c.style = 'margin-left: 8px; margin-right: 8px;';
         return false;

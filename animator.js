@@ -187,6 +187,7 @@ export let Animator = class {
     let idx = 0;
     let prevIcon = null;
     animateIcons.forEach((icon) => {
+      if (!icon._icon) return;
       let pos = icon.get_transformed_position();
 
       if (icon._found && !icon._handled) {
@@ -282,6 +283,7 @@ export let Animator = class {
     }
 
     animateIcons.forEach((icon) => {
+      if (!icon._icon) return;
       let original_pos = [...icon._pos];
 
       // used by background resizing and repositioning
@@ -403,6 +405,7 @@ export let Animator = class {
       nearestIcon._targetScale += 0.1;
       let adjust = nearestIcon._translate / 2;
       animateIcons.forEach((icon) => {
+        if (!icon._icon) return;
         if (icon._scale > 1) {
           let o = -adjust * (2 - icon._scale);
           let nt = icon._translate - o;
@@ -433,6 +436,7 @@ export let Animator = class {
     }
 
     animateIcons.forEach((icon) => {
+      if (!icon._icon) return;
       // this fixes jittery hovered icon
       if (icon._targetScale > 1.9) icon._targetScale = 2;
 
@@ -542,6 +546,7 @@ export let Animator = class {
     // renderer
     //--------------
     animateIcons.forEach((icon) => {
+      if (!icon._icon) return;
       // dock.renderArea.opacity = 100;
       {
         let icon_name = icon._icon.icon_name;
@@ -738,7 +743,7 @@ export let Animator = class {
             if (this._dwellTick > 450 && icon._targetScale > 1) {
               try {
                 hideLabel = false;
-                if (icon._label.opacity < 255-25) {
+                if (icon._label.opacity < 255 - 25) {
                   icon._label.opacity += 25;
                 } else {
                   icon._label.opacity = 255;
@@ -1085,7 +1090,8 @@ export let Animator = class {
     // let scaleFactor = dock.getMonitor().geometry_scale;
     //! why not scaleFactor?
     let travel =
-      (dock._iconSize / 3) * ((0.25 + dock.extension.animation_bounce_height) * 1.5);
+      (dock._iconSize / 3) *
+      ((0.25 + dock.extension.animation_bounce_height) * 1.5);
     // * scaleFactor;
     appwell.translation_y = 0;
 
@@ -1095,27 +1101,26 @@ export let Animator = class {
       let icon = icons.find((icon) => {
         return icon._appwell && icon._appwell._id == app_id;
       });
-      if (!icon) {
+      if (!icon || !icon._appwell) {
         return [null, null];
       }
       return [icon._appwell.get_parent(), icon._appwell];
     };
 
     const translateDecor = (container, appwell) => {
-      try {
-        if (container._renderer) {
-          container._renderer.translationY = appwell.translationY;
-        }
-        if (container._image) {
-          container._image.translationY = appwell.translationY;
-        }
-        if (container._badge) {
-          container._badge.translationY = appwell.translationY;
-        }
-        if (container._label) {
-          container._label.opacity = 0;
-        }
-      } catch (err) {}
+      if (!container._icon) return;
+      if (container._renderer) {
+        container._renderer.translationY = appwell.translationY;
+      }
+      if (container._image) {
+        container._image.translationY = appwell.translationY;
+      }
+      if (container._badge) {
+        container._badge.translationY = appwell.translationY;
+      }
+      if (container._label) {
+        container._label.opacity = 0;
+      }
     };
 
     let t = 250;
@@ -1127,21 +1132,19 @@ export let Animator = class {
           let [container, appwell] = getTarget(app_id);
           if (!appwell) return;
           appwell._bounce = true;
-          try {
-            if (dock.isVertical()) {
-              appwell.translation_x =
-                dock._position == DockPosition.LEFT ? res : -res;
-              if (container._renderer) {
-                container._renderer.translationX = appwell.translationX;
-              }
-            } else {
-              appwell.translation_y =
-                dock._position == DockPosition.BOTTOM ? -res : res;
-              if (container._renderer) {
-                container._renderer.translationY = appwell.translationY;
-              }
+          if (dock.isVertical()) {
+            appwell.translation_x =
+              dock._position == DockPosition.LEFT ? res : -res;
+            if (container._renderer) {
+              container._renderer.translationX = appwell.translationX;
             }
-          } catch (err) {}
+          } else {
+            appwell.translation_y =
+              dock._position == DockPosition.BOTTOM ? -res : res;
+            if (container._renderer) {
+              container._renderer.translationY = appwell.translationY;
+            }
+          }
           translateDecor(container, appwell);
         },
       },
@@ -1152,28 +1155,30 @@ export let Animator = class {
           let [container, appwell] = getTarget(app_id);
           if (!appwell) return;
           appwell._bounce = true;
-          try {
-            if (dock.isVertical()) {
-              appwell.translation_x = appwell.translation_x =
-                dock._position == DockPosition.LEFT ? res : -res;
-              if (container._renderer) {
-                container._renderer.translationX = appwell.translationX;
-              }
-            } else {
-              appwell.translation_y =
-                dock._position == DockPosition.BOTTOM ? -res : res;
-              if (container._renderer) {
-                container._renderer.translationY = appwell.translationY;
-              }
+          if (dock.isVertical()) {
+            appwell.translation_x = appwell.translation_x =
+              dock._position == DockPosition.LEFT ? res : -res;
+            if (container._renderer) {
+              container._renderer.translationX = appwell.translationX;
             }
-          } catch (err) {}
+          } else {
+            appwell.translation_y =
+              dock._position == DockPosition.BOTTOM ? -res : res;
+            if (container._renderer) {
+              container._renderer.translationY = appwell.translationY;
+            }
+          }
           translateDecor(container, appwell);
         },
       },
     ];
 
     let frames = [];
-    for (let i = 0; i < [3, 1, 2, 3][dock.extension.animation_bounce_frequency || 0]; i++) {
+    for (
+      let i = 0;
+      i < [3, 1, 2, 3][dock.extension.animation_bounce_frequency || 0];
+      i++
+    ) {
       _frames.forEach((b) => {
         frames.push({
           ...b,
@@ -1188,11 +1193,9 @@ export let Animator = class {
         _func: (f, s) => {
           let [container, appwell] = getTarget(app_id);
           if (!appwell) return;
-          try {
-            appwell._bounce = true;
-            appwell.translation_y = 0;
-            translateDecor(container, appwell);
-          } catch (err) {}
+          appwell._bounce = true;
+          appwell.translation_y = 0;
+          translateDecor(container, appwell);
         },
       },
       {
@@ -1200,9 +1203,7 @@ export let Animator = class {
         _func: (f, s) => {
           let [container, appwell] = getTarget(app_id);
           if (!appwell) return;
-          try {
-            appwell._bounce = false;
-          } catch (err) {}
+          appwell._bounce = false;
         },
       },
     ]);

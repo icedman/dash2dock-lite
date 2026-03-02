@@ -78,6 +78,34 @@
             </child>
           </object>
         </child>
+        <child>
+          <object class="AdwActionRow">
+            <property name="title" translatable="yes">Isolation Mode</property>
+            <property name="subtitle" translatable="yes">Hide running app icons and indicators from other workspaces or monitors. Favorites always remain visible. Monitor isolation requires dock on all monitors.</property>
+            <property name="activatable-widget">isolation-mode</property>
+            <child>
+              <object class="GtkDropDown" id="isolation-mode">
+                <property name="valign">center</property>
+                <property name="model">isolation-mode-model</property>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="AdwActionRow">
+            <property name="title" translatable="yes">App Click Overrides</property>
+            <property name="subtitle" translatable="yes">Override click behavior for favorite apps when they have no open window in the current workspace/monitor.</property>
+            <child>
+              <object class="GtkButton" id="isolation-app-overrides-button">
+                <property name="valign">center</property>
+                <property name="label" translatable="yes">Configure...</property>
+                <style>
+                  <class name="suggested-action"/>
+                </style>
+              </object>
+            </child>
+          </object>
+        </child>
       </object>
     </child>
     <child>
@@ -343,6 +371,14 @@
     <items>
       <item translatable="yes">None</item>
       <item translatable="yes">Bounce</item>
+    </items>
+  </object>
+  <object class="GtkStringList" id="isolation-mode-model">
+    <items>
+      <item translatable="yes">Off</item>
+      <item translatable="yes">Isolate Workspaces</item>
+      <item translatable="yes">Isolate Monitors</item>
+      <item translatable="yes">Isolate Both</item>
     </items>
   </object>
 </interface>

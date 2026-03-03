@@ -463,6 +463,19 @@ export default class Preferences extends ExtensionPreferences {
     this.addButtonEvents(window, builder, settings);
     this.addMenu(window, builder);
 
+    // disable multi-monitor-filter when isolation-mode includes monitor
+    let monitorFilterDropdown = builder.get_object('multi-monitor-filter');
+    if (monitorFilterDropdown) {
+      const updateMonitorFilterSensitivity = () => {
+        let isolationValue = settings.get_int('isolation-mode');
+        // 2 = monitor, 3 = both — monitor filtering already handled
+        let hasMonitorIsolation = isolationValue === 2 || isolationValue === 3;
+        monitorFilterDropdown.set_sensitive(!hasMonitorIsolation);
+      };
+      updateMonitorFilterSensitivity();
+      settings.connect('changed::isolation-mode', updateMonitorFilterSensitivity);
+    }
+
     if (builder.get_object('peek-hidden-icons-row')) {
       builder.get_object('peek-hidden-icons-row').visible = false;
     }

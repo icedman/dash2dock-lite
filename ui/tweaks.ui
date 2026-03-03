@@ -276,7 +276,7 @@
         <child>
           <object class="AdwActionRow">
             <property name="title" translatable="yes">Monitor Filter</property>
-            <property name="subtitle" translatable="yes">Filter window cycling and click actions to the current monitor. Does not hide icons.</property>
+            <property name="subtitle" translatable="yes">Filter window cycling and click actions to the current monitor. Does not hide icons. Has no effect when Isolation Mode includes monitor isolation.</property>
             <property name="activatable-widget">multi-monitor-filter</property>
             <child>
               <object class="GtkDropDown" id="multi-monitor-filter">

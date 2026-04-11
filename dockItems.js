@@ -60,7 +60,7 @@ class DockItemMenu extends PopupMenu.PopupMenu {
 
   popup() {
     this.open(BoxPointer.PopupAnimation.FULL);
-    this._menuManager.ignoreRelease();
+    this._menuManager.ignoreRelease?.();
   }
 }
 

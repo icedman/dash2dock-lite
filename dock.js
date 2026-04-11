@@ -2,7 +2,6 @@
 
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as Fav from 'resource:///org/gnome/shell/ui/appFavorites.js';
-import * as Config from 'resource:///org/gnome/shell/misc/config.js';
 
 import Shell from 'gi://Shell';
 import GObject from 'gi://GObject';
@@ -424,21 +423,16 @@ export let Dock = GObject.registerClass(
 
       Main.layoutManager.addChrome(this.struts, {
         affectsStruts: !this.extension.autohide_dash,
-        ...(Config.PACKAGE_VERSION[0] == '4'
-          ? { affectsInputRegion: true }
-          : {}),
         trackFullscreen: false,
       });
 
       Main.layoutManager.addChrome(this, {
         affectsStruts: false,
-        // affectsInputRegion: false,
         trackFullscreen: true,
       });
 
       Main.layoutManager.addChrome(this.dwell, {
         affectsStruts: false,
-        // affectsInputRegion: false,
         trackFullscreen: false,
       });
 

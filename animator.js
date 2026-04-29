@@ -26,7 +26,21 @@ import {
 } from './utils.js';
 
 const ANIM_POSITION_PER_SEC = 550 / 1000;
-const ANIM_SIZE_PER_SEC = 250 / 1000;
+const ANIM_SIZE_PER_SEC = 650 / 1000;
+
+// UnlimitOS/macOS-like tuning.
+// Lower smoothing values = softer/slower response; higher = snappier.
+const ANIM_SCALE_SMOOTHING = 0.18;
+const ANIM_SPREAD_SMOOTHING = 0.38;
+
+// Exponential position smoothing makes near and far icons arrive together.
+// This avoids the delayed-tail gap caused by fixed pixels-per-frame movement.
+const ANIM_POSITION_SMOOTHING = 0.48;
+
+// Visible edge-to-edge spacing between enlarged icons.
+const ANIM_VISUAL_GAP = 10;
+const ANIM_CENTER_ANCHOR = true;
+
 const ANIM_ICON_RAISE = 0.5;
 const ANIM_ICON_SCALE = 1.5;
 const ANIM_ICON_HIT_AREA = 2.5;
@@ -333,8 +347,14 @@ export let Animator = class {
         did_scale_count += 1;
       }
 
-      icon._scale = scale;
-      icon._targetScale = scale;
+      // Smooth the magnification target before applying it.
+      // This avoids the abrupt/poppy growth that happens when pointer distance
+      // is converted directly into icon scale every frame.
+      icon._smoothScale ??= 1;
+      icon._smoothScale += (scale - icon._smoothScale) * ANIM_SCALE_SMOOTHING;
+
+      icon._scale = icon._smoothScale;
+      icon._targetScale = icon._smoothScale;
 
       //! what is the difference between set_size and set_icon_size? and effects
       // set_icon_size resizes the image... avoid changing per frame
@@ -350,7 +370,7 @@ export let Animator = class {
       ) {
         // skip scaling image files!... too costly
       } else {
-        icon._icon.set_scale(scale, scale);
+        icon._icon.set_scale(icon._smoothScale, icon._smoothScale);
       }
 
       if (!icon._pos) {
@@ -359,13 +379,10 @@ export let Animator = class {
     });
 
     let largestIconScale = 1;
-
-    //! use better collision test here?
-    let total_spread_left = 0;
-    let total_spread_right = 0;
     let hoveredIcon = dock._lastHoveredIcon;
+
+    // Find the icon with the largest visual scale.
     for (let i = 0; i < iconTable.length; i++) {
-      if (iconTable.length < 2) break;
       let icon = iconTable[i];
 
       if (icon._targetScale > largestIconScale) {
@@ -373,46 +390,88 @@ export let Animator = class {
         hoveredIcon = icon;
       }
 
-      // if (icon._icon && icon._icon.hover) {
-      //   hoveredIcon = icon;
-      // }
+      icon._translate = 0;
+    }
 
-      let scale = icon._scale;
-      if (scale > 1.1) {
-        // affect spread
-        let offset = Math.floor(
-          1.25 * (scale - 1) * iconSize * scaleFactor * spread * 0.5
-        );
-        // left
-        for (let j = i - 1; j >= 0; j--) {
-          let left = iconTable[j];
-          left._translate -= offset;
-          total_spread_left += offset;
+    // Mac-like spread: keep a consistent visual gap between scaled icon edges.
+    // The old code pushed icons by a guessed offset, which let enlarged icons
+    // crowd into one another. This calculates the needed center-to-center
+    // distance from each icon's visual width, then smooths the translation.
+    if (iconTable.length >= 2 && nearestIcon && spread > 0) {
+      const baseStep = iconSize * scaleFactor;
+      const visualGap = ANIM_VISUAL_GAP * scaleFactor;
+      let desired = new Array(iconTable.length).fill(0);
+
+      let anchorIndex = nearestIdx >= 0 ? nearestIdx : iconTable.indexOf(hoveredIcon);
+      if (anchorIndex < 0) anchorIndex = 0;
+
+      desired[anchorIndex] = 0;
+
+      // Push icons to the right so visual edges keep a constant gap.
+      for (let i = anchorIndex + 1; i < iconTable.length; i++) {
+        let prev = iconTable[i - 1];
+        let curr = iconTable[i];
+
+        let prevWidth = baseStep * (prev._targetScale || prev._scale || 1);
+        let currWidth = baseStep * (curr._targetScale || curr._scale || 1);
+
+        let normalDistance = baseStep;
+        let requiredDistance = prevWidth / 2 + currWidth / 2 + visualGap;
+        let extra = Math.max(0, requiredDistance - normalDistance);
+
+        desired[i] = desired[i - 1] + extra * spread;
+      }
+
+      // Push icons to the left so visual edges keep a constant gap.
+      for (let i = anchorIndex - 1; i >= 0; i--) {
+        let next = iconTable[i + 1];
+        let curr = iconTable[i];
+
+        let nextWidth = baseStep * (next._targetScale || next._scale || 1);
+        let currWidth = baseStep * (curr._targetScale || curr._scale || 1);
+
+        let normalDistance = baseStep;
+        let requiredDistance = currWidth / 2 + nextWidth / 2 + visualGap;
+        let extra = Math.max(0, requiredDistance - normalDistance);
+
+        desired[i] = desired[i + 1] - extra * spread;
+      }
+
+      // Anchor the wave so the dock/background does not drift side-to-side.
+      if (ANIM_CENTER_ANCHOR && desired.length > 1) {
+        let centerOffset = (desired[0] + desired[desired.length - 1]) / 2;
+        for (let i = 0; i < desired.length; i++) {
+          desired[i] -= centerOffset;
         }
-        // right
-        for (let j = i + 1; j < iconTable.length; j++) {
-          let right = iconTable[j];
-          right._translate += offset;
-          total_spread_right += offset;
-        }
+      }
+
+      for (let i = 0; i < iconTable.length; i++) {
+        let icon = iconTable[i];
+
+        icon._smoothTranslate ??= 0;
+        icon._smoothTranslate +=
+          (desired[i] - icon._smoothTranslate) * ANIM_SPREAD_SMOOTHING;
+
+        icon._translate = icon._smoothTranslate;
+      }
+    } else {
+      // Glide icons back to their normal positions.
+      for (let i = 0; i < iconTable.length; i++) {
+        let icon = iconTable[i];
+
+        icon._smoothTranslate ??= 0;
+        icon._smoothTranslate +=
+          (0 - icon._smoothTranslate) * ANIM_SPREAD_SMOOTHING;
+
+        icon._translate = icon._smoothTranslate;
       }
     }
 
     // re-center to hovered icon
     dock._hoveredIcon = hoveredIcon;
-    let TRANSLATE_COEF = 24;
     if (nearestIcon) {
-      nearestIcon._targetScale += 0.1;
-      let adjust = nearestIcon._translate / 2;
-      animateIcons.forEach((icon) => {
-        if (!icon._icon) return;
-        if (icon._scale > 1) {
-          let o = -adjust * (2 - icon._scale);
-          let nt = icon._translate - o;
-          icon._translate =
-            (icon._translate * TRANSLATE_COEF + nt) / (TRANSLATE_COEF + 1);
-        }
-      });
+      // Small hover emphasis, but not enough to create a pop.
+      nearestIcon._targetScale += 0.03;
     }
 
     //-------------------
@@ -428,8 +487,10 @@ export let Animator = class {
       slowDown = 0.5;
     }
 
-    let lockPosition =
-      didScale && first && last && first._p == 0 && last._p == 0;
+    // The original edge-lock cache can freeze far icons briefly while the
+    // nearby icons move, creating the gap/snap artifact seen in testing.
+    // With exponential position smoothing, this cache is no longer needed.
+    let lockPosition = false;
 
     if (dock._preview) {
       lockPosition = false;
@@ -460,24 +521,29 @@ export let Animator = class {
       // animate position
       //-------------------
       {
-        let speed = ANIM_POSITION_PER_SEC * slowDown;
         let targetPosition = new Vector([translationX, translationY, 0]);
         let currentPosition = new Vector([
           icon._icon.translationX,
           icon._icon.translationY,
           0,
         ]);
+
+        // Mac-like timing: move by percentage-of-distance instead of
+        // fixed pixels per frame. With the old method, farther icons
+        // arrived later and opened a temporary gap that snapped closed.
+        let frameRatio = Math.max(0.25, Math.min(4, dt / 16.6667));
+        let t = 1 - Math.pow(1 - ANIM_POSITION_SMOOTHING, frameRatio);
+
         let dst = targetPosition.subtract(currentPosition);
         let mag = dst.magnitude();
-        if (mag > 0) {
-          dst = dst.normalize();
+        let appliedVector;
+
+        if (mag <= 0.35) {
+          appliedVector = targetPosition;
+        } else {
+          appliedVector = currentPosition.add(dst.multiplyScalar(t));
         }
-        let deltaVector = dst.multiplyScalar(speed * dt);
-        let deltaMag = deltaVector.magnitude();
-        let appliedVector = new Vector([targetPosition.x, targetPosition.y, 0]);
-        if (deltaMag < mag) {
-          appliedVector = currentPosition.add(deltaVector);
-        }
+
         translationX = appliedVector.x;
         translationY = appliedVector.y;
         icon._deltaVector = appliedVector;
@@ -901,27 +967,30 @@ export let Animator = class {
       }
     });
 
-    // separators
+    // separators / permanent Mac-style handle
     dock._separators.forEach((actor) => {
       let prev = actor._prev; // get_previous_sibling() || actor._prev;
       let next = actor._next; // get_next_sibling();
+      let any = next ?? prev;
+
+      // Keep the separator/handle visible even if the theme/default thickness is 0.
+      let thickness = dock.extension.separator_thickness || 2;
+      actor.width = !vertical
+        ? thickness + 0.5
+        : iconSize * 0.5 * scaleFactor;
+      actor.height = vertical
+        ? thickness + 0.5
+        : iconSize * 0.75 * scaleFactor;
+      actor.visible = true;
+      actor.opacity = 220;
+
       if (prev && next && prev._icon && next._icon) {
         actor.translationX =
           (prev._icon.translationX + next._icon.translationX) / 2;
         actor.translationY =
           (prev._icon.translationY + next._icon.translationY) / 2;
-        let thickness = dock.extension.separator_thickness || 0;
-        //! use ifs for more readability
-        actor.width = !vertical
-          ? thickness + 0.5
-          : iconSize * 0.5 * scaleFactor;
-        actor.height = vertical
-          ? thickness + 0.5
-          : iconSize * 0.75 * scaleFactor;
-        actor.visible = thickness > 0;
       }
 
-      let any = next ?? prev;
       if (!vertical && any) {
         actor.translationY = any.height / 2 - actor.height / 2;
       } else if (vertical && any) {
@@ -978,9 +1047,12 @@ export let Animator = class {
 
     // dock translation
     {
-      let autohide_slowDown = 1;
       let translationX = targetX;
       let translationY = targetY;
+
+      // Mac-like autohide tuning. Lower = slower.
+      // When dock._hidden is true the dock is moving out; otherwise it is showing.
+      let autohide_slowDown = dock._hidden ? 0.50 : 0.36;
       let speed =
         ((150 + 300 * dock.extension.autohide_speed * scaleFactor) / 1000) *
         autohide_slowDown;
@@ -989,11 +1061,14 @@ export let Animator = class {
       let v2 = new Vector([dock.dash.translationX, dock.dash.translationY, 0]);
       let dst = v1.subtract(v2);
       let mag = dst.magnitude();
-      if (mag > 0) {
-        // let ndst = dst.normalize();
+
+      if (mag > 0.5) {
         let v3 = v2.add(dst.multiplyScalar(speed));
         translationX = v3.x;
         translationY = v3.y;
+      } else {
+        translationX = targetX;
+        translationY = targetY;
       }
 
       dock.dash.translationX = translationX;

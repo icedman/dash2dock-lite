@@ -323,7 +323,7 @@ export let Dock = GObject.registerClass(
     _updateIconEffectColor(color) {
       let targets = this._effectTargets();
       targets.forEach((target) => {
-        if (target.iconEffect) {
+        if (target && target.iconEffect) {
           target.iconEffect.color = color;
         }
       });

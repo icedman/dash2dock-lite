@@ -97,7 +97,6 @@
             </child>
           </object>
         </child>
-        
         <child>
           <object class="AdwActionRow">
             <property name="title" translatable="yes">Bounce Frequency</property>
@@ -111,7 +110,6 @@
             </child>
           </object>
         </child>
-        
         <child>
           <object class="AdwActionRow">
             <property name="title" translatable="yes">Items Angle</property>
@@ -313,7 +311,6 @@
       <item translatable="yes">x3</item>
     </items>
   </object>
-  
   <object class="GtkStringList" id="icon-resolution-model">
     <items>
       <item translatable="yes">Default</item>

@@ -10,6 +10,11 @@ install: build
 	rm -rf ~/.local/share/gnome-shell/extensions/dash2dock-lite@icedman.github.com/
 	mkdir -p ~/.local/share/gnome-shell/extensions/dash2dock-lite@icedman.github.com/
 	cp -R ./* ~/.local/share/gnome-shell/extensions/dash2dock-lite@icedman.github.com/
+	rm -rf ~/.local/share/gnome-shell/extensions/dash2dock-lite@icedman.github.com/build
+	rm -rf ~/.local/share/gnome-shell/extensions/dash2dock-lite@icedman.github.com/Makefile
+	rm -rf ~/.local/share/gnome-shell/extensions/dash2dock-lite@icedman.github.com/tests
+	rm -rf ~/.local/share/gnome-shell/extensions/dash2dock-lite@icedman.github.com/tools
+	rm -rf ~/.local/share/gnome-shell/extensions/dash2dock-lite@icedman.github.com/screenshotsq
 
 clean:
 	rm -rf ./build

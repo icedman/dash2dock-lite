@@ -548,7 +548,7 @@ export const Services = class {
     let fn = Gio.File.new_for_path(recentsPath);
     if (fn.query_exists(null)) {
       try {
-        const [success, contents] = fn.load_contents(null);
+        const [success, contents] = await fn.load_contents_async(null);
         const decoder = new TextDecoder();
         let contentsString = decoder.decode(contents);
         let idx = 0;

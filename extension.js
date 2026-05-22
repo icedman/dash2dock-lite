@@ -131,7 +131,7 @@ export default class Dash2DockLiteExt extends Extension {
   }
 
   recreateAllDocks(delay = 750) {
-    console.log('recreate all docks');
+    // console.log('recreate all docks');
 
     // recreate only the dash
     this.docks.forEach((d) => {
@@ -666,6 +666,7 @@ export default class Dash2DockLiteExt extends Extension {
   _disableSettings() {
     this._settingsKeys.disconnectSettings();
     this._settingsKeys = null;
+    this._settings = null;
 
     if (this._interfaceSettings) {
       this._interfaceSettings.disconnectObject(this);
@@ -799,7 +800,9 @@ export default class Dash2DockLiteExt extends Extension {
 
   _removeEvents() {
     this._appSystem.disconnectObject(this);
+    this._appSystem = null;
     this._appFavorites.disconnectObject(this);
+    this._appFavorites = null;
     Main.extensionManager.disconnectObject(this);
     Main.messageTray.disconnectObject(this);
     Main.overview.disconnectObject(this);
@@ -965,7 +968,7 @@ export default class Dash2DockLiteExt extends Extension {
   }
 
   _updateMultiMonitorPreference() {
-    console.log('update monitors');
+    // console.log('update monitors');
     this.destroyDocks();
     this._loTimer.runOnce(() => {
       this.startUp();

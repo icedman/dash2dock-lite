@@ -323,8 +323,12 @@ export let Dock = GObject.registerClass(
     _updateIconEffectColor(color) {
       let targets = this._effectTargets();
       targets.forEach((target) => {
-        if (target && target.iconEffect) {
-          target.iconEffect.color = color;
+        try {
+          if (target && target.iconEffect) {
+            target.iconEffect.color = color;
+          }
+        } catch(err) {
+          // console.log(err)
         }
       });
     }
@@ -932,7 +936,7 @@ export let Dock = GObject.registerClass(
     }
 
     layout() {
-      if (!this.dash) return;
+      if (!this.dash || !this.dash.last_child) return;
       if (this.extension.apps_icon_front) {
         this.dash.last_child.text_direction = 2; // RTL
         this.dash._box.text_direction = 1; // LTR

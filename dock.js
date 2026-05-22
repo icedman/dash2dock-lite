@@ -932,7 +932,7 @@ export let Dock = GObject.registerClass(
     }
 
     layout() {
-      if (!this.dash) return;
+      if (!this.dash || !this.dash.last_child) return;
       if (this.extension.apps_icon_front) {
         this.dash.last_child.text_direction = 2; // RTL
         this.dash._box.text_direction = 1; // LTR

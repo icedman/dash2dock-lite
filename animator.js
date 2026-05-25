@@ -223,7 +223,7 @@ export let Animator = class {
       icon._prev = prevIcon;
       icon._next = null;
       if (prevIcon) {
-        icon._next = icon;
+        prevIcon._next = icon;
       }
       prevIcon = icon;
     });
@@ -303,7 +303,7 @@ export let Animator = class {
       lastIcon = null;
 
       let scale = 1;
-      let dx = original_pos[0] - px;
+      let dx = icon._fixedPosition[0] + iconCenterOffset - px;
       if (vertical) {
         dx = original_pos[1] - py;
       }
@@ -380,9 +380,7 @@ export let Animator = class {
       let scale = icon._scale;
       if (scale > 1.1) {
         // affect spread
-        let offset = Math.floor(
-          1.25 * (scale - 1) * iconSize * scaleFactor * spread * 0.5
-        );
+        let offset = 1.25 * (scale - 1) * iconSize * scaleFactor * spread * 0.5;
         // left
         for (let j = i - 1; j >= 0; j--) {
           let left = iconTable[j];
@@ -402,7 +400,7 @@ export let Animator = class {
     dock._hoveredIcon = hoveredIcon;
     let TRANSLATE_COEF = 24;
     if (nearestIcon) {
-      nearestIcon._targetScale += 0.1;
+      nearestIcon._targetScale = nearestIcon._targetScale * 0.85 + (nearestIcon._targetScale + 0.1) * 0.15;
       let adjust = nearestIcon._translate / 2;
       animateIcons.forEach((icon) => {
         if (!icon._icon) return;
@@ -449,42 +447,26 @@ export let Animator = class {
           ? 1
           : -1;
 
-      let translationX = icon._translate;
-      let translationY = icon._translateRise * rdir;
-      if (vertical) {
-        translationX = icon._translateRise * rdir;
-        translationY = icon._translate;
-      }
+        const TRANSLATE_SMOOTH = 0.2;
+        icon._smoothTranslate = icon._smoothTranslate !== undefined
+            ? icon._smoothTranslate * (1 - TRANSLATE_SMOOTH) + icon._translate * TRANSLATE_SMOOTH
+            : icon._translate;
 
+        let translationX = icon._smoothTranslate;
+        let translationY = icon._translateRise * rdir;
+        if (vertical) {
+            translationX = icon._translateRise * rdir;
+            translationY = icon._smoothTranslate;
+        }
       //-------------------
       // animate position
       //-------------------
-      {
-        let speed = ANIM_POSITION_PER_SEC * slowDown;
-        let targetPosition = new Vector([translationX, translationY, 0]);
-        let currentPosition = new Vector([
-          icon._icon.translationX,
-          icon._icon.translationY,
-          0,
-        ]);
-        let dst = targetPosition.subtract(currentPosition);
-        let mag = dst.magnitude();
-        if (mag > 0) {
-          dst = dst.normalize();
-        }
-        let deltaVector = dst.multiplyScalar(speed * dt);
-        let deltaMag = deltaVector.magnitude();
-        let appliedVector = new Vector([targetPosition.x, targetPosition.y, 0]);
-        if (deltaMag < mag) {
-          appliedVector = currentPosition.add(deltaVector);
-        }
-        translationX = appliedVector.x;
-        translationY = appliedVector.y;
-        icon._deltaVector = appliedVector;
-      }
+      const POSITION_LERP = 0.18 * slowDown;
+      translationX = icon._icon.translationX + (translationX - icon._icon.translationX) * POSITION_LERP;
+      translationY = icon._icon.translationY + (translationY - icon._icon.translationY) * POSITION_LERP;
 
       // fix jitterness
-      if (lockPosition && icon._p == 0) {
+      if (lockPosition && icon._p == 0 && Math.abs(icon._translate) < 0.5) {
         icon._positionCache = icon._positionCache || [];
         var lockThreshold = 48;
         if (
@@ -639,22 +621,8 @@ export let Animator = class {
         let unscaledIconSize = dock._iconSizeScaledDown * scaleFactor;
         let targetSize = unscaledIconSize * icon._targetScale;
         let currentSize = renderer.icon_size * renderer.scaleX;
-        {
-          let dst = targetSize - currentSize;
-          let mag = Math.abs(dst);
-          let dir = Math.sign(dst);
-          let accel = 0;
-          let pixelOverTime = ANIM_SIZE_PER_SEC * slowDown;
-          let deltaSize = pixelOverTime * dir * dt;
-          let appliedSize = deltaSize;
-          appliedSize += accel;
-          if (Math.abs(appliedSize) > mag) {
-            appliedSize = dst * 0.5;
-          }
-          targetSize = currentSize + appliedSize;
-          icon._deltaSize = appliedSize;
-          icon._targetSize = targetSize;
-        }
+        const SCALE_LERP = 0.18 * slowDown;
+        targetSize = currentSize + (targetSize - currentSize) * SCALE_LERP;
         // compute icon scale based on size
         icon._scale = targetSize / unscaledIconSize;
 

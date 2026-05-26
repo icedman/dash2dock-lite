@@ -1,12 +1,14 @@
-// const Gdk = imports.gi.Gdk;
-// const GLib = imports.gi.GLib;
-
-import Gdk from 'gi://Gdk';
 import GLib from 'gi://GLib';
 
 export let PrefKeys = class {
-  constructor() {
+  constructor(patch) {
     this._keys = {};
+    
+    if (patch) {
+      Object.keys(patch).forEach((k) => {
+        this[k] = patch[k];
+      });
+    }
   }
 
   setKeys(keys) {
@@ -104,6 +106,12 @@ export let PrefKeys = class {
     return this._keys;
   }
 
+  _toRGBA() {
+    console.log('implement me!');
+    // implement @ patch
+    return null;
+  }
+
   connectSettings(settings, callback) {
     this._settingsListeners = [];
 
@@ -154,7 +162,8 @@ export let PrefKeys = class {
           try {
             if (key.object) {
               key.object.set_rgba(
-                new Gdk.RGBA({
+                // new Gdk.RGBA({
+                this._toRGBA({
                   red: key.value[0],
                   green: key.value[1],
                   blue: key.value[2],

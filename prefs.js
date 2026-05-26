@@ -189,7 +189,11 @@ export default class Preferences extends ExtensionPreferences {
     let settings = this.getSettings(schemaId);
     settings.set_string('msg-to-ext', '');
 
-    let settingsKeys = SettingsKeys();
+    let settingsKeys = SettingsKeys({
+      _toRGBA: function (rgba) {
+        return new Gdk.RGBA(rgba);
+      }
+    });
     settingsKeys.connectBuilder(builder);
     settingsKeys.connectSettings(settings);
 

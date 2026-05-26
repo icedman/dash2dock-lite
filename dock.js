@@ -495,20 +495,46 @@ export let Dock = GObject.registerClass(
       return iconSize;
     }
 
-    // Structure for dash icon container widgets - g42,g43,g44,g45,g46
+    // Structure for dash icon container widgets - g42,g43,g44,g45,g46 + GNOME 50+
     /**
      *  DashItemContainer
      *    > child (DashIcon[appwell])
-     *      > .icon (IconGrid)
-     *        > .icon (StIcon)
+     *      > .icon (IconGrid or BaseIcon)
+     *        > .icon (StIcon) or ._iconBin.child (GNOME 50)
      *      > ._dot
      *    > .label
      *
      *  ShowAppsIcon extends DashItemContainer
-     *    > .icon (IconGrid)
+     *    > .icon (IconGrid or BaseIcon)
      *      > .icon
      *    > ._iconActor
      */
+
+    // Helper: robustly get the StIcon from a DashIcon/AppIcon instance
+    // Supports both GNOME 46 (old) and GNOME 50 (new) structures
+    _getStIconFromAppwell(appwell) {
+      if (!appwell || !appwell.icon) return null;
+      let baseIcon = appwell.icon; // BaseIcon or old IconGrid
+
+      if (baseIcon instanceof St.Icon) return baseIcon;
+
+      // Try direct .icon property (works after setIconSize is called)
+      if (baseIcon.icon) return baseIcon.icon;
+      // GNOME 50: try _iconBin.child
+      if (baseIcon._iconBin && baseIcon._iconBin.child) return baseIcon._iconBin.child;
+      // Force icon creation if not yet initialized
+      try {
+        if (baseIcon.setIconSize) {
+          let size = (typeof baseIcon.iconSize === 'number' && baseIcon.iconSize > 0) ? baseIcon.iconSize : 48;
+          baseIcon._createIconTexture(size);
+          if (baseIcon.icon) return baseIcon.icon;
+          if (baseIcon._iconBin && baseIcon._iconBin.child) return baseIcon._iconBin.child;
+        }
+      } catch (err) {
+        // ignore initialization errors
+      }
+      return null;
+    }
 
     _inspectIcon(c) {
       if (!c.visible) return false;
@@ -533,47 +559,68 @@ export let Dock = GObject.registerClass(
         return false;
       }
 
-      /* ShowAppsIcon */
-      if (c.icon /* IconGrid */ && c.icon.icon /* StIcon */) {
-        c._icon = c.icon.icon;
-        c._button = c.child;
-        c.icon.style = 'background-color: transparent !important;';
-      }
-
-      /* DashItemContainer */
-      if (
-        c.child /* DashIcon */ &&
-        c.child.icon /* IconGrid */ &&
-        c.child.icon.icon /* StIcon */
-      ) {
-        c._grid = c.child.icon;
-        c._icon = c.child.icon.icon;
-        c._appwell = c.child;
-        if (c._appwell) {
-          c._appwell.visible = true;
-          c._dot = c._appwell._dot;
-
-          let app = c._appwell.app;
-          let appId = app ? app.get_id() : '';
-
-          // hide icons if favorites only
-          if (
-            !c.custom_icon &&
-            this._favorite_ids &&
-            !this._favorite_ids.includes(appId)
-          ) {
-            if (this.extension.favorites_only) {
-              c._appwell.visible = false;
-              c.width = -1;
-              c.height = -1;
-              return false;
-            } else if (!c._found) {
-              c._found = true;
-            }
+      /* ShowAppsIcon - GNOME 50: has .icon (BaseIcon) directly and .child (toggleButton) */
+      /* ShowAppsIcon - GNOME 46: has .icon.icon (StIcon) */
+      if (c.icon /* BaseIcon or old IconGrid */) {
+        let stIcon = null;
+        // GNOME 50: icon is BaseIcon, icon.icon might be null initially
+        stIcon = this._getStIconFromAppwell(c);
+        if (!stIcon && c.icon.icon) {
+          stIcon = c.icon.icon;
+        }
+        if (stIcon) {
+          c._icon = stIcon;
+          // GNOME 50: child is toggleButton; GNOME 46: child is the button directly
+          c._button = c.child;
+          try {
+            c.icon.style = 'background-color: transparent !important;';
+          } catch (err) {
+            // ignore
           }
         }
-        if (c._dot) {
-          c._dot.opacity = 0;
+      }
+
+      /* DashItemContainer - GNOME 50: child (DashIcon/AppIcon) has .icon (BaseIcon) */
+      /* DashItemContainer - GNOME 46: child.icon.icon is StIcon */
+      if (c.child /* DashIcon/AppIcon */) {
+        let appwell = c.child;
+        let stIcon = null;
+        if (appwell.icon /* BaseIcon or old IconGrid */) {
+          stIcon = this._getStIconFromAppwell(appwell);
+          if (!stIcon && appwell.icon.icon) {
+            stIcon = appwell.icon.icon;
+          }
+        }
+        if (stIcon) {
+          c._grid = appwell.icon; // BaseIcon or old IconGrid
+          c._icon = stIcon;
+          c._appwell = appwell;
+          if (c._appwell) {
+            c._appwell.visible = true;
+            c._dot = c._appwell._dot;
+
+            let app = c._appwell.app;
+            let appId = app ? app.get_id() : '';
+
+            // hide icons if favorites only
+            if (
+              !c.custom_icon &&
+              this._favorite_ids &&
+              !this._favorite_ids.includes(appId)
+            ) {
+              if (this.extension.favorites_only) {
+                c._appwell.visible = false;
+                c.width = -1;
+                c.height = -1;
+                return false;
+              } else if (!c._found) {
+                c._found = true;
+              }
+            }
+          }
+          if (c._dot) {
+            c._dot.opacity = 0;
+          }
         }
       }
 

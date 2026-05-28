@@ -29,6 +29,7 @@ import {
 } from './utils.js';
 
 const Point = Graphene.Point;
+const GNOME_VERSION = parseInt(Config.PACKAGE_VERSION.split('.')[0]);
 
 export const DockPosition = {
   BOTTOM: 'bottom',
@@ -205,6 +206,7 @@ export let Dock = GObject.registerClass(
     }
 
     _onButtonPressEvent(evt) {
+      this._lastButtonEvent = evt;
       return Clutter.EVENT_PROPAGATE;
     }
 
@@ -428,7 +430,7 @@ export let Dock = GObject.registerClass(
 
       Main.layoutManager.addChrome(this.struts, {
         affectsStruts: !this.extension.autohide_dash,
-        ...(Config.PACKAGE_VERSION[0] == '4'
+        ...(GNOME_VERSION < 50
           ? { affectsInputRegion: true }
           : {}),
         trackFullscreen: false,
@@ -1370,9 +1372,9 @@ export let Dock = GObject.registerClass(
         return;
       }
 
-      let event = Clutter.get_current_event();
-      let modifiers = event ? event.get_state() : 0;
-      let pressed = event.type() == Clutter.EventType.BUTTON_PRESS;
+      let event = this._lastButtonEvent;
+      let modifiers = event ? event.get_modifier_state() : 0;
+      let pressed = event ? event.get_event_type() == Clutter.EventType.BUTTON_PRESS : true;
       let button1 = (modifiers & Clutter.ModifierType.BUTTON1_MASK) != 0;
       let button2 = (modifiers & Clutter.ModifierType.BUTTON2_MASK) != 0;
       let button3 = (modifiers & Clutter.ModifierType.BUTTON3_MASK) != 0;
@@ -1514,7 +1516,13 @@ export let Dock = GObject.registerClass(
 
     _onScrollEvent(obj, evt) {
       this._lastScrollEvent = evt;
-      let pointer = global.get_pointer();
+      let pointer;
+      if (global.display.get_cursor_location) {
+        let rect = global.display.get_cursor_location();
+        pointer = [rect.x, rect.y];
+      } else {
+        pointer = global.get_pointer();
+      }
       let target = this._nearestIcon; // this._hoveredIcon;
       // console.log(`${target == this._hoveredIcon}`);
       if (target) {
@@ -1525,9 +1533,10 @@ export let Dock = GObject.registerClass(
 
         // adjustment for touch scroll (much more sensitive) and mouse scrollwheel
         let multiplier = 1;
+        let device = evt.get_source_device();
         if (
-          evt.get_source_device().get_device_type() == 5 ||
-          evt.get_source_device().get_device_name().includes('Touch')
+          device.get_device_type() == Clutter.InputDeviceType.TOUCHSCREEN_DEVICE ||
+          device.get_device_name().includes('Touch')
         ) {
           multiplier = 1;
         } else {
@@ -1542,15 +1551,20 @@ export let Dock = GObject.registerClass(
         if (icon._appwell && icon._appwell.app) {
           this._lastScrollObject = icon;
           let direction = evt.get_scroll_direction();
-          switch (direction) {
-            case Clutter.ScrollDirection.UP:
-            case Clutter.ScrollDirection.LEFT:
-              this._scrollCounter += (1 / SCROLL_RESOLUTION) * multiplier;
-              break;
-            case Clutter.ScrollDirection.DOWN:
-            case Clutter.ScrollDirection.RIGHT:
-              this._scrollCounter -= (1 / SCROLL_RESOLUTION) * multiplier;
-              break;
+          if (direction === Clutter.ScrollDirection.SMOOTH) {
+            let [, dy] = evt.get_scroll_delta();
+            this._scrollCounter += dy * (1 / SCROLL_RESOLUTION) * multiplier * -1;
+          } else {
+            switch (direction) {
+              case Clutter.ScrollDirection.UP:
+              case Clutter.ScrollDirection.LEFT:
+                this._scrollCounter += (1 / SCROLL_RESOLUTION) * multiplier;
+                break;
+              case Clutter.ScrollDirection.DOWN:
+              case Clutter.ScrollDirection.RIGHT:
+                this._scrollCounter -= (1 / SCROLL_RESOLUTION) * multiplier;
+                break;
+            }
           }
           this._cycleWindows(icon._appwell.app, evt);
         }

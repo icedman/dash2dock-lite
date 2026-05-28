@@ -115,9 +115,37 @@ function draw_text(ctx, showtext, font = 'DejaVuSans 42') {
 
 function set_color(ctx, clr, alpha) {
   if (typeof clr === 'string') {
-    const fn = Cogl?.Color.from_string || Clutter?.Color.from_string;
-    const [, cc] = fn(clr);
-    ctx.setSourceRGBA(cc.red, cc.green, cc.blue, alpha);
+    try {
+      const fn = Cogl?.Color.from_string || Clutter?.Color.from_string;
+      if (fn) {
+        const [, cc] = fn(clr);
+        ctx.setSourceRGBA(cc.red, cc.green, cc.blue, alpha);
+        return;
+      }
+    } catch (e) {
+      // fallback to manual parsing
+    }
+    let r = 0, g = 0, b = 0;
+    if (clr.startsWith('#')) {
+      let hex = clr.slice(1);
+      if (hex.length === 3) {
+        r = parseInt(hex[0] + hex[0], 16) / 255;
+        g = parseInt(hex[1] + hex[1], 16) / 255;
+        b = parseInt(hex[2] + hex[2], 16) / 255;
+      } else if (hex.length >= 6) {
+        r = parseInt(hex.slice(0, 2), 16) / 255;
+        g = parseInt(hex.slice(2, 4), 16) / 255;
+        b = parseInt(hex.slice(4, 6), 16) / 255;
+      }
+    } else if (clr.startsWith('rgb')) {
+      let match = clr.match(/\d+/g);
+      if (match && match.length >= 3) {
+        r = parseInt(match[0]) / 255;
+        g = parseInt(match[1]) / 255;
+        b = parseInt(match[2]) / 255;
+      }
+    }
+    ctx.setSourceRGBA(r, g, b, alpha);
   } else {
     if (clr.red) {
       ctx.setSourceRGBA(clr.red, clr.green, clr.blue, alpha);

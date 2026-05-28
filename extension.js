@@ -207,7 +207,7 @@ export default class Dash2DockLiteExt extends Extension {
     this._showMainOverviewDash(false);
     this.docks = [];
 
-    this.icon_theme = St.IconTheme.new();
+    this.icon_theme = St.IconTheme.get_default();
 
     // integrations
     this.integrations = new Integrations();
@@ -472,7 +472,7 @@ export default class Dash2DockLiteExt extends Extension {
         case 'msg-to-ext': {
           if (value.length) {
             try {
-              eval(value);
+              this._handleExtMessage(value);
             } catch (err) {
               console.log(err);
             }
@@ -828,7 +828,7 @@ export default class Dash2DockLiteExt extends Extension {
       this.services.disable();
       this.services.enable();
     }
-    this._iconTheme = St.IconTheme.new();
+    this._iconTheme = St.IconTheme.get_default();
     this._updateStyle();
     this.recreateAllDocks();
   }
@@ -1187,6 +1187,21 @@ export default class Dash2DockLiteExt extends Extension {
 
     if (this.animate_icons && !disable) {
       this.animate();
+    }
+  }
+
+  _handleExtMessage(value) {
+    const cmd = value.replace(/^this\./, '').replace(/\(\)$/, '');
+    const commands = {
+      'runDiagnostics': () => this.runDiagnostics(),
+      'dumpTimers': () => this.dumpTimers(),
+      'recreateAllDocks': () => this.recreateAllDocks(),
+      'checkHide': () => this.checkHide(),
+    };
+    if (commands[cmd]) {
+      commands[cmd]();
+    } else {
+      console.log(`[d2dl] unhandled msg-to-ext command: ${value}`);
     }
   }
 

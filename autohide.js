@@ -1,8 +1,18 @@
 'use strict';
 
 import Meta from 'gi://Meta';
+import * as Config from 'resource:///org/gnome/shell/misc/config.js';
 
 import { DockPosition } from './dock.js';
+
+const GNOME_VERSION = parseInt(Config.PACKAGE_VERSION.split('.')[0]);
+
+function getWindowActors() {
+  if (GNOME_VERSION >= 48) {
+    return Meta.Compositor.get_window_actors(global.display);
+  }
+  return getWindowActors();
+}
 import {
   get_distance_sqr,
   get_distance,
@@ -45,7 +55,7 @@ export let AutoHide = class {
 
     this._enabled = false;
 
-    let actors = global.get_window_actors();
+    let actors = getWindowActors();
     let windows = actors.map((a) => a.get_meta_window());
     windows.forEach((w) => {
       if (w._tracked) {
@@ -65,7 +75,13 @@ export let AutoHide = class {
   _onMotionEvent() {
     if (this.extension.pressure_sense && !this._shown) {
       let monitor = this.dock._monitor;
-      let pointer = global.get_pointer();
+      let pointer;
+      if (global.display.get_cursor_location) {
+        let rect = global.display.get_cursor_location();
+        pointer = [rect.x, rect.y];
+      } else {
+        pointer = global.get_pointer();
+      }
       if (this.extension.simulated_pointer) {
         pointer = [...this.extension.simulated_pointer];
       }
@@ -195,7 +211,13 @@ export let AutoHide = class {
     if (this.extension._inOverview) {
       return false;
     }
-    let pointer = global.get_pointer();
+    let pointer;
+    if (global.display.get_cursor_location) {
+      let rect = global.display.get_cursor_location();
+      pointer = [rect.x, rect.y];
+    } else {
+      pointer = global.get_pointer();
+    }
     if (this.extension.simulated_pointer) {
       pointer = [...this.extension.simulated_pointer];
     }
@@ -237,7 +259,7 @@ export let AutoHide = class {
     // console.log("checking windows...");
 
     let monitor = this.dock._monitor;
-    let actors = global.get_window_actors();
+    let actors = getWindowActors();
     let windows = actors.map((a) => {
       let w = a.get_meta_window();
       w._parent = a;

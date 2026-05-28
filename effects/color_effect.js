@@ -4,6 +4,7 @@
 
 import Shell from 'gi://Shell';
 import GLib from 'gi://GLib';
+import Gio from 'gi://Gio';
 import GObject from 'gi://GObject';
 import Clutter from 'gi://Clutter';
 
@@ -15,7 +16,10 @@ const getColorEffectShaderSource = (extensionDir) => {
   ]);
 
   try {
-    return Shell.get_file_contents_utf8_sync(SHADER_PATH);
+    const file = Gio.File.new_for_path(SHADER_PATH);
+    const [ok, contents] = file.load_contents(null);
+    if (!ok) return null;
+    return new TextDecoder().decode(contents);
   } catch (e) {
     log(`[d2dl] error loading shader from ${SHADER_PATH}: ${e}`);
     return null;
@@ -54,11 +58,12 @@ export const ColorEffect = GObject.registerClass(
     }
 
     preload(path) {
-      // set shader source
       this._source = getColorEffectShaderSource(path);
-      if (this._source) this.set_shader_source(this._source);
-
       this.update_enabled();
+    }
+
+    vfunc_get_static_shader_source() {
+      return this._source;
     }
 
     get red() {

@@ -5,7 +5,14 @@ import Gio from 'gi://Gio';
 
 const pointer_wrapper = {
   get_position: () => {
-    let [px, py] = global.get_pointer();
+    let px, py;
+    if (global.display.get_cursor_location) {
+      let rect = global.display.get_cursor_location();
+      px = rect.x;
+      py = rect.y;
+    } else {
+      [px, py] = global.get_pointer();
+    }
     return [{}, px, py];
   },
   warp: (screen, x, y) => {
@@ -90,7 +97,16 @@ export const isInRect = (r, p, pad) => {
 export const trySpawnCommandLine = function (cmd) {
   return new Promise((resolve, reject) => {
     try {
-      GLib.spawn_command_line_async(cmd);
+      let [ok, argv] = GLib.shell_parse_argv(cmd);
+      if (!ok) {
+        reject(new Error('Failed to parse command'));
+        return;
+      }
+      let proc = new Gio.Subprocess({
+        argv: argv,
+        flags: Gio.SubprocessFlags.NONE,
+      });
+      proc.init(null);
       resolve();
     } catch (err) {
       reject(err);

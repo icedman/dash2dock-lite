@@ -333,7 +333,11 @@ export const Services = class {
 
     sources.forEach((source) => {
       let appId = null;
-      if (source.app) {
+      if (source.get_app) {
+        let app = source.get_app();
+        if (app) appId = app.get_id();
+      }
+      if (!appId && source.app) {
         appId = source.app.get_id();
       }
       if (!appId && source._app) {
@@ -357,7 +361,7 @@ export const Services = class {
           source: source,
         };
       }
-      this._appNotices[appId].count = source.count;
+      this._appNotices[appId].count = source.count ?? source.get_count?.() ?? 0;
       this._appNotices[`${appId}`] = this._appNotices[appId];
       if (!appId.endsWith('desktop')) {
         this._appNotices[`${appId}.desktop`] = this._appNotices[appId];

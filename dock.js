@@ -526,17 +526,12 @@ export let Dock = GObject.registerClass(
       if (baseIcon.icon) return baseIcon.icon;
       // GNOME 50: try _iconBin.child
       if (baseIcon._iconBin && baseIcon._iconBin.child) return baseIcon._iconBin.child;
-      // Force icon creation if not yet initialized
-      try {
-        if (baseIcon.setIconSize) {
-          let size = (typeof baseIcon.iconSize === 'number' && baseIcon.iconSize > 0) ? baseIcon.iconSize : 48;
-          baseIcon._createIconTexture(size);
-          if (baseIcon.icon) return baseIcon.icon;
-          if (baseIcon._iconBin && baseIcon._iconBin.child) return baseIcon._iconBin.child;
-        }
-      } catch (err) {
-        // ignore initialization errors
-      }
+      // GNOME owns BaseIcon's child lifecycle.  In particular, do not call
+      // _createIconTexture() here: _findIcons() can run while Dash._redisplay()
+      // is destroying an old DashItemContainer.  Creating a replacement child
+      // during clutter_actor_destroy_all_children() makes Clutter abort the
+      // entire shell.  The animator runs continuously, so an icon which is not
+      // ready yet can safely be picked up on a later frame.
       return null;
     }
     
@@ -665,12 +660,11 @@ export let Dock = GObject.registerClass(
         Main.uiGroup.remove_child(c._menu.actor);
         c._menu = null;
       }
-      if (c._label) {
-        let p = c._label.get_parent();
-        if (p) {
-          p.remove_child(c._label);
-        }
-      }
+      // DashItemContainer owns its label.  This cleanup is invoked from the
+      // icon's destroy signal, which can itself be part of GNOME Dash teardown.
+      // Detaching the label here re-enters the parent's child-destruction loop
+      // and can crash gnome-shell.  Drop only our borrowed reference.
+      c._label = null;
     }
 
     _findIcons() {
@@ -706,16 +700,6 @@ export let Dock = GObject.registerClass(
       this.dash._box.get_children().forEach((icon) => {
         this._inspectIcon(icon);
       });
-
-      // hack: sometimes the Dash creates more than one separator
-      // workaround - remove all separators in such situation
-      //! pinpoint the cause of the errors
-      if (this._separators.length > 1) {
-        while (this._separators.length > 0) {
-          this.dash._box.remove_child(this._separators[0]);
-          this._separators.shift();
-        }
-      }
 
       // hide separator between running apps and favorites - if not needed
       if (this.extension.favorites_only) {
@@ -821,11 +805,12 @@ export let Dock = GObject.registerClass(
           };
         }
         let icon = c._icon;
-        if (icon && !icon._destroyConnectId) {
-          icon._destroyConnectId = icon.connect('destroy', () => {
-            this._cleanupIcon(c);
-          });
-        }
+        // Do not attach cleanup callbacks to GNOME-owned StIcons. Their
+        // destroy signal runs recursively inside DashItemContainer teardown;
+        // mutating other actor trees from there can make Clutter's
+        // destroy_all_children() abort the entire shell. The container's own
+        // destroy handler invalidates the cache, and destroyDash() performs
+        // explicit extension-owned cleanup when the dock is disabled.
         let { _draggable } = c.child;
         if (_draggable && !_draggable._dragBeginId) {
           _draggable._dragBeginId = _draggable.connect('drag-begin', () => {

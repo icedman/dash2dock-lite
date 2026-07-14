@@ -436,7 +436,10 @@ export let Dock = GObject.registerClass(
 
       Main.layoutManager.addChrome(this, {
         affectsStruts: false,
-        // affectsInputRegion: false,
+        // keep the full-width container out of the input region — on X11 it
+        // would otherwise block clicks near the screen edge while the dock
+        // is hidden (#317); struts carries input when the dock is visible
+        affectsInputRegion: false,
         trackFullscreen: true,
       });
 

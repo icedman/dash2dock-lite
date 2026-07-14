@@ -26,12 +26,19 @@ const handledWindowTypes = [
 ];
 
 export let AutoHide = class {
+  _setDwellActive(active) {
+    if (this.dock.dwell) {
+      this.dock.dwell.reactive = active;
+    }
+  }
+
   enable() {
     if (this._enabled) return;
     // console.log('enable autohide');
     this._enabled = true;
     this._shown = true;
     this._dwell = 0;
+    this._setDwellActive(false);
     console.log('autohide enabled');
   }
 
@@ -149,6 +156,7 @@ export let AutoHide = class {
     this._dwell = 0;
     this.frameDelay = 0;
     this._shown = true;
+    this._setDwellActive(false);
     this.dock.slideIn();
   }
 
@@ -156,6 +164,7 @@ export let AutoHide = class {
     this._dwell = 0;
     this.frameDelay = 10;
     this._shown = false;
+    this._setDwellActive(true);
     this.dock.slideOut();
   }
 

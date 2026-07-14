@@ -126,7 +126,10 @@ export let Dock = GObject.registerClass(
       });
       this.dwell = new St.Widget({
         name: 'DockDwell',
-        reactive: true,
+        // The edge sensor is activated by AutoHide only while the dock is
+        // hidden. Leaving it reactive while the dock is shown intercepts
+        // clicks in the space vacated by a floating dock on Wayland.
+        reactive: false,
         track_hover: true,
         offscreen_redirect: Clutter.OffscreenRedirect.ALWAYS,
       });
@@ -426,9 +429,15 @@ export let Dock = GObject.registerClass(
 
       this._updateIconEffect();
 
+      // GNOME 50 removed affectsInputRegion from addChrome(). On older
+      // releases it must remain disabled for the dock's animation container;
+      // otherwise its larger allocation becomes an invisible input region on
+      // X11 and blocks clicks around a floating dock.
+      const hasAffectsInputRegion = Config.PACKAGE_VERSION[0] == '4';
+
       Main.layoutManager.addChrome(this.struts, {
         affectsStruts: !this.extension.autohide_dash,
-        ...(Config.PACKAGE_VERSION[0] == '4'
+        ...(hasAffectsInputRegion
           ? { affectsInputRegion: true }
           : {}),
         trackFullscreen: false,
@@ -436,13 +445,17 @@ export let Dock = GObject.registerClass(
 
       Main.layoutManager.addChrome(this, {
         affectsStruts: false,
-        // affectsInputRegion: false,
+        ...(hasAffectsInputRegion
+          ? { affectsInputRegion: false }
+          : {}),
         trackFullscreen: true,
       });
 
       Main.layoutManager.addChrome(this.dwell, {
         affectsStruts: false,
-        // affectsInputRegion: false,
+        ...(hasAffectsInputRegion
+          ? { affectsInputRegion: false }
+          : {}),
         trackFullscreen: false,
       });
 

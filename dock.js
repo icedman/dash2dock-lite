@@ -1264,6 +1264,10 @@ export let Dock = GObject.registerClass(
         this.add_style_class_name('hi');
         this.struts.add_style_class_name('hi');
         this.dwell.add_style_class_name('hi');
+      } else {
+        this.remove_style_class_name('hi');
+        this.struts.remove_style_class_name('hi');
+        this.dwell.remove_style_class_name('hi');
       }
 
       this._favorite_ids = Fav.getAppFavorites()._getIds();
@@ -1293,11 +1297,9 @@ export let Dock = GObject.registerClass(
     }
 
     _endAnimation() {
-      if (this.extension.debug_visual) {
-        this.remove_style_class_name('hi');
-        this.struts.remove_style_class_name('hi');
-        this.dwell.remove_style_class_name('hi');
-      }
+      this.remove_style_class_name('hi');
+      this.struts.remove_style_class_name('hi');
+      this.dwell.remove_style_class_name('hi');
 
       this._updateFocusedIcon();
 

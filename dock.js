@@ -209,14 +209,14 @@ export let Dock = GObject.registerClass(
     }
 
     _onMotionEvent(evt) {
-      if (!this._monitor.inFullscreen) {
+      if (!this._monitor.inFullscreen || this.extension._inOverview) {
         this._beginAnimation();
       }
       this.autohider._debounceCheckHide();
       return Clutter.EVENT_PROPAGATE;
     }
     _onEnterEvent(evt) {
-      if (!this._monitor.inFullscreen) {
+      if (!this._monitor.inFullscreen || this.extension._inOverview) {
         this._beginAnimation();
       }
       return Clutter.EVENT_PROPAGATE;
@@ -431,7 +431,7 @@ export let Dock = GObject.registerClass(
         ...(Config.PACKAGE_VERSION[0] == '4'
           ? { affectsInputRegion: true }
           : {}),
-        trackFullscreen: false,
+        trackFullscreen: true,
       });
 
       Main.layoutManager.addChrome(this, {
@@ -443,7 +443,7 @@ export let Dock = GObject.registerClass(
       Main.layoutManager.addChrome(this.dwell, {
         affectsStruts: false,
         // affectsInputRegion: false,
-        trackFullscreen: false,
+        trackFullscreen: true,
       });
 
       this._onChrome = true;

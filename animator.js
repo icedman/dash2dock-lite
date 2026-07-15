@@ -165,7 +165,7 @@ export let Animator = class {
     let vertical = dock.isVertical();
     let isWithin = dock._isWithinDash([px, py]);
 
-    if (m.inFullscreen) {
+    if (m.inFullscreen && !dock.extension._inOverview) {
       isWithin = false;
     }
 
@@ -1064,7 +1064,8 @@ export let Animator = class {
       dock._updateTransparenies();
     }
 
-    dock.struts.visible = !dock._hidden;
+    dock.struts.visible =
+      !dock._hidden && (!m.inFullscreen || dock.extension._inOverview);
     dock.dash.opacity = 255;
 
     //---------------------

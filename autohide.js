@@ -32,13 +32,20 @@ export let AutoHide = class {
     }
   }
 
+  _syncDwellActive() {
+    // The sensor must follow the dock's actual visibility, rather than the
+    // last requested transition. slideOut() can decline to hide while a
+    // flyout is open.
+    this._setDwellActive(this._enabled && this.dock._hidden);
+  }
+
   enable() {
     if (this._enabled) return;
     // console.log('enable autohide');
     this._enabled = true;
     this._shown = true;
     this._dwell = 0;
-    this._setDwellActive(false);
+    this._syncDwellActive();
     console.log('autohide enabled');
   }
 
@@ -51,6 +58,7 @@ export let AutoHide = class {
     this.show();
 
     this._enabled = false;
+    this._syncDwellActive();
 
     let actors = global.get_window_actors();
     let windows = actors.map((a) => a.get_meta_window());
@@ -156,7 +164,6 @@ export let AutoHide = class {
     this._dwell = 0;
     this.frameDelay = 0;
     this._shown = true;
-    this._setDwellActive(false);
     this.dock.slideIn();
   }
 
@@ -164,7 +171,6 @@ export let AutoHide = class {
     this._dwell = 0;
     this.frameDelay = 10;
     this._shown = false;
-    this._setDwellActive(true);
     this.dock.slideOut();
   }
 

@@ -341,16 +341,19 @@ export let Dock = GObject.registerClass(
         this._hidden = false;
         this._beginAnimation();
       }
+      this.autohider._syncDwellActive();
     }
 
     slideOut() {
       if (this._list && this._list.visible) {
+        this.autohider._syncDwellActive();
         return;
       }
       if (!this._hidden) {
         this._hidden = true;
         this._beginAnimation();
       }
+      this.autohider._syncDwellActive();
     }
 
     getMonitor() {

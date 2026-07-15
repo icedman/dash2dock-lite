@@ -54,7 +54,6 @@ export let Dock = GObject.registerClass(
   class DashToDock extends St.Widget {
     _init(params) {
       super._init({
-        // name: 'd2daDock',
         name: 'dashtodockContainer',
         style_class: 'bottom',
         reactive: false,
@@ -75,7 +74,6 @@ export let Dock = GObject.registerClass(
       this._background = new DockBackground({ name: 'd2daBackground' });
       this.add_child(this._background);
 
-      // for blur-my-shell
       this._slider = {
         get_child: () => {
           return this;
@@ -85,8 +83,6 @@ export let Dock = GObject.registerClass(
         },
       };
 
-      // pretend to be Dash-to-Dock
-      // required by blur-my-shell to find the dash upon disabling
       this.fake_dash = new St.Widget({ name: 'dash' });
       this.add_child(this.fake_dash);
       this.fake_dash_background = new St.Widget({
@@ -157,12 +153,12 @@ export let Dock = GObject.registerClass(
         this._trashIcon = null;
         this._recentFilesIcon = null;
         this._downloadsIcon = null;
-        // mounted icons?
       }
     }
 
     recreateDash() {
       this._hidden = false;
+      this.show(); // [REAL FIX] Ensure it is visible upon recreation
       this.opacity = 0;
       this.renderArea.opacity = 0;
       this.add_child(this.createDash());
@@ -189,6 +185,7 @@ export let Dock = GObject.registerClass(
       if (!this.dash) {
         this.add_child(this.createDash());
       }
+      this.show(); // [REAL FIX] Ensure it starts visible
       this.animator.enable();
       this.addToChrome();
       this.layout();
@@ -230,7 +227,6 @@ export let Dock = GObject.registerClass(
     _debouncedBeginAnimation() {
       this.dash.opacity = 1;
 
-      // this elaborate hack - mitigates nvim's "create window when deleting! hmmp"
       if (!this._debounceBeginAnimateSeq) {
         this._debounceBeginAnimateSeq = this.extension._loTimer.runDebounced(
           () => {
@@ -246,19 +242,16 @@ export let Dock = GObject.registerClass(
     }
 
     _onFocusWindow(evt) {
-      // this._debouncedBeginAnimation();
       this._beginAnimation();
       this.autohider._debounceCheckHide();
       return Clutter.EVENT_PROPAGATE;
     }
     _onFullScreen() {
-      // this._debouncedBeginAnimation();
       this._beginAnimation();
       this.autohider._debounceCheckHide();
       return Clutter.EVENT_PROPAGATE;
     }
     _onRestacked() {
-      // this._debouncedBeginAnimation();
       this._beginAnimation();
       this.autohider._debounceCheckHide();
       return Clutter.EVENT_PROPAGATE;
@@ -267,7 +260,6 @@ export let Dock = GObject.registerClass(
       this._favorite_ids = Fav.getAppFavorites()._getIds();
       this._icons = null;
       this._fast_forward = 20;
-      // this._debouncedBeginAnimation();
       this._beginAnimation();
       this.autohider._debounceCheckHide();
       return Clutter.EVENT_PROPAGATE;
@@ -327,13 +319,12 @@ export let Dock = GObject.registerClass(
           if (target && target.iconEffect) {
             target.iconEffect.color = color;
           }
-        } catch(err) {
-          // console.log(err)
-        }
+        } catch(err) {}
       });
     }
 
     slideIn() {
+      this.show(); // [REAL FIX] Explicitly tell Wayland to put the dock back into the input region
       if (this._hidden) {
         this._hidden = false;
         this._beginAnimation();
@@ -369,7 +360,6 @@ export let Dock = GObject.registerClass(
       let dash = new Dash();
 
       dash._adjustIconSize = () => {};
-      let con = console;
       let orig = dash._createAppItem;
       orig = orig.bind(dash);
       dash._createAppItem = function (app) {
@@ -386,7 +376,6 @@ export let Dock = GObject.registerClass(
       this._extraIcons = new St.BoxLayout();
       this.dash._box.add_child(this._extraIcons);
 
-      // null these - needed when calling recreateDash
       this._trashIcon = null;
 
       this._separator = new St.Widget({
@@ -426,23 +415,22 @@ export let Dock = GObject.registerClass(
 
       this._updateIconEffect();
 
+      // [REAL FIX] Set affectsInputRegion to false so the struts never steal clicks!
       Main.layoutManager.addChrome(this.struts, {
         affectsStruts: !this.extension.autohide_dash,
         ...(Config.PACKAGE_VERSION[0] == '4'
-          ? { affectsInputRegion: true }
+          ? { affectsInputRegion: false } 
           : {}),
         trackFullscreen: false,
       });
 
       Main.layoutManager.addChrome(this, {
         affectsStruts: false,
-        // affectsInputRegion: false,
         trackFullscreen: true,
       });
 
       Main.layoutManager.addChrome(this.dwell, {
         affectsStruts: false,
-        // affectsInputRegion: false,
         trackFullscreen: false,
       });
 
@@ -478,12 +466,10 @@ export let Dock = GObject.registerClass(
         this._preferredIconSizes = preferredIconSizes;
       }
 
-      //! why the need for upscaling
       let upscale = 1 + (2 - this._scaleFactor) || 1;
       if (upscale < 1) {
-        upscale = 1; // does scaleFactor go beyond 2x?
+        upscale = 1;
       }
-      // console.log(`scaleFactor:${this._scaleFactor} upscale:${upscale}`);
       iconSize =
         upscale *
         (preferredIconSizes[
@@ -499,34 +485,14 @@ export let Dock = GObject.registerClass(
       return iconSize;
     }
 
-    // Structure for dash icon container widgets - g42,g43,g44,g45,g46
-    /**
-     *  DashItemContainer
-     *    > child (DashIcon[appwell])
-     *      > .icon (IconGrid)
-     *        > .icon (StIcon)
-     *      > ._dot
-     *    > .label
-     *
-     *  ShowAppsIcon extends DashItemContainer
-     *    > .icon (IconGrid)
-     *      > .icon
-     *    > ._iconActor
-     */
-
-    // Helper: robustly get the StIcon from a DashIcon/AppIcon instance
-    // Supports both GNOME 46 (old) and GNOME 50 (new) structures
     _getStIconFromAppwell(appwell) {
       if (!appwell || !appwell.icon) return null;
-      let baseIcon = appwell.icon; // BaseIcon or old IconGrid
+      let baseIcon = appwell.icon;
 
       if (baseIcon instanceof St.Icon) return baseIcon;
 
-      // Try direct .icon property (works after setIconSize is called)
       if (baseIcon.icon) return baseIcon.icon;
-      // GNOME 50: try _iconBin.child
       if (baseIcon._iconBin && baseIcon._iconBin.child) return baseIcon._iconBin.child;
-      // Force icon creation if not yet initialized
       try {
         if (baseIcon.setIconSize) {
           let size = (typeof baseIcon.iconSize === 'number' && baseIcon.iconSize > 0) ? baseIcon.iconSize : 48;
@@ -534,16 +500,13 @@ export let Dock = GObject.registerClass(
           if (baseIcon.icon) return baseIcon.icon;
           if (baseIcon._iconBin && baseIcon._iconBin.child) return baseIcon._iconBin.child;
         }
-      } catch (err) {
-        // ignore initialization errors
-      }
+      } catch (err) {}
       return null;
     }
     
     _inspectIcon(c) {
       if (!c.visible) return false;
 
-      /* release any reference once destroyed */
       if (!c._destroyConnectId) {
         c._destroyConnectId = c.connect('destroy', () => {
           this._icons = null;
@@ -553,7 +516,6 @@ export let Dock = GObject.registerClass(
         });
       }
 
-      /* separator */
       c._cls = c._cls || c.get_style_class_name();
       if (c._cls === 'dash-separator') {
         this._separators.push(c);
@@ -563,40 +525,32 @@ export let Dock = GObject.registerClass(
         return false;
       }
 
-      /* ShowAppsIcon - GNOME 50: has .icon (BaseIcon) directly and .child (toggleButton) */
-      /* ShowAppsIcon - GNOME 46: has .icon.icon (StIcon) */
-      if (c.icon /* BaseIcon or old IconGrid */) {
+      if (c.icon) {
         let stIcon = null;
-        // GNOME 50: icon is BaseIcon, icon.icon might be null initially
         stIcon = this._getStIconFromAppwell(c);
         if (!stIcon && c.icon.icon) {
           stIcon = c.icon.icon;
         }
         if (stIcon) {
           c._icon = stIcon;
-          // GNOME 50: child is toggleButton; GNOME 46: child is the button directly
           c._button = c.child;
           try {
             c.icon.style = 'background-color: transparent !important;';
-          } catch (err) {
-            // ignore
-          }
+          } catch (err) {}
         }
       }
 
-      /* DashItemContainer - GNOME 50: child (DashIcon/AppIcon) has .icon (BaseIcon) */
-      /* DashItemContainer - GNOME 46: child.icon.icon is StIcon */
-      if (c.child /* DashIcon/AppIcon */) {
+      if (c.child) {
         let appwell = c.child;
         let stIcon = null;
-        if (appwell.icon /* BaseIcon or old IconGrid */) {
+        if (appwell.icon) {
           stIcon = this._getStIconFromAppwell(appwell);
           if (!stIcon && appwell.icon.icon) {
             stIcon = appwell.icon.icon;
           }
         }
         if (stIcon) {
-          c._grid = appwell.icon; // BaseIcon or old IconGrid
+          c._grid = appwell.icon;
           c._icon = stIcon;
           c._appwell = appwell;
           if (c._appwell) {
@@ -606,7 +560,6 @@ export let Dock = GObject.registerClass(
             let app = c._appwell.app;
             let appId = app ? app.get_id() : '';
 
-            // hide icons if favorites only
             if (
               !c.custom_icon &&
               this._favorite_ids &&
@@ -629,7 +582,6 @@ export let Dock = GObject.registerClass(
       }
       
       if (c._icon) {
-        // renderer takes care of displaying an icon
         c._icon.opacity = 0;
         c._label = c.label;
 
@@ -639,7 +591,6 @@ export let Dock = GObject.registerClass(
           });
         }
 
-        // limitation: vertical layout cannot do apps_icon_front
         if (
           c == this.dash._showAppsIcon &&
           this.extension.apps_icon_front &&
@@ -690,7 +641,6 @@ export let Dock = GObject.registerClass(
       }
 
       if (this._icons) {
-        // use icons cache
         return this._icons;
       }
 
@@ -700,16 +650,10 @@ export let Dock = GObject.registerClass(
 
       if (!this.dash) return [];
 
-      //--------------------
-      // find favorites and running apps icons
-      //--------------------
       this.dash._box.get_children().forEach((icon) => {
         this._inspectIcon(icon);
       });
 
-      // hack: sometimes the Dash creates more than one separator
-      // workaround - remove all separators in such situation
-      //! pinpoint the cause of the errors
       if (this._separators.length > 1) {
         while (this._separators.length > 0) {
           this.dash._box.remove_child(this._separators[0]);
@@ -717,7 +661,6 @@ export let Dock = GObject.registerClass(
         }
       }
 
-      // hide separator between running apps and favorites - if not needed
       if (this.extension.favorites_only) {
         if (this._separators.length) {
           this._separators[0].visible = false;
@@ -729,9 +672,6 @@ export let Dock = GObject.registerClass(
         }
       }
 
-      //--------------------
-      // find custom icons (trash, mounts, downloads, etc...)
-      //--------------------
       if (this._extraIcons) {
         this._extraIcons.get_children().forEach((icon) => {
           this._inspectIcon(icon);
@@ -739,9 +679,6 @@ export let Dock = GObject.registerClass(
         this._extraIcons.visible = this._extraIcons.get_children().length > 1;
       }
 
-      //--------------------
-      // find the showAppsIcon
-      //--------------------
       if (this.dash._showAppsIcon) {
         this.dash._showAppsIcon.visible = this.extension.apps_icon;
         if (this._inspectIcon(this.dash._showAppsIcon)) {
@@ -803,7 +740,6 @@ export let Dock = GObject.registerClass(
           c.toggle_mode = false;
         }
         if (c._grid) {
-          // c._grid.style = noAnimation ? '' : 'background: none !important;';
           c._grid.style = 'background: none !important;';
         }
         if (c._appwell && !c._appwell._activate) {
@@ -815,9 +751,7 @@ export let Dock = GObject.registerClass(
               }
               this._maybeMinimizeOrMaximize(c._appwell.app);
               c._appwell._activate();
-            } catch (err) {
-              // happens with dummy DashIcons
-            }
+            } catch (err) {}
           };
         }
         let icon = c._icon;
@@ -839,8 +773,6 @@ export let Dock = GObject.registerClass(
         }
       });
 
-      // link list the dash items
-      //! optimize this. there has to be a better way to get the separators _prev and _next
       let prev = null;
       this._dashItems.forEach((c) => {
         if (prev) {
@@ -858,12 +790,7 @@ export let Dock = GObject.registerClass(
         return;
       }
 
-      // check these intermittently!
-      //---------------
-      // the mount icons
-      //---------------
       {
-        //! avoid creating app_info & /tmp/*.desktop files
         let extras = [...this._extraIcons.get_children()];
         let extraMountPaths = extras.map((e) => e._mountPath);
         let mounted = Object.keys(this.extension.services._mounts);
@@ -888,32 +815,22 @@ export let Dock = GObject.registerClass(
         });
       }
 
-      //---------------
-      // the folder icons
-      //---------------
-      //! add explanations
       let folders = [
         {
           icon: '_recentFilesIcon',
           folder: 'recent:///',
-          //! find a way to avoid this
           path: `${this.extension.path}/apps/recents-dash2dock-lite.desktop`,
-          // not ready for prime time
-          // does not work on gnome 43 (debian)
-          show: false, // this.extension.documents_icon,
+          show: false,
           prepare: this.extension.services.checkRecents.bind(
             this.extension.services
           ),
           items: '_recentFiles',
           itemsLength: '_recentFilesLength',
-          cleanup: (() => {
-            // this.extension.services._recentFiles = null;
-          }).bind(this),
+          cleanup: (() => {}).bind(this),
         },
         {
           icon: '_downloadsIcon',
           folder: Gio.File.new_for_path('Downloads').get_path(),
-          //! find a way to avoid this
           path: tempPath('downloads-dash2dock-lite.desktop'),
           show: this.extension.downloads_icon,
           items: '_downloadFiles',
@@ -930,7 +847,6 @@ export let Dock = GObject.registerClass(
           this[f.icon] = DockItemList.createItem(this, f);
           this._icons = null;
         } else if (this[f.icon] && !f.show) {
-          // unpin downloads icon
           this._extraIcons.remove_child(this[f.icon]);
           this[f.icon] = null;
           this._icons = null;
@@ -938,23 +854,16 @@ export let Dock = GObject.registerClass(
         f.cleanup();
       });
 
-      //---------------
-      // the trash icon
-      //---------------
       if (!this._trashIcon && this.extension.trash_icon) {
-        // pin trash icon
-        //! avoid creating app_info & /tmp/*.desktop files
         this._trashIcon = this.createItem(
           tempPath('trash-dash2dock-lite.desktop')
         );
         this._icons = null;
       } else if (this._trashIcon && !this.extension.trash_icon) {
-        // unpin trash icon
         this._extraIcons.remove_child(this._trashIcon);
         this._trashIcon = null;
         this._icons = null;
       } else if (this._trashIcon && this.extension.trash_icon) {
-        // move trash icon to the end
         if (this._extraIcons.last_child != this._trashIcon) {
           this._extraIcons.remove_child(this._trashIcon);
           this._extraIcons.add_child(this._trashIcon);
@@ -1020,41 +929,18 @@ export let Dock = GObject.registerClass(
 
       this._icons = this._findIcons();
 
-      //! add explanation
       let flags = {
-        top: {
-          edgeX: 0,
-          edgeY: 0,
-          offsetX: 0,
-          offsetY: 0,
-        },
-        bottom: {
-          edgeX: 0,
-          edgeY: 1,
-          offsetX: 0,
-          offsetY: -1,
-        },
-        left: {
-          edgeX: 0,
-          edgeY: 0,
-          offsetX: 0,
-          offsetY: 0,
-        },
-        right: {
-          edgeX: 1,
-          edgeY: 0,
-          offsetX: -1,
-          offsetY: 0,
-        },
+        top: { edgeX: 0, edgeY: 0, offsetX: 0, offsetY: 0, },
+        bottom: { edgeX: 0, edgeY: 1, offsetX: 0, offsetY: -1, },
+        left: { edgeX: 0, edgeY: 0, offsetX: 0, offsetY: 0, },
+        right: { edgeX: 1, edgeY: 0, offsetX: -1, offsetY: 0, },
       };
       let f = flags[this._position];
 
       let width = 1200;
       let height = 140;
-      //! use dock size limit - add preferences
       let dock_size_limit = 1;
       let animation_spread = this.extension.animation_spread;
-      // let animation_magnify = this.extension.animation_magnify;
 
       let iconMargins = 0;
       let iconStyle = '';
@@ -1069,17 +955,15 @@ export let Dock = GObject.registerClass(
       }
 
       let iconSize = this._preferredIconSize();
-      //! why not use icon_spacing? animation spread should only be when animated
       let iconSizeSpaced = iconSize + 2 + 8 * animation_spread;
 
       let projectedWidth =
         iconSize +
-        // (this.animated ? iconSizeSpaced : 0) +
         iconSizeSpaced * (this._icons.length > 3 ? this._icons.length : 3);
       projectedWidth += iconMargins;
 
       let scaleDown = 1.0;
-      let limit = vertical ? 0.96 : 0.98; // use dock_size_limit
+      let limit = vertical ? 0.96 : 0.98;
       let maxWidth = (vertical ? m.height : m.width) * limit;
       if (projectedWidth * scaleFactor > maxWidth * 0.98) {
         scaleDown = (maxWidth - iconSize / 2) / (projectedWidth * scaleFactor);
@@ -1089,7 +973,6 @@ export let Dock = GObject.registerClass(
       iconSizeSpaced *= scaleDown;
       projectedWidth *= scaleDown;
 
-      // make multiple of 2
       iconSize = Math.floor(iconSize / 2) * 2;
       iconSizeSpaced = Math.floor(iconSizeSpaced / 2) * 2;
       projectedWidth = Math.floor(projectedWidth / 2) * 2;
@@ -1112,29 +995,17 @@ export let Dock = GObject.registerClass(
         }
       });
 
-      //! check with multi-monitor and scaled displays
       this.x = m.x;
       this.y = m.y;
       this.width = m.width;
       this.height = m.height;
 
-      // reorient and reposition the dash
       this.dash.last_child.layout_manager.orientation = vertical;
       this.dash._box.layout_manager.orientation = vertical;
       if (this._extraIcons) {
         this._extraIcons.layout_manager.orientation = vertical;
       }
 
-      // hug the edge
-      // if (vertical) {
-      //   this.dash.x = this.width * f.edgeX + this.dash.width * f.offsetX;
-      //   this.dash.y = this.height / 2 - this.dash.height / 2;
-      // } else {
-      //   this.dash.x = this.width / 2 - this.dash.width / 2;
-      //   this.dash.y = this.height * f.edgeY + this.dash.height * f.offsetY;
-      // }
-
-      // computation derived from animation scale
       let magnify = this.extension.animation_magnify * 1.8;
       let fp = iconSize * 2 + iconSize * (0.6 * (1 + magnify));
       if (vertical) {
@@ -1150,8 +1021,6 @@ export let Dock = GObject.registerClass(
       this._iconSizeScaledDown = iconSize;
       this._scaledDown = scaleDown;
 
-      // dwell
-      //! add scaleFactor?
       let dwellHeight = 2;
       if (vertical) {
         this.dwell.width = dwellHeight;
@@ -1229,10 +1098,8 @@ export let Dock = GObject.registerClass(
         this._preview--;
       }
 
-      //! add layout here instead of at the
       this.animator.animate(dt);
 
-      // hack to mitigate jerkiness when a new icon is inserted
       if (!this._pauseBounce || this._pauseBounce <= 0) {
         while (this._fast_forward && this._fast_forward-- > 0) {
           this.animate(dt);
@@ -1246,7 +1113,6 @@ export let Dock = GObject.registerClass(
       }
     }
 
-    //! move these generic functions outside of this class
     _isWithinDash(p) {
       if (this._hidden) {
         return false;
@@ -1268,12 +1134,8 @@ export let Dock = GObject.registerClass(
 
       this._favorite_ids = Fav.getAppFavorites()._getIds();
 
-      // if (caller) {
-      //   console.log(`animation triggered by ${caller}`);
-      // }
       if (this.extension._hiTimer && this.debounceEndSeq) {
         this.extension._loTimer.runDebounced(this.debounceEndSeq);
-        // this.extension._loTimer.cancel(this.debounceEndSeq);
       }
 
       this.animationInterval = this.extension.animationInterval;
@@ -1309,6 +1171,11 @@ export let Dock = GObject.registerClass(
       this._icons = null;
       this._dragged = null;
       this._lastHoveredIcon = null;
+
+      // [REAL FIX] Hide the Clutter actor to remove the dead zone from Wayland Input Region
+      if (this._hidden) {
+        this.hide();
+      }
     }
 
     _destroyList() {
@@ -1342,7 +1209,6 @@ export let Dock = GObject.registerClass(
     }
 
     _updateFocusedIcon() {
-      // apply focus
       this._icons?.forEach((icon) => {
         if (!icon._renderer) return;
         if (icon._appwell?.app) {
@@ -1352,7 +1218,6 @@ export let Dock = GObject.registerClass(
           windows.forEach((w) => {
             if (w.has_focus()) {
               icon._renderer.set_style_class_name('icon-focused');
-              // icon._renderer.style = 'background-color: rgba(255,0,0,0.2); border-radius: 8px;'
             }
           });
         }
@@ -1364,7 +1229,6 @@ export let Dock = GObject.registerClass(
         return;
       }
 
-      // let windows = app.get_windows();
       let windows = this.getAppWindowsFiltered(app);
       if (!windows.length) {
         return;
@@ -1377,7 +1241,7 @@ export let Dock = GObject.registerClass(
       let button2 = (modifiers & Clutter.ModifierType.BUTTON2_MASK) != 0;
       let button3 = (modifiers & Clutter.ModifierType.BUTTON3_MASK) != 0;
       let shift = (modifiers & Clutter.ModifierType.SHIFT_MASK) != 0;
-      let isMiddleButton = button3; // middle?
+      let isMiddleButton = button3; 
       let isCtrlPressed = (modifiers & Clutter.ModifierType.CONTROL_MASK) != 0;
       let openNewWindow =
         app.can_open_new_window() &&
@@ -1395,7 +1259,6 @@ export let Dock = GObject.registerClass(
         }
       });
 
-      // delay - allow dash to actually call 'activate' first
       if (focusedWindow) {
         this.extension._hiTimer.runOnce(() => {
           if (shift) {
@@ -1419,7 +1282,6 @@ export let Dock = GObject.registerClass(
           return w.is_hidden();
         });
 
-        // multi-monitors fix -- where focus can seem to get lost
         if (!hidden.length) {
           let windows = app.get_windows().filter((w) => {
             return w.get_monitor() == this._monitor.index;
@@ -1467,7 +1329,6 @@ export let Dock = GObject.registerClass(
           return;
         }
       }
-      // bounce the custom icons
       if (container.custom_icon || just_do_it) {
         this.animator.bounceIcon(container.child);
       }
@@ -1476,18 +1337,14 @@ export let Dock = GObject.registerClass(
     getAppWindowsFiltered(app) {
       var apply_filtering = this.extension.multi_monitor_filter != 0;
 
-      // no filtering needed for a single dock
       if (apply_filtering && this.extension.multi_monitor_preference == 0) {
         apply_filtering = false;
       }
 
-      // no filtering needed on single monitor desktop
       if (apply_filtering && Main.layoutManager.monitors.length == 1) {
         apply_filtering = false;
       }
 
-      // apply filtering only if app appears on multiple monitors
-      // 2 - whenever applicable
       if (apply_filtering && this.extension.multi_monitor_filter == 2) {
         var on_current_monitor = false;
         var on_other_monitor = false;
@@ -1515,15 +1372,13 @@ export let Dock = GObject.registerClass(
     _onScrollEvent(obj, evt) {
       this._lastScrollEvent = evt;
       let pointer = global.get_pointer();
-      let target = this._nearestIcon; // this._hoveredIcon;
-      // console.log(`${target == this._hoveredIcon}`);
+      let target = this._nearestIcon; 
       if (target) {
         if (this._scrollCounter < -2 || this._scrollCounter > 2)
           this._scrollCounter = 0;
 
         let icon = target;
 
-        // adjustment for touch scroll (much more sensitive) and mouse scrollwheel
         let multiplier = 1;
         if (
           evt.get_source_device().get_device_type() == 5 ||
@@ -1557,7 +1412,6 @@ export let Dock = GObject.registerClass(
       }
     }
 
-    // an overly sensitive setting will make window cycle too fast. allow a half second pause after each cycle
     _lockCycle() {
       if (this._lockedCycle) return;
       this._lockedCycle = true;
@@ -1587,7 +1441,6 @@ export let Dock = GObject.registerClass(
       let workspaceManager = global.workspace_manager;
       let activeWs = workspaceManager.get_active_workspace();
 
-      // let windows = app.get_windows();
       let windows = this.getAppWindowsFiltered(app);
 
       if (evt.modifier_state & Clutter.ModifierType.CONTROL_MASK) {
@@ -1601,7 +1454,6 @@ export let Dock = GObject.registerClass(
         return w1.get_id() > w2.get_id() ? -1 : 1;
       });
 
-      //! add explanations
       if (nw > 1) {
         for (let i = 0; i < nw; i++) {
           if (windows[i].has_focus()) {

@@ -963,23 +963,25 @@ export let Dock = GObject.registerClass(
     }
 
     _snapToContainerEdge(container, child, edge = true) {
-      child.x = container.width / 2 - child.width / 2;
-      child.y = container.height / 2 - child.height / 2;
+      let x = container.width / 2 - child.width / 2;
+      let y = container.height / 2 - child.height / 2;
       if (edge) {
         if (this.isVertical()) {
           if (this._position == DockPosition.LEFT) {
-            child.x = 0;
+            x = 0;
           } else {
-            child.x = container.width - child.width;
+            x = container.width - child.width;
           }
         } else {
           if (this._position == DockPosition.TOP) {
-            child.y = 0;
+            y = 0;
           } else {
-            child.y = container.height - child.height;
+            y = container.height - child.height;
           }
         }
       }
+      if (child.x !== x) child.x = x;
+      if (child.y !== y) child.y = y;
     }
 
     layout() {
@@ -1105,24 +1107,28 @@ export let Dock = GObject.registerClass(
       }
 
       this._icons.forEach((icon) => {
-        icon.width = Math.floor(iconSizeSpaced * scaleFactor);
-        icon.height = Math.floor(iconSizeSpaced * scaleFactor);
+        let actorSize = Math.floor(iconSizeSpaced * scaleFactor);
+        if (icon.width !== actorSize) icon.width = actorSize;
+        if (icon.height !== actorSize) icon.height = actorSize;
         if (icon.style != iconStyle) {
           icon.style = iconStyle;
         }
       });
 
-      //! check with multi-monitor and scaled displays
-      this.x = m.x;
-      this.y = m.y;
-      this.width = m.width;
-      this.height = m.height;
-
       // reorient and reposition the dash
-      this.dash.last_child.layout_manager.orientation = vertical;
-      this.dash._box.layout_manager.orientation = vertical;
+      let orientation = vertical
+        ? Clutter.Orientation.VERTICAL
+        : Clutter.Orientation.HORIZONTAL;
+      if (this.dash.last_child.layout_manager.orientation !== orientation) {
+        this.dash.last_child.layout_manager.orientation = orientation;
+      }
+      if (this.dash._box.layout_manager.orientation !== orientation) {
+        this.dash._box.layout_manager.orientation = orientation;
+      }
       if (this._extraIcons) {
-        this._extraIcons.layout_manager.orientation = vertical;
+        if (this._extraIcons.layout_manager.orientation !== orientation) {
+          this._extraIcons.layout_manager.orientation = orientation;
+        }
       }
 
       // hug the edge
@@ -1137,14 +1143,30 @@ export let Dock = GObject.registerClass(
       // computation derived from animation scale
       let magnify = this.extension.animation_magnify * 1.8;
       let fp = iconSize * 2 + iconSize * (0.6 * (1 + magnify));
+
+      // Compute the final monitor-relative geometry before committing actor
+      // properties. Assigning the full monitor size and then the dock size on
+      // every animation frame continuously invalidates Clutter allocations.
+      let dockWidth = vertical ? fp * scaleFactor : m.width;
+      let dockHeight = vertical ? m.height : fp * scaleFactor;
+      let dockX = m.x + (m.width - dockWidth) / 2;
+      let dockY = m.y + (m.height - dockHeight) / 2;
       if (vertical) {
-        this.width = fp * scaleFactor;
+        dockX =
+          this._position == DockPosition.LEFT
+            ? m.x
+            : m.x + m.width - dockWidth;
       } else {
-        this.height = fp * scaleFactor;
+        dockY =
+          this._position == DockPosition.TOP
+            ? m.y
+            : m.y + m.height - dockHeight;
       }
-      this._snapToContainerEdge(m, this, true);
-      this.x += m.x;
-      this.y += m.y;
+
+      if (this.width !== dockWidth) this.width = dockWidth;
+      if (this.height !== dockHeight) this.height = dockHeight;
+      if (this.x !== dockX) this.x = dockX;
+      if (this.y !== dockY) this.y = dockY;
       this._snapToContainerEdge(this, this.dash, true);
 
       this._iconSizeScaledDown = iconSize;
@@ -1154,20 +1176,22 @@ export let Dock = GObject.registerClass(
       //! add scaleFactor?
       let dwellHeight = 2;
       if (vertical) {
-        this.dwell.width = dwellHeight;
-        this.dwell.height = this.height;
-        this.dwell.x = m.x;
-        this.dwell.y = this.y;
+        if (this.dwell.width !== dwellHeight) this.dwell.width = dwellHeight;
+        if (this.dwell.height !== this.height) this.dwell.height = this.height;
+        if (this.dwell.x !== m.x) this.dwell.x = m.x;
+        if (this.dwell.y !== this.y) this.dwell.y = this.y;
         if (this._position == DockPosition.RIGHT) {
-          this.dwell.x = m.x + m.width - dwellHeight;
+          let dwellX = m.x + m.width - dwellHeight;
+          if (this.dwell.x !== dwellX) this.dwell.x = dwellX;
         }
       } else {
-        this.dwell.width = this.width;
-        this.dwell.height = dwellHeight;
-        this.dwell.x = this.x;
-        this.dwell.y = this.y + this.height - this.dwell.height;
+        if (this.dwell.width !== this.width) this.dwell.width = this.width;
+        if (this.dwell.height !== dwellHeight) this.dwell.height = dwellHeight;
+        if (this.dwell.x !== this.x) this.dwell.x = this.x;
+        let dwellY = this.y + this.height - dwellHeight;
+        if (this.dwell.y !== dwellY) this.dwell.y = dwellY;
         if (this._position == DockPosition.TOP) {
-          this.dwell.y = this.y;
+          if (this.dwell.y !== this.y) this.dwell.y = this.y;
         }
       }
 

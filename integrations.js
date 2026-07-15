@@ -209,6 +209,37 @@ export const Integrations = class {
         return;
       }
 
+      // Display blank/unblank briefly leaves the blur actors without an
+      // allocation. Do not derive or apply clip geometry during that window;
+      // Mutter rejects NaN clips and can keep the actor tree in a relayout
+      // loop afterwards.
+      let allocationActors = [
+        dock,
+        dock._background,
+        dock.renderArea,
+        bms.first_child,
+        meta_background,
+      ];
+      if (
+        allocationActors.some(
+          (actor) => !actor?.has_allocation || !actor.has_allocation()
+        )
+      ) {
+        return;
+      }
+
+      let setFiniteClip = (x, y, width, height) => {
+        if (
+          ![x, y, width, height].every(Number.isFinite) ||
+          width <= 0 ||
+          height <= 0
+        ) {
+          return false;
+        }
+        bms.first_child.set_clip(x, y, width, height);
+        return true;
+      };
+
       // bottom layout
       switch (dock._position) {
         case 'left':
@@ -217,7 +248,7 @@ export const Integrations = class {
           bms.y = 0;
           bms.first_child.x = 0;
           bms.first_child.y = 0;
-          bms.first_child.set_clip(
+          setFiniteClip(
             bg_offset_x,
             bg_offset_y,
             dock._background.width - (dock.extension.border_thickness && 0),
@@ -229,7 +260,7 @@ export const Integrations = class {
           bms.y = 0;
           bms.first_child.x = -meta_background.width + rw;
           bms.first_child.y = 0;
-          bms.first_child.set_clip(
+          setFiniteClip(
             -bms.first_child.x + bg_offset_x,
             0 + bg_offset_y,
             dock._background.width - (dock.extension.border_thickness && 0),
@@ -242,7 +273,7 @@ export const Integrations = class {
           bms.y = 0;
           bms.first_child.x = 0;
           bms.first_child.y = -meta_background.height + rh;
-          bms.first_child.set_clip(
+          setFiniteClip(
             0 + bg_offset_x,
             -bms.first_child.y + bg_offset_y,
             dock._background.width - (dock.extension.border_thickness && 0),

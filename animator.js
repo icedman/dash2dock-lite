@@ -61,6 +61,7 @@ export let Animator = class {
     }
 
     let count = dock._icons.length;
+    let createdResources = false;
     if (dock.renderArea.get_children().length == 0) {
       this._renderers = [];
       this._dots = [];
@@ -80,6 +81,7 @@ export let Animator = class {
       renderer.visible = false;
       target.add_child(renderer);
       this._renderers.push(renderer);
+      createdResources = true;
 
       // dot
       let dots = new DockItemDotsOverlay(new Dot(DOT_CANVAS_SIZE));
@@ -98,6 +100,15 @@ export let Animator = class {
       this._renderers[i].visible = false;
       this._dots[i].visible = false;
       this._badges[i].visible = false;
+    }
+
+    // Newly attached actors do not have a stage allocation until the next
+    // frame. Mutating their scale/position immediately floods Mutter with
+    // "needs an allocation" warnings and can leave stale geometry after the
+    // display wakes. Give Clutter one frame to allocate them first.
+    if (createdResources) {
+      this._target.queue_relayout();
+      return false;
     }
 
     return true;

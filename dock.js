@@ -431,7 +431,7 @@ export let Dock = GObject.registerClass(
         ...(Config.PACKAGE_VERSION[0] == '4'
           ? { affectsInputRegion: true }
           : {}),
-        trackFullscreen: false,
+        trackFullscreen: true,
       });
 
       Main.layoutManager.addChrome(this, {
@@ -443,7 +443,7 @@ export let Dock = GObject.registerClass(
       Main.layoutManager.addChrome(this.dwell, {
         affectsStruts: false,
         // affectsInputRegion: false,
-        trackFullscreen: false,
+        trackFullscreen: true,
       });
 
       this._onChrome = true;

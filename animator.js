@@ -1064,7 +1064,7 @@ export let Animator = class {
       dock._updateTransparenies();
     }
 
-    dock.struts.visible = !dock._hidden;
+    dock.struts.visible = !dock._hidden && !m.inFullscreen;
     dock.dash.opacity = 255;
 
     //---------------------

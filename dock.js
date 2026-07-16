@@ -67,6 +67,14 @@ export let Dock = GObject.registerClass(
         offscreen_redirect: Clutter.OffscreenRedirect.ALWAYS,
       });
 
+      // Some extensions identify Dash-to-Dock by this actor's compatibility
+      // name and force it reactive after temporarily hiding it. The container
+      // covers the dock's full animation area, so that turns it into a large
+      // invisible input blocker. Its interactive children remain reactive.
+      this.connect('notify::reactive', () => {
+        if (this.reactive) this.reactive = false;
+      });
+
       this.extension = params.extension;
 
       this._alignment = DockAlignment.CENTER;

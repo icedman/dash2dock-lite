@@ -67,6 +67,14 @@ export let Dock = GObject.registerClass(
         offscreen_redirect: Clutter.OffscreenRedirect.ALWAYS,
       });
 
+      // Some extensions identify Dash-to-Dock by this actor's compatibility
+      // name and force it reactive after temporarily hiding it. The container
+      // covers the dock's full animation area, so that turns it into a large
+      // invisible input blocker. Its interactive children remain reactive.
+      this.connect('notify::reactive', () => {
+        if (this.reactive) this.reactive = false;
+      });
+
       this.extension = params.extension;
 
       this._alignment = DockAlignment.CENTER;
@@ -126,7 +134,10 @@ export let Dock = GObject.registerClass(
       });
       this.dwell = new St.Widget({
         name: 'DockDwell',
-        reactive: true,
+        // The edge sensor is activated by AutoHide only while the dock is
+        // hidden. Leaving it reactive while the dock is shown intercepts
+        // clicks in the space vacated by a floating dock on Wayland.
+        reactive: false,
         track_hover: true,
         offscreen_redirect: Clutter.OffscreenRedirect.ALWAYS,
       });
@@ -338,16 +349,19 @@ export let Dock = GObject.registerClass(
         this._hidden = false;
         this._beginAnimation();
       }
+      this.autohider._syncDwellActive();
     }
 
     slideOut() {
       if (this._list && this._list.visible) {
+        this.autohider._syncDwellActive();
         return;
       }
       if (!this._hidden) {
         this._hidden = true;
         this._beginAnimation();
       }
+      this.autohider._syncDwellActive();
     }
 
     getMonitor() {
@@ -426,9 +440,15 @@ export let Dock = GObject.registerClass(
 
       this._updateIconEffect();
 
+      // GNOME 50 removed affectsInputRegion from addChrome(). On older
+      // releases it must remain disabled for the dock's animation container;
+      // otherwise its larger allocation becomes an invisible input region on
+      // X11 and blocks clicks around a floating dock.
+      const hasAffectsInputRegion = Config.PACKAGE_VERSION[0] == '4';
+
       Main.layoutManager.addChrome(this.struts, {
         affectsStruts: !this.extension.autohide_dash,
-        ...(Config.PACKAGE_VERSION[0] == '4'
+        ...(hasAffectsInputRegion
           ? { affectsInputRegion: true }
           : {}),
         trackFullscreen: false,
@@ -436,13 +456,17 @@ export let Dock = GObject.registerClass(
 
       Main.layoutManager.addChrome(this, {
         affectsStruts: false,
-        // affectsInputRegion: false,
+        ...(hasAffectsInputRegion
+          ? { affectsInputRegion: false }
+          : {}),
         trackFullscreen: true,
       });
 
       Main.layoutManager.addChrome(this.dwell, {
         affectsStruts: false,
-        // affectsInputRegion: false,
+        ...(hasAffectsInputRegion
+          ? { affectsInputRegion: false }
+          : {}),
         trackFullscreen: false,
       });
 
@@ -1170,6 +1194,7 @@ export let Dock = GObject.registerClass(
           this.dwell.y = this.y;
         }
       }
+      this.autohider._syncDwellActive();
 
       return true;
     }

@@ -12,6 +12,7 @@ import {
 
 const DEBOUNCE_HIDE_TIMEOUT = 120;
 const PRESSURE_SENSE_DISTANCE = 40;
+const PRESSURE_SENSE_TIMEOUT = 1000;
 
 // some codes lifted from dash-to-dock intellihide
 const handledWindowTypes = [
@@ -26,9 +27,124 @@ const handledWindowTypes = [
 ];
 
 export let AutoHide = class {
+  _supportsPointerBarriers() {
+    return (
+      global.backend.capabilities & Meta.BackendCapabilities.BARRIERS
+    );
+  }
+
+  _destroyBarrier() {
+    if (this._barrier) {
+      this._barrier.destroy();
+      this._barrier = null;
+    }
+    this._barrierGeometry = null;
+    this._barrierPressure = 0;
+    this._lastBarrierTime = 0;
+  }
+
+  _barrierParams() {
+    let monitor = this.dock._monitor;
+    if (!monitor) return null;
+
+    let params = { backend: global.backend };
+    switch (this.dock._position) {
+      case DockPosition.LEFT:
+        Object.assign(params, {
+          x1: monitor.x,
+          x2: monitor.x,
+          y1: monitor.y,
+          y2: monitor.y + monitor.height,
+          directions: Meta.BarrierDirection.NEGATIVE_X,
+        });
+        break;
+      case DockPosition.RIGHT:
+        Object.assign(params, {
+          x1: monitor.x + monitor.width,
+          x2: monitor.x + monitor.width,
+          y1: monitor.y,
+          y2: monitor.y + monitor.height,
+          directions: Meta.BarrierDirection.POSITIVE_X,
+        });
+        break;
+      case DockPosition.TOP:
+        Object.assign(params, {
+          x1: monitor.x,
+          x2: monitor.x + monitor.width,
+          y1: monitor.y,
+          y2: monitor.y,
+          directions: Meta.BarrierDirection.NEGATIVE_Y,
+        });
+        break;
+      default:
+        Object.assign(params, {
+          x1: monitor.x,
+          x2: monitor.x + monitor.width,
+          y1: monitor.y + monitor.height,
+          y2: monitor.y + monitor.height,
+          directions: Meta.BarrierDirection.POSITIVE_Y,
+        });
+        break;
+    }
+    return params;
+  }
+
+  _onBarrierHit(event) {
+    if (!this._enabled || this._shown) return;
+    if (!this.extension.pressure_sense) {
+      this.show();
+      return;
+    }
+
+    if (event.time - this._lastBarrierTime > PRESSURE_SENSE_TIMEOUT) {
+      this._barrierPressure = 0;
+    }
+    this._lastBarrierTime = event.time;
+
+    let distance = this.dock.isVertical()
+      ? Math.abs(event.dx)
+      : Math.abs(event.dy);
+    this._barrierPressure += Math.min(15, distance);
+
+    let threshold =
+      100 - 80 * (this.extension.pressure_sense_sensitivity || 0);
+    if (this._barrierPressure >= threshold) {
+      this.show();
+    }
+  }
+
+  _updateBarrier() {
+    let params = this._barrierParams();
+    if (!params) return;
+
+    let geometry = [
+      params.x1,
+      params.y1,
+      params.x2,
+      params.y2,
+      params.directions,
+    ].join(':');
+    if (geometry == this._barrierGeometry) return;
+
+    this._destroyBarrier();
+    this._barrier = new Meta.Barrier(params);
+    this._barrier.connect('hit', (barrier, event) => {
+      this._onBarrierHit(event);
+    });
+    this._barrierGeometry = geometry;
+  }
+
   _setDwellActive(active) {
     if (this.dock.dwell) {
-      this.dock.dwell.reactive = active;
+      // Pointer barriers detect the screen edge without becoming a Clutter
+      // pick target, so clicks continue through to application windows.
+      this.dock.dwell.reactive = active && !this._supportsPointerBarriers();
+    }
+
+    if (!this._supportsPointerBarriers() || !active) {
+      this._destroyBarrier();
+    } else {
+      this._updateBarrier();
     }
   }
 

@@ -1186,6 +1186,7 @@ export let Dock = GObject.registerClass(
           this.dwell.y = this.y;
         }
       }
+      this.autohider._syncDwellActive();
 
       return true;
     }

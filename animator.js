@@ -190,11 +190,6 @@ export let Animator = class {
       if (!icon._icon) return;
       let pos = icon.get_transformed_position();
 
-      if (icon._found && !icon._handled) {
-        icon._handled = true;
-        dock._maybeBounce(icon, true);
-      }
-
       icon._pos = [...pos];
       icon._fixedPosition = [...pos];
 

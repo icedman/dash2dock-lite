@@ -729,10 +729,10 @@ export let Dock = GObject.registerClass(
       if (this.dash._showAppsIcon) {
         this.dash._showAppsIcon.visible = this.extension.apps_icon;
         if (this._inspectIcon(this.dash._showAppsIcon)) {
-          let icon = this.dash._showAppsIcon._icon;
-          if (!icon._connected) {
-            icon._connected = true;
-            icon.connectObject(
+          let button = this.dash._showAppsIcon.child;
+          if (!button._d2dlConnected) {
+            button._d2dlConnected = true;
+            button.connectObject(
               'button-press-event',
               () => {
                 let overview = Main.uiGroup
@@ -761,8 +761,6 @@ export let Dock = GObject.registerClass(
         }
       }
 
-      let noAnimation = !this.extension.animate_icons_unmute;
-
       let pv = new Point();
       pv.x = 0.5;
       pv.y = 0.5;
@@ -778,16 +776,13 @@ export let Dock = GObject.registerClass(
             }
           };
         }
-        c._icon.track_hover = true;
-        c._icon.reactive = true;
         c._icon.pivot_point = pv;
-        if (c._button) {
-          c._button.reactive = noAnimation;
-          c._button.track_hover = noAnimation;
-          c.toggle_mode = false;
+        if (c._appwell || c === this.dash._showAppsIcon) {
+          // Pointer input belongs to the owning AppIcon or button.
+          c._icon.reactive = false;
+          c._icon.track_hover = false;
         }
         if (c._grid) {
-          // c._grid.style = noAnimation ? '' : 'background: none !important;';
           c._grid.style = 'background: none !important;';
         }
         if (c._appwell && !c._appwell._activate) {

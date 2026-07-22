@@ -44,6 +44,11 @@
             </child>
           </object>
         </child>
+        <child>
+          <object class="AdwEntryRow" id="apps-icon-name">
+            <property name="title" translatable="yes">Apps Icon Name (themed icon, empty for default)</property>
+          </object>
+        </child>
       </object>
     </child>
     <child>

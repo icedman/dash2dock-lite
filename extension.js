@@ -163,6 +163,38 @@ export default class Dash2DockLiteExt extends Extension {
     Main.overview.dash._showAppsIcon.child.track_hover = show;
   }
 
+  _guardOverviewDashRelayout() {
+    // GNOME 50 Dash._adjustIconSize dereferences firstIcon.icon without a
+    // null check; an icon mid-destruction escalates into a fatal Clutter
+    // paint assertion (issue #336). Skip the relayout in that state.
+    let dash = Main.overview.dash;
+    if (dash.__d2dlAdjustIconSize) return;
+    dash.__d2dlAdjustIconSize = dash._adjustIconSize;
+    dash._adjustIconSize = function (...args) {
+      let iconChildren = this._box
+        .get_children()
+        .filter(
+          (actor) => actor.child?._delegate?.icon && !actor.animatingOut
+        );
+      iconChildren.push(this._showAppsIcon);
+      let firstIcon = iconChildren[0]?.child?._delegate?.icon;
+      if (!firstIcon?.icon) return;
+      try {
+        this.__d2dlAdjustIconSize(...args);
+      } catch (err) {
+        console.log(`dash2dock-lite: skipped dash relayout: ${err}`);
+      }
+    };
+  }
+
+  _unguardOverviewDashRelayout() {
+    let dash = Main.overview.dash;
+    if (dash.__d2dlAdjustIconSize) {
+      dash._adjustIconSize = dash.__d2dlAdjustIconSize;
+      delete dash.__d2dlAdjustIconSize;
+    }
+  }
+
   enable() {
     Main.overview.d2dl = this;
 
@@ -205,6 +237,7 @@ export default class Dash2DockLiteExt extends Extension {
 
     Main.overview.dash.__box = Main.overview.dash._box;
     this._showMainOverviewDash(false);
+    this._guardOverviewDashRelayout();
     this.docks = [];
 
     this.icon_theme = St.IconTheme.new();
@@ -256,6 +289,7 @@ export default class Dash2DockLiteExt extends Extension {
     this._updateAutohide(true);
     this._unloadConfig();
 
+    this._unguardOverviewDashRelayout();
     this._showMainOverviewDash(true);
 
     this.destroyDocks();

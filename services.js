@@ -218,12 +218,8 @@ export const Services = class {
     let open_app = 'nautilus --select';
 
     let trash_action = `${extension_path}/apps/empty-trash.sh`;
-    {
-      let fn = Gio.File.new_for_path('.local/share/Trash');
-      trash_action = `rm -rf "${fn.get_path()}"`;
-    }
 
-    let content = `[Desktop Entry]\nVersion=1.0\nTerminal=false\nType=Application\nName=Trash\nExec=${open_app} trash:///\nIcon=user-trash\nStartupWMClass=trash-dash2dock-lite\nActions=trash\n\n[Desktop Action trash]\nName=Empty Trash\nExec=${trash_action}\nTerminal=true\n`;
+    let content = `[Desktop Entry]\nVersion=1.0\nTerminal=false\nType=Application\nName=Trash\nExec=${open_app} trash:///\nIcon=user-trash\nStartupWMClass=trash-dash2dock-lite\nActions=trash\n\n[Desktop Action trash]\nName=Empty Trash\nExec=${trash_action}\nTerminal=false\n`;
     const [, etag] = fn.replace_contents(
       content,
       null,

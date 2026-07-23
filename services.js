@@ -683,6 +683,22 @@ export const Services = class {
   }
 
   //! this is out of place - services should only do background process - no rendering
+  // Resolve state-dependent icon names (trash full/empty) — must run BEFORE
+  // the renderer reads icon_name so the same frame paints the new state;
+  // updateIcon() runs after paint and would lag one animation tick.
+  updateIconState(item) {
+    let icon = item?._icon;
+    if (!icon || !icon.icon_name) {
+      return;
+    }
+    if (this.extension.trash_icon && icon.icon_name.startsWith('user-trash')) {
+      let new_icon = this.trashFull ? 'user-trash-full' : 'user-trash';
+      if (new_icon != icon.icon_name) {
+        icon.icon_name = new_icon;
+      }
+    }
+  }
+
   updateIcon(item, settings) {
     if (!item) {
       return;
@@ -695,14 +711,6 @@ export const Services = class {
     let { scaleFactor, iconSize, dock } = settings;
 
     // todo move dots and badges here?
-
-    // the trash
-    if (this.extension.trash_icon && icon.icon_name.startsWith('user-trash')) {
-      let new_icon = this.trashFull ? 'user-trash-full' : 'user-trash';
-      if (new_icon != icon.icon_name) {
-        icon.icon_name = new_icon;
-      }
-    }
 
     // clock
     if (icon.icon_name == 'org.gnome.clocks') {

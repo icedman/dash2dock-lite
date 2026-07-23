@@ -60,7 +60,8 @@ class DockItemMenu extends PopupMenu.PopupMenu {
 
   popup() {
     this.open(BoxPointer.PopupAnimation.FULL);
-    this._menuManager.ignoreRelease();
+    // removed in GNOME 50's PopupMenuManager
+    this._menuManager.ignoreRelease?.();
   }
 }
 

@@ -548,6 +548,7 @@ export let Animator = class {
     animateIcons.forEach((icon) => {
       if (!icon._icon) return;
       // dock.renderArea.opacity = 100;
+      dock.extension.services?.updateIconState(icon);
       {
         let icon_name = icon._icon.icon_name;
         let app_name =

@@ -168,6 +168,10 @@ export const SettingsKeys = () => {
       default_value: false,
       widget_type: 'switch',
     },
+    'apps-icon-name': {
+      default_value: '',
+      widget_type: 'string',
+    },
     'trash-icon': {
       default_value: false,
       widget_type: 'switch',

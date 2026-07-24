@@ -581,6 +581,17 @@ export let Dock = GObject.registerClass(
           } catch (err) {
             // ignore
           }
+          if (this.dash && c == this.dash._showAppsIcon) {
+            if (stIcon._defaultIconName === undefined) {
+              stIcon._defaultIconName = stIcon.icon_name;
+            }
+            // themed override; missing names fall back to the stock grid icon
+            stIcon.fallback_icon_name = stIcon._defaultIconName;
+            let appsIconName = this.extension.apps_icon_name || '';
+            stIcon.icon_name = appsIconName.length
+              ? appsIconName
+              : stIcon._defaultIconName;
+          }
         }
       }
 
@@ -658,6 +669,10 @@ export let Dock = GObject.registerClass(
     }
 
     _cleanupIcon(c) {
+      if (c._icon && c._icon._defaultIconName !== undefined) {
+        c._icon.icon_name = c._icon._defaultIconName;
+        delete c._icon._defaultIconName;
+      }
       if (c._image && c._image.get_parent()) {
         c._image.get_parent().remove_child(c._image);
       }

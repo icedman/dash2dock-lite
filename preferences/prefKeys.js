@@ -69,6 +69,10 @@ export let PrefKeys = class {
           settings.set_double(name, value);
           break;
         }
+        case 'string': {
+          settings.set_string(name, value);
+          break;
+        }
         case 'color': {
           settings.set_value(name, new GLib.Variant('(dddd)', value));
           break;
@@ -146,7 +150,7 @@ export let PrefKeys = class {
         }
         case 'string': {
           key.value = settings.get_string(name);
-          if (key.object) key.object.set_value(key.value);
+          if (key.object && key.object.set_text) key.object.set_text(key.value);
           break;
         }
         case 'color': {
@@ -261,6 +265,16 @@ export let PrefKeys = class {
           signal_id = key.object.connect('value-changed', (w) => {
             let value = w.get_value();
             self.setValue(name, value);
+          });
+          break;
+        }
+        case 'string': {
+          signal_id = key.object.connect('changed', (w) => {
+            let value = w.get_text();
+            self.setValue(name, value);
+            if (key.callback) {
+              key.callback(value);
+            }
           });
           break;
         }

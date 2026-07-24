@@ -530,6 +530,7 @@ export default class Dash2DockLiteExt extends Extension {
           break;
         case 'apps-icon':
         case 'apps-icon-front':
+        case 'apps-icon-name':
         case 'calendar-icon':
         case 'clock-icon':
         case 'favorites-only': {

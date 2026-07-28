@@ -2,7 +2,6 @@
 
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as Fav from 'resource:///org/gnome/shell/ui/appFavorites.js';
-import * as Config from 'resource:///org/gnome/shell/misc/config.js';
 
 import Shell from 'gi://Shell';
 import GObject from 'gi://GObject';
@@ -170,6 +169,7 @@ export let Dock = GObject.registerClass(
       this._trashIcon = null;
       this._recentFilesIcon = null;
       this._downloadsIcon = null;
+      this._trackDashInput();
       this._beginAnimation();
     }
 
@@ -426,32 +426,68 @@ export let Dock = GObject.registerClass(
 
       this._updateIconEffect();
 
+      // The struts actor reserves work area. It must not take part in the
+      // input region: with autohide disabled it spans the full monitor
+      // width, so on X11 it would swallow every click in that band.
       Main.layoutManager.addChrome(this.struts, {
         affectsStruts: !this.extension.autohide_dash,
-        ...(Config.PACKAGE_VERSION[0] == '4'
-          ? { affectsInputRegion: true }
-          : {}),
+        affectsInputRegion: false,
         trackFullscreen: false,
       });
 
+      // The dock container is sized to the whole monitor, so it cannot carry
+      // the input region either. Track the visible parts instead, so the
+      // clickable area matches what is actually drawn.
       Main.layoutManager.addChrome(this, {
         affectsStruts: false,
-        // affectsInputRegion: false,
+        affectsInputRegion: false,
         trackFullscreen: true,
       });
 
+      // 2px edge strip -- stays reactive so autohide reveal keeps working
       Main.layoutManager.addChrome(this.dwell, {
         affectsStruts: false,
-        // affectsInputRegion: false,
         trackFullscreen: false,
       });
 
       this._onChrome = true;
+
+      if (this._background) {
+        Main.layoutManager.trackChrome(this._background, {
+          affectsInputRegion: true,
+        });
+      }
+      this._trackDashInput();
+    }
+
+    // recreateDash() destroys and rebuilds this.dash, so its input tracking
+    // has to be re-established whenever that happens.
+    _trackDashInput() {
+      if (!this._onChrome) {
+        return;
+      }
+      if (this._trackedDash && this._trackedDash != this.dash) {
+        Main.layoutManager.untrackChrome(this._trackedDash);
+        this._trackedDash = null;
+      }
+      if (this.dash && this._trackedDash != this.dash) {
+        Main.layoutManager.trackChrome(this.dash, {
+          affectsInputRegion: true,
+        });
+        this._trackedDash = this.dash;
+      }
     }
 
     removeFromChrome() {
       if (!this._onChrome) {
         return;
+      }
+      if (this._trackedDash) {
+        Main.layoutManager.untrackChrome(this._trackedDash);
+        this._trackedDash = null;
+      }
+      if (this._background) {
+        Main.layoutManager.untrackChrome(this._background);
       }
       Main.layoutManager.removeChrome(this.struts);
       Main.layoutManager.removeChrome(this);

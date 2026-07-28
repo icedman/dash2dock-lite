@@ -1030,9 +1030,12 @@ export let Animator = class {
           dock.struts.height = dock._background.height;
           // X11 .. click through fix ..
           // dock.struts.width *= 1.25;
+        } else {
+          // Without this the strut rect keeps y=0 and lands on the wrong
+          // monitor whenever the dock's monitor has a non-zero y offset.
+          dock.struts.y = dock.y;
         }
 
-        // dock.struts.y = dock.y;
         if (dock._position == DockPosition.RIGHT) {
           dock.struts.x = dock.x + dock.width - dock.struts.width;
         } else {
@@ -1051,9 +1054,12 @@ export let Animator = class {
           dock.struts.width = dock._background.width;
           // X11 .. click through fix ..
           // dock.struts.height *= 1.25;
+        } else {
+          // Without this the strut rect keeps x=0 and lands on the wrong
+          // monitor whenever the dock's monitor has a non-zero x offset.
+          dock.struts.x = dock.x;
         }
 
-        // dock.struts.x = dock.x;
         if (dock._position == DockPosition.BOTTOM) {
           dock.struts.y = dock.y + dock.height - dock.struts.height;
         } else {

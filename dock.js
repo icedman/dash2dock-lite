@@ -873,7 +873,16 @@ export let Dock = GObject.registerClass(
             return;
           }
           if (!mounted.includes(extra._mountPath)) {
+            // the label is parented to the chrome, not to the item, so
+            // remove_child() leaves it on screen at whatever opacity the
+            // animator last gave it - 255 whenever the icon was hovered to
+            // reach its Unmount action. _cleanupIcon() is the existing
+            // teardown for that, but it only ever ran from the icon's
+            // 'destroy' handler, which unparenting never triggers.
+            extra._label = extra._label || extra.label;
+            this._cleanupIcon(extra);
             this._extraIcons.remove_child(extra);
+            extra.destroy();
             this._icons = null;
           }
         });

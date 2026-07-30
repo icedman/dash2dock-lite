@@ -642,8 +642,41 @@ export const Services = class {
     return tempPath(appname);
   }
 
+  // the /tmp entries are written one per mount and nothing else removes them:
+  // drop every one no live mount claims, which also clears leftovers from a
+  // session that ended while something was still mounted
+  _sweepMountEntries(keep) {
+    let prefix = tempPath('mount-');
+    let dirPath = GLib.path_get_dirname(prefix);
+    let iter = null;
+    try {
+      iter = Gio.File.new_for_path(dirPath).enumerate_children(
+        'standard::name',
+        Gio.FileQueryInfoFlags.NOFOLLOW_SYMLINKS,
+        null
+      );
+    } catch (err) {
+      return;
+    }
+
+    let info = null;
+    while ((info = iter.next_file(null))) {
+      let path = `${dirPath}/${info.get_name()}`;
+      if (!path.startsWith(prefix)) continue;
+      if (!path.endsWith('-dash2dock-lite.desktop')) continue;
+      if (keep[path]) continue;
+      try {
+        Gio.File.new_for_path(path).delete(null);
+      } catch (err) {
+        // already gone, or not ours to remove
+      }
+    }
+    iter.close(null);
+  }
+
   checkMounts() {
     if (!this.extension.mounted_icon) {
+      this._sweepMountEntries({});
       this._mounts = {};
       this.mounts = [];
       return;
@@ -662,6 +695,7 @@ export const Services = class {
 
     this.mounts = mounts;
     this._mounts = _mounts;
+    this._sweepMountEntries(_mounts);
   }
 
   //! this is out of place - services should only do background process - no rendering

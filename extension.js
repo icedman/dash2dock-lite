@@ -493,7 +493,6 @@ export default class Dash2DockLiteExt extends Extension {
           break;
         case 'mounted-icon': {
           this.services.checkMounts();
-          this.services._commitMounts();
           this.animate({ refresh: true });
           break;
         }

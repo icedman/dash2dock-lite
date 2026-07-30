@@ -67,10 +67,6 @@ export const Services = class {
         'ping',
         1000 * 5,
         () => {
-          // deferred stuff is required when .desktop entry if first created
-          // check for deferred mounts
-          this._commitMounts();
-
           // notifications
           this.checkNotifications();
         },
@@ -80,7 +76,6 @@ export const Services = class {
 
     this._disableNotifications = 0;
 
-    this._deferredMounts = [];
     this._volumeMonitor = Gio.VolumeMonitor.get();
     this._volumeMonitor.connectObject(
       'mount-added',
@@ -119,16 +114,17 @@ export const Services = class {
     this.checkNotifications();
 
     this.checkMounts();
-    this._commitMounts();
   }
 
   disable() {
-    this._downloadsMonitor.disconnectObject(this);
+    // guarded - a throw here used to abort the rest of disable() and leave the
+    // volume monitor connected to a dead Services instance
+    this._downloadsMonitor?.disconnectObject(this);
     this._downloadsMonitor = null;
     this._services = [];
-    this._volumeMonitor.disconnectObject(this);
+    this._volumeMonitor?.disconnectObject(this);
     this._volumeMonitor = null;
-    this._trashMonitor.disconnectObject(this);
+    this._trashMonitor?.disconnectObject(this);
     this._trashMonitor = null;
     this._trashDir = null;
   }
@@ -171,37 +167,21 @@ export const Services = class {
     this._debounceCheckDownloads();
   }
 
-  _commitMounts() {
-    if (this._deferredMounts && this._deferredMounts.length) {
-      let mounts = [...this._deferredMounts];
-      this._deferredMounts = [];
-      mounts.forEach((m) => {
-        this._onMountAdded(null, m);
-      });
-    }
-  }
-
   _onMountAdded(monitor, mount) {
     if (!this.extension.mounted_icon) {
       return false;
     }
 
     this.last_mounted = mount;
-    let basename = this._getMountName(mount); // mount.get_default_location().get_basename();
-    // let appname = `mount-${this._toSafeFileName(basename)}-dash2dock-lite.desktop`;
-    this.setupMountIcon(mount);
-    this.extension.animate();
+    this.checkMounts();
+    // refresh - the dock only reconciles its mount icons from layout()
+    this.extension.animate({ refresh: true });
     return true;
   }
 
   _onMountRemoved(monitor, mount) {
-    let basename = this._getMountName(mount); //mount.get_default_location().get_basename();
-    let appname = `mount-${this._toSafeFileName(
-      basename
-    )}-dash2dock-lite.desktop`;
-    let mount_id = tempPath(appname);
-    delete this._mounts[mount_id];
-    this.extension.animate();
+    this.checkMounts();
+    this.extension.animate({ refresh: true });
   }
 
   update(elapsed) {
@@ -286,32 +266,32 @@ export const Services = class {
       // return;
     }
     let label = mount.get_name();
-    let appname = `mount-${this._toSafeFileName(
-      basename
-    )}-dash2dock-lite.desktop`;
-    let fullpath = mount.get_default_location().get_path();
+    let location = mount.get_default_location();
+    // network mounts (smb://, sftp://...) have no local path
+    let fullpath = location.get_path() ?? location.get_uri();
     let icon = 'drive-harddisk-solidstate';
     if (mount.get_icon() && mount.get_icon().names) {
       icon =
         this.extension.lookup_icon_from_names(mount.get_icon().names) ?? icon;
     }
     let mount_exec = 'echo "not implemented"';
-    let unmount_exec = `umount ${fullpath}`;
-    let mount_id = tempPath(appname);
+    // unmount through gio - a bare umount(8) needs root for anything that
+    // isn't a fuse mount, and it unmounts behind udisks' back when it does work
+    let unmount_exec = `gio mount -u "${fullpath}"`;
+    let mount_id = this._mountId(mount);
     let fn = Gio.File.new_for_path(mount_id);
 
-    if (!fn.query_exists(null)) {
-      let content = `[Desktop Entry]\nVersion=1.0\nTerminal=false\nType=Application\nName=${label}\nExec=xdg-open ${fullpath}\nIcon=${icon}\nStartupWMClass=mount-${this._toSafeFileName(
-        basename
-      )}-dash2dock-lite\nActions=unmount;\n\n[Desktop Action mount]\nName=Mount\nExec=${mount_exec}\n\n[Desktop Action unmount]\nName=Unmount\nExec=${unmount_exec}\n`;
-      const [, etag] = fn.replace_contents(
-        content,
-        null,
-        false,
-        Gio.FileCreateFlags.REPLACE_DESTINATION,
-        null
-      );
-    }
+    // always rewrite - name, path and icon belong to whatever is mounted now
+    let content = `[Desktop Entry]\nVersion=1.0\nTerminal=false\nType=Application\nName=${label}\nExec=xdg-open "${fullpath}"\nIcon=${icon}\nStartupWMClass=mount-${this._toSafeFileName(
+      basename
+    )}-dash2dock-lite\nActions=unmount;\n\n[Desktop Action mount]\nName=Mount\nExec=${mount_exec}\n\n[Desktop Action unmount]\nName=Unmount\nExec=${unmount_exec}\n`;
+    const [, etag] = fn.replace_contents(
+      content,
+      null,
+      false,
+      Gio.FileCreateFlags.REPLACE_DESTINATION,
+      null
+    );
 
     this._mounts[mount_id] = mount;
   }
@@ -652,34 +632,70 @@ export const Services = class {
       }
     }
 
-    return 'Volume';
+    return name || 'Volume';
+  }
+
+  _mountId(mount) {
+    let appname = `mount-${this._toSafeFileName(
+      this._getMountName(mount)
+    )}-dash2dock-lite.desktop`;
+    return tempPath(appname);
+  }
+
+  // the /tmp entries are written one per mount and nothing else removes them:
+  // drop every one no live mount claims, which also clears leftovers from a
+  // session that ended while something was still mounted
+  _sweepMountEntries(keep) {
+    let prefix = tempPath('mount-');
+    let dirPath = GLib.path_get_dirname(prefix);
+    let iter = null;
+    try {
+      iter = Gio.File.new_for_path(dirPath).enumerate_children(
+        'standard::name',
+        Gio.FileQueryInfoFlags.NOFOLLOW_SYMLINKS,
+        null
+      );
+    } catch (err) {
+      return;
+    }
+
+    let info = null;
+    while ((info = iter.next_file(null))) {
+      let path = `${dirPath}/${info.get_name()}`;
+      if (!path.startsWith(prefix)) continue;
+      if (!path.endsWith('-dash2dock-lite.desktop')) continue;
+      if (keep[path]) continue;
+      try {
+        Gio.File.new_for_path(path).delete(null);
+      } catch (err) {
+        // already gone, or not ours to remove
+      }
+    }
+    iter.close(null);
   }
 
   checkMounts() {
     if (!this.extension.mounted_icon) {
-      this._mounts = [];
+      this._sweepMountEntries({});
+      this._mounts = {};
+      this.mounts = [];
       return;
     }
 
+    // rebuild from the live mount list instead of tracking add/remove deltas.
+    // on 'mount-removed' the GMount has already lost its drive and volume, so
+    // the id derived from its name no longer matches the id it was added with -
+    // deltas leave icons of unmounted drives behind.
     let mounts = this._volumeMonitor.get_mounts() || [];
-    let mount_ids = mounts.map((mount) => {
-      let basename = this._getMountName(mount);
-      let appname = `mount-${this._toSafeFileName(
-        basename
-      )}-dash2dock-lite.desktop`;
-      return appname;
+    let _mounts = {};
+    mounts.forEach((mount) => {
+      this.setupMountIcon(mount);
+      _mounts[this._mountId(mount)] = mount;
     });
 
     this.mounts = mounts;
-    mounts.forEach((mount) => {
-      let basename = this._getMountName(mount);
-      let appname = `mount-${this._toSafeFileName(
-        basename
-      )}-dash2dock-lite.desktop`;
-      this._deferredMounts.push(mount);
-    });
-
-    // added devices will subsequently be on mounted events
+    this._mounts = _mounts;
+    this._sweepMountEntries(_mounts);
   }
 
   //! this is out of place - services should only do background process - no rendering

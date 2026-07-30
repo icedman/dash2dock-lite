@@ -814,6 +814,11 @@ export let Dock = GObject.registerClass(
                 this._maybeBounce(c);
               }
               this._maybeMinimizeOrMaximize(c._appwell.app);
+            } catch (err) {
+              // the dock's extras must never swallow the click itself
+              console.log(err);
+            }
+            try {
               c._appwell._activate();
             } catch (err) {
               // happens with dummy DashIcons
@@ -1372,7 +1377,6 @@ export let Dock = GObject.registerClass(
 
       let event = Clutter.get_current_event();
       let modifiers = event ? event.get_state() : 0;
-      let pressed = event.type() == Clutter.EventType.BUTTON_PRESS;
       let button1 = (modifiers & Clutter.ModifierType.BUTTON1_MASK) != 0;
       let button2 = (modifiers & Clutter.ModifierType.BUTTON2_MASK) != 0;
       let button3 = (modifiers & Clutter.ModifierType.BUTTON3_MASK) != 0;
@@ -1385,8 +1389,6 @@ export let Dock = GObject.registerClass(
         (isCtrlPressed || isMiddleButton);
       if (openNewWindow) return;
 
-      let workspaceManager = global.workspace_manager;
-      let activeWs = workspaceManager.get_active_workspace();
       let focusedWindow = null;
 
       windows.forEach((w) => {
@@ -1395,7 +1397,26 @@ export let Dock = GObject.registerClass(
         }
       });
 
+      const hidden = windows.filter((w) => {
+        return w.is_hidden();
+      });
+
+      // restoring takes precedence over the minimize toggle. an app holding
+      // both a minimized window and a focused one would otherwise minimize
+      // every window 50ms after activate() restored the minimized one - the
+      // window flashes onscreen and is gone again
       // delay - allow dash to actually call 'activate' first
+      if (hidden.length) {
+        this.extension._hiTimer.runOnce(() => {
+          hidden.forEach((w) => {
+            w.unminimize();
+          });
+          // get_windows() is most-recently-used first
+          this._raiseAndFocus(hidden[0]);
+        }, 50);
+        return;
+      }
+
       if (focusedWindow) {
         this.extension._hiTimer.runOnce(() => {
           if (shift) {
@@ -1414,33 +1435,16 @@ export let Dock = GObject.registerClass(
             });
           }
         }, 50);
-      } else {
-        const hidden = windows.filter((w) => {
-          return w.is_hidden();
-        });
+        return;
+      }
 
-        // multi-monitors fix -- where focus can seem to get lost
-        if (!hidden.length) {
-          let windows = app.get_windows().filter((w) => {
-            return w.get_monitor() == this._monitor.index;
-          });
-          if (windows.length > 0) {
-            this.extension._hiTimer.runOnce(() => {
-              this._raiseAndFocus(windows[0]);
-            }, 50);
-          }
-          return;
-        }
-
+      // multi-monitors fix -- where focus can seem to get lost
+      let onThisMonitor = app.get_windows().filter((w) => {
+        return w.get_monitor() == this._monitor.index;
+      });
+      if (onThisMonitor.length > 0) {
         this.extension._hiTimer.runOnce(() => {
-          windows.forEach((w) => {
-            if (w.is_hidden()) {
-              w.unminimize();
-              if (w.has_focus()) {
-                w.raise();
-              }
-            }
-          });
+          this._raiseAndFocus(onThisMonitor[0]);
         }, 50);
       }
     }

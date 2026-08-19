@@ -165,7 +165,7 @@ export let Animator = class {
     let vertical = dock.isVertical();
     let isWithin = dock._isWithinDash([px, py]);
 
-    if (m.inFullscreen) {
+    if (m.inFullscreen && !dock.extension._inOverview) {
       isWithin = false;
     }
 
@@ -1065,7 +1065,10 @@ export let Animator = class {
       dock._updateTransparenies();
     }
 
-    dock.struts.visible = !dock._hidden;
+    // struts carries the input region, so it must drop out in fullscreen -
+    // otherwise it swallows clicks over a video's transport controls
+    dock.struts.visible =
+      !dock._hidden && (!m.inFullscreen || dock.extension._inOverview);
     dock.dash.opacity = 255;
 
     //---------------------

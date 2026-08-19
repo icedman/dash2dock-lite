@@ -143,7 +143,11 @@ export let AutoHide = class {
   }
 
   show() {
-    if (!this.dock._monitor || this.dock._monitor.inFullscreen) {
+    if (!this.dock._monitor) {
+      return;
+    }
+    // overview exception: fullscreen windows are just thumbnails there
+    if (this.dock._monitor.inFullscreen && !this.extension._inOverview) {
       return;
     }
     this._dwell = 0;

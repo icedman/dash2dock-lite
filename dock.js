@@ -1213,6 +1213,13 @@ export let Dock = GObject.registerClass(
     }
 
     animate(dt = 15) {
+      // destroyDocks() nulls the dash, but a tick already in flight can
+      // re-enter here afterwards - unplugging a monitor mid-animation
+      // would then throw and take the extension down
+      if (!this.dash) {
+        return;
+      }
+
       if (this._preview) {
         let p = null;
 
@@ -1241,6 +1248,9 @@ export let Dock = GObject.registerClass(
       if (!this._pauseBounce || this._pauseBounce <= 0) {
         while (this._fast_forward && this._fast_forward-- > 0) {
           this.animate(dt);
+          if (!this.dash) {
+            break;
+          }
           this.dash.opacity = 0;
         }
       }

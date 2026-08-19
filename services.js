@@ -218,12 +218,8 @@ export const Services = class {
     let open_app = 'nautilus --select';
 
     let trash_action = `${extension_path}/apps/empty-trash.sh`;
-    {
-      let fn = Gio.File.new_for_path('.local/share/Trash');
-      trash_action = `rm -rf "${fn.get_path()}"`;
-    }
 
-    let content = `[Desktop Entry]\nVersion=1.0\nTerminal=false\nType=Application\nName=Trash\nExec=${open_app} trash:///\nIcon=user-trash\nStartupWMClass=trash-dash2dock-lite\nActions=trash\n\n[Desktop Action trash]\nName=Empty Trash\nExec=${trash_action}\nTerminal=true\n`;
+    let content = `[Desktop Entry]\nVersion=1.0\nTerminal=false\nType=Application\nName=Trash\nExec=${open_app} trash:///\nIcon=user-trash\nStartupWMClass=trash-dash2dock-lite\nActions=trash\n\n[Desktop Action trash]\nName=Empty Trash\nExec=${trash_action}\nTerminal=false\n`;
     const [, etag] = fn.replace_contents(
       content,
       null,
@@ -683,6 +679,22 @@ export const Services = class {
   }
 
   //! this is out of place - services should only do background process - no rendering
+  // resolve state-dependent icon names (trash full/empty) - must run before
+  // the renderer reads icon_name so the same frame paints the new state.
+  // updateIcon() runs after paint and would always lag one animation tick
+  updateIconState(item) {
+    let icon = item?._icon;
+    if (!icon || !icon.icon_name) {
+      return;
+    }
+    if (this.extension.trash_icon && icon.icon_name.startsWith('user-trash')) {
+      let new_icon = this.trashFull ? 'user-trash-full' : 'user-trash';
+      if (new_icon != icon.icon_name) {
+        icon.icon_name = new_icon;
+      }
+    }
+  }
+
   updateIcon(item, settings) {
     if (!item) {
       return;
@@ -695,14 +707,6 @@ export const Services = class {
     let { scaleFactor, iconSize, dock } = settings;
 
     // todo move dots and badges here?
-
-    // the trash
-    if (this.extension.trash_icon && icon.icon_name.startsWith('user-trash')) {
-      let new_icon = this.trashFull ? 'user-trash-full' : 'user-trash';
-      if (new_icon != icon.icon_name) {
-        icon.icon_name = new_icon;
-      }
-    }
 
     // clock
     if (icon.icon_name == 'org.gnome.clocks') {

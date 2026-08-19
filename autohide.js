@@ -251,7 +251,12 @@ export let AutoHide = class {
       (w) =>
         workspace == w.get_workspace().index() && w.showing_on_its_workspace()
     );
-    windows = windows.filter((w) => w.get_window_type() in handledWindowTypes);
+    // `in` tests array indices, not values - it matched window types 0..3
+    // instead of the listed enum values, so modal dialogs and utilities
+    // never dodged while desktop and dock windows wrongly did
+    windows = windows.filter((w) =>
+      handledWindowTypes.includes(w.get_window_type())
+    );
 
     let isOverlapped = false;
     let dockRect = this.dock.struts.get_transformed_position();

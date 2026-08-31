@@ -124,6 +124,11 @@ export let Dock = GObject.registerClass(
         name: 'DockStruts',
         offscreen_redirect: Clutter.OffscreenRedirect.ALWAYS,
       });
+      this.hitbox = new St.Widget({
+        name: 'DockHitbox',
+        reactive: false,
+        track_hover: false,
+      });
       this.dwell = new St.Widget({
         name: 'DockDwell',
         reactive: true,
@@ -327,7 +332,7 @@ export let Dock = GObject.registerClass(
           if (target && target.iconEffect) {
             target.iconEffect.color = color;
           }
-        } catch(err) {
+        } catch (err) {
           // console.log(err)
         }
       });
@@ -368,7 +373,7 @@ export let Dock = GObject.registerClass(
       this.Dash = Dash;
       let dash = new Dash();
 
-      dash._adjustIconSize = () => {};
+      dash._adjustIconSize = () => { };
       let con = console;
       let orig = dash._createAppItem;
       orig = orig.bind(dash);
@@ -411,7 +416,7 @@ export let Dock = GObject.registerClass(
         'leave-event',
         this._onLeaveEvent.bind(this),
         'destroy',
-        () => {},
+        () => { },
         this
       );
 
@@ -429,14 +434,24 @@ export let Dock = GObject.registerClass(
       Main.layoutManager.addChrome(this.struts, {
         affectsStruts: !this.extension.autohide_dash,
         ...(Config.PACKAGE_VERSION[0] == '4'
+          ? { affectsInputRegion: false }
+          : {}),
+        trackFullscreen: true,
+      });
+
+      Main.layoutManager.addChrome(this.hitbox, {
+        affectsStruts: false,
+        ...(Config.PACKAGE_VERSION[0] == '4'
           ? { affectsInputRegion: true }
           : {}),
-        trackFullscreen: false,
+        trackFullscreen: true,
       });
 
       Main.layoutManager.addChrome(this, {
         affectsStruts: false,
-        // affectsInputRegion: false,
+        ...(Config.PACKAGE_VERSION[0] == '4'
+          ? { affectsInputRegion: false }
+          : {}),
         trackFullscreen: true,
       });
 
@@ -454,6 +469,7 @@ export let Dock = GObject.registerClass(
         return;
       }
       Main.layoutManager.removeChrome(this.struts);
+      Main.layoutManager.removeChrome(this.hitbox);
       Main.layoutManager.removeChrome(this);
       Main.layoutManager.removeChrome(this.dwell);
       this._onChrome = false;
@@ -539,7 +555,7 @@ export let Dock = GObject.registerClass(
       }
       return null;
     }
-    
+
     _inspectIcon(c) {
       if (!c.visible) return false;
 
@@ -627,7 +643,7 @@ export let Dock = GObject.registerClass(
           }
         }
       }
-      
+
       if (c._icon) {
         // renderer takes care of displaying an icon
         c._icon.opacity = 0;
@@ -921,7 +937,7 @@ export let Dock = GObject.registerClass(
           prepare: (() => {
             this.extension.services._debounceCheckDownloads();
           }).bind(this),
-          cleanup: () => {},
+          cleanup: () => { },
         },
       ];
 
@@ -1261,9 +1277,10 @@ export let Dock = GObject.registerClass(
 
     _beginAnimation(caller) {
       if (this.extension.debug_visual) {
-        this.add_style_class_name('hi');
-        this.struts.add_style_class_name('hi');
-        this.dwell.add_style_class_name('hi');
+        this.hitbox.add_style_class_name('hi');
+        // this.add_style_class_name('hi');
+        // this.struts.add_style_class_name('hi');
+        // this.dwell.add_style_class_name('hi');
       }
 
       this._favorite_ids = Fav.getAppFavorites()._getIds();
@@ -1294,9 +1311,10 @@ export let Dock = GObject.registerClass(
 
     _endAnimation() {
       if (this.extension.debug_visual) {
-        this.remove_style_class_name('hi');
-        this.struts.remove_style_class_name('hi');
-        this.dwell.remove_style_class_name('hi');
+        this.hitbox.remove_style_class_name('hi');
+        // this.remove_style_class_name('hi');
+        // this.struts.remove_style_class_name('hi');
+        // this.dwell.remove_style_class_name('hi');
       }
 
       this._updateFocusedIcon();

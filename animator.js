@@ -1061,6 +1061,13 @@ export let Animator = class {
         }
       }
 
+      if (dock.hitbox) {
+        dock.hitbox.x = dock._background.x + dock.x;
+        dock.hitbox.y = dock._background.y + dock.y;
+        dock.hitbox.width = dock._background.width;
+        dock.hitbox.height = dock._background.height;
+      }
+
       dock._updateTransparenies();
     }
 

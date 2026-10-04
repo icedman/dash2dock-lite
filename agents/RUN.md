@@ -115,8 +115,8 @@ Status: `[ ]` todo · `[~]` in progress · `[x]` done (hash) · `[!]` blocked ·
 | [x] c84f252 | 1.2 | R-2 reset `*Seq` + listeners | 1.1 | B-6, B-7 |
 | [x] dda62a5 | 1.3 | R-3 autohide | 1.1 | B-3, B-4, B-26, B-27 · human visual |
 | [x] c9ca876 | 1.4 | R-4a extension.js one-liners | 0.3 | B-5, B-13, B-16, B-20 |
-| [~] | 1.5 | R-4b animator one-liners | 0.1 | B-14, B-15, B-34 · human visual |
-| [ ] | 1.6 | R-4c dock.js input | 0.1 | B-17, B-18, B-19 · human visual |
+| [x] 8f44419 | 1.5 | R-4b animator one-liners | 0.1 | B-14, B-15, B-34 · human visual |
+| [~] | 1.6 | R-4c dock.js input | 0.1 | B-17, B-18, B-19 · human visual |
 | [ ] | 1.7 | R-4d mount names | 0.1 | B-9 |
 | [ ] | 1.8 | R-6 remove eval | 0.1 | B-11 |
 | [ ] | 1.9 | R-5 prefs | 0.3, 1.8 | B-12, B-32, B-33 · human visual |
@@ -183,9 +183,9 @@ Status: `open` · `fixed <hash>` · `partial <hash>` · `blocked` · `wontfix (r
 | B-11 | R-6 | open | | B-29 | R-7b | open |
 | B-12 | R-5 | open | | B-30 | (unassigned) | open |
 | B-13 | R-4a | fixed c9ca876 | | B-31 | R-7c | open |
-| B-14 | R-4b | open | | B-32 | R-5 | open |
-| B-15 | R-4b | open | | B-33 | R-5 | open |
-| B-16 | R-4a | fixed c9ca876 | | B-34 | R-4b | open |
+| B-14 | R-4b | fixed 8f44419 | | B-32 | R-5 | open |
+| B-15 | R-4b | fixed 8f44419 | | B-33 | R-5 | open |
+| B-16 | R-4a | fixed c9ca876 | | B-34 | R-4b | fixed 8f44419 |
 | B-17 | R-4c | open | | B-35 | B-35 | open |
 | B-18 | R-4c | open | | T-4 | R-0d | deferred (no release for now) |
 | P-1 | R-10 | open | | P-7 | R-12 | open |
@@ -223,6 +223,9 @@ Items the agents can't see. The human runs `make test-shell` (needs `mutter-devk
 | 1.3 | dda62a5 | Shown dock, pointer resting on it while a window overlaps ⇒ never hides | |
 | 1.4 | c9ca876 | Log in with the extension on, disable it, open overview ⇒ dash icons + show-apps visible | |
 | 1.4 | c9ca876 | Change icon size in prefs ⇒ dock resizes, shrink still applies | |
+| 1.5 | 8f44419 | Hover magnify settles without jitter; separators stay in place | |
+| 1.5 | 8f44419 | Animation FPS Medium/Low: icons snap to magnified positions (intended) and look right | |
+| 1.5 | 8f44419 | Launch from a left and a right dock: after the bounce the icon returns fully to its column | |
 
 ## 6. Run Log (append-only, newest last)
 
@@ -272,3 +275,6 @@ Format: `YYYY-MM-DD HH:MM · cycle · EVENT · details` where EVENT ∈ `SETUP, 
 - 2026-10-04 · 1.4 · AUDIT-PASS · `c9ca876`. check=PASS lint=0/162 (−4) settings=1/30 (duplicate-case gone) timer_check 15/15 smoke=PASS(x2). B-5, B-13, B-16, B-20 fixed. 2 human-check items queued.
 - 2026-10-04 · 1.5 · PREFLIGHT · tree clean apart from agents/*; HEAD `c9ca876`; GNOME Shell 50.5.
 - 2026-10-04 · 1.5 · ASSIGN · R-4b animator one-liners (B-14, B-15, B-34). Worker told to report the on-screen effect of each revived branch and hold any ID that looks harmful.
+- 2026-10-04 · 1.5 · AUDIT-PASS · `8f44419`. check=PASS lint=0/162 settings=1/30 timer_check 15/15 smoke=PASS(x2). Auditor judged all three revived branches within intent (B-14 fps split per commit 5c173eb; B-15 can't oscillate; B-34 x reset doesn't fight the animator). B-14, B-15, B-34 fixed. 3 human-check items queued.
+- 2026-10-04 · 1.6 · PREFLIGHT · tree clean apart from agents/*; HEAD `8f44419`; GNOME Shell 50.5.
+- 2026-10-04 · 1.6 · ASSIGN · R-4c dock.js input (B-17, B-18, B-19).

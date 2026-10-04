@@ -84,40 +84,41 @@ Minor nits (naming, a stray blank line) that don't violate a rule: list them as 
 > Overwritten each cycle. On FAIL the Worker reads this for its rework.
 
 ```
-Cycle / Task / Attempt:  1.5 / R-4b / 1
+Cycle / Task / Attempt:  1.6 / R-4c / 1
 Verdict:          PASS
-Commit:           see Audit Log (fix(animator): ...)
-Gates:            check=PASS ; lint=PASS (0 err / 162 warn = baseline; animator.js 23 = HEAD) ;
-                  settings=exit 1, 1 err (B-12) / 30 warn = baseline ; smoke=PASS (1 known sig,
-                  0 new, probe 6/5, after-enable deltas 0, after-disable 0/0/0/0/0/+1/0) ;
-                  smoke-x2=PASS (same) ; `d2da: ` 0 ; timer_check all passed ; leaks=n/a ;
-                  real=not run (advisory) ; card=PASS.
-Scope:            animator.js (+6/-2, 3 hunks). Matches Report. agents/RUN.md, WORKER.md,
-                  AUDITOR.md = bookkeeping.
-Rule violations:  none. A1-A13 clean. A8: one attribute read per icon in animate; bounce reset
-                  is once per bounce.
+Commit:           see Audit Log (fix(dock): ...)
+Gates:            check=PASS ; lint=PASS (0 err / 158 warn, baseline 162; dock.js 21 vs HEAD 25,
+                  removed = button1/button2/pressed/err, all in edited code, no new warnings) ;
+                  settings=exit 1, 1 err (B-12) / 30 warn = baseline ; timer_check all passed ;
+                  smoke: runs 1-2 FAIL (NEW sig Style.unloadAll fn.delete of
+                  /tmp/iceman-custom-d2dl.css "No such file", via extension.js disable), HEAD in a
+                  temp worktree PASS, runs 3-4 PASS (1 known sig, 0 new, after-enable 0, after-disable
+                  0/0/0/0/0/+1/0) ; `d2da: ` 0 ; leaks=n/a ; real=not run ; card=PASS.
+Scope:            dock.js (+33/-15). Matches Report. agents/RUN.md, WORKER.md = bookkeeping.
+Rule violations:  none. A1-A13 clean.
 Specific checks:
-  - B-14: within intent. 5c173eb "restore smoothness for high fps" wrote this exact
-    if(fps>0) direct / else smoothing split; before that, translation was always direct.
-    Only the receiver was wrong. Default fps 0 unchanged; Medium/Low get the direct path the
-    author designed.
-  - B-15: lock is one-way (cache only grows while _hoverProgress==0, cleared on hover), so
-    no oscillation; real neighbour only lowers threshold 48->32 frames (~0.5-1.4 s at 15-45 ms
-    ticks), after a neighbour has already settled. Not "too early". Separator _prev/_next
-    (dock.js _findIcons) untouched: separators not in dock._icons; separator code reads only
-    its own fields.
-  - B-34: bounce frames write renderer.translationX only on vertical docks; nothing else ever
-    resets it (animate resets renderer Y at ~598 only, translateDecor copies Y). Zeroing X on
-    the end frame is a no-op for top/bottom. animate never writes appwell/renderer X, so no
-    fight; animate's per-frame _icon translation is a different actor.
+  - B-17: get_state() is a ClutterEvent method on 45-50; CONTROL_MASK = current-workspace filter.
+  - B-18 (a) Shell 50.5 appDisplay.js AppIcon.activate(button) (isMiddleButton = button ===
+    BUTTON_MIDDLE); same signature since before 45. Forwarding button = within intent: middle-click
+    now opens a new window as in stock Shell; right no longer counts as middle. (b) Original
+    activate now runs outside our try: same as unpatched Shell (St.Button clicked handler, gjs logs
+    errors), and the old catch skipped activation entirely. Acceptable, lower risk than before.
+    Smoke shows 0 errors from it. (c) the 4 lint removals are all in _maybeMinimizeOrMaximize and
+    the patched activate (eslint HEAD vs tree diff).
+  - B-19: _updateIconEffect adds 'icon-effect' only to _effectTargets() (renderArea, _list?._box);
+    _removeIconEffect removes that name from the same list, null-safe, nulls iconEffect. Not in a
+    per-frame path (undock/removeFromChrome only). A8 ok; the new per-activate work is O(1).
 Rework list:      none.
 Nits:
-  - bounce catch uses console.log(err) (pre-existing, not d2da: prefixed).
-  - animate still clears only _appwell.translationY per frame (harmless now).
-Findings confirmed:  B-14, B-15, B-34 fixed.
-Human check needed:  hover magnify settle without jitter + separators in place; animation-fps
-                     Medium/Low magnify; bounce on left/right dock returns fully.
-New findings spotted (for Orchestrator): none.
+  - Style.unloadAll catch uses console.log(err) (pre-existing).
+  - In undock _list is already destroyed so only renderArea is cleared there (harmless).
+Findings confirmed:  B-17, B-18, B-19 fixed.
+Human check needed:  click / shift-click / middle-click / ctrl-click on a running app; Ctrl+scroll
+                     cycles current-workspace windows; tint/monochrome on, disable => effect gone.
+New findings spotted (for Orchestrator): smoke flake: the nested shell and the live session share
+  /tmp/<user>-custom-d2dl.css (style.js tempPath, B-10 class), so disable() in either can delete
+  the file under the other -> intermittent NEW Style.unloadAll signature. Fix with R-B-10 (per-
+  instance/XDG runtime path) or make delete ignore NOT_FOUND.
 ```
 
 ## 7. Audit Log (append-only, newest last)
@@ -136,3 +137,4 @@ New findings spotted (for Orchestrator): none.
 | 1.3 | R-3 | 2 | PASS | this commit | `make check` PASS; `make lint` PASS (0 err / 166 warn = baseline; autohide.js 3 = HEAD); check-settings exit 1 (2 err / 30 warn = baseline); `make smoke` PASS; smoke-x2 PASS (1 known sig, 0 new, 6/5 msgs, probe 6/5, after-disable deltas 0/0/0/0/0/+1/0 both); `d2da: ` 0; timer_check 15/15 | B-26 per human rule: dead `isInRect(arect, pointer)` (pad undefined => NaN => always false) removed with `pos`/`rect`/`arect`/import; zero behaviour change. Verified `_isWithinDash` (hidden => false, same struts rect, pad 20) is checked before every `return true` in `_checkOverlap`, and `hide()`/`slideOut()` are reachable only via `_checkHide`, so a shown dock under the pointer never hides and pointer position never reveals a hidden one. B-3 comment corrected (defensive guard). B-4, B-27 unchanged from attempt 1. Human visual check required. Finding (pre-existing, Low): `_isWithinDash` precedes the fullscreen check; masked by trackFullscreen. |
 | 1.4 | R-4a | 1 | PASS | this commit | `make check` PASS; `make lint` PASS (0 err / 162 warn, baseline 166; extension.js 13 warn vs HEAD 16 warn + 1 err); check-settings exit 1 (1 err B-12 / 30 warn, was 2/30); `make smoke` PASS; smoke-x2 PASS (1 known sig, 0 new, 6/5 msgs, probe 6/5, after-disable deltas 0/0/0/0/0/+1/0 both); `d2da: ` 0; timer_check all passed | B-5 dc_monitor rename (all refs). B-16 merged icon-size case = superset of both old bodies (shrink -> layout -> animate refresh). B-20 `_iconTheme` gone, unified on icon_theme. B-13 hidden actor remembered only if we hid it, restored+cleared in _showMainOverviewDash(true) from disable(); no-op if enabled after startup; no new private access. eslint: no-duplicate-case override removed, no-undef comment narrowed to 6.3 Clutter. Human visual check required. Nit: `Main.overview.dash.opacity` lacks `?.` (pre-existing). |
 | 1.5 | R-4b | 1 | PASS | this commit | `make check` PASS; `make lint` PASS (0 err / 162 warn = baseline; animator.js 23 = HEAD); check-settings exit 1 (1 err B-12 / 30 warn = baseline); `make smoke` PASS; smoke-x2 PASS (1 known sig, 0 new, 6/5 msgs, probe 6/5, after-disable deltas 0/0/0/0/0/+1/0 both); timer_check all passed | B-14, B-15, B-34 fixed; revived branches judged within intent (B-14 per 5c173eb; B-15 lock monotonic; B-34 X reset no conflict). Nits: bounce catch console.log; animate clears only appwell Y. Findings: none. |
+| 1.6 | R-4c | 1 | PASS | this commit | `make check` PASS; `make lint` PASS (0 err / 158 warn, baseline 162; dock.js 21 vs HEAD 25, -4 unused vars in edited code); check-settings exit 1 (1 err B-12 / 30 warn = baseline); smoke FAIL x2 (NEW Style.unloadAll /tmp css delete, environmental), HEAD worktree PASS, then `make smoke` PASS + smoke-x2 PASS (1 known sig, 0 new, 6/5, after-disable deltas 0/0/0/0/0/+1/0); `d2da: ` 0; timer_check all passed | B-17 get_state; B-18 activate(button) forwarded (Shell 50.5 AppIcon.activate(button) verified), original activate runs uncaught like stock Shell, judged within intent; B-19 symmetric removal on _effectTargets. Finding: smoke flake from /tmp css shared with the live session (style.js, B-10 class). |

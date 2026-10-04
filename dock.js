@@ -198,7 +198,7 @@ export let Dock = GObject.registerClass(
     undock() {
       this._destroyList();
       this._endAnimation();
-      this.dash._box.remove_effect_by_name('icon-effect');
+      this._removeIconEffect();
       this.autohider.disable();
       this.removeFromChrome();
       this.animator.disable();
@@ -325,6 +325,14 @@ export let Dock = GObject.registerClass(
           target.add_effect_with_name('icon-effect', effect);
         }
         target.iconEffect = effect;
+      });
+    }
+
+    _removeIconEffect() {
+      this._effectTargets().forEach((target) => {
+        if (!target) return;
+        target.remove_effect_by_name('icon-effect');
+        target.iconEffect = null;
       });
     }
 
@@ -465,7 +473,7 @@ export let Dock = GObject.registerClass(
       Main.layoutManager.removeChrome(this);
       Main.layoutManager.removeChrome(this.dwell);
       this._onChrome = false;
-      this.dash._box.get_parent().remove_effect_by_name('icon-effect');
+      this._removeIconEffect();
     }
 
     isVertical() {
@@ -816,16 +824,16 @@ export let Dock = GObject.registerClass(
         }
         if (c._appwell && !c._appwell._activate) {
           c._appwell._activate = c._appwell.activate;
-          c._appwell.activate = () => {
+          c._appwell.activate = (button) => {
             try {
               if (!c._menu) {
                 this._maybeBounce(c);
               }
-              this._maybeMinimizeOrMaximize(c._appwell.app);
-              c._appwell._activate();
-            } catch (err) {
-              // happens with dummy DashIcons
+              this._maybeMinimizeOrMaximize(c._appwell.app, button);
+            } catch (e) {
+              console.error('d2da: appwell activate', e);
             }
+            return c._appwell._activate(button);
           };
         }
         let icon = c._icon;
@@ -1367,8 +1375,8 @@ export let Dock = GObject.registerClass(
       });
     }
 
-    _maybeMinimizeOrMaximize(app) {
-      if (!app.get_windows) {
+    _maybeMinimizeOrMaximize(app, button) {
+      if (!app?.get_windows) {
         return;
       }
 
@@ -1380,12 +1388,22 @@ export let Dock = GObject.registerClass(
 
       let event = Clutter.get_current_event();
       let modifiers = event ? event.get_state() : 0;
-      let pressed = event.type() == Clutter.EventType.BUTTON_PRESS;
-      let button1 = (modifiers & Clutter.ModifierType.BUTTON1_MASK) != 0;
-      let button2 = (modifiers & Clutter.ModifierType.BUTTON2_MASK) != 0;
-      let button3 = (modifiers & Clutter.ModifierType.BUTTON3_MASK) != 0;
+      // St.Button activates on release, whose state still holds the pressed
+      // button mask; prefer the button Shell passes to activate()
+      let eventButton = null;
+      if (event) {
+        let type = event.type();
+        if (
+          type == Clutter.EventType.BUTTON_PRESS ||
+          type == Clutter.EventType.BUTTON_RELEASE
+        ) {
+          eventButton = event.get_button();
+        }
+      }
       let shift = (modifiers & Clutter.ModifierType.SHIFT_MASK) != 0;
-      let isMiddleButton = button3; // middle?
+      let isMiddleButton =
+        (button ?? eventButton) == Clutter.BUTTON_MIDDLE ||
+        (modifiers & Clutter.ModifierType.BUTTON2_MASK) != 0;
       let isCtrlPressed = (modifiers & Clutter.ModifierType.CONTROL_MASK) != 0;
       let openNewWindow =
         app.can_open_new_window() &&
@@ -1598,7 +1616,7 @@ export let Dock = GObject.registerClass(
       // let windows = app.get_windows();
       let windows = this.getAppWindowsFiltered(app);
 
-      if (evt.modifier_state & Clutter.ModifierType.CONTROL_MASK) {
+      if (evt.get_state() & Clutter.ModifierType.CONTROL_MASK) {
         windows = windows.filter((w) => {
           return activeWs == w.get_workspace();
         });

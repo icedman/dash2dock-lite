@@ -58,20 +58,25 @@ Isolated smoke can't change settings from outside (memory backend is in-process)
 > Written by the ORCHESTRATOR only. Worker: do not edit this section.
 
 ```
-Cycle:      1.5
-Task:       R-4b — `animator.js` one-liners
+Cycle:      1.6
+Task:       R-4c — `dock.js` input fixes
 Attempt:    1
-Card:       §6 "R-4b"
-Notes:      HEAD c9ca876. These are one-line fixes to code that has never run, so fixing
-            them CHANGES visible behaviour. For each ID, describe in the Report what the
-            newly-live code will do on screen (B-14: which fps branch now runs and at
-            what animation-fps values; B-15: what jitter-lock does with a real neighbour).
-            If a revived branch looks harmful or its intent is unclear, don't guess: make
-            no edit for that ID and report it (the Orchestrator asks the human, as for
-            B-26). B-15: report every `_next` writer (`grep -n '_next' *.js`). A8:
-            nothing new per frame (these are in `animate`; an attribute fix is fine).
-            Baselines: lint 0/162; check-settings 1/30; smoke 1 known sig, deltas
-            0/0/0/0/0/+1/0; timer_check 15/15.
+Card:       §6 "R-4c"
+Notes:      HEAD 8f44419. As in 1.5: revived code changes behaviour. Describe the
+            on-screen effect of each fix, and hold (no edit, report) any ID whose intent
+            is unclear. B-17: confirm `get_state()` exists on Clutter events for GNOME
+            45-50 and which mask "current workspace only" checks. B-18: verify the mask
+            and button constants against Clutter (BUTTON1/2/3 = left/middle/right; the
+            card's BUTTON3_MASK remark suggests the current code tests RIGHT). Also, a
+            press-time `get_state()` doesn't include the button being pressed, so prefer
+            `get_button()` on button events. The activate patch must fall back to the
+            original activate if our handler throws, logged with
+            `console.error('d2da: …', e)`. The patch is existing coupling (§4): no new
+            private access, and don't move it (R-14 does that). B-19: report which actors
+            effects are added to and removed from (grep `add_effect`/`remove_effect`/
+            `clear_effects`); make removal symmetric, null-safe.
+            Baselines: lint 0/162 (dock.js 25); check-settings 1/30; smoke 1 known sig,
+            deltas 0/0/0/0/0/+1/0; timer_check 15/15.
 ```
 
 ## 5. Report
@@ -79,65 +84,57 @@ Notes:      HEAD c9ca876. These are one-line fixes to code that has never run, s
 > Overwritten by the WORKER each cycle; read by the AUDITOR.
 
 ```
-Cycle / Task / Attempt: 1.5 / R-4b / 1
+Cycle / Task / Attempt: 1.6 / R-4c / 1
 Status:            DONE
-Files changed:     animator.js only, vs HEAD c9ca876 (3 hunks, +6/-2)
+Files changed:     dock.js only, vs HEAD 8f44419 (+33/-15)
 Findings addressed:
-  B-14 animate(): `dock.animation_fps` -> `dock.extension.animation_fps`. Before this, the else
-       (smoothing) branch always ran. Values come from the schema `animation-fps` (int, default 0)
-       and the prefs dropdown: 0 = High (15 ms tick), 1 = Medium (30 ms), 2 = Low (45 ms)
-       (extension._updateAnimationFPS). Now:
-         fps 0 (default): same as before. icon translation eases 3/4 toward the target each tick
-           ("retain this for smoothness at high fps").
-         fps 1/2: the direct branch runs. icon._icon.translationX/Y = the computed target on
-           every tick, with no 1/4 lag. On screen, Medium/Low icons follow the spread at once
-           instead of easing over ~4 ticks. That fits the comment: smoothing only at high fps,
-           because at a 30-45 ms tick the extra lag would look sluggish. Not harmful. Only users
-           who changed animation-fps see a change.
-  B-15 Linking loop in animate(): `icon._next = icon` -> `prevIcon._next = icon`. Now A._next = B
-       (the next animated icon) and the last icon's _next is null. Effect in jitter-lock
-       (lockPosition && _hoverProgress == 0): the lock threshold drops 48 -> 32 cached frames when
-       _prev OR _next is already _locked. Before, the self-reference meant `_next._locked`
-       checked the icon itself, so after it locked, the cond was always true (harmless, it was
-       already locked). Before it locked, it only counted _prev, so locking cascaded left-to-right
-       only. Now it cascades in both directions: neighbours of a settled icon freeze ~16 frames
-       sooner, so the dock settles a bit sooner after magnification ends. No new per-frame work.
-       All `_next` writers (grep -n '_next' *.js):
-         animator.js:224  icon._next = null            (animate, per animated icon)
-         animator.js:226  prevIcon._next = icon        (animate, this fix)
-         dock.js:855      prev._next = c               (_findIcons, links all _dashItems incl. separators)
-       Readers: animator.js:492 (jitter lock, icons), animator.js:864 (separator: actor._next).
-       Both files write _next on icons: dock.js sets A._next = Separator, then animate overwrites
-       A._next = B. This clobbering existed before too (it was set to null/self). Separators are
-       not in dock._icons, so animate never writes a separator's own _prev/_next. The separator code
-       reads only the separator's fields, so it is unaffected. animate also already overwrote
-       icon._prev (B._prev = A instead of Separator) before this change.
-  B-34 bounceIcon end frame now resets translation_x and translation_y, plus
-       container._renderer.translationX (null-checked). Verified: the vertical bounce frames set
-       the renderer's translationX, and nothing else ever resets it. animate only resets renderer
-       translationY (animator.js:598), and translateDecor only copies Y. So on left/right docks the
-       appwell and renderer kept an x offset after a bounce. Runs once per bounce, not per frame.
-       Related, not changed: animate() line ~538 clears only `_appwell.translationY` per frame.
-       After this fix that's harmless, since the end frame zeroes X.
+  B-17 _cycleWindows: `evt.modifier_state` -> `evt.get_state()`. evt is the Clutter scroll event
+       from _onScrollEvent (only caller). ClutterEvent.get_state() is a long-standing C method,
+       present on 45-50; `modifier_state` is not a JS property of Clutter.Event, so it was always
+       undefined -> 0. The check is CONTROL_MASK. On screen: Ctrl+scroll over an icon now cycles
+       only that app's windows on the active workspace (as intended); plain scroll unchanged.
+  B-18 Activate patch (_findIcons) + _maybeMinimizeOrMaximize:
+       - Constants (Clutter): BUTTON_PRIMARY=1, BUTTON_MIDDLE=2, BUTTON_SECONDARY=3;
+         BUTTON1_MASK=left, BUTTON2_MASK=middle, BUTTON3_MASK=right. Old code used BUTTON3_MASK
+         as "middle", i.e. it tested RIGHT. Removed unused button1/button2/pressed vars.
+       - The old `event.type()` ran unguarded -> TypeError when there's no current event
+         (keyboard/a11y activation), swallowed by the silent catch, which also skipped
+         `_activate()` => app not activated at all. Now: `event` null-safe; middle detection =
+         (button arg ?? event.get_button() on BUTTON_PRESS/RELEASE) == BUTTON_MIDDLE, OR
+         BUTTON2_MASK in state (St.Button activates on release; release state still has the mask).
+       - Wrapper now takes `(button)` and forwards it: `_activate(button)`. Previously it called
+         the original with no args, so Shell's AppIcon.activate(button) never saw the middle
+         button. Our handler (bounce + minimize/maximize) is in try/catch with
+         console.error('d2da: appwell activate', e); the original activate then ALWAYS runs
+         (fallback), outside the catch, so its own errors reach Shell as they would unpatched.
+         The old comment said errors "happen with dummy DashIcons"; if those were from the original
+         activate they'd now show in the log [unverified; smoke shows 0 'd2da:' and no new sigs].
+       - On screen: middle-click on a running app opens a new window (Shell's behaviour) and
+         doesn't minimize; right-click no longer counts as middle (right opens the menu anyway, so
+         that path was mostly unreachable). Keyboard activation works again. Left/Shift click same.
+       - No new private access; patch not moved (existing _appwell/_activate coupling).
+  B-19 Effects added only in _updateIconEffect to _effectTargets() = [renderArea, _list?._box]
+       (also called from dockItemMenu.js slideIn). Removed before from dash._box (undock) and
+       dash._box.get_parent() (removeFromChrome) — never the actors holding them. New
+       _removeIconEffect(): same targets, null-safe, remove_effect_by_name + iconEffect = null;
+       called at both old sites. In undock _destroyList runs first so _list is null there; the
+       list's box is destroyed with the list anyway. No clear_effects usage exists.
+       On screen: tint/monochrome effect is actually dropped on disable/undock (renderArea kept
+       a stale effect until re-add before).
 Self-verification:
   make check = OK
-  make lint = 0 errors / 162 warnings (= baseline)
-  python3 -B tools/check-settings.py = 1 error (B-12) / 30 warnings (= baseline)
-  gjs -m tests/timer_check.js = all passed (15/15)
-  make smoke = PASS, 1 known sig, 0 new, 0 gone; msgs 6/5; probe 6/5;
-    grep -c 'd2da: ' /tmp/d2da-smoke.log = 0.
-    Run 1: after-disable deltas 0/-24/0/0/0/+1/0. The stage count dropped 2857->2833 between
-    toggles 3 and 4, in both after-enable AND after-disable rows equally (shell-side actors, not
-    ours; it shrank, it didn't grow).
-    Rerun (tools/smoke-shell.sh 5): after-enable all 0 (uiGroup 40, stage 2833, dashes 2, docks 1,
-    hi 1, lo 2, loop 1); after-disable 0/0/0/0/0/+1/0 = baseline (lo +1 = known T-5).
-    Absolute stage is 24 lower than last cycle in every row. Environmental [inference].
-  Not covered by smoke: all three IDs (headless, no hover/bounce; default fps 0 = old branch).
-Needs human visual check: yes. (1) Hover magnify on a bottom dock and let it settle: no jitter,
-  separators sit between their neighbours. (2) Set prefs Animation FPS to Medium/Low: magnify
-  still looks OK (no easing lag now). (3) Launch an app on a LEFT and a RIGHT dock: after the bounce
-  the icon returns fully to its column with no sideways offset.
-New findings (proposed B-xx, with file:symbol and evidence): none (renderer-X residue folded into B-34)
+  make lint = 0 errors / 158 warnings (baseline 162; -4 from removed unused vars)
+  python3 -B tools/check-settings.py = 1 error / 30 warnings (= baseline)
+  gjs -m tests/timer_check.js = all passed
+  make smoke = PASS, 1 known sig, 0 new, 0 gone; msgs 6/5; probe 6/5; 'd2da: ' count 0.
+    Run 1: stage +32 between toggles 4 and 5 in both after-enable and after-disable rows
+    equally (same pattern as 1.5, environmental [inference]); lo +1 = known.
+    Rerun tools/smoke-shell.sh 5: after-enable all 0; after-disable 0/0/0/0/0/+1/0 = baseline.
+  Not covered by smoke: all three (no clicks/scroll, default icon_effect 0).
+Needs human visual check: yes — left-click focused app minimizes / unfocused raises; Shift-click
+  maximize toggle; middle-click and Ctrl-click on running app open a new window; Ctrl+scroll cycles
+  only current-workspace windows; set icon effect tint, then disable extension: no leftover tint.
+New findings (proposed B-xx, with file:symbol and evidence): none
 Scope request / blockers: none
 ```
 

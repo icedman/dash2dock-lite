@@ -1,0 +1,4 @@
+Gjs-WARNING **: : Gio.DesktopAppInfo has been moved to a separate platform-specific library. Please update your code to use GioUnix.DesktopAppInfo instead.
+Gjs-WARNING **: : Type GITypeInfo of property NM.Object::client does not match return type GITypeInfo of getter get_client. Falling back to slow path
+GLib-GObject-CRITICAL **: : value "nan" of type 'gdouble' is invalid or out of range for property 'clip' of type 'gdouble'
+N enable() ["file:///home/iceman/.local/share/gnome-shell/extensions/search-light@icedman.github.com/extension.js":N:N]

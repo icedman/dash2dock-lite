@@ -1,0 +1,1 @@
+Gjs-WARNING **: : Type GITypeInfo of property NM.Object::client does not match return type GITypeInfo of getter get_client. Falling back to slow path

@@ -1,6 +1,20 @@
 all: build install lint
 
-.PHONY: build install
+.PHONY: build install check-devkit test-shell test-shell2 check smoke
+
+RUNTIME_DIR ?= $(or $(XDG_RUNTIME_DIR),/run/user/$(shell id -u))
+# gnome-shell writes this at startup as a crash marker; if it is left behind
+# (e.g. nested shell killed early) the next run starts with all extensions off.
+DISABLE_EXT_FLAG = $(RUNTIME_DIR)/gnome-shell-disable-extensions
+MUTTER_DEVKIT ?= /usr/libexec/mutter-devkit
+
+# GNOME 49+: `gnome-shell --devkit` runs headless and spawns mutter-devkit as
+# the viewer window. Without it the shell runs but no window ever appears.
+check-devkit:
+	@test -x $(MUTTER_DEVKIT) || { \
+		echo "error: $(MUTTER_DEVKIT) not found - nested shell would run with no window."; \
+		echo "       install it: sudo dnf install mutter-devkit"; \
+		exit 1; }
 
 build:
 	glib-compile-schemas --strict --targetdir=schemas/ schemas
@@ -35,6 +49,7 @@ publish:
 	cp -R preferences ./build
 	cp -R effects ./build
 	rm -rf ./*.zip
+	rm -rf build/agents
 	rm -rf build/schemas/gschemas.compiled
 	rm -rf build/*_.js
 	rm -rf build/imports*.js
@@ -51,19 +66,21 @@ install-zip:
 test-prefs:
 	gnome-extensions prefs dash2dock-lite@icedman.github.com
 
-test-shell: install
-	env GNOME_SHELL_SLOWDOWN_FACTOR=1 \
+test-shell: check-devkit install
+	rm -f $(DISABLE_EXT_FLAG)
+	-env GNOME_SHELL_SLOWDOWN_FACTOR=1 \
 		MUTTER_DEBUG_DUMMY_MODE_SPECS=1200x800 \
 	 	MUTTER_DEBUG_DUMMY_MONITOR_SCALES=1 \
 		dbus-run-session -- gnome-shell --devkit --wayland
-	rm /run/user/1000/gnome-shell-disable-extensions
+	rm -f $(DISABLE_EXT_FLAG)
 
-test-shell2: install
-	env GNOME_SHELL_SLOWDOWN_FACTOR=2 \
+test-shell2: check-devkit install
+	rm -f $(DISABLE_EXT_FLAG)
+	-env GNOME_SHELL_SLOWDOWN_FACTOR=2 \
 		MUTTER_DEBUG_DUMMY_MODE_SPECS=1200x800 \
 	 	MUTTER_DEBUG_DUMMY_MONITOR_SCALES=2 \
 		dbus-run-session -- gnome-shell --devkit --wayland
-	rm /run/user/1000/gnome-shell-disable-extensions
+	rm -f $(DISABLE_EXT_FLAG)
 
 g44: build
 	rm -rf ./build
@@ -101,10 +118,22 @@ test-shell-g44: g44
 		MUTTER_DEBUG_DUMMY_MODE_SPECS=1200x800 \
 	 	MUTTER_DEBUG_DUMMY_MONITOR_SCALES=1 \
 		dbus-run-session -- gnome-shell --nested --wayland
-	rm /run/user/1000/gnome-shell-disable-extensions
+	rm -f $(DISABLE_EXT_FLAG)
 
 lint:
 	eslint ./
+
+# Parse-only syntax check of all shipped JS (stand-in until ESLint works, R-0b).
+check:
+	find . -path ./node_modules -prune -o -path ./build -prune -o -path ./tests -prune \
+		-o -path ./tools -prune -o -name '*.js' -print \
+		| xargs -n1 node --experimental-default-type=module --check
+	@echo "check: OK"
+
+# Headless nested shell: extension ACTIVE, N enable/disable cycles, no new
+# error signatures vs agents/smoke-baseline.txt. See tools/smoke-shell.sh.
+smoke: install
+	tools/smoke-shell.sh 5
 
 xml-lint:
 	cd ui ; \

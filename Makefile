@@ -1,6 +1,6 @@
 all: build install lint
 
-.PHONY: build install check-devkit test-shell test-shell2 check smoke lint
+.PHONY: build install check-devkit test-shell test-shell2 check smoke lint check-settings
 
 RUNTIME_DIR ?= $(or $(XDG_RUNTIME_DIR),/run/user/$(shell id -u))
 # gnome-shell writes this at startup as a crash marker; if it is left behind
@@ -136,6 +136,11 @@ check:
 		-o -path ./tools -prune -o -name '*.js' -print \
 		| xargs -n1 node --experimental-default-type=module --check
 	@echo "check: OK"
+
+# schema <-> preferences/keys.js <-> ui/*.ui <-> runtime refs. Exits 1 on
+# error-class issues (shared adjustment, duplicate case, missing schema key).
+check-settings:
+	python3 tools/check-settings.py
 
 # Headless nested shell: extension ACTIVE, N enable/disable cycles, no new
 # error signatures vs agents/smoke-baseline.txt. See tools/smoke-shell.sh.

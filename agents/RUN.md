@@ -104,8 +104,8 @@ Status: `[ ]` todo · `[~]` in progress · `[x]` done (hash) · `[!]` blocked ·
 |---|---|---|---|---|
 | [x] 861b7c1 | 0.0 | **Bootstrap commit** (Auditor only, no Worker) | — | Commit setup: `Makefile` (devkit check, flag cleanup, `check`, `smoke`), `tools/smoke-shell.sh`, `agents/*.md`, `agents/smoke-baseline*.txt`. Gates: `make check`, `make smoke`. Message `chore(agents): bootstrap agent workflow and headless smoke test`. |
 | [x] 2bbf52d | 0.1 | R-0a leak/regression probe | 0.0 | Records first leak deltas (expected ≠ 0) |
-| [~] | 0.2 | R-0b ESLint flat config | 0.0 | Needs network for `npm install` |
-| [ ] | 0.3 | R-0c settings checker | 0.0 | Must flag B-12, B-16 |
+| [x] 2a0ae6f | 0.2 | R-0b ESLint flat config | 0.0 | Needs network for `npm install` |
+| [~] | 0.3 | R-0c settings checker | 0.0 | Must flag B-12, B-16 |
 | [ ] | 0.4 | R-0d release via `gnome-extensions pack` | 0.0 | HUMAN — end of phase 0 |
 
 ### Phase 1 — Correctness quick wins
@@ -193,6 +193,7 @@ Status: `open` · `fixed <hash>` · `partial <hash>` · `blocked` · `wontfix (r
 | P-3..P-6 | R-12 | open | | P-9, P-10 | R-13 | open |
 | P-11 | R-12 | open | | §6.3 low bugs | batch after phase 1 | open |
 | T-5 | R-0e | open | | T-6 | R-0e | open |
+| T-7 | R-0b, R-0d | partial 2a0ae6f (interim rm lines; dev docs still installed; R-0d pack list must exclude `eslint.config.js`) | | | | |
 
 Unassigned rows: when a phase ends, either add a card + board row for them or mark `wontfix (reason)`.
 
@@ -205,7 +206,7 @@ Unassigned rows: when a phase ends, either add a card + board row for them or ma
 | Smoke baseline (real dconf, advisory) | 4 signatures (incl. B-35, search-light's DesktopAppInfo warning) | setup |
 | Probe after-disable deltas, 5 toggles (uiGroup / stage / dashes / docks / hi / lo / loop) | 0 / 0 / 0 / 0 / 0 / **+1** / 0. `lo` +1 = smoke-timing artifact (T-5). Stage-walk can't see B-1 (T-6). Absolute `stage` varies per run (2865-2885) ⇒ track deltas only | 2bbf52d |
 | Strict leaks (`D2DA_SMOKE_STRICT_LEAKS=1` in G-leaks) | **OFF** (turn ON after 2.4) | |
-| ESLint warnings | — (R-0b) | |
+| ESLint warnings (errors) | 168 (0). no-unused-vars 162, no-undef 5, no-duplicate-case 1; known-bug rules demoted in `extension.js`/`timer.js` only, restore in R-4a/R-1 | 2a0ae6f |
 | check-settings issues | — (R-0c) | |
 
 ### 5.1 Human-check queue
@@ -238,3 +239,6 @@ Format: `YYYY-MM-DD HH:MM · cycle · EVENT · details` where EVENT ∈ `SETUP, 
 - 2026-10-04 · 0.2 · STOP · Waiting for the human: (a) revert those 2 lines ⇒ Auditor re-runs and commits R-0b; or (b) keep them and the Orchestrator adds them to R-0b scope (interim T-7 fix; R-0d replaces it with `gnome-extensions pack`) ⇒ re-audit.
 - 2026-10-04 · 0.2 · HUMAN · Human chose option (b): keep the 2 `node_modules` rm lines. Added to R-0b scope with the T-7 interim fix (install drops agents/, eslint.config.js, package*.json; publish drops eslint.config.js; `lint` in .PHONY).
 - 2026-10-04 · 0.2 · REWORK · Attempt 2 sent to the Worker session (Makefile only).
+- 2026-10-04 · 0.2 · AUDIT-PASS · `2a0ae6f` attempt 2. check=PASS lint=0 err/168 warn smoke=PASS(x2); publish verified in a temp copy (no eslint.config.js/node_modules/agents/package*.json; `themes/` missing = T-4). T-7 filed (D2DA §6.6), partial; R-0d card extended (allow-list install, exclude `eslint.config.js` and dev docs, handle spaces in filenames).
+- 2026-10-04 · 0.3 · PREFLIGHT · tree = only agents/* Orchestrator edits; HEAD `2a0ae6f`; GNOME Shell 50.5.
+- 2026-10-04 · 0.3 · ASSIGN · R-0c settings consistency checker.

@@ -282,6 +282,7 @@ Everything here can break on a Shell release. **Goal: route all of it through on
 |---|---|---|---|
 | T-5 | `tools/smoke-shell.sh` toggle loop [verified 2bbf52d] | Waits 4 s before the 1st disable but 1 s after each re-enable ⇒ `startUp()`'s pending `_loTimer.runOnce(…)` is still subscribed at later disables ⇒ probe `lo` delta +1 (artifact, not a leak). Strict mode also passes when 0 probe lines are logged (expected N+1/N is printed, not enforced). | Same settle wait before every disable; in strict mode FAIL if probe line counts ≠ N+1/N. |
 | T-6 | `probe.js` [verified 2bbf52d] | Stage-walk counts can't see off-stage leaks: `destroyDocks()` already unparents docks, so B-1 leaks give delta 0 today. Absolute `stage` count varies between runs (2865-2885); only in-run deltas mean anything. | Add live-instance counters (e.g. module-level `Set`/counter incremented in `Dock`/`Dash`/`Animator` ctor, decremented on `destroy`), plus GLib source count if cheap. R-7d Accept uses these. |
+| T-7 | `Makefile` `install`/`publish` [verified 2a0ae6f] | `install` copies `./*` (got `node_modules/` 14 MB, `agents/`, `eslint.config.js`, `package*.json`, dev docs); `publish` `cp *.js` ships `eslint.config.js`. Interim rm lines in 2a0ae6f; `CHECKLIST.md`, `DESIGN.md`, `ERRORS.md`, `HACKING.md` still installed. | R-0d: allow-list via `gnome-extensions pack`; `install` = install the packed zip. |
 
 ---
 

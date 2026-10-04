@@ -144,23 +144,64 @@ export let Dock = GObject.registerClass(
       );
     }
 
+    destroy() {
+      if (!this._destroyed) {
+        this._destroyed = true;
+        this.undock();
+        this.cancelAnimations();
+        this.destroyDash();
+
+        // before super.destroy() takes renderArea with it
+        this.animator.destroy();
+        this.animator = null;
+
+        this.autohider.disable();
+        this.autohider.dock = null;
+        this.autohider.extension = null;
+        this.autohider = null;
+
+        // struts and dwell are chrome actors, not children
+        this.dwell.disconnectObject(this);
+        this.struts.destroy();
+        this.dwell.destroy();
+        this.struts = null;
+        this.dwell = null;
+        this._slider = null;
+      }
+      super.destroy();
+    }
+
     destroyDash() {
       if (this.dash) {
-        {
-          this._icons = null;
-          this._findIcons();
-          this._icons.forEach((i) => {
-            this._cleanupIcon(i);
-          });
-          this._icons = null;
-        }
+        // the list may point at a downloads item that goes with the dash
+        this._destroyList();
 
-        this.remove_child(this.dash);
+        // every item, also those _findIcons() skips (hidden non-favorites)
+        [
+          ...this.dash._box.get_children(),
+          ...(this._extraIcons?.get_children() ?? []),
+          this.dash._showAppsIcon,
+        ].forEach((c) => {
+          if (c) this._cleanupIcon(c);
+        });
+
+        // Shell's Dash disconnects its AppSystem/AppFavorites/overview
+        // handlers (connectObject) and its ctrl-alt-tab group on destroy
+        this.dash.destroy();
         this.dash = null;
+        this._extraIcons = null;
+        this._separator = null;
+        this._icons = null;
+        this._dashItems = [];
+        this._separators = [];
+        this._hoveredIcon = null;
+        this._lastHoveredIcon = null;
+        this._nearestIcon = null;
+        this._dragged = null;
+        this._dragging = false;
         this._trashIcon = null;
         this._recentFilesIcon = null;
         this._downloadsIcon = null;
-        // mounted icons?
       }
     }
 
@@ -702,6 +743,11 @@ export let Dock = GObject.registerClass(
     }
 
     _findIcons() {
+      if (!this.dash) {
+        this._icons = null;
+        return [];
+      }
+
       if (this._icons && !this._dragging) {
         let _boxIconsLength = this.dash._box.get_children().length;
         if (_boxIconsLength != this._boxIconsLength) {
@@ -725,8 +771,6 @@ export let Dock = GObject.registerClass(
       this._dashItems = [];
       this._separators = [];
       this._icons = [];
-
-      if (!this.dash) return [];
 
       //--------------------
       // find favorites and running apps icons
@@ -901,7 +945,7 @@ export let Dock = GObject.registerClass(
             return;
           }
           if (!mounted.includes(extra._mountPath)) {
-            this._extraIcons.remove_child(extra);
+            extra.destroy();
             this._icons = null;
           }
         });
@@ -958,8 +1002,9 @@ export let Dock = GObject.registerClass(
           this[f.icon] = DockItemList.createItem(this, f);
           this._icons = null;
         } else if (this[f.icon] && !f.show) {
-          // unpin downloads icon
-          this._extraIcons.remove_child(this[f.icon]);
+          // unpin downloads icon; the list may be showing its files
+          this._destroyList();
+          this[f.icon].destroy();
           this[f.icon] = null;
           this._icons = null;
         }
@@ -978,7 +1023,7 @@ export let Dock = GObject.registerClass(
         this._icons = null;
       } else if (this._trashIcon && !this.extension.trash_icon) {
         // unpin trash icon
-        this._extraIcons.remove_child(this._trashIcon);
+        this._trashIcon.destroy();
         this._trashIcon = null;
         this._icons = null;
       } else if (this._trashIcon && this.extension.trash_icon) {

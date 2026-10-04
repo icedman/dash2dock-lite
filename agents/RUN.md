@@ -129,8 +129,8 @@ Status: `[ ]` todo · `[~]` in progress · `[x]` done (hash) · `[!]` blocked ·
 | [x] 30ae2d5 | 2.1 | R-7a animator teardown | 1.2 | |
 | [x] 0a01a50 | 2.2 | R-7b menus/lists/clock/calendar destroy | 2.1 | B-29 |
 | [x] deb31fb | 2.3 | R-7c WindowTracker, no Meta.Window expandos | 1.3 | B-31 |
-| [~] | 2.3a | R-0e probe v2 (smoke timing, live-instance counters) | 0.1 | T-5, T-6 · prerequisite for strict leaks |
-| [ ] | 2.4 | R-7d Dock.destroy + destroyDocks | 2.1-2.3a | B-1 · then turn **strict leaks ON** (§5) |
+| [x] 523cec2 | 2.3a | R-0e probe v2 (smoke timing, live-instance counters) | 0.1 | T-5, T-6 · prerequisite for strict leaks |
+| [~] | 2.4 | R-7d Dock.destroy + destroyDocks | 2.1-2.3a | B-1 · then turn **strict leaks ON** (§5) |
 | [ ] | 2.5 | R-8 services cancellables / dt | 2.4 | B-25 |
 | [ ] | 2.6 | R-9a trash via Gio | 2.5 | B-8 · human visual |
 | [ ] | 2.7 | R-9b launchers in memory | 2.5 | B-10 |
@@ -193,9 +193,9 @@ Status: `open` · `fixed <hash>` · `partial <hash>` · `blocked` · `wontfix (r
 | P-2 | R-11a | open | | P-8 | (unassigned, BMS) | open |
 | P-3..P-6 | R-12 | open | | P-9, P-10 | R-13 | open |
 | P-11 | R-12 | open | | §6.3 low bugs | batch after phase 1 | open |
-| T-5 | R-0e | open | | T-6 | R-0e | open |
+| T-5 | R-0e | fixed 523cec2 | | T-6 | R-0e | fixed 523cec2 (live counters) |
 | B-36 | R-8 | open | | B-37 | R-9d | open |
-| B-38 | R-7d | open | | T-8 | R-0e | open |
+| B-38 | R-7d | open | | T-8 | R-0e | fixed 523cec2 (counted; strict-only gate) |
 | B-39 | R-7d | open | | B-40 | R-7d | open |
 | T-7 | R-0b, R-0d | partial 2a0ae6f (interim rm lines; dev docs still installed; R-0d pack list must exclude `eslint.config.js`) | | | | |
 
@@ -208,7 +208,8 @@ Unassigned rows: when a phase ends, either add a card + board row for them or ma
 | GNOME Shell | 50.5 (Fedora 44) | setup |
 | Smoke baseline (isolated) | 1 signature (NM GI warning — shell side, not ours) | setup |
 | Smoke baseline (real dconf, advisory) | 4 signatures (incl. B-35, search-light's DesktopAppInfo warning) | setup |
-| Probe after-disable deltas, 5 toggles (uiGroup / stage / dashes / docks / hi / lo / loop) | 0 / 0 / 0 / 0 / 0 / **+1** / 0. `lo` +1 = smoke-timing artifact (T-5). Stage-walk can't see B-1 (T-6). Absolute `stage` varies per run (2865-2885) ⇒ track deltas only | 2bbf52d |
+| Probe after-disable deltas, 5 toggles (uiGroup / stage / dashes / docks / hi / lo / loop / liveDock / liveDash / liveAnimator) | **523cec2:** 0 / 0 / 0 / 0 / 0 / 0 / 0 / **+4 / +4 / +4** (B-1). At 2bbf52d `lo` was +1 (T-5 artifact, fixed). Absolute `stage` varies per run ⇒ deltas only | 523cec2 |
+| Shutdown criticals (T-8, "sweeping phase of GC") | 150 at 5 toggles = 30 per toggle (90 @3, 60 @2); 200 with the settings variant. R-7d target ≈ 0 | 523cec2 |
 | Strict leaks (`D2DA_SMOKE_STRICT_LEAKS=1` in G-leaks) | **OFF** (turn ON after 2.4) | |
 | ESLint warnings (errors) | 150 (0) at deb31fb; 151 at 5840f29; 154 at 0821a56; 158 at 1b03ca7; 162 at c9ca876; 166 at ef879f9; 168 at 2a0ae6f. no-unused-vars 162, no-undef 5, no-duplicate-case 1; only remaining demotion: `no-undef: warn` in extension.js for the dead `_onKeyPressed` Clutter use (delete in R-18/R-21) | 2a0ae6f |
 | check-settings issues | **5840f29: exit 0, 0 errors / 30 warnings ⇒ G-settings is now a hard gate (must exit 0).** c9ca876: 1 error (B-12) / 30 warnings. At cff438d: exit 1 by design. Errors 2: shared-adjustment 1 (B-12), duplicate-case 1 (B-16); missing-in-schema 0, widget-type 0. Warnings 30: missing-in-keys 5, key-no-widget 8, dead-setting 17 (§6.5 list + `msg-to-ext` false positive). Should exit 0 after R-4a + R-5 ⇒ then make G-settings a hard exit-code gate | cff438d |
@@ -327,3 +328,6 @@ Format: `YYYY-MM-DD HH:MM · cycle · EVENT · details` where EVENT ∈ `SETUP, 
 - 2026-10-04 · 2.3 · AUDIT-PASS · `deb31fb`. check=PASS lint=0/150 (−1) settings=exit 0 timer_check 15/15 window_tracker_check 20/20 (a broken copy fails 8) smoke=PASS(x2) disposed/finalized=0 T-8 GC=150. One connection set per window across docks; created in enable, cleared on autohide off / during disable, destroyed after destroyDocks; `unmanaged` releases. B-31 fixed. Low items to §6.3 (dodge-off doesn't clear; cross-monitor windows stay tracked). 1 human-check item queued.
 - 2026-10-04 · 2.3a · PREFLIGHT · tree clean apart from agents/*; HEAD `deb31fb`; GNOME Shell 50.5.
 - 2026-10-04 · 2.3a · ASSIGN · R-0e probe v2 (T-5 settle, T-8 shutdown criticals, T-6 live-instance counters, strict line counts, memory-only settings hook). Stub expanded.
+- 2026-10-04 · 2.3a · AUDIT-PASS · `523cec2`. check=PASS lint=0/150 settings=exit 0 timer_check 15/15 window_tracker_check 20/20 smoke=PASS(x2) + settings variant PASS + D2DA_PROBE=0 PASS. New baseline: all probe deltas 0 except liveDock/liveDash/liveAnimator +1 per toggle (B-1); shutdown criticals 30 per toggle (150 @5). Strict @3 fails only on live +2 and 90 shutdown criticals (expected until R-7d). Settings hook gated on D2DA_PROBE=1 AND GSETTINGS_BACKEND=memory inside the extension. T-5, T-6, T-8 fixed. Smoke nits (F1 shutdown race, kill -0 startup loop, rare strict flakes) to §6.3.
+- 2026-10-04 · 2.4 · PREFLIGHT · tree clean apart from agents/*; HEAD `523cec2`; GNOME Shell 50.5.
+- 2026-10-04 · 2.4 · ASSIGN · R-7d Dock.destroy + destroy Shell Dash/struts/dwell (B-1, B-38, B-39, B-40). Stub expanded. Accept = live* deltas 0, shutdown criticals ≈ 0.

@@ -84,73 +84,71 @@ Minor nits (naming, a stray blank line) that don't violate a rule: list them as 
 > Overwritten each cycle. On FAIL the Worker reads this for its rework.
 
 ```
-Cycle / Task / Attempt:  2.3a / R-0e probe v2 (settle, shutdown criticals, live counters, settings hook) / 1
+Cycle / Task / Attempt:  2.4 / R-7d Dock.destroy(); destroy the Shell Dash and chrome actors / 1
 Verdict:          PASS
-Commit:           see Audit Log (test(smoke): probe v2 ...)
+Commit:           see Audit Log (fix(dock): destroy docks, Shell Dash and chrome actors on teardown)
 Gates:            check=PASS ; lint=PASS 0 err / 150 warn (= baseline; dock.js 21, animator.js 23,
-                  extension.js 13 = HEAD; probe.js 0) ; settings=exit 0, 0/30 ; timer_check 15/15 ;
-                  window_tracker_check 20/20 ; sh -n OK ; smoke x2 PASS (1 known sig, 0 new, 6/5 msgs,
-                  probe 6/5, deltas 0 except live* +5 enable / +4 disable both runs) ; disposed/finalized
-                  /already-destroyed = 0 and `d2da: ` = 0 in every run ; shutdown criticals 150/150 (default).
-                  Accept settings (trash/downloads/clock/calendar/autohide = true, 5 toggles): PASS, 0 new,
-                  "settings applied" x6, after-enable uiGroup 44 / stage 2887, after-disable 36/2822,
-                  shutdown criticals 200. Accept D2DA_PROBE=0 (+ settings, 2 toggles): PASS, 0 d2da-probe
-                  lines, script note "ignored without D2DA_PROBE=1", shutdown criticals 60.
-                  Strict (D2DA_SMOKE_STRICT_LEAKS=1, 3 toggles): FAIL as expected on live* +2 (B-1) and
-                  shutdown criticals 90 > 0; line counts 4/3 ok, stage flat. Neither Worker flake (missed
-                  disable, stage +32) reproduced. No orphaned `gnome-shell --headless` after any run.
-                  G-real NOT run (W3).
-Scope:            tools/smoke-shell.sh (+93/-14), probe.js (+52), dock.js (+5), animator.js (+6),
-                  extension.js (+4/-1) + agents/*.md bookkeeping. Report stats match numstat.
+                  extension.js 13 = HEAD) ; settings=exit 0, 0/30 ; timer_check all passed ;
+                  window_tracker_check all passed ; smoke x2 PASS (1 known sig, 0 new, 6/5 msgs,
+                  probe 6/5, ALL after-enable and after-disable deltas 0 incl. liveDock/liveDash/
+                  liveAnimator; after-disable 36/2833, live 0/0/0) ; shutdown criticals 0 both
+                  (was 150). Settings variant (trash/downloads/clock/calendar/autohide, 5 toggles):
+                  PASS, "settings applied" x6, deltas 0, after-enable 44/2898, shutdown criticals 0
+                  (was 200). Strict (D2DA_SMOKE_STRICT_LEAKS=1, 3 toggles): run 1 FAIL on line counts
+                  only (3/2 vs 4/3; the log has 3 enables / 2 disables, the 3rd `gnome-extensions
+                  disable` never reached the shell, state ACTIVE, deltas 0, criticals 0 = R-0e F2
+                  D-Bus flake, not a leak); run 2 PASS (4/3, deltas 0 incl. stage, criticals 0).
+                  disposed/finalized/already been destroyed/has been finalized = 0 and `d2da: ` = 0
+                  in all 5 runs. No orphaned headless shell. G-real NOT run (W3).
+Scope:            dock.js (+61/-16), extension.js (+2/-3), animator.js (+2) + agents/*.md
+                  bookkeeping. Matches the Report.
 Rule violations:  none. A1-A10, A12, A13 clean (A11 n/a).
 Specific checks:
-  1. Hook can't reach real dconf: applySmokeSettings returns unless D2DA_PROBE === '1' AND
-     GSETTINGS_BACKEND === 'memory', read from the shell's own env inside the extension.
-     The script also sets D2DA_SMOKE_SETTINGS to '' unless memory + probe=1.
-  2. D2DA_PROBE unset: the only always-on code is live(), one integer add. It runs in the Dock
-     _init, createDash, Animator ctor and destroy signals/destroy(). createDash runs from dock(),
-     the ctor and recreateDash (event-driven via recreateAllDocks). Nothing per-frame (A8), no logging.
-  3. Dash counter: +1 right after `new Dash()` in createDash, -1 on its own 'destroy' signal (emitted
-     once). Separate connect, not connectObject, so a disconnectObject can't drop it. Balanced.
-     liveDash +1/toggle because destroyDash only remove_child()s (B-1, R-7d).
-  4. Hook placement: after integrations.enable(), services.enable() and _onCheckServices(), before
-     _update*() and before docks (startUp runs 250 ms later via _loTimer). this.docks = [] is
-     already set. Errors: per-pair try/catch -> console.error('d2da: probe settings', e). set_value's
-     synchronous changed:: handlers can't throw into enable() (GJS logs signal-handler exceptions).
-     So enable() can't fail from the hook.
-  5. alive(): /proc/PID/status readable and State not Z. Correct for zombies, false after the reap.
-     Linux-only, which is fine.
-  6. Real-dconf path (read only, untested): BACKEND=dconf => SETTINGS='' with a note.
-     GSETTINGS_BACKEND=dconf also fails the extension guard. The safety re-enable now also runs before
-     the stop (shell alive, D-Bus available). cleanup() still re-enables on early exit/INT/TERM while
-     the shell lives, and after a normal stop its re-enable fails silently (output to /dev/null,
-     no hang). The stop uses SIGTERM like the old cleanup, so dconf sees the same shutdown as before.
-  7. Signatures: pre-marker grep unchanged; post-marker only JS ERROR/WARNING/TypeError/
-     ReferenceError minus CRITICAL lines. Marker appended with O_APPEND after the shell's own
-     output, so the run/shutdown split is ordered.
+  1. Use-after-destroy paths:
+     - hi/lo timers: undock() cancels _animationSeq/debounceEndSeq/_debounceBeginAnimateSeq after
+       its own autohider.disable() re-arm; cancelAnimations() drops _animationSeq + autohider's;
+       the second autohider.disable() in destroy() returns early (_enabled already false) after
+       cancelling _debounceCheckSeq, so it can't re-arm via show()->slideIn().
+     - extension.listeners = [], extension.dock = null, extension.docks = [] in destroyDocks, so
+       checkHide()/_autohiders(), overview showing/hidden, services clock/calendar fan-outs,
+       animate/_updateLayout/_updateAutohide never see a destroyed dock.
+     - integrations: hookBms(false) iterates extension.docks (empty afterwards); bms_update_size is
+       called by the animator, which is destroyed (disabled) before super.destroy().
+     - dash handlers: connectObject on the dash goes with dash.destroy(); dwell explicitly
+       disconnectObject(this) then destroyed; struts destroyed.
+     - icon 'destroy' -> _cleanupIcon(c) fires during dash.destroy() while the dock is still alive;
+       _cleanupIcon is idempotent (image nulled first, _destroyMenu idempotent per R-7b).
+  2. recreateDash(): add_child(createDash()) -> createDash() sees this.dash -> destroyDash()
+     (list destroyed, all items cleaned, Shell Dash destroyed, _extraIcons/_separator/_icons/item
+     refs reset) -> new Dash, new _extraIcons + _separator, _trashIcon null; recreateDash then
+     nulls _icons/_trash/_recent/_downloads and begins animation; _updateExtraIcons recreates the
+     extras. _findIcons rebuilds with _icons null. Rebuild path is correct by reading; not
+     smoke-covered -> human check.
+  3. destroy() override: plain JS method on a GObject.registerClass St.Widget subclass, ends in
+     super.destroy() (always, outside the guard). C-side teardown bypasses it (Worker F1); the
+     own 'destroy' live counter fires once (live deltas 0 in every run).
+  4. dock.extension not nulled: accepted. Nothing holds actors through it; late readers are all
+     gone (see 1).
+  5. A4/A5: Dash.destroy() public; dash._box and dash._showAppsIcon already used at HEAD
+     (dock.js _findIcons / _inspectIcon). No new private access, no monkeypatch, no version sniff.
+  6. Size 65+/19- code, inside scope.
+  B-38: !dash guard precedes the cache branch. B-39: three remove_child -> destroy (downloads
+  destroys the list first). B-40: cleanup over all box + extra children + showAppsIcon.
 Rework list:      none.
 Nits:
-  - Startup wait loop (`until gnome-extensions list`) still uses `kill -0`, so it's blind to a zombie
-    shell. Bounded by the 30 s timeout. Could use alive().
-  - Real mode passes D2DA_SMOKE_SETTINGS='' (set, empty) rather than unset. Harmless.
-  - "gnome-shell-calendar-server ... Lost the name" prints to the terminal after SMOKE: line
-    (private bus teardown). Cosmetic.
-  - Animator.destroy() decrement has no idempotence guard (Worker F3). R-7d must call it once.
-New probe baseline (default, 5 toggles, HEAD of this commit):
-  after-enable   uiGroup 40  stage 2845-2848  dashes 2  docks 1  hi 1  lo 2  loop 1  live* 1..6 (+5)
-  after-disable  uiGroup 36  stage 2822-2825  dashes 1  docks 0  hi 0  lo 0  loop 1  live* 1..5 (+4)
-  deltas 0 for every stage-walk/timer column (the T-5 `lo` +1 is gone)
-  shutdown criticals: 150 default (5 toggles) = 30/toggle-ish; 90 @3; 60 @2; 200 with the settings variant
-Findings confirmed:  T-5 (fixed), T-6 (live counters added), T-8 (shutdown now measured).
-Human check needed:  none.
+  - _separator and the _extraIcons box go through _cleanupIcon too (harmless no-op).
+  - Strict mode is still exposed to the missed-D-Bus-toggle flake (line counts). Consider a retry
+    or a state wait per toggle in smoke-shell.sh before making strict the default.
+Findings confirmed:  B-1 (dock side), B-38, B-39, B-40 fixed. Worker's Shell-side claim (Dash
+                  releases its own handlers via connectObject) is consistent with live deltas 0.
+Human check needed:  yes. Toggle several times; change preferred monitor and the multi-monitor
+                  setting; lock/unlock; plug/unplug a monitor if possible. Dock always renders,
+                  no duplicate docks, overview dash fine; clock/calendar/trash/downloads after rebuild.
 New findings spotted (for Orchestrator):
-  - Shutdown criticals scale with toggles (60/90/150 for 2/3/5) => leaked per-enable objects
-    swept at exit. R-7d Accept can use "shutdown criticals: N" falling to ~0 (or a toggle-independent const).
-  - Settings variant adds 50 shutdown criticals (extra items/menus), for R-7d/B-39/B-40.
-  - Worker F1 (shutdown race: _hiTimer layout() on a disposed Dash) is masked by the final sleep 2,
-    and strict mode would catch it. Candidate card after R-7d.
-  - Worker F2: strict flakiness (missed D-Bus disable, stage +32). Not reproduced in 5 runs here;
-    consider dropping `stage` from the strict check before turning strict on.
+  - Worker F2 (Shell Dash label timeouts survive destroy) is Shell-side, tiny. Agree: no patch.
+  - extension.createTheDocks multi-monitor branch: when count == docks.length it doesn't
+    destroyDocks but still creates `count` new docks [inference, pre-existing; check callers].
+  - Strict-mode stage noise did not show in 5 runs this cycle (stage flat 2856/2833).
 ```
 
 ## 7. Audit Log (append-only, newest last)
@@ -178,3 +176,4 @@ New findings spotted (for Orchestrator):
 | 2.2 | R-7b | 1 | PASS | this commit | `make check` PASS; lint 0/151 = baseline (dock.js 21, dockItems.js 7, services.js 8 = HEAD); check-settings exit 0, 0/30 = baseline; timer_check 15/15; smoke x2 PASS (1 known sig, 0 new, 6/5 msgs, probe 6/5, deltas 0/0/0/0/0/+1/0), disposed/finalized 0, d2da: 0, no B-37 flake; T-8 shutdown GC criticals 150 both (= baseline); G-real not run (no approval) | B-29 destroy half + clock/calendar. Checked against Shell 50.5 popupMenu.js/dash.js/iconGrid.js: only d2da actors destroyed (Shell label stays unparent-only); _cleanupIcon/_destroyMenu idempotent on both paths; removeMenu pops the grab before destroy; _destroyList nulls before destroy so later _animate passes bail; services connects at creation only (A8); self-owned destroy connections (A6). Limitation: isolated smoke can not enable trash/downloads/clock/calendar, judged by reading. Process nit: Worker ran G-real once without human approval (writes enabled-extensions). Nit: removeMenu leaves activeMenu on the dropped manager. Findings: _updateExtraIcons remove_child without destroy (menu leak, Worker); icon-only recreate kills menu (Worker, rare); destroyDash skips invisible/non-favorite items (clock leak, Low); R-0e env hook for non-default settings. |
 | 2.3 | R-7c | 1 | PASS | this commit | `make check` PASS; lint 0/150 (baseline 151; autohide.js 2 < HEAD 3, extension.js 13 = HEAD, windowTracker.js 0); check-settings exit 0, 0/30 = baseline; timer_check 15/15; window_tracker_check 20/20 (mutant without idempotence check: 8 FAIL, exit 1); smoke x2 PASS (1 known sig, 0 new, 6/5 msgs, probe 6/5, after-disable 0/0/0/0/0/+1/0 both); disposed/finalized 0; T-8 GC 150 | B-31. WindowTracker in new windowTracker.js (card-allowed), created in enable(), cleared on autohide off and in disable() before destroyDocks, destroyed after. Nit: smoke run 1 after-enable stage -32 on first sample only (timing, run 2 = 0). Tracker not exercised by smoke; human check. G-real not run. |
 | 2.3a | R-0e | 1 | PASS | this commit | `make check` PASS; lint 0/150 = baseline (per file = HEAD, probe.js 0); check-settings exit 0, 0/30; timer_check 15/15; window_tracker_check 20/20; smoke x2 PASS (1 known sig, 0 new, 6/5 msgs, probe 6/5, deltas 0 except live* +5/+4); disposed/finalized 0; shutdown criticals 150 both; settings Accept PASS (200 crit); PROBE=0 PASS (0 probe lines); strict x1 FAIL as expected (live* + shutdown crit only) | T-5/T-6/T-8. Hook gated in-extension on D2DA_PROBE=1 + GSETTINGS_BACKEND=memory, placed after services and before docks, per-pair try/catch. live() off every per-frame path; Dash +1/-1 balanced via its own destroy signal. /proc zombie check correct. Real-dconf path verified by reading (re-enable before stop, settings blanked), not run. No orphan shells. **New metric baseline:** liveDock/liveDash/liveAnimator +1 per toggle (B-1); shutdown criticals 150 @5 toggles. Nits: startup loop still kill -0; calendar-server stderr line. Worker flakes not reproduced. |
+| 2.4 | R-7d | 1 | PASS | this commit | `make check` PASS; lint 0/150 = baseline (per file = HEAD); check-settings exit 0, 0/30; timer_check pass; window_tracker_check pass; smoke x2 PASS (1 known sig, 0 new, 6/5, ALL deltas 0 incl. live*); shutdown criticals 0/0 (was 150); settings variant PASS, deltas 0, criticals 0 (was 200); strict x2: FAIL (missed D-Bus disable, counts 3/2, deltas 0) then PASS; disposed/finalized 0, `d2da: ` 0 in all runs | B-1 dock side, B-38, B-39, B-40. Dock.destroy() override (guarded, always super.destroy()); destroyDash destroys the Shell Dash; recreateDash rebuild verified by reading only (human check). All post-destroy readers emptied/cancelled. No new private coupling. Findings: strict line-count flake; createTheDocks multi-monitor branch may over-create [inference]. |

@@ -59,6 +59,8 @@ export let Animator = class {
   }
 
   destroy() {
+    if (this._destroyed) return;
+    this._destroyed = true;
     live('animator', -1);
     this.disable();
     this.dock = null;

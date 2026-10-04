@@ -123,10 +123,9 @@ export default class Dash2DockLiteExt extends Extension {
   }
 
   destroyDocks() {
+    // Dock.destroy() undocks, cancels its animations and destroys the dash
     (this.docks || []).forEach((dock) => {
-      dock.undock();
-      dock.cancelAnimations();
-      dock.destroyDash();
+      dock.destroy();
     });
     this.dock = null;
     this.docks = [];

@@ -134,7 +134,7 @@ Status: `[ ]` todo · `[~]` in progress · `[x]` done (hash) · `[!]` blocked ·
 | [x] e5ba736 | 2.4a | R-7e smoke per-toggle state wait (T-9) + createTheDocks duplicate guard (B-41) | 2.4 | small; makes strict leaks reliable |
 | [x] c0391da | 2.5 | R-8 services cancellables / dt | 2.4 | B-25, B-36 |
 | [x] 8fab2a5 | 2.6 | R-9a trash via Gio | 2.5 | B-8 · human visual |
-| [~] | 2.7 | R-9b launchers in memory | 2.5 | B-10 |
+| [x] 1553b9d | 2.7 | R-9b launchers in memory | 2.5 | B-10 |
 | [ ] | 2.8 | R-9c XDG paths | 2.5 | B-22 |
 | [ ] | 2.9 | R-9d CSS without /tmp | 2.5 | HUMAN — end of phase 2 |
 
@@ -181,7 +181,7 @@ Status: `open` · `fixed <hash>` · `partial <hash>` · `blocked` · `wontfix (r
 | B-7 | R-2 | fixed c84f252 | | B-25 | R-8 | fixed c0391da |
 | B-8 | R-9a | fixed 8fab2a5 | | B-26 | R-3 | fixed dda62a5 (dead check removed per human rule) |
 | B-9 | R-4d | fixed 0821a56 | | B-27 | R-3 | fixed dda62a5 |
-| B-10 | R-9b | open | | B-28 | (unassigned, needs St case check) | open |
+| B-10 | R-9b | fixed 1553b9d | | B-28 | (unassigned, needs St case check) | open |
 | B-11 | R-6 | fixed 3311461 | | B-29 | R-7b | partial 0a01a50 (destroy done; "menu side always TOP" open) |
 | B-12 | R-5 | fixed 5840f29 | | B-30 | (unassigned) | open |
 | B-13 | R-4a | fixed c9ca876 | | B-31 | R-7c | fixed deb31fb |
@@ -213,7 +213,7 @@ Unassigned rows: when a phase ends, either add a card + board row for them or ma
 | Probe after-disable deltas, 5 toggles (uiGroup / stage / dashes / docks / hi / lo / loop / liveDock / liveDash / liveAnimator) | **d95bb11: all 0.** 523cec2: 0 / 0 / 0 / 0 / 0 / 0 / 0 / **+4 / +4 / +4** (B-1). At 2bbf52d `lo` was +1 (T-5 artifact, fixed). Absolute `stage` varies per run ⇒ deltas only | 523cec2 |
 | Shutdown criticals (T-8, "sweeping phase of GC") | **d95bb11: 0** (default and settings variant). 523cec2: 150 at 5 toggles = 30 per toggle (90 @3, 60 @2); 200 with the settings variant. R-7d target ≈ 0 | 523cec2 |
 | Strict leaks (`D2DA_SMOKE_STRICT_LEAKS=1` in G-leaks) | **ON** since d95bb11. Flake policy: a strict FAIL only on probe line counts (missed `gnome-extensions disable`, T-9) ⇒ rerun once; fail if it repeats | d95bb11 |
-| ESLint warnings (errors) | 150 (0) at deb31fb; 151 at 5840f29; 154 at 0821a56; 158 at 1b03ca7; 162 at c9ca876; 166 at ef879f9; 168 at 2a0ae6f. no-unused-vars 162, no-undef 5, no-duplicate-case 1; only remaining demotion: `no-undef: warn` in extension.js for the dead `_onKeyPressed` Clutter use (delete in R-18/R-21) | 2a0ae6f |
+| ESLint warnings (errors) | 145 (0) at 1553b9d; 150 (0) at deb31fb; 151 at 5840f29; 154 at 0821a56; 158 at 1b03ca7; 162 at c9ca876; 166 at ef879f9; 168 at 2a0ae6f. no-unused-vars 162, no-undef 5, no-duplicate-case 1; only remaining demotion: `no-undef: warn` in extension.js for the dead `_onKeyPressed` Clutter use (delete in R-18/R-21) | 2a0ae6f |
 | check-settings issues | **5840f29: exit 0, 0 errors / 30 warnings ⇒ G-settings is now a hard gate (must exit 0).** c9ca876: 1 error (B-12) / 30 warnings. At cff438d: exit 1 by design. Errors 2: shared-adjustment 1 (B-12), duplicate-case 1 (B-16); missing-in-schema 0, widget-type 0. Warnings 30: missing-in-keys 5, key-no-widget 8, dead-setting 17 (§6.5 list + `msg-to-ext` false positive). Should exit 0 after R-4a + R-5 ⇒ then make G-settings a hard exit-code gate | cff438d |
 
 ### 5.1 Human-check queue
@@ -348,3 +348,6 @@ Format: `YYYY-MM-DD HH:MM · cycle · EVENT · details` where EVENT ∈ `SETUP, 
 - 2026-10-04 · 2.6 · AUDIT-PASS · `8fab2a5`. check=PASS lint=0/150 settings=exit 0 timer_check 15/15 window_tracker_check 20/20 smoke=PASS(x2) strict=PASS all deltas 0 shutdown criticals 0. B-8 fixed: empty trash via Gio, modal confirmation dialog in DockItemMenu, rm -rf removed. 1 human-check item queued.
 - 2026-10-04 · 2.7 · PREFLIGHT · tree clean apart from agents/*; HEAD `8fab2a5`; GNOME Shell 50.5.
 - 2026-10-04 · 2.7 · ASSIGN · R-9b launchers in memory from GLib.KeyFile without /tmp (B-10). Stub expanded.
+- 2026-10-05 · 2.7 · AUDIT-PASS · `1553b9d`. check=PASS lint=0/145 (−5) settings=exit 0 timer_check 15/15 window_tracker_check 20/20 smoke=PASS(x2) strict=PASS all deltas 0 shutdown criticals 0. B-10 fixed: launchers built in memory via DesktopAppInfo.new_from_keyfile, paths quoted with GLib.shell_quote, 0 /tmp/*.desktop files created.
+- 2026-10-05 · 2.8 · PREFLIGHT · tree clean apart from agents/*; HEAD `1553b9d`; GNOME Shell 50.5.
+- 2026-10-05 · — · HUMAN · Replaced Makefile publish recipe with tools/publish.sh (explicit inclusion packaging, no temp tree cleanup, zero dev files in zip).

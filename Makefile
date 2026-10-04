@@ -1,6 +1,6 @@
 all: build install lint
 
-.PHONY: build install check-devkit test-shell test-shell2 check smoke lint check-settings
+.PHONY: build install publish check-devkit test-shell test-shell2 check smoke lint check-settings
 
 RUNTIME_DIR ?= $(or $(XDG_RUNTIME_DIR),/run/user/$(shell id -u))
 # gnome-shell writes this at startup as a crash marker; if it is left behind
@@ -39,30 +39,7 @@ clean:
 	rm -rf ./build
 
 publish:
-	echo "publishing..."
-	rm -rf build
-	mkdir ./build
-	cp LICENSE ./build
-	cp *.js ./build
-	cp metadata.json ./build
-	cp stylesheet.css ./build
-	cp CHANGELOG.md ./build
-	cp README.md ./build
-	cp -R schemas ./build
-	cp -R ui ./build
-	cp -R apps ./build
-	cp -R preferences ./build
-	cp -R effects ./build
-	rm -rf ./*.zip
-	rm -rf build/agents
-	rm -rf build/schemas/gschemas.compiled
-	rm -rf build/*_.js
-	rm -rf build/imports*.js
-	rm -rf build/apps/mount-dash2dock-lite.desktop
-	rm -rf build/node_modules
-	rm -f build/eslint.config.js
-	cd build ; \
-	zip -qr ../dash2dock-lite@icedman.github.com.zip .
+	./tools/publish.sh
 
 install-zip:
 	echo "installing zip..."

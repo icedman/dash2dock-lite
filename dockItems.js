@@ -3,6 +3,8 @@
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as BoxPointer from 'resource:///org/gnome/shell/ui/boxpointer.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
+import * as ModalDialog from 'resource:///org/gnome/shell/ui/modalDialog.js';
+import * as Dialog from 'resource:///org/gnome/shell/ui/dialog.js';
 import { trySpawnCommandLine } from './utils.js';
 
 // import { trySpawnCommandLine } from 'resource:///org/gnome/shell/misc/util.js';
@@ -32,6 +34,8 @@ class DockItemMenu extends PopupMenu.PopupMenu {
     super(sourceActor, 0.5, side);
 
     let { desktopApp } = params;
+    this.item = params.item || sourceActor;
+    this._confirmDialog = null;
     if (!desktopApp) return;
 
     this.desktopApp = desktopApp;
@@ -47,13 +51,70 @@ class DockItemMenu extends PopupMenu.PopupMenu {
     desktopApp.list_actions().forEach((action) => {
       let name = desktopApp.get_action_name(action);
       this.addAction(name, () => {
+        if (action === 'trash' || name === 'Empty Trash') {
+          this._confirmEmptyTrash(desktopApp, action);
+          return;
+        }
         let workspaceManager = global.workspace_manager;
         let workspace = workspaceManager.get_active_workspace();
         let ctx = global.create_app_launch_context(0, workspace);
         desktopApp.launch_action(action, ctx);
-        this.item.dock.extension.animate({ refresh: true });
+        this.item?.dock?.extension?.animate?.({ refresh: true });
       });
     });
+  }
+
+  _confirmEmptyTrash(desktopApp, action) {
+    if (this._confirmDialog) {
+      this._confirmDialog.open();
+      return;
+    }
+
+    const dialog = new ModalDialog.ModalDialog();
+    this._confirmDialog = dialog;
+
+    const content = new Dialog.MessageDialogContent({
+      title: 'Empty Trash?',
+      description: 'All items in the Trash will be permanently deleted.',
+    });
+    dialog.contentLayout.add_child(content);
+
+    dialog.addButton({
+      label: 'Cancel',
+      action: () => {
+        dialog.close();
+      },
+      key: Clutter.KEY_Escape,
+    });
+
+    const emptyButton = dialog.addButton({
+      label: 'Empty Trash',
+      action: () => {
+        dialog.close();
+        const services = this.item?.dock?.extension?.services;
+        if (services?.emptyTrash) {
+          services.emptyTrash();
+        } else {
+          let workspaceManager = global.workspace_manager;
+          let workspace = workspaceManager.get_active_workspace();
+          let ctx = global.create_app_launch_context(0, workspace);
+          desktopApp.launch_action(action, ctx);
+          this.item?.dock?.extension?.animate?.({ refresh: true });
+        }
+      },
+      default: true,
+    });
+    emptyButton?.add_style_class_name('destructive-action');
+
+    const cleanUp = () => {
+      if (this._confirmDialog === dialog) {
+        this._confirmDialog = null;
+      }
+    };
+    dialog.connect('closed', cleanUp);
+    dialog.connect('destroy', cleanUp);
+
+    dialog.open();
   }
 
   _onActivate() {}
@@ -61,6 +122,16 @@ class DockItemMenu extends PopupMenu.PopupMenu {
   popup() {
     this.open(BoxPointer.PopupAnimation.FULL);
     this._menuManager.ignoreRelease();
+  }
+
+  destroy() {
+    if (this._confirmDialog) {
+      const dialog = this._confirmDialog;
+      this._confirmDialog = null;
+      dialog.close();
+      dialog.destroy();
+    }
+    super.destroy();
   }
 }
 
@@ -303,6 +374,7 @@ export const DockItemContainer = GObject.registerClass(
       if (params.appinfo_filename) {
         this._menu = new DockItemMenu(this, St.Side.TOP, {
           desktopApp,
+          item: this,
         });
         this._menu.item = this;
         this._menuManager = new PopupMenu.PopupMenuManager(this);

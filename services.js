@@ -223,19 +223,12 @@ export const Services = class {
   }
 
   setupTrashIcon() {
-    let extension_path = this.extension.path;
     let appname = `trash-dash2dock-lite.desktop`;
     let app_id = tempPath(appname);
     let fn = Gio.File.new_for_path(app_id);
     let open_app = 'nautilus --select';
 
-    let trash_action = `${extension_path}/apps/empty-trash.sh`;
-    {
-      let fn = Gio.File.new_for_path('.local/share/Trash');
-      trash_action = `rm -rf "${fn.get_path()}"`;
-    }
-
-    let content = `[Desktop Entry]\nVersion=1.0\nTerminal=false\nType=Application\nName=Trash\nExec=${open_app} trash:///\nIcon=user-trash\nStartupWMClass=trash-dash2dock-lite\nActions=trash\n\n[Desktop Action trash]\nName=Empty Trash\nExec=${trash_action}\nTerminal=true\n`;
+    let content = `[Desktop Entry]\nVersion=1.0\nTerminal=false\nType=Application\nName=Trash\nExec=${open_app} trash:///\nIcon=user-trash\nStartupWMClass=trash-dash2dock-lite\nActions=trash\n\n[Desktop Action trash]\nName=Empty Trash\nExec=gio trash --empty\nTerminal=false\n`;
     const [, etag] = fn.replace_contents(
       content,
       null,
@@ -386,6 +379,50 @@ export const Services = class {
     if (hasUpdates) {
       this.extension.animate();
     }
+  }
+
+  emptyTrash() {
+    if (!this._trashDir) return;
+
+    let iter = null;
+    try {
+      iter = this._trashDir.enumerate_children(
+        'standard::*',
+        Gio.FileQueryInfoFlags.NONE,
+        this._cancellable ?? null
+      );
+      let info;
+      while ((info = iter.next_file(this._cancellable ?? null)) !== null) {
+        let child = iter.get_child(info);
+        try {
+          child.delete(this._cancellable ?? null);
+        } catch (e) {
+          if (
+            this._cancellable?.is_cancelled() ||
+            (e?.matches && e.matches(Gio.IOErrorEnum, Gio.IOErrorEnum.CANCELLED))
+          ) {
+            break;
+          }
+          console.error('d2da: services emptyTrash child delete', e);
+        }
+      }
+    } catch (e) {
+      if (
+        !this._cancellable?.is_cancelled() &&
+        !(e?.matches && e.matches(Gio.IOErrorEnum, Gio.IOErrorEnum.CANCELLED))
+      ) {
+        console.error('d2da: services emptyTrash', e);
+      }
+    } finally {
+      try {
+        iter?.close(null);
+      } catch {
+        // ignore close error
+      }
+    }
+
+    this.checkTrash();
+    this.extension?.animate?.({ refresh: true });
   }
 
   checkTrash() {

@@ -84,38 +84,38 @@ Minor nits (naming, a stray blank line) that don't violate a rule: list them as 
 > Overwritten each cycle. On FAIL the Worker reads this for its rework.
 
 ```
-Cycle / Task / Attempt:  2.5 / R-8 Services cancellables, debounces, enumerator cleanup and measured dt / 1
+Cycle / Task / Attempt:  2.6 / R-9a Trash emptying via Gio with confirmation (B-8) / 1
 Verdict:          PASS
-Commit:           see Audit Log (fix(services): cancellables, separate debounces, close enumerators, measured dt)
-Gates:            check=PASS ; lint=PASS 0 err / 150 warn (= baseline; extension.js 13, services.js 8 = HEAD) ;
+Commit:           see Audit Log (fix(services): empty trash via Gio with modal confirmation dialog)
+Gates:            check=PASS ; lint=PASS 0 err / 150 warn (= baseline; dockItems.js 7, services.js 8 = HEAD) ;
                   settings=exit 0, 0/30 ; timer_check all passed (15/15) ;
                   window_tracker_check all passed (20/20) ; smoke x2 PASS (1 known sig, 0 new,
                   6/5 msgs, 6/5 probe lines, ALL deltas 0) ; strict x1 PASS (counts 6/5, ALL deltas 0,
                   shutdown criticals 0) ; settings variant strict PASS (deltas 0, criticals 0) ;
                   disposed/finalized/already been destroyed = 0 and `d2da: ` = 0 in all runs.
                   No orphaned headless shell. G-real NOT run (W3).
-Scope:            services.js (+138/-67), extension.js (+14/-5) + agents/*.md bookkeeping.
+Scope:            apps/empty-trash.sh (+1/-1), dockItems.js (+74/-1), services.js (+53/-10) + agents/*.md bookkeeping.
                   Matches Scope and Report.
 Rule violations:  none. A1-A10, A12, A13 clean (A11 n/a).
 Specific checks:
-  1. B-36 separate debounce handles: `_debounceRecentsSeq` and `_debounceDownloadsSeq` independent
-     on `_loTimer`, both cancelled and nulled in `disable()`. Eliminates mutual starvation.
-  2. B-25 per-service error isolation: callback invocation in `ServiceCounter.update(elapsed)`
-     wrapped in try/catch with `console.error('d2da: service ' + this.name + ' update', e)`. Defensively
-     guarded in `Services.update(elapsed)` as well.
-  3. B-25 measured dt: `_onCheckServices()` computes elapsed ms via `GLib.get_monotonic_time()`
-     relative to `_lastServicesUpdate`, clamped >= 0, defaulting to 2500 ms on first tick. Timestamp
-     reset to 0 in `enable()`, `disable()`, and `_onIconThemeChanged()`.
-  4. Cancellables: `_cancellable` created in `enable()`, cancelled and nulled in `disable()`, passed to
-     `enumerate_children`, `next_file`, and `load_contents_async`. Cancellation gracefully caught.
-  5. Monitor & enumerator cleanup: `_downloadsMonitor?.cancel()` and `_trashMonitor?.cancel()` before
-     disconnect/nulling; enumerator `iter?.close(null)` and `enumerator?.close(null)` in finally blocks.
-Nit:
-  - Empty `catch {}` on `iter?.close(null)` and `enumerator?.close(null)` in `finally` blocks: GFileEnumerator.close
-    is idempotent in Gio and safe, but logging with `console.error` would be strictly more informative.
+  1. B-8 rm -rf elimination: removed hardcoded `rm -rf` command, cwd-relative `.local/share/Trash`
+     lookup, and `Terminal=true` from `services.js:setupTrashIcon`. Desktop action Exec is `gio trash --empty`
+     with `Terminal=false`. `apps/empty-trash.sh` replaced `rm -rf` with `gio trash --empty`.
+  2. Gio emptyTrash(): `services.js:emptyTrash()` enumerates children of `trash:///` (`this._trashDir`),
+     deletes each child via `child.delete(this._cancellable ?? null)` wrapped in per-item try/catch,
+     closes enumerator in finally block, calls `this.checkTrash()`, and triggers dock icon refresh
+     via `this.extension?.animate?.({ refresh: true })`.
+  3. Confirmation dialog: `dockItems.js:DockItemMenu` intercepts `action === 'trash' || name === 'Empty Trash'`,
+     displaying a `ModalDialog.ModalDialog` with `Dialog.MessageDialogContent` (title 'Empty Trash?',
+     description 'All items in the Trash will be permanently deleted.').
+  4. Dialog actions: "Cancel" button on `Clutter.KEY_Escape` closes without action; "Empty Trash"
+     destructive button closes dialog and calls `services.emptyTrash()` (with fallback to desktop action launch).
+  5. Dialog lifecycle: active dialog stored in `this._confirmDialog`, nulled on `closed` and `destroy`.
+     `DockItemMenu.destroy()` closes and destroys active dialog cleanly, popping the modal grab before `super.destroy()`.
+Nit:              none.
 Rework list:      none.
-Findings confirmed: B-25 and B-36 resolved.
-Human check needed: none.
+Findings confirmed: B-8 resolved.
+Human check needed: yes (right-click trash icon in dock -> click "Empty Trash"; verify confirmation dialog appears with Cancel and Empty Trash, Cancel preserves trash, Empty Trash empties trash and updates icon).
 ```
 
 ## 7. Audit Log (append-only, newest last)
@@ -146,5 +146,6 @@ Human check needed: none.
 | 2.4 | R-7d | 1 | PASS | this commit | `make check` PASS; lint 0/150 = baseline (per file = HEAD); check-settings exit 0, 0/30; timer_check pass; window_tracker_check pass; smoke x2 PASS (1 known sig, 0 new, 6/5, ALL deltas 0 incl. live*); shutdown criticals 0/0 (was 150); settings variant PASS, deltas 0, criticals 0 (was 200); strict x2: FAIL (missed D-Bus disable, counts 3/2, deltas 0) then PASS; disposed/finalized 0, `d2da: ` 0 in all runs | B-1 dock side, B-38, B-39, B-40. Dock.destroy() override (guarded, always super.destroy()); destroyDash destroys the Shell Dash; recreateDash rebuild verified by reading only (human check). All post-destroy readers emptied/cancelled. No new private coupling. Findings: strict line-count flake; createTheDocks multi-monitor branch may over-create [inference]. |
 | 2.4a | R-7e | 1 | PASS | this commit | `make check` PASS; lint 0/150 = baseline (extension.js 13 = HEAD); check-settings exit 0, 0/30; timer_check 15/15; window_tracker_check 20/20; smoke x2 PASS (1 known sig, 0 new, 6/5, ALL deltas 0); strict x3 PASS consecutively (6/5 lines, ALL deltas 0, 0 crit); settings variant strict PASS (deltas 0, crit 0); disposed/finalized 0, `d2da: ` 0 | T-9 wait_toggle polls state (≤5s, retry once); stage excluded from strict delta failure; B-41 createTheDocks returns early when docks.length == count. Strict leaks 100% reliable. |
 | 2.5 | R-8 | 1 | PASS | this commit | `make check` PASS; lint 0/150 = baseline (extension.js 13, services.js 8 = HEAD); check-settings exit 0, 0/30; timer_check 15/15; window_tracker_check 20/20; smoke x2 PASS (1 known sig, 0 new, 6/5, ALL deltas 0); strict PASS (6/5 lines, ALL deltas 0, 0 crit); settings variant strict PASS (deltas 0, crit 0); disposed/finalized 0, `d2da: ` 0 | B-25 (measured dt via get_monotonic_time, per-service try/catch), B-36 (separate _debounceRecentsSeq / _debounceDownloadsSeq), Gio cancellables, monitor cancel, enumerator close. Nit: empty catch on enumerator close in finally. |
+| 2.6 | R-9a | 1 | PASS | this commit | check=PASS; lint 0/150 = baseline (dockItems.js 7, services.js 8 = HEAD); check-settings exit 0, 0/30; timer_check 15/15; window_tracker_check 20/20; smoke x2 PASS (1 known sig, 0 new, 6/5, ALL deltas 0); strict PASS (6/5 lines, ALL deltas 0, 0 crit); settings variant strict PASS (deltas 0, crit 0); disposed/finalized 0, `d2da: ` 0 | B-8 fixed. Hardcoded rm -rf removed from services.js and empty-trash.sh; services.emptyTrash() enumerates trash:/// and deletes children via Gio; DockItemMenu displays modal confirmation dialog (ModalDialog + MessageDialogContent) with Cancel and destructive Empty Trash buttons; cleanly destroyed with modal grab popped on menu teardown. |
 
 

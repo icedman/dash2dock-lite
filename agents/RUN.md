@@ -132,8 +132,8 @@ Status: `[ ]` todo · `[~]` in progress · `[x]` done (hash) · `[!]` blocked ·
 | [x] 523cec2 | 2.3a | R-0e probe v2 (smoke timing, live-instance counters) | 0.1 | T-5, T-6 · prerequisite for strict leaks |
 | [x] d95bb11 | 2.4 | R-7d Dock.destroy + destroyDocks | 2.1-2.3a | B-1 · then turn **strict leaks ON** (§5) |
 | [x] e5ba736 | 2.4a | R-7e smoke per-toggle state wait (T-9) + createTheDocks duplicate guard (B-41) | 2.4 | small; makes strict leaks reliable |
-| [~] | 2.5 | R-8 services cancellables / dt | 2.4 | B-25, B-36 |
-| [ ] | 2.6 | R-9a trash via Gio | 2.5 | B-8 · human visual |
+| [x] c0391da | 2.5 | R-8 services cancellables / dt | 2.4 | B-25, B-36 |
+| [~] | 2.6 | R-9a trash via Gio | 2.5 | B-8 · human visual |
 | [ ] | 2.7 | R-9b launchers in memory | 2.5 | B-10 |
 | [ ] | 2.8 | R-9c XDG paths | 2.5 | B-22 |
 | [ ] | 2.9 | R-9d CSS without /tmp | 2.5 | HUMAN — end of phase 2 |
@@ -178,7 +178,7 @@ Status: `open` · `fixed <hash>` · `partial <hash>` · `blocked` · `wontfix (r
 | B-4 | R-3 | fixed dda62a5 | | B-22 | R-9c | open |
 | B-5 | R-4a | fixed c9ca876 | | B-23 | R-1 | fixed ef879f9 |
 | B-6 | R-1, R-2 | fixed ef879f9 + c84f252 | | B-24 | R-1, R-11b | partial ef879f9 (`typeof func` typo; resolution collapse in R-11b) |
-| B-7 | R-2 | fixed c84f252 | | B-25 | R-8 | open |
+| B-7 | R-2 | fixed c84f252 | | B-25 | R-8 | fixed c0391da |
 | B-8 | R-9a | open | | B-26 | R-3 | fixed dda62a5 (dead check removed per human rule) |
 | B-9 | R-4d | fixed 0821a56 | | B-27 | R-3 | fixed dda62a5 |
 | B-10 | R-9b | open | | B-28 | (unassigned, needs St case check) | open |
@@ -195,7 +195,7 @@ Status: `open` · `fixed <hash>` · `partial <hash>` · `blocked` · `wontfix (r
 | P-3..P-6 | R-12 | open | | P-9, P-10 | R-13 | open |
 | P-11 | R-12 | open | | §6.3 low bugs | batch after phase 1 | open |
 | T-5 | R-0e | fixed 523cec2 | | T-6 | R-0e | fixed 523cec2 (live counters) |
-| B-36 | R-8 | open | | B-37 | R-9d | open |
+| B-36 | R-8 | fixed c0391da | | B-37 | R-9d | open |
 | B-38 | R-7d | fixed d95bb11 | | T-8 | R-0e | fixed 523cec2 (counted; strict-only gate) |
 | B-39 | R-7d | fixed d95bb11 | | B-40 | R-7d | fixed d95bb11 |
 | B-41 | R-7e | fixed e5ba736 | | T-9 | R-7e | fixed e5ba736 |
@@ -341,3 +341,6 @@ Format: `YYYY-MM-DD HH:MM · cycle · EVENT · details` where EVENT ∈ `SETUP, 
 - 2026-10-04 · 2.4a · AUDIT-PASS · `e5ba736`. check=PASS lint=0/150 settings=exit 0 timer_check 15/15 window_tracker_check 20/20 smoke=PASS(x2) strict(x3)=PASS all deltas 0 shutdown criticals 0. State polling on toggle (T-9) and multi-monitor createTheDocks idempotency guard (B-41) fixed.
 - 2026-10-04 · 2.5 · PREFLIGHT · tree clean apart from agents/*; HEAD `e5ba736`; GNOME Shell 50.5.
 - 2026-10-04 · 2.5 · ASSIGN · R-8 services cancellables / dt (B-25, B-36). Stub expanded.
+- 2026-10-04 · 2.5 · AUDIT-PASS · `c0391da`. check=PASS lint=0/150 settings=exit 0 timer_check 15/15 window_tracker_check 20/20 smoke=PASS(x2) strict=PASS all deltas 0 shutdown criticals 0. B-25 (measured dt, per-service try/catch), B-36 (separate debounce handles) fixed; Gio cancellable, monitor.cancel, enumerator.close added.
+- 2026-10-04 · 2.6 · PREFLIGHT · tree clean apart from agents/*; HEAD `c0391da`; GNOME Shell 50.5.
+- 2026-10-04 · 2.6 · ASSIGN · R-9a trash via Gio with confirmation (B-8). Stub expanded.

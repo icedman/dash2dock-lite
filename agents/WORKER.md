@@ -48,6 +48,7 @@ Required reading before touching code: `agents/D2DA.md` §2 (architecture, esp. 
 | `D2DA_SMOKE_REAL_DCONF=1 D2DA_SMOKE_BASELINE=agents/smoke-baseline-real.txt tools/smoke-shell.sh 3` | Same with user's real settings + all their extensions (covers blur-my-shell / magic-lamp paths). Advisory. |
 | `/tmp/d2da-smoke.log`, `/tmp/d2da-smoke.log.sig` | Full shell log / normalized error signatures of the last smoke run |
 | `grep -n 'symbol' file.js` | Locate code (D2DA line numbers drift) |
+| `../gnome-shell/` | GNOME Shell source tree (read directly, no resource extractio). Gnome versions are at branches gnome-45, gnome-46, and so on. |
 
 Isolated smoke can't change settings from outside (memory backend is in-process). To exercise non-default settings in a test, gate the code path behind an env var read with `GLib.getenv('D2DA_…')` and document it in the card's Verify.
 
@@ -58,17 +59,15 @@ Isolated smoke can't change settings from outside (memory backend is in-process)
 > Written by the ORCHESTRATOR only. Worker: do not edit this section.
 
 ```
-Cycle:      2.5
-Task:       R-8 — Services cancellables, debounces, enumerator cleanup and measured dt
+Cycle:      2.6
+Task:       R-9a — Trash emptying via Gio with confirmation (B-8)
 Attempt:    1
-Card:       §6 "R-8"
-Notes:      HEAD e5ba736. Strict leaks are ON. Baseline at e5ba736: all probe deltas 0,
-            shutdown criticals 0, strict smoke passes reliably.
-            Focus: Services lifecycle & timing.
-            (B-36) separate debounce handles for recents and downloads.
-            (B-25) per-service try/catch, measure actual dt in extension.js.
-            (Gio) cancellable for file ops, monitor.cancel(), enumerator.close().
-            G-real: NOT allowed (W3).
+Card:       §6 "R-9a"
+Notes:      HEAD c0391da. Strict leaks are ON.
+            (B-8) Remove rm -rf and Terminal=true. Empty trash via Gio.
+            Show confirmation dialog on Empty Trash from the dock menu.
+            Delete or replace apps/empty-trash.sh.
+            G-real: NOT allowed (W3). Do not touch the user's real trash in automated tests.
             Gates: check; lint 0/150; check-settings exit 0 (0/30); timer_check 15/15;
             window_tracker_check 20/20; smoke 1 known sig; strict PASS.
 ```
@@ -78,35 +77,34 @@ Notes:      HEAD e5ba736. Strict leaks are ON. Baseline at e5ba736: all probe de
 > Overwritten by the WORKER each cycle; read by the AUDITOR.
 
 ```
-Cycle / Task / Attempt: 2.5 / R-8 / 1
+Cycle / Task / Attempt: 2.6 / R-9a / 1
 Status:            DONE (all items in one cycle, nothing deferred)
-Files changed:     services.js (+138/-67), extension.js (+14/-5). HEAD e5ba736.
+Files changed:     apps/empty-trash.sh (+1/-1), dockItems.js (+74/-1), services.js (+53/-10). HEAD c0391da.
                    agents/*.md untouched except this Report.
 What changed:
+  - apps/empty-trash.sh:
+    - (B-8) Replaced `rm -rf ~/.local/share/Trash/*` with `gio trash --empty`.
   - services.js:
-    - (B-36) Split `_debounceCheckSeq` into `_debounceRecentsSeq` (used by `_debounceCheckRecents()`)
-      and `_debounceDownloadsSeq` (used by `_debounceCheckDownloads()`). In `disable()`, cancelled
-      both handles via `this.extension._loTimer?.cancel(...)` and nulled both handles.
-    - (B-25 per-service try/catch) Wrapped callback invocation in `ServiceCounter.update(elapsed)`
-      inside `try ... catch (e)` logging with `console.error('d2da: service ' + this.name + ' update', e)`.
-      Also wrapped `s.update(elapsed)` in `Services.update(elapsed)` defensively with
-      `console.error('d2da: service ' + s.name + ' update', e)`.
-    - (Cancellables) Initialized `this._cancellable = new Gio.Cancellable()` in `enable()`. In `disable()`,
-      cancelled via `this._cancellable?.cancel()` and nulled. Passed `this._cancellable ?? null` to cancellable
-      operations: `_trashDir.enumerate_children`, `iter.next_file`, `directory.enumerate_children`,
-      `enumerator.next_file`, and `fn.load_contents_async`. Caught cancellation errors gracefully
-      (`this._cancellable?.is_cancelled() || (e?.matches && e.matches(Gio.IOErrorEnum, Gio.IOErrorEnum.CANCELLED))`).
-    - (Monitor cancel) Added `this._downloadsMonitor?.cancel()` before `disconnectObject(this)` in
-      `setupDownloads()` and in `disable()`. Added `this._trashMonitor?.cancel()` before
-      `disconnectObject(this)` in `disable()`.
-    - (Enumerator close) Wrapped enumerator operations in `checkTrash()` and `checkRecentFilesInFolder(path)`
-      in `try ... finally` blocks and called `iter?.close(null)` / `enumerator?.close(null)` to release
-      file descriptors promptly.
-  - extension.js:
-    - (B-25 measured dt) In `_onCheckServices()`, measured actual elapsed milliseconds between calls using
-      `GLib.get_monotonic_time()` (`Math.max(0, Math.round((now - this._lastServicesUpdate) / 1000))`),
-      defaulting to `SERVICES_UPDATE_INTERVAL` (2500 ms) on first call. Initialized/reset
-      `this._lastServicesUpdate = 0` in `enable()`, `disable()`, and `_onIconThemeChanged()`.
+    - (B-8 remove rm -rf) In `setupTrashIcon()`, removed `rm -rf` command string, cwd-relative `.local/share/Trash`
+      lookup, and `Terminal=true`. Set desktop action `Exec` to `gio trash --empty` with `Terminal=false`.
+    - (Gio emptyTrash) Added `emptyTrash()` method: enumerates children of `this._trashDir` (`trash:///`) via
+      `enumerate_children` with `this._cancellable ?? null`, iterates child files via `iter.next_file`, and deletes
+      each child item via `child.delete(this._cancellable ?? null)` wrapped in per-item `try ... catch`. Closes
+      the enumerator promptly in `finally`, calls `this.checkTrash()`, and triggers dock refresh
+      via `this.extension?.animate?.({ refresh: true })`.
+  - dockItems.js:
+    - (Confirmation dialog) Imported `* as ModalDialog` and `* as Dialog` from `resource:///org/gnome/shell/ui/`.
+    - In `DockItemMenu`:
+      - Handled `action === 'trash' || name === 'Empty Trash'` to show a modal confirmation dialog
+        (`ModalDialog.ModalDialog` containing `Dialog.MessageDialogContent` with title `'Empty Trash?'`
+        and description `'All items in the Trash will be permanently deleted.'`).
+      - Added "Cancel" button (`key: Clutter.KEY_Escape`) which closes the dialog without emptying trash.
+      - Added "Empty Trash" button (`default: true`, styled with `.destructive-action`) which closes the dialog
+        and calls `this.item?.dock?.extension?.services?.emptyTrash()` (with fallback to desktop action launch).
+      - Tracked active dialog in `this._confirmDialog` with cleanup listeners on `closed` and `destroy`.
+      - Added `destroy()` to `DockItemMenu`: cleanly closes and destroys `this._confirmDialog` if active,
+        popping the modal grab and releasing actors before calling `super.destroy()`.
+    - In `DockItemContainer._init`: passed `item: this` into `DockItemMenu` options.
 Self-verification:
   - `make check`: OK.
   - `make lint`: 0 errors / 150 warnings.
@@ -116,12 +114,10 @@ Self-verification:
   - `make smoke`: PASS, 0 new sigs (1 known), shutdown criticals 0, msgs 6/5, probe lines 6/5,
     probe after-disable deltas all 0.
   - `D2DA_SMOKE_STRICT_LEAKS=1 tools/smoke-shell.sh 5`: PASS, shutdown criticals 0, probe line counts 6/5,
-    probe after-disable deltas all 0.
+    probe after-disable deltas all 0 (stage delta -40, all others 0).
   - `D2DA_SMOKE_SETTINGS='trash-icon=true downloads-icon=true clock-icon=true calendar-icon=true autohide-dash=true' D2DA_SMOKE_STRICT_LEAKS=1 tools/smoke-shell.sh 5`: PASS,
-    shutdown criticals 0, probe line counts 6/5, probe after-disable deltas all 0.
-New findings / notes:
-  - In GJS, GLib.Error inspection uses `err.matches(domain, code)` rather than `GLib.Error.matches`.
-    Used `this._cancellable?.is_cancelled() || (err?.matches && err.matches(Gio.IOErrorEnum, Gio.IOErrorEnum.CANCELLED))`.
+    shutdown criticals 0, probe line counts 6/5, probe after-disable deltas all 0 (including stage delta 0).
+New findings / notes: none.
 Scope request / blockers: none.
 ```
 
@@ -365,8 +361,19 @@ Phase 2-5 cards are *stubs*: the Orchestrator expands a stub into a full card (s
 - **Don't:** Change desktop file generation or shell spawn paths (that's R-9a/R-9b). Don't touch real dconf or run interactive tests.
 - **Accept:** `make check`, `make lint` (0 errors, ≤ 150 warnings), `tools/check-settings.py` (exit 0), unit tests pass, `make smoke` and strict smoke pass with 0 new signatures and all deltas 0.
 - **Verify:** `make check`; `make lint`; `python3 -B tools/check-settings.py`; `gjs -m tests/timer_check.js`; `gjs -m tests/window_tracker_check.js`; `D2DA_SMOKE_STRICT_LEAKS=1 tools/smoke-shell.sh 5`; `make smoke`.
-- **Human:** no.
-- **R-9a** Trash: empty via Gio with confirmation, no `rm -rf` (B-8). **R-9b** Launchers: `DesktopAppInfo` from in-memory `GLib.KeyFile`, `GLib.shell_quote` (B-10). **R-9c** XDG paths (B-22). **R-9d** CSS from runtime dir / in-memory, per shell instance (B-37).
+#### R-9a — Trash emptying via Gio with confirmation (B-8)
+- **Fixes:** B-8.
+- **Scope:** `services.js`; `dockItems.js`; `apps/empty-trash.sh`.
+- **Do:**
+  - (B-8 remove `rm -rf`) In `services.js:setupTrashIcon`, remove the hardcoded `rm -rf` command and `Terminal=true`. Set the desktop action `Exec` to `gio trash --empty` with `Terminal=false`.
+  - (Gio emptyTrash) In `services.js`, add an `emptyTrash()` method: enumerate children of `this._trashDir` (`trash:///`) and delete each child via Gio (`child.delete(this._cancellable ?? null)` or `child.delete_async`), close the enumerator, call `this.checkTrash()`, and refresh dock icon state (`this.extension.animate({ refresh: true })`).
+  - (Confirmation dialog) In `dockItems.js:DockItemMenu`, when handling the `trash` action (e.g. from context menu "Empty Trash"), display a GNOME Shell modal confirmation dialog (`ModalDialog.ModalDialog` with `Dialog.MessageDialogContent`: title "Empty Trash?", description "All items in the Trash will be permanently deleted.") with Cancel and destructive "Empty Trash" buttons. Only proceed to empty trash when confirmed. Ensure the dialog closes cleanly, disconnects, and does not leak actors.
+  - Delete `apps/empty-trash.sh` (or replace its content with `gio trash --empty`).
+- **Don't:** Never execute `rm -rf`. Never empty trash without confirmation when triggered from the dock menu. Never delete files outside `trash:///`. Don't empty real trash during automated test suites.
+- **Accept:** `make check`, `make lint` (0 errors, ≤ 150 warnings), `tools/check-settings.py` (exit 0), unit tests pass, `make smoke` and strict smoke pass with 0 new signatures and all deltas 0.
+- **Verify:** `make check`; `make lint`; `python3 -B tools/check-settings.py`; `gjs -m tests/timer_check.js`; `gjs -m tests/window_tracker_check.js`; `D2DA_SMOKE_STRICT_LEAKS=1 tools/smoke-shell.sh 5`; `make smoke`.
+- **Human:** yes. Right-click trash icon in dock -> click "Empty Trash". Verify confirmation dialog appears with Cancel and Empty Trash. Cancel leaves trash intact. Empty Trash empties trash and updates icon to empty.
+- **R-9b** Launchers: `DesktopAppInfo` from in-memory `GLib.KeyFile`, `GLib.shell_quote` (B-10). **R-9c** XDG paths (B-22). **R-9d** CSS from runtime dir / in-memory, per shell instance (B-37).
 
 ### Phase 3 — Speed (stubs)
 - **R-10** split `layout()` → `relayout()` on dirty flag; `animate` must not call `layout()` (P-1).

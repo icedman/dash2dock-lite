@@ -202,6 +202,14 @@ export let Dock = GObject.registerClass(
       this.autohider.disable();
       this.removeFromChrome();
       this.animator.disable();
+
+      // autohider.disable() -> show() -> slideIn() may re-arm these
+      this.extension._hiTimer?.cancel(this._animationSeq);
+      this.extension._loTimer?.cancel(this.debounceEndSeq);
+      this.extension._loTimer?.cancel(this._debounceBeginAnimateSeq);
+      this._animationSeq = null;
+      this.debounceEndSeq = null;
+      this._debounceBeginAnimateSeq = null;
     }
 
     _onButtonPressEvent(evt) {

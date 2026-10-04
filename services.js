@@ -131,6 +131,8 @@ export const Services = class {
     this._trashMonitor.disconnectObject(this);
     this._trashMonitor = null;
     this._trashDir = null;
+    this.extension._loTimer?.cancel(this._debounceCheckSeq);
+    this._debounceCheckSeq = null;
   }
 
   setupDownloads() {

@@ -36,10 +36,15 @@ export let AutoHide = class {
   }
 
   disable() {
+    // _debounceCheckHide() also runs while autohide is off, so always drop it
+    this.extension._loTimer?.cancel(this._debounceCheckSeq);
+    this._debounceCheckSeq = null;
+
     if (!this._enabled) return;
     if (this.extension._hiTimer) {
       this.extension._hiTimer.cancel(this._animationSeq);
     }
+    this._animationSeq = null;
 
     this.show();
 

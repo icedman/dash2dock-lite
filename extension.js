@@ -126,9 +126,11 @@ export default class Dash2DockLiteExt extends Extension {
       dock.undock();
       dock.cancelAnimations();
       dock.destroyDash();
-      this.dock = null;
     });
+    this.dock = null;
     this.docks = [];
+    // services has no listener hooks; createDock() rebuilds the list
+    this.listeners = [];
   }
 
   recreateAllDocks(delay = 750) {
@@ -273,6 +275,11 @@ export default class Dash2DockLiteExt extends Extension {
 
     this.services.disable();
     this.services = null;
+
+    this._hiTimer?.cancel(this._debounceStyleSeq);
+    this._loTimer?.cancel(this._iconSpacingDebounceSeq);
+    this._debounceStyleSeq = null;
+    this._iconSpacingDebounceSeq = null;
 
     this._timer = null;
     this._hiTimer = null;

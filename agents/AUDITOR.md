@@ -84,82 +84,91 @@ Minor nits (naming, a stray blank line) that don't violate a rule: list them as 
 > Overwritten each cycle. On FAIL the Worker reads this for its rework.
 
 ```
-Cycle / Task / Attempt:  1.1 / R-1 / 1
+Cycle / Task / Attempt:  1.2 / R-2 / 1
 Verdict:          PASS
 Commit:           see Audit Log (short hash)
-Gates:            check=PASS ; lint=PASS (0 errors / 166 warnings, was 168; timer.js 2 -> 0, the 2
-                  removed = no-undef `func` (B-24); `npx eslint timer.js eslint.config.js` clean, so
-                  no-undef is an error again for timer.js) ; settings=BASELINE (exit 1, 2 err / 30 warn,
-                  same classes/counts) ; smoke=PASS (1 known sig, 0 new, 6/5 msgs, probe 6/5,
-                  after-enable deltas 0, after-disable 0 0 0 0 0 +1 0 = T-5) ; smoke-x2=PASS (same;
-                  deltas 0 0 0 0 0 +1 0) ; `grep -c 'd2da: timer' /tmp/d2da-smoke.log` = 0 both runs ;
-                  leaks=n/a (strict OFF) ; real=not run (advisory, no integrations.js change) ;
-                  card=PASS (`gjs -m tests/timer_check.js` 15/15, exit 0, 0.4 s).
-Scope:            timer.js (+57/-16), eslint.config.js (only 'timer.js' dropped from the no-undef:warn
-                  override `files` + its comment), tests/timer_check.js (new, 132 lines; tests/ is
-                  not linted and not shipped). agents/*.md = Orchestrator/Auditor bookkeeping
-                  (RUN.md board/ledger/metrics/log, D2DA.md 6.5 wording from 0.3).
+Gates:            check=PASS ; lint=PASS (0 errors / 166 warnings = baseline; per file vs HEAD
+                  extension.js 17/17, dock.js 25/25, autohide.js 3/3, services.js 12/12) ;
+                  settings=BASELINE (exit 1, 2 err / 30 warn) ; smoke=PASS (1 known sig, 0 new,
+                  6/5 msgs, probe 6/5, after-enable deltas 0/-32/0/0/0/0/0, after-disable
+                  0/-32/0/0/0/+1/0; the -32 is T-6 run variance, it shows up the same in the
+                  after-enable rows) ; smoke-x2=PASS (same; deltas 0/0/0/0/0/+1/0 both tables) ;
+                  after-disable hi = 0 every cycle in both runs ; `d2da: ` = 0 and
+                  'unable to layout' = 0 in /tmp/d2da-smoke.log ; leaks=n/a (strict OFF) ;
+                  real=not run (advisory, no integrations.js change) ; card=PASS ;
+                  `gjs -m tests/timer_check.js` 15/15 all passed.
+Scope:            extension.js (+8/-1), dock.js (+8), autohide.js (+5), services.js (+2), only
+                  reset lines + 3 short comments. agents/RUN.md + agents/WORKER.md = Orchestrator/
+                  Worker bookkeeping (1.1 board/ledger/metrics/log; 1.2 assignment + report).
 Rule violations:  none (A1-A13).
 Specific checks:
-  - Discrimination: the test against HEAD timer.js (scratch dir, removed) exits non-zero. It FAILs
-    the stale checks, then runAnimation(handle) throws "array.forEach is not a function". Same test
-    with the runAnimation section cut, against HEAD: 8 FAILs (stale x4, B-23 restart x2,
-    is_running after REMOVE, thrower).
-  - B-2: per-subscriber try/catch with the d2da prefix, loop continues. The start() wrapper also
-    catches anything else in onUpdate (hibernate/onStop), so GJS can never kill the source with
-    _timeoutId left set. The wrapper returns CONTINUE only if `_timeoutId === sourceId`. A
-    stop()/start() or hibernate() inside a tick removes the old source without nulling the new
-    id. source_remove on the dispatching source followed by returning REMOVE is legal in GLib.
-  - B-23: subscribe restarts on `length > 0 && !is_running()`. extension.js _updateAnimationFPS
-    shutdown()+initialize() with live subs now restarts on the next subscribe (test 5 + my case G:
-    hibernate in onUpdate, then subscribe restarts).
-  - B-6 (timer half): module-level id counter; obj._timer owner tag; a foreign-owned handle gets
-    _id/_timer stripped. The merge path keeps _timer (spread of obj, which has _timer = this).
-  - B-24 part: runAnimation typo fixed, mirrors runSequence. The only caller is animator.js
-    bounceIcon (array), so no behaviour change.
-  - Departure 1 (no slice): verified safe. unsubscribe() always replaces this._subscribers and
-    never mutates the captured array, so a mid-loop removal can't skip or double-visit anyone.
-    subscribe() push lands in the captured array or a newer one, and count is fixed, so a new sub
-    is not run in that tick and runs once in the next. Ids are deduped, so an object can't
-    appear twice. Auditor scratch cases (gjs, manual onUpdate, file removed) all ok:
-    self-unsubscribe before a survivor, 2 consecutive unsubscribes, subscribe during the loop
-    before/after an unsubscribe, self re-arm (1 call/tick, no dup), re-armed debounce never
-    fires, thrower between 2 subs, hibernate -> subscribe restart. Semantics = HEAD forEach
-    (which also bound the array once), minus nothing, plus no allocation.
-  - Departure 2 (s._timer.unsubscribe): accepted. Every element has _timer (set before
-    push/merge). Grep of every runDebounced/runOnce/runLoop/runSequence/runAnimation/cancel
-    caller (extension.js, dock.js, autohide.js, services.js, animator.js, diagnostics.js): each
-    handle is created, re-armed and cancelled on the same timer (debounceEndSeq _loTimer;
-    _animationSeq _hiTimer; autohider._animationSeq only cancelled, never assigned; cancel()
-    still uses `this`). So nothing changes for current callers, and the stale-handle case is
-    fixed (it was the B-6 "never unsubscribes" root cause).
-  - A8: onUpdate allocates nothing per tick (const ref + index loop; template strings only on
-    throw). The wrapper closure is per start(), not per tick. subscribe writes one property.
-  - A13: Report claims match (files, lint 166, test results, HEAD discrimination, smoke).
+  - (1) Seq inventory. My own `grep -n 'Seq' *.js apps/*.js effects/*.js preferences/*.js`
+    plus a grep of every run*( call matches the Worker's table exactly. Stored handles:
+    ext._debounceStyleSeq (hi), ext._iconSpacingDebounceSeq (lo), dock._animationSeq (hi),
+    dock.debounceEndSeq (lo), dock._debounceBeginAnimateSeq (lo), autohider._debounceCheckSeq
+    (lo), autohider._animationSeq (never assigned), services._debounceCheckSeq (lo). Each one is
+    cancelled on the timer that created it and then nulled. Unstored ones: extension.js:242/327/991
+    runOnce, :810 runLoop on _timer, dock.js runOnce x4, animator.js:1159 runAnimation,
+    diagnostics _seqs (a local array). None is missed. Timer.cancel(null) is a no-op and
+    unsubscribe matches on _id, so cancelling the stored original after a merge-path re-arm
+    still hits the merged copy.
+  - (2) dock.js order. undock(): _endAnimation() cancels hi/lo, then calls
+    autohider._debounceCheckHide() (re-arms the lo handle). autohider.disable() cancels
+    _debounceCheckSeq first, then for an enabled autohider show() -> dock.slideIn() ->
+    (_hidden) _beginAnimation() re-subscribes _animationSeq (hi) and debounceEndSeq (lo, still
+    non-null at that point). show() never calls _debounceCheckHide. Then removeFromChrome() and
+    animator.disable() touch no timers. So the reset at the end of undock() is correct and
+    necessary. After undock(): destroyDocks -> cancelAnimations (cancel(null), nulls only),
+    destroyDash (_findIcons/_cleanupIcon, no timers). extension.disable() order: timers
+    shutdown() first (_autoStart=false, so re-subscribes during teardown don't restart them),
+    _updateAutohide(true) (same chain, undone again by undock), destroyDocks, integrations/
+    services.disable, then the extension resets, then the timers are nulled. Nothing after the
+    extension resets (_style.unloadAll, icon_theme, probe) arms a timer. Probe hi=0 after
+    disable confirms it.
+  - (3) listeners. The only readers are the 4 fan-outs (_onFocusWindow/_onFullScreen/
+    _onRestacked/_onAppsChanged, extension.js ~854-880). They copy the array and check for each
+    hook. Services defines none of these hooks (grep), so [] between destroyDocks and createDock
+    drops nothing live. The gap paths are _updateMultiMonitorPreference (destroyDocks + startUp
+    after 500 ms) and createTheDocks' internal destroyDocks (createDock follows at once, or
+    nothing if no monitor matches the config). Moving `this.dock = null` out of the loop is
+    the same end state. The only extension.dock readers are in diagnostics.js, and nothing
+    calls them during teardown.
+  - (4) autohide _debounceCheckSeq before the _enabled return. Docks call _debounceCheckHide()
+    whether or not autohide is on, so a disabled autohider also holds a live lo handle. HEAD
+    never cleared it. Callers of disable(): undock (teardown, wanted) and _updateAutohide
+    (setting toggle, or disable(true)). The pending callback is _checkHide(), which does
+    nothing unless _enabled. After disable() _enabled is false on every path, so the
+    cancelled callback would have been a no-op anyway. The next _debounceCheckHide() creates a
+    fresh handle because the field is null. Safe.
+  - A6/A8/A10/A12: no new subscriptions; nothing per frame; uses `?.` on timers (they are live
+    on every path at that point, so it is defensive only); the comments explain ordering, they
+    don't restate the code.
+  - A13: Report matches the diff and the gates, except the diffstat: "+24/-1" vs the actual
+    +23/-1 (numstat). Trivial, nit only.
 Rework list:
   —
 Nits:
-  - onUpdate comment rationale (b) overclaims. run*(handle) already sets `_time = 0` on the
-    shared object before the merge, so slice() would see the reset too. After an earlier
-    unsubscribe in the same tick, the captured array holds the pre-merge object (exactly as HEAD
-    did). The code is right; only the "must be seen in its reset state" wording is stronger than
-    the truth.
-  - tests/timer_check.js check 1 (thrower) doesn't isolate B-2 on HEAD. HEAD's colliding 0xff id
-    (B-6) overwrote the thrower in place, so it ran 0 times for that reason. The check still
-    fails on HEAD, just for B-6. Consider separate timers per scenario when the test is next
-    touched.
-  - The test's last step monkeypatches timer.onUpdate on the instance (fine: the wrapper reads
-    this.onUpdate dynamically).
-Findings confirmed:  B-2, B-23, B-6 (timer half), B-24 (runAnimation typo) fixed in timer.js.
-Human check needed:  none
+  - Report diffstat is off by one (+24 claimed, +23 real).
+  - autohide.js disable(): `this._animationSeq = null` sits after the `_enabled` early return,
+    so a never-enabled autohider skips it. Harmless: the field is never assigned, and
+    dock.cancelAnimations() nulls it too. R-18 removes it.
+Findings confirmed:  B-7 fixed (destroyDocks clears listeners, `dock` nulled once). B-6
+                     extension side fixed: every stored *Seq handle is cancelled on its owner timer
+                     and nulled on teardown. With ef879f9 (timer side), B-6 can be closed.
+Human check needed:  none required. Optional: with 2 monitors, toggle multi-monitor-preference and
+                     autohide-dash a few times and watch for a stuck dock or a busy CPU.
 New findings spotted (for Orchestrator):
-  - (latent) A handle that is still live on timer A and gets passed to B.runX() is re-owned by B.
-    A keeps ticking its copy, and that copy's run* closure now unsubscribes from B, not A, so it
-    stays on A. No caller does this today (grep above). R-2 should keep the "one handle, one
-    timer" convention and null handles in disable().
-  - Worker info items accepted: onStart/onStop/onPause/onResume hooks are unguarded (no users;
-    R-11/R-18). The merge path returns a copy, so callers must store the return value (R-2
-    relies on this).
+  - Worker's services finding confirmed, with the order. setupDownloads() ends with
+    _debounceCheckDownloads() (services.js ~173), before enable() calls _debounceCheckRecents(),
+    so the shared services._debounceCheckSeq is the downloads one. Recents re-arms
+    (extension.js ~547) run checkDownloads. Same timer, so it is a correctness smell, not a
+    leak. Suggest one handle per job (R-4-class one-liner or R-18).
+  - Worker's dock.js _beginAnimation guard (`_hiTimer &&` before a `_loTimer.runDebounced`)
+    confirmed. Cosmetic.
+  - Worker's B-1 note accepted: undocked docks keep dwell/struts signal handlers in the
+    multi-monitor recreate path. A late event on a leaked dock can re-arm a lo/hi handle
+    owned by the dead dock. Bounded (a debounce fires once; an _animationSeq loop on a leaked
+    dock would run until _endAnimation). R-7d (Dock.destroy) must disconnect before undock.
 ```
 
 ## 7. Audit Log (append-only, newest last)
@@ -173,3 +182,4 @@ New findings spotted (for Orchestrator):
 | 0.2 | R-0b | 2 | PASS | this commit | `make check` PASS; `make lint` PASS (0 errors / 168 warnings = baseline); `make smoke` PASS; smoke-x2 PASS (1 known sig, 0 new, 6/5 msgs, probe 6/5, deltas 0/0/0/0/0/+1/0); card PASS; publish verified in temp copy | Attempt 2 = Makefile T-7 interim (human node_modules lines kept + agents/eslint.config.js/package*.json removed from install, eslint.config.js from publish; lint .PHONY; check comment). Installed dir and zip contain no node_modules/agents/eslint.config.js/package*.json. Zip: 80 entries, no themes/ (T-4), still has ui/legacy (R-0d). G-lint baseline 168 warnings (per-file list in Last verdict). Nits: rm -rf for single files; package.json main=index.js; dev *.md docs installed. Finding: screenshot names with spaces break xargs cp. |
 | 0.3 | R-0c | 1 | PASS | this commit | `make check` PASS; `make lint` PASS (0 err / 168 warn = baseline); check-settings exit 1 by design (2 err / 30 warn); `make smoke` PASS; smoke-x2 PASS (1 known sig, 0 new, 6/5 msgs, probe 6/5; deltas 0/0/0/0/0/+1/0 and 0/-32/0/0/0/+1/0, the -32 = T-6 variance) | **G-settings baseline:** ERROR shared-adjustment 1 (B-12), duplicate-case 1 (B-16), missing-in-schema 0, widget-type 0; WARN missing-in-keys 5 (debug, debug-log, monitor-count, msg-to-pref, theme), ui-id-no-key 0, key-no-widget 8 (animate-icons, animation-type, drawing-* x6), dead-setting 17 (6.5 list of 16 + msg-to-ext FP). B-12/B-16 verified in source; negative test (both patched in scratch copy) gives 0 errors, exit 0; 6 dead + 4 live spot checks correct. Accepted: apps/+effects/ scan, msg-to-ext WARN FP, schema->keys missing = WARN, extra widget-type class. Nits: `.foo_bar` matches any receiver; untracked tools/__pycache__ not staged (gitignore in R-0d). Finding: D2DA 6.5 mislabels animation-type/documents-path as schema-only. |
 | 1.1 | R-1 | 1 | PASS | this commit | `make check` PASS; `make lint` PASS (0 err / 166 warn, was 168; timer.js 2 -> 0); check-settings exit 1 (2 err / 30 warn = baseline); `make smoke` PASS; smoke-x2 PASS (1 known sig, 0 new, 6/5 msgs, probe 6/5, deltas 0/0/0/0/0/+1/0 both); card `gjs -m tests/timer_check.js` 15/15 exit 0 (0.4 s) | B-2, B-23, B-6 (timer half), B-24 typo fixed. Test fails against HEAD timer.js (scratch dir, removed). Departures accepted: (1) captured-array iteration, no slice, verified safe (unsubscribe replaces the array; fixed count; 12 Auditor scratch edge cases ok; = HEAD semantics, no per-tick alloc, A8 ok); (2) run* unsubscribe via s._timer, all callers use one timer per handle. Nits: onUpdate comment rationale (b) overclaims; test check 1 fails on HEAD via B-6 id collision, not B-2 alone. Finding: a live handle passed to a second timer stays stuck on the first (latent, no caller). |
+| 1.2 | R-2 | 1 | PASS | this commit | `make check` PASS; `make lint` PASS (0 err / 166 warn = baseline; per-file = HEAD); check-settings exit 1 (2 err / 30 warn = baseline); `make smoke` PASS; smoke-x2 PASS (1 known sig, 0 new, 6/5 msgs, probe 6/5, after-disable deltas 0/-32(T-6)/0/0/0/+1/0 and 0/0/0/0/0/+1/0, hi=0 after every disable); card: `gjs -m tests/timer_check.js` 15/15 | B-7 fixed; B-6 extension side fixed (8 stored *Seq handles, each cancelled on its owner timer and nulled; inventory checked against grep of Seq and every run* call). Checked: undock() reset must be last because autohider.disable()->show()->slideIn()->_beginAnimation() re-arms _animationSeq/debounceEndSeq; nothing after it arms timers; listeners readers are the 4 fan-outs, services has no hooks; autohide early cancel safe (_checkHide no-op when !_enabled). Nits: Report diffstat +24 vs real +23; autohider._animationSeq null after the early return (dead field). Findings: services shared _debounceCheckSeq confirmed (downloads armed first, recents re-arms run checkDownloads); leaked docks can re-arm handles until R-7d. |

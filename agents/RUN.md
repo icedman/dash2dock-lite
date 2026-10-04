@@ -111,8 +111,8 @@ Status: `[ ]` todo · `[~]` in progress · `[x]` done (hash) · `[!]` blocked ·
 ### Phase 1 — Correctness quick wins
 | | Cycle | Task | Depends | Notes |
 |---|---|---|---|---|
-| [~] | 1.1 | R-1 harden Timer | 0.1 | B-2, B-23, B-6(timer), B-24(typo) |
-| [ ] | 1.2 | R-2 reset `*Seq` + listeners | 1.1 | B-6, B-7 |
+| [x] ef879f9 | 1.1 | R-1 harden Timer | 0.1 | B-2, B-23, B-6(timer), B-24(typo) |
+| [~] | 1.2 | R-2 reset `*Seq` + listeners | 1.1 | B-6, B-7 |
 | [ ] | 1.3 | R-3 autohide | 1.1 | B-3, B-4, B-26, B-27 · human visual |
 | [ ] | 1.4 | R-4a extension.js one-liners | 0.3 | B-5, B-13, B-16, B-20 |
 | [ ] | 1.5 | R-4b animator one-liners | 0.1 | B-14, B-15, B-34 · human visual |
@@ -171,11 +171,11 @@ Status: `open` · `fixed <hash>` · `partial <hash>` · `blocked` · `wontfix (r
 | ID | Task | Status | | ID | Task | Status |
 |---|---|---|---|---|---|---|
 | B-1 | R-7d | open | | B-19 | R-4c | open |
-| B-2 | R-1 | open | | B-20 | R-4a | open |
+| B-2 | R-1 | fixed ef879f9 | | B-20 | R-4a | open |
 | B-3 | R-3 | open | | B-21 | R-8 | open |
 | B-4 | R-3 | open | | B-22 | R-9c | open |
-| B-5 | R-4a | open | | B-23 | R-1 | open |
-| B-6 | R-1, R-2 | open | | B-24 | R-1, R-11b | open |
+| B-5 | R-4a | open | | B-23 | R-1 | fixed ef879f9 |
+| B-6 | R-1, R-2 | partial ef879f9 (timer side; extension resets in R-2) | | B-24 | R-1, R-11b | partial ef879f9 (`typeof func` typo; resolution collapse in R-11b) |
 | B-7 | R-2 | open | | B-25 | R-8 | open |
 | B-8 | R-9a | open | | B-26 | R-3 | open |
 | B-9 | R-4d | open | | B-27 | R-3 | open |
@@ -206,7 +206,7 @@ Unassigned rows: when a phase ends, either add a card + board row for them or ma
 | Smoke baseline (real dconf, advisory) | 4 signatures (incl. B-35, search-light's DesktopAppInfo warning) | setup |
 | Probe after-disable deltas, 5 toggles (uiGroup / stage / dashes / docks / hi / lo / loop) | 0 / 0 / 0 / 0 / 0 / **+1** / 0. `lo` +1 = smoke-timing artifact (T-5). Stage-walk can't see B-1 (T-6). Absolute `stage` varies per run (2865-2885) ⇒ track deltas only | 2bbf52d |
 | Strict leaks (`D2DA_SMOKE_STRICT_LEAKS=1` in G-leaks) | **OFF** (turn ON after 2.4) | |
-| ESLint warnings (errors) | 168 (0). no-unused-vars 162, no-undef 5, no-duplicate-case 1; known-bug rules demoted in `extension.js`/`timer.js` only, restore in R-4a/R-1 | 2a0ae6f |
+| ESLint warnings (errors) | 166 (0) at ef879f9; was 168 at 2a0ae6f. no-unused-vars 162, no-undef 5, no-duplicate-case 1; known-bug rule demotions now only in `extension.js` (restore in R-4a); timer.js restored in ef879f9 | 2a0ae6f |
 | check-settings issues | exit 1 by design. Errors 2: shared-adjustment 1 (B-12), duplicate-case 1 (B-16); missing-in-schema 0, widget-type 0. Warnings 30: missing-in-keys 5, key-no-widget 8, dead-setting 17 (§6.5 list + `msg-to-ext` false positive). Should exit 0 after R-4a + R-5 ⇒ then make G-settings a hard exit-code gate | cff438d |
 
 ### 5.1 Human-check queue
@@ -247,3 +247,6 @@ Format: `YYYY-MM-DD HH:MM · cycle · EVENT · details` where EVENT ∈ `SETUP, 
 - 2026-10-04 · 0.4 · STOP · End of phase 0. Waiting for the human to start phase 1 (1.1 R-1 harden Timer).
 - 2026-10-04 · 1.1 · PREFLIGHT · tree = only agents/* Orchestrator edits; HEAD `cff438d`; GNOME Shell 50.5; gjs 1.88.1.
 - 2026-10-04 · 1.1 · ASSIGN · R-1 harden Timer (scope + `eslint.config.js`: drop timer.js from the no-undef demotion after the B-24 typo fix).
+- 2026-10-04 · 1.1 · AUDIT-PASS · `ef879f9`. check=PASS lint=0/166 (−2) settings=2/30 smoke=PASS(x2) timer_check 15/15 (fails on HEAD~ timer.js). Worker departures accepted: direct iteration of `_subscribers` (unsubscribe swaps the array; verified with 12 edge cases), run* helpers unsubscribe via the owning timer. Ledger: B-2, B-23 fixed; B-6, B-24 partial. Nit: test's thrower case relies on B-6 too. Latent: a handle active on timer A and passed to timer B is taken over by B ⇒ R-2 notes.
+- 2026-10-04 · 1.2 · PREFLIGHT · tree clean apart from agents/*; HEAD `ef879f9`; GNOME Shell 50.5.
+- 2026-10-04 · 1.2 · ASSIGN · R-2 reset `*Seq` handles + listeners on disable.

@@ -58,21 +58,25 @@ Isolated smoke can't change settings from outside (memory backend is in-process)
 > Written by the ORCHESTRATOR only. Worker: do not edit this section.
 
 ```
-Cycle:      1.1
-Task:       R-1 — Harden `Timer`
+Cycle:      1.2
+Task:       R-2 — Reset handles & listeners on disable
 Attempt:    1
-Card:       §6 "R-1"
-Notes:      HEAD cff438d. Gates: check; lint baseline 0 err / 168 warn (timer.js must not
-            get more warnings); check-settings baseline exit 1 with 2 err / 30 warn (no new);
-            smoke (1 known sig; probe after-disable deltas 0/0/0/0/0/+1/0, with lo +1 = T-5
-            artifact, so don't chase it).
-            Scope addition: `eslint.config.js`. Once the B-24 `typeof func` typo is fixed,
-            remove 'timer.js' from the `no-undef: warn` override's `files` and from its
-            comment, so the rule is an error again for timer.js. Change nothing else there.
-            Also per D2DA §7 R-1: clear `_timeoutId` when the GLib source dies (callback
-            returns REMOVE or the source is removed), so `is_running()` is truthful.
-            gjs 1.88.1 is available for `gjs -m tests/timer_check.js` (`tests/` is not
-            linted). The test must exit non-zero on failure and finish in under 5 s.
+Card:       §6 "R-2"
+Notes:      HEAD ef879f9. R-1 made timer handles owner-tagged (`obj._timer`) with global
+            ids; a stale handle passed to a *different* timer is stripped and re-adopted.
+            So B-6 no longer causes runaway ticks, but R-2 still must null every handle
+            in disable/teardown. Auditor 1.1 latent finding: a handle still active on
+            timer A that gets passed to timer B is taken over by B while A keeps its
+            copy. Keep "one handle, one timer": never share a `*Seq` object between
+            timers, and null it on teardown. List every `*Seq` you found
+            (`grep -n 'Seq' *.js`, plus `apps/` and `effects/`) with where it's reset.
+            Report any handle that isn't reset and say why.
+            B-7: `destroyDocks()` must clear `this.listeners` so events don't reach
+            undocked docks. Check that nothing iterates listeners expecting them
+            between destroyDocks and the next createDock.
+            Gate baselines: lint 0 err / 166 warn; check-settings 2 err / 30 warn;
+            smoke 1 known sig, probe after-disable deltas 0/0/0/0/0/+1/0 (lo +1 = T-5,
+            but say if it changes). `gjs -m tests/timer_check.js` must still pass.
 ```
 
 ## 5. Report
@@ -80,76 +84,81 @@ Notes:      HEAD cff438d. Gates: check; lint baseline 0 err / 168 warn (timer.js
 > Overwritten by the WORKER each cycle; read by the AUDITOR.
 
 ```
-Cycle / Task / Attempt: 1.1 / R-1 / 1
+Cycle / Task / Attempt: 1.2 / R-2 / 1
 Status:            DONE
-Files changed:     timer.js; eslint.config.js (Orchestrator scope addition); tests/timer_check.js (new)
+Files changed:     extension.js, dock.js, autohide.js, services.js (reset lines only; +24/-1)
 Findings addressed:
-  B-2  onUpdate: each subscriber call in try/catch ->
-       console.error('d2da: timer <name> subscriber <_name ?? _id>', e), loop continues.
-       Also clear _timeoutId when the GLib source dies (D2DA §7 R-1): start() now passes a
-       wrapper closure that captures its own sourceId. It calls onUpdate() inside a try/catch
-       ('d2da: timer <name> update') and returns SOURCE_CONTINUE only if onUpdate returned true
-       AND _timeoutId is still this source. Otherwise it returns SOURCE_REMOVE and nulls
-       _timeoutId if it still points at this source. So is_running() is truthful, and a
-       stop()/start() inside a tick can't null the new id. stop() keeps nulling on source_remove.
-  B-23 subscribe: (re)start when (_hibernating || _autoStart) && length > 0 && !is_running()
-       (was length == 1). Fixes the freeze after _updateAnimationFPS' shutdown(); initialize()
-       with live subscribers.
-  B-6 (timer half)
-       - Module-level nextSubscriberId (starts 0xff) replaces the per-instance _subscriberId,
-         so ids are globally unique.
-       - subscribe tags obj._timer = this. If obj._timer is a different Timer, it deletes
-         _id/_timer and treats obj as new.
-       - Extra, needed for the "never unsubscribes / runs every tick forever" half of B-6:
-         the run* closures captured `this` (the OLD timer), so a stale handle re-subscribed to
-         a new Timer called old.unsubscribe(s) and stayed subscribed forever. The 5
-         `this.unsubscribe(s)` in the runUntil/runOnce/runDebounced/runSequence/runAnimation
-         closures are now `s._timer.unsubscribe(s)` (the owner tag set by subscribe, also copied
-         by the replace-merge path). Same file, same card. Auditor: flag it if you consider it
-         over-scope.
-  B-24 (part) runAnimation `typeof func` typo -> `typeof array` / array._time / subscribe(array)
-       (mirrors runSequence). Only callers pass arrays (animator.js bounceIcon), so there is no
-       behaviour change today.
-  eslint.config.js: 'timer.js' removed from the no-undef:warn override `files` and from its
-       comment. Nothing else changed.
-Deviation (intentional), "iterate a copy of _subscribers": I iterate a captured reference with
-  a fixed length (same semantics as the old forEach), not slice(). Reasons:
-  (a) unsubscribe() already replaces the array instead of mutating it, so the captured array
-      is effectively a snapshot for removals, and appends aren't visited (count is fixed).
-  (b) subscribe()'s re-arm path replaces the element in place with a reset copy. With a slice()
-      a debounce re-armed earlier in the same tick would still run in its OLD state, fire, and
-      unsubscribe the re-armed handle (by _id), so the re-arm would be lost. The reference
-      snapshot sees the reset copy, like before.
-  (c) No per-tick allocation on _hiTimer (G2).
-  The comment in onUpdate documents this invariant.
-Findings not reproduced / already fixed: none. All 4 confirmed in code at HEAD cff438d.
+  B-7  destroyDocks(): `this.dock = null` moved out of the loop (once, after it);
+       `this.listeners = []` added. Checked who iterates listeners: only the 4 fan-outs
+       _onFocusWindow/_onFullScreen/_onRestacked/_onAppsChanged (extension.js). They copy
+       the array and call optional hooks. Services defines none of these hooks (grep), so
+       dropping it from the list between destroyDocks and the next createDock loses nothing.
+       createDock() still rebuilds [services, ...docks]. In the gap
+       (_updateMultiMonitorPreference: destroyDocks, then startUp 500 ms later)
+       animate()/checkHide() iterate this.docks, which is [] already. If createTheDocks
+       creates no dock (config `docks` with no matching monitor), listeners stays [],
+       which is correct since there's no dock.
+  B-6 (extension side): every *Seq handle is cancelled on its owning timer and nulled on
+       teardown. Each handle is created and re-armed on exactly one timer, so no handle is
+       shared between timers (see table).
+Seq inventory (grep -n 'Seq' *.js apps/ effects/ preferences/; apps/effects/preferences: none):
+  handle                              timer  owner          reset where
+  extension._debounceStyleSeq         hi     extension      disable(): cancel+null, before timers are nulled
+  extension._iconSpacingDebounceSeq   lo     extension      disable(): cancel+null (same place)
+  dock._animationSeq                  hi     Dock           undock() end: cancel+null (cancelAnimations still nulls it too)
+  dock.debounceEndSeq                 lo     Dock           undock() end: cancel+null
+  dock._debounceBeginAnimateSeq       lo     Dock           undock() end: cancel+null
+  autohider._debounceCheckSeq         lo     AutoHide       disable(): cancel+null, BEFORE the `if (!_enabled) return`
+  autohider._animationSeq             hi     AutoHide       disable(): nulled after cancel. Never assigned anywhere (dead
+                                                            field; cancelAnimations also nulls it). Kept for safety.
+  services._debounceCheckSeq          lo     Services       disable(): cancel+null (also covers _onIconThemeChanged's
+                                                            disable/enable on the same object)
+  diagnostics._seqs                   -      local array    not a stored handle (passed to _diagnosticTimer.runSequence)
+  Not stored (fire-and-forget, die with the Timer): extension startUp/_updateMultiMonitorPreference
+  runOnce, services runLoop in _addEvents, dock.js runOnce x4, animator bounceIcon runAnimation.
+  Unreset handles: none.
+Ordering notes (why the resets are where they are):
+  - Dock.undock(): _endAnimation() calls autohider._debounceCheckHide() (re-arms the lo
+    debounce), then autohider.disable() -> show() -> dock.slideIn() -> _beginAnimation()
+    re-arms _animationSeq and debounceEndSeq. So the dock reset sits at the END of undock(),
+    and AutoHide.disable() drops _debounceCheckSeq unconditionally (_debounceCheckHide runs
+    even when autohide is off; _checkHide is a no-op when !_enabled, so cancelling it in
+    the setting-toggle path changes nothing).
+  - cancelAnimations() is unchanged: it is also used by _updateAnimationFPS, and cancelling
+    the debounces there would change behaviour.
+  - Cancel calls use `?.` on the timers. During disable() they are still alive (nulled
+    later); during multi-monitor recreate they are alive.
+Findings not reproduced / already fixed: none. Both still existed at ef879f9.
 Self-verification:
-  gjs -m tests/timer_check.js -> 15/15 ok, "all passed", exit 0, ~0.5 s
-    Checks: throwing subscriber keeps being called; each throw is logged once with the d2da
-    prefix (console.error is read-only in gjs, so the test intercepts via
-    GLib.log_set_writer_func); the counter keeps incrementing after 150 ms; is_running();
-    runOnce fires once; a stale handle from an old Timer gets re-owned with a fresh, unique
-    id, fires once and unsubscribes itself from the NEW timer; runAnimation(handle)
-    re-subscribes the same _id without duplicating; restart after shutdown()+initialize()
-    with live subs; is_running() false after the source returns REMOVE. 4 s guard timeout ->
-    exit 1.
-  Same test against HEAD timer.js (temporary copy in /tmp/d2da-r1, removed): FAILS (stale
-    checks fail, runAnimation(handle) throws), so the test discriminates.
   make check = OK
-  make lint = 0 errors / 166 warnings (was 168; the 2 removed are timer.js no-undef `func`).
-    `npx eslint timer.js eslint.config.js` = clean (no-undef is an error again for timer.js).
+  make lint = 0 errors / 166 warnings (unchanged)
   python3 tools/check-settings.py = exit 1, 2 errors / 30 warnings (unchanged)
-  make smoke = PASS: 1 known sig, 0 new, 0 gone; msgs 6/5; probe 6/5; after-enable deltas all 0;
-    after-disable deltas 0 0 0 0 0 +1 0 (lo +1 = T-5 artifact, same as before).
-    grep -c 'd2da: timer' /tmp/d2da-smoke.log = 0 (no subscriber threw during smoke).
-  No artifacts left (no __pycache__; /tmp/d2da-r1 removed; agents/.report.tmp removed).
-Needs human visual check: no
+  gjs -m tests/timer_check.js = 15/15 ok, all passed
+  make smoke = PASS, 1 known sig, 0 new, 0 gone; msgs 6/5; probe 6/5.
+    after-enable deltas all 0 (hi 1, lo 2, loop 1 every cycle).
+    after-disable absolute: uiGroup 36, stage 2854, dashes 1, docks 0, hi 0, lo 0->1, loop 1.
+    after-disable deltas 0/0/0/0/0/+1/0. lo +1 unchanged (T-5: the first cycle settles,
+    later ones disable while startUp's runOnce is still pending; nobody holds that one).
+    hi after-disable = 0 every cycle.
+    grep -c 'd2da: ' /tmp/d2da-smoke.log = 0; 'unable to layout' = 0.
+  No artifacts left (the report helper script was deleted; no __pycache__).
+Needs human visual check: no (teardown only). An optional sanity check: toggle multi-monitor
+  preference / autohide on and off with 2 monitors.
 New findings (proposed B-xx, with file:symbol and evidence):
-  - (info, R-11/R-18) onStart/onStop/onPause/onResume subscriber hooks still have no try/catch.
-    No subscriber defines them today (grep), so it is latent only. Not touched (out of card).
-  - (info) subscribe()'s replace path returns a merged COPY, not the caller's object, so
-    callers must store the return value (they do: `this._xSeq = timer.runDebounced(...)`).
-    Unchanged; noted because R-2 relies on it.
+  - services.js:_debounceCheckRecents / _debounceCheckDownloads share ONE handle
+    (this._debounceCheckSeq) on _loTimer. Whichever is created first keeps its callback.
+    setupDownloads() runs first in enable(), so recents re-arms run checkDownloads (and
+    checkRecents is a no-op anyway). Same timer, so no cross-timer takeover, but it is the
+    "one handle, one job" smell. Fix: split it into two handles (out of scope: "reset lines
+    only").
+  - dock.js:_beginAnimation gates the debounceEndSeq re-arm on `this.extension._hiTimer`
+    but calls `_loTimer.runDebounced`. It's harmless (both timers live and die together),
+    just inconsistent.
+  - (B-1 related) undocked docks keep their dwell motion/enter/leave connections and the
+    actors aren't destroyed. In the multi-monitor recreate path (timers alive), a late
+    leave-event on a leaked dwell could re-arm a debounce on the leaked dock/autohider.
+    R-7d (Dock.destroy) closes this.
+  - autohider._animationSeq is never assigned (dead). R-18 can remove it.
 Scope request / blockers: none
 ```
 

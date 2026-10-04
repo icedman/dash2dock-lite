@@ -58,18 +58,21 @@ Isolated smoke can't change settings from outside (memory backend is in-process)
 > Written by the ORCHESTRATOR only. Worker: do not edit this section.
 
 ```
-Cycle:      0.3
-Task:       R-0c — Settings consistency checker
+Cycle:      1.1
+Task:       R-1 — Harden `Timer`
 Attempt:    1
-Card:       §6 "R-0c"
-Notes:      HEAD 2a0ae6f. New gate available: `make lint` (baseline 0 errors / 168 warnings).
-            `tools/` is ignored by ESLint; the checker is Python stdlib anyway. Must flag
-            B-12 (`scroll-sensitivity-adjust` shared) and B-16 (duplicate `case 'icon-size'`)
-            and exit 1 on the current tree. That's the expected outcome, not a failure.
-            Keep heuristics simple and documented (regex over JS/XML is fine). Make
-            false positives visible as warnings, not errors. Report the full issue list
-            grouped by class with counts; the Auditor records it as the G-settings baseline.
-            Don't fix any of the reported issues (R-4a, R-5, R-20 do that).
+Card:       §6 "R-1"
+Notes:      HEAD cff438d. Gates: check; lint baseline 0 err / 168 warn (timer.js must not
+            get more warnings); check-settings baseline exit 1 with 2 err / 30 warn (no new);
+            smoke (1 known sig; probe after-disable deltas 0/0/0/0/0/+1/0, with lo +1 = T-5
+            artifact, so don't chase it).
+            Scope addition: `eslint.config.js`. Once the B-24 `typeof func` typo is fixed,
+            remove 'timer.js' from the `no-undef: warn` override's `files` and from its
+            comment, so the rule is an error again for timer.js. Change nothing else there.
+            Also per D2DA §7 R-1: clear `_timeoutId` when the GLib source dies (callback
+            returns REMOVE or the source is removed), so `is_running()` is truthful.
+            gjs 1.88.1 is available for `gjs -m tests/timer_check.js` (`tests/` is not
+            linted). The test must exit non-zero on failure and finish in under 5 s.
 ```
 
 ## 5. Report
@@ -77,75 +80,76 @@ Notes:      HEAD 2a0ae6f. New gate available: `make lint` (baseline 0 errors / 1
 > Overwritten by the WORKER each cycle; read by the AUDITOR.
 
 ```
-Cycle / Task / Attempt: 0.3 / R-0c / 1
+Cycle / Task / Attempt: 1.1 / R-1 / 1
 Status:            DONE
-Files changed:     tools/check-settings.py (new, +x), Makefile (check-settings target + .PHONY only;
-                   NOT added to `all:`)
-Findings addressed: detector for the B-12 / B-16 class (no source fixes, per card)
-  tools/check-settings.py (python3 stdlib only: re, xml.etree, glob). Heuristics are in the
-  module docstring. Summary:
-  - schema: <key name> from schemas/*.gschema.xml (ElementTree).
-  - keys.js: comments stripped, then `'name': {` at 4-space indent after setKeys(;
-    widget_type = first `widget_type: '..'` before the next key.
-  - ui: ui/*.ui top level only (ui/legacy/ excluded). Value widgets = GtkSwitch/GtkScale/
-    GtkDropDown/GtkColorButton (what prefKeys.connectBuilder binds by id == key name).
-  - runtime read = `.foo_bar` property access (covers this./extension./this.extension./
-    dock.extension.) or getValue('foo-bar') / get_<type>('foo-bar'), in root *.js + apps/*.js
-    + effects/*.js, minus prefs.js (prefs process) and eslint.config.js. apps/ and effects/
-    were added beyond the card's "root *.js" because they are shipped runtime code. They
-    add no reads today; it only prevents future false "dead" hits. The settings mirror
-    (`this[n] = value`) and `case 'key':` labels are NOT reads. Comments are stripped, so
-    commented-out uses (animator.js peek_hidden_icons, dock.js documents_icon) don't count.
-  - duplicate case: small tokenizer (skips strings/template/comments/regex literals, tracks
-    braces, attributes `case <literal>:` to the innermost enclosing switch). Scans root *.js,
-    apps/, effects/, preferences/ (superset of the card's extension.js; only extension.js hits).
-    Sanity check: all 71 `case '` lines in extension.js are attributed (2 switches).
-  Classes and severity:
-    ERROR missing-in-schema (keys.js key without schema key: GSettings would abort),
-          shared-adjustment, duplicate-case, widget-type (keys.js widget_type != ui class).
-    WARN  missing-in-keys (schema-only), ui-id-no-key (marks "wired by hand in prefs.js"),
-          key-no-widget, dead-setting (marks UI-visible / no widget, source, and
-          "has case in extension.js").
-    Exit 1 if any ERROR. Decision: "missing key" is an ERROR only in the keys.js->schema
-    direction (that crashes). schema->keys.js is a WARN because those are the known
-    schema-only dead keys, and failing on them would be a permanent false positive.
-Findings not reproduced / already fixed: none. B-12 and B-16 both reproduced.
+Files changed:     timer.js; eslint.config.js (Orchestrator scope addition); tests/timer_check.js (new)
+Findings addressed:
+  B-2  onUpdate: each subscriber call in try/catch ->
+       console.error('d2da: timer <name> subscriber <_name ?? _id>', e), loop continues.
+       Also clear _timeoutId when the GLib source dies (D2DA §7 R-1): start() now passes a
+       wrapper closure that captures its own sourceId. It calls onUpdate() inside a try/catch
+       ('d2da: timer <name> update') and returns SOURCE_CONTINUE only if onUpdate returned true
+       AND _timeoutId is still this source. Otherwise it returns SOURCE_REMOVE and nulls
+       _timeoutId if it still points at this source. So is_running() is truthful, and a
+       stop()/start() inside a tick can't null the new id. stop() keeps nulling on source_remove.
+  B-23 subscribe: (re)start when (_hibernating || _autoStart) && length > 0 && !is_running()
+       (was length == 1). Fixes the freeze after _updateAnimationFPS' shutdown(); initialize()
+       with live subscribers.
+  B-6 (timer half)
+       - Module-level nextSubscriberId (starts 0xff) replaces the per-instance _subscriberId,
+         so ids are globally unique.
+       - subscribe tags obj._timer = this. If obj._timer is a different Timer, it deletes
+         _id/_timer and treats obj as new.
+       - Extra, needed for the "never unsubscribes / runs every tick forever" half of B-6:
+         the run* closures captured `this` (the OLD timer), so a stale handle re-subscribed to
+         a new Timer called old.unsubscribe(s) and stayed subscribed forever. The 5
+         `this.unsubscribe(s)` in the runUntil/runOnce/runDebounced/runSequence/runAnimation
+         closures are now `s._timer.unsubscribe(s)` (the owner tag set by subscribe, also copied
+         by the replace-merge path). Same file, same card. Auditor: flag it if you consider it
+         over-scope.
+  B-24 (part) runAnimation `typeof func` typo -> `typeof array` / array._time / subscribe(array)
+       (mirrors runSequence). Only callers pass arrays (animator.js bounceIcon), so there is no
+       behaviour change today.
+  eslint.config.js: 'timer.js' removed from the no-undef:warn override `files` and from its
+       comment. Nothing else changed.
+Deviation (intentional), "iterate a copy of _subscribers": I iterate a captured reference with
+  a fixed length (same semantics as the old forEach), not slice(). Reasons:
+  (a) unsubscribe() already replaces the array instead of mutating it, so the captured array
+      is effectively a snapshot for removals, and appends aren't visited (count is fixed).
+  (b) subscribe()'s re-arm path replaces the element in place with a reset copy. With a slice()
+      a debounce re-armed earlier in the same tick would still run in its OLD state, fire, and
+      unsubscribe the re-armed handle (by _id), so the re-arm would be lost. The reference
+      snapshot sees the reset copy, like before.
+  (c) No per-tick allocation on _hiTimer (G2).
+  The comment in onUpdate documents this invariant.
+Findings not reproduced / already fixed: none. All 4 confirmed in code at HEAD cff438d.
 Self-verification:
-  python3 tools/check-settings.py -> exit 1 (expected), 2 errors / 30 warnings
-  make check-settings -> "make: *** [Makefile:143: check-settings] Error 1" (expected)
-  make check = OK; make lint = 0 errors / 168 warnings (unchanged)
-  make smoke = PASS: 1 known sig, 0 new, 0 gone; msgs 6/5; probe 6/5; after-disable deltas
-    0 0 0 0 0 +1 0 (lo +1 = T-5, same as 0.2). Expected: tools/ isn't installed.
-G-settings baseline (HEAD 2a0ae6f; 97 schema keys, 92 keys.js keys, 81 ui value widgets):
-  ERROR shared-adjustment (1)
-    'scroll-sensitivity-adjust' used by pressure-sense-sensitivity (ui/tweaks.ui:171),
-      scroll-sensitivity (ui/tweaks.ui:268)                                    = B-12
-  ERROR duplicate-case (1)
-    extension.js: case 'icon-size' at line 603 repeats line 586 (switch at line 482) = B-16
-  ERROR missing-in-schema (0), widget-type (0)
-  WARN missing-in-keys (5): debug, debug-log, monitor-count, msg-to-pref, theme
-  WARN ui-id-no-key (0)
-  WARN key-no-widget (8): animate-icons (UI uses animate-icons-unmute), animation-type,
-    drawing-accent-color, drawing-dark-color, drawing-dark-foreground, drawing-light-color,
-    drawing-light-foreground, drawing-secondary-color (drawing-* are read in
-    extension.js:912-917, so they're internal, not dead)
-  WARN dead-setting (17):
-    UI-visible (9): blur-resolution*, calendar-style*, disable-blur-at-overview,
-      documents-icon*, experimental-features, icon-border-color*, icon-border-thickness*,
-      peek-hidden-icons*, topbar-blur-background
-    no widget (8): animation-type, documents-path, msg-to-ext* [keys.js+schema];
-      debug, debug-log, monitor-count, msg-to-pref, theme [schema only]
-    (* = has a case in extension.js)
-  Matches D2DA §6.5 exactly (all 9 UI-visible + 7 schema-only names). The 17th is
-  msg-to-ext, a known false positive: its case consumes `value` directly (eval, B-11). It's
-  flagged "has case" so it stays visible as a warning. It will disappear or change with R-6.
-  Total: 2 errors, 30 warnings, exit 1.
+  gjs -m tests/timer_check.js -> 15/15 ok, "all passed", exit 0, ~0.5 s
+    Checks: throwing subscriber keeps being called; each throw is logged once with the d2da
+    prefix (console.error is read-only in gjs, so the test intercepts via
+    GLib.log_set_writer_func); the counter keeps incrementing after 150 ms; is_running();
+    runOnce fires once; a stale handle from an old Timer gets re-owned with a fresh, unique
+    id, fires once and unsubscribes itself from the NEW timer; runAnimation(handle)
+    re-subscribes the same _id without duplicating; restart after shutdown()+initialize()
+    with live subs; is_running() false after the source returns REMOVE. 4 s guard timeout ->
+    exit 1.
+  Same test against HEAD timer.js (temporary copy in /tmp/d2da-r1, removed): FAILS (stale
+    checks fail, runAnimation(handle) throws), so the test discriminates.
+  make check = OK
+  make lint = 0 errors / 166 warnings (was 168; the 2 removed are timer.js no-undef `func`).
+    `npx eslint timer.js eslint.config.js` = clean (no-undef is an error again for timer.js).
+  python3 tools/check-settings.py = exit 1, 2 errors / 30 warnings (unchanged)
+  make smoke = PASS: 1 known sig, 0 new, 0 gone; msgs 6/5; probe 6/5; after-enable deltas all 0;
+    after-disable deltas 0 0 0 0 0 +1 0 (lo +1 = T-5 artifact, same as before).
+    grep -c 'd2da: timer' /tmp/d2da-smoke.log = 0 (no subscriber threw during smoke).
+  No artifacts left (no __pycache__; /tmp/d2da-r1 removed; agents/.report.tmp removed).
 Needs human visual check: no
 New findings (proposed B-xx, with file:symbol and evidence):
-  - (info, for R-20) key-no-widget list above: animation-type is in keys.js with a dropdown
-    type but has no widget and no runtime read, so it is fully dead.
-  - (not checked, out of card) keys.js default_value vs schema <default> drift (D2DA §6.5
-    says 15 keys). Easy to add as a WARN class later if R-20 wants a gate.
+  - (info, R-11/R-18) onStart/onStop/onPause/onResume subscriber hooks still have no try/catch.
+    No subscriber defines them today (grep), so it is latent only. Not touched (out of card).
+  - (info) subscribe()'s replace path returns a merged COPY, not the caller's object, so
+    callers must store the return value (they do: `this._xSeq = timer.runDebounced(...)`).
+    Unchanged; noted because R-2 relies on it.
 Scope request / blockers: none
 ```
 
@@ -191,7 +195,7 @@ Phase 2-5 cards are *stubs*: the Orchestrator expands a stub into a full card (s
 #### R-0d — Release via `gnome-extensions pack`
 - **Fixes:** T-4 (zip missing `themes/`), T-7 (dev files in install/zip), part of G5.
 - **Scope:** `Makefile` (`publish`, `install-zip`), `.gitignore`; `git rm --cached schemas/gschemas.compiled` (file stays on disk; it is tracked today).
-- **Do:** `publish` = `gnome-extensions pack --force --extra-source=…` for every runtime file/dir (all root `*.js` except `prefs.js`/`extension.js` which pack adds itself, `apps/`, `effects/`, `preferences/`, `ui/` **without `ui/legacy`**, `themes/`, `stylesheet.css`, `LICENSE`, `CHANGELOG.md`), `--schema=schemas/org.gnome.shell.extensions.dash2dock-lite.gschema.xml`. Gitignore `schemas/gschemas.compiled`, `.antigravitycli/`, `*.shell-extension.zip`. Keep the `g44*` targets (deleted in R-21). `probe.js` is a runtime file (imported by `extension.js`), so it must be in the zip. `eslint.config.js` is a root `*.js` but **must not** be packed (list runtime JS explicitly or filter it out). Make `install` install from the same allow-list (e.g. `gnome-extensions install --force` of the packed zip), replacing the interim `rm -rf` lines from 2a0ae6f, so dev docs (`CHECKLIST.md`, `DESIGN.md`, `ERRORS.md`, `HACKING.md`), `agents/`, `node_modules/`, `package*.json` are never installed; `make smoke` must still work. Shell loops over files: handle spaces (`screenshots/` has some).
+- **Do:** `publish` = `gnome-extensions pack --force --extra-source=…` for every runtime file/dir (all root `*.js` except `prefs.js`/`extension.js` which pack adds itself, `apps/`, `effects/`, `preferences/`, `ui/` **without `ui/legacy`**, `themes/`, `stylesheet.css`, `LICENSE`, `CHANGELOG.md`), `--schema=schemas/org.gnome.shell.extensions.dash2dock-lite.gschema.xml`. Gitignore `schemas/gschemas.compiled`, `.antigravitycli/`, `*.shell-extension.zip`, `__pycache__/`. Keep the `g44*` targets (deleted in R-21). `probe.js` is a runtime file (imported by `extension.js`), so it must be in the zip. `eslint.config.js` is a root `*.js` but **must not** be packed (list runtime JS explicitly or filter it out). Make `install` install from the same allow-list (e.g. `gnome-extensions install --force` of the packed zip), replacing the interim `rm -rf` lines from 2a0ae6f, so dev docs (`CHECKLIST.md`, `DESIGN.md`, `ERRORS.md`, `HACKING.md`), `agents/`, `node_modules/`, `package*.json` are never installed; `make smoke` must still work. Shell loops over files: handle spaces (`screenshots/` has some).
 - **Accept:** `make publish` produces a zip; `unzip -l` shows `themes/`, no `ui/legacy`, no `agents/`, `tools/`, `tests/`, `build/`, `eslint.config.js`, `node_modules/`, `package*.json`, dev docs; `probe.js` present. After `make install` the installed dir has the same file set.
 - **Verify:** `make publish && unzip -l dash2dock-lite@icedman.github.com.shell-extension.zip`; `make smoke`.
 - **Human:** no.

@@ -105,13 +105,13 @@ Status: `[ ]` todo · `[~]` in progress · `[x]` done (hash) · `[!]` blocked ·
 | [x] 861b7c1 | 0.0 | **Bootstrap commit** (Auditor only, no Worker) | — | Commit setup: `Makefile` (devkit check, flag cleanup, `check`, `smoke`), `tools/smoke-shell.sh`, `agents/*.md`, `agents/smoke-baseline*.txt`. Gates: `make check`, `make smoke`. Message `chore(agents): bootstrap agent workflow and headless smoke test`. |
 | [x] 2bbf52d | 0.1 | R-0a leak/regression probe | 0.0 | Records first leak deltas (expected ≠ 0) |
 | [x] 2a0ae6f | 0.2 | R-0b ESLint flat config | 0.0 | Needs network for `npm install` |
-| [~] | 0.3 | R-0c settings checker | 0.0 | Must flag B-12, B-16 |
-| [ ] | 0.4 | R-0d release via `gnome-extensions pack` | 0.0 | HUMAN — end of phase 0 |
+| [x] cff438d | 0.3 | R-0c settings checker | 0.0 | Must flag B-12, B-16 |
+| SKIPPED | 0.4 | R-0d release via `gnome-extensions pack` | 0.0 | Human 2026-10-04: no release for now. Card kept for later. End of phase 0 |
 
 ### Phase 1 — Correctness quick wins
 | | Cycle | Task | Depends | Notes |
 |---|---|---|---|---|
-| [ ] | 1.1 | R-1 harden Timer | 0.1 | B-2, B-23, B-6(timer), B-24(typo) |
+| [~] | 1.1 | R-1 harden Timer | 0.1 | B-2, B-23, B-6(timer), B-24(typo) |
 | [ ] | 1.2 | R-2 reset `*Seq` + listeners | 1.1 | B-6, B-7 |
 | [ ] | 1.3 | R-3 autohide | 1.1 | B-3, B-4, B-26, B-27 · human visual |
 | [ ] | 1.4 | R-4a extension.js one-liners | 0.3 | B-5, B-13, B-16, B-20 |
@@ -162,7 +162,7 @@ Status: `[ ]` todo · `[~]` in progress · `[x]` done (hash) · `[!]` blocked ·
 | [ ] | 5.2 | R-18 effects base, prune helpers | 3.5 | |
 | [ ] | 5.3 | R-19 module renames / moves | 5.1 | |
 | [ ] | 5.4 | R-20 keys from schema, dead keys | 0.3 | HUMAN OK for key removal |
-| [ ] | 5.5 | R-21 delete obsolete files, README | 0.4 | HUMAN — end of phase 5 |
+| [ ] | 5.5 | R-21 delete obsolete files, README | 0.4 (skipped; re-check before 5.5) | HUMAN — end of phase 5 |
 
 ## 4. Findings Ledger
 
@@ -187,7 +187,7 @@ Status: `open` · `fixed <hash>` · `partial <hash>` · `blocked` · `wontfix (r
 | B-15 | R-4b | open | | B-33 | R-5 | open |
 | B-16 | R-4a | open | | B-34 | R-4b | open |
 | B-17 | R-4c | open | | B-35 | B-35 | open |
-| B-18 | R-4c | open | | T-4 | R-0d | open |
+| B-18 | R-4c | open | | T-4 | R-0d | deferred (no release for now) |
 | P-1 | R-10 | open | | P-7 | R-12 | open |
 | P-2 | R-11a | open | | P-8 | (unassigned, BMS) | open |
 | P-3..P-6 | R-12 | open | | P-9, P-10 | R-13 | open |
@@ -207,7 +207,7 @@ Unassigned rows: when a phase ends, either add a card + board row for them or ma
 | Probe after-disable deltas, 5 toggles (uiGroup / stage / dashes / docks / hi / lo / loop) | 0 / 0 / 0 / 0 / 0 / **+1** / 0. `lo` +1 = smoke-timing artifact (T-5). Stage-walk can't see B-1 (T-6). Absolute `stage` varies per run (2865-2885) ⇒ track deltas only | 2bbf52d |
 | Strict leaks (`D2DA_SMOKE_STRICT_LEAKS=1` in G-leaks) | **OFF** (turn ON after 2.4) | |
 | ESLint warnings (errors) | 168 (0). no-unused-vars 162, no-undef 5, no-duplicate-case 1; known-bug rules demoted in `extension.js`/`timer.js` only, restore in R-4a/R-1 | 2a0ae6f |
-| check-settings issues | — (R-0c) | |
+| check-settings issues | exit 1 by design. Errors 2: shared-adjustment 1 (B-12), duplicate-case 1 (B-16); missing-in-schema 0, widget-type 0. Warnings 30: missing-in-keys 5, key-no-widget 8, dead-setting 17 (§6.5 list + `msg-to-ext` false positive). Should exit 0 after R-4a + R-5 ⇒ then make G-settings a hard exit-code gate | cff438d |
 
 ### 5.1 Human-check queue
 Items the agents can't see. The human runs `make test-shell` (needs `mutter-devkit`) or uses their real session, then ticks them here.
@@ -242,3 +242,8 @@ Format: `YYYY-MM-DD HH:MM · cycle · EVENT · details` where EVENT ∈ `SETUP, 
 - 2026-10-04 · 0.2 · AUDIT-PASS · `2a0ae6f` attempt 2. check=PASS lint=0 err/168 warn smoke=PASS(x2); publish verified in a temp copy (no eslint.config.js/node_modules/agents/package*.json; `themes/` missing = T-4). T-7 filed (D2DA §6.6), partial; R-0d card extended (allow-list install, exclude `eslint.config.js` and dev docs, handle spaces in filenames).
 - 2026-10-04 · 0.3 · PREFLIGHT · tree = only agents/* Orchestrator edits; HEAD `2a0ae6f`; GNOME Shell 50.5.
 - 2026-10-04 · 0.3 · ASSIGN · R-0c settings consistency checker.
+- 2026-10-04 · 0.3 · AUDIT-PASS · `cff438d`. check=PASS lint=0/168 settings=exit 1 (2 err/30 warn baseline) smoke=PASS(x2). Auditor confirmed B-12/B-16 hits by reading code, negative test (both fixed in a scratch copy ⇒ exit 0), and spot-checked dead settings. D2DA §6.5 corrected (`animation-type`, `documents-path` are in keys.js too).
+- 2026-10-04 · 0.4 · HUMAN · Human: skip R-0d, no release for now. Row 0.4 marked SKIPPED; T-4 deferred, T-7 stays partial (interim rm lines from 2a0ae6f). R-21's dependency on 0.4 is noted. Removed loop artifact `tools/__pycache__/` (gitignore was planned in R-0d).
+- 2026-10-04 · 0.4 · STOP · End of phase 0. Waiting for the human to start phase 1 (1.1 R-1 harden Timer).
+- 2026-10-04 · 1.1 · PREFLIGHT · tree = only agents/* Orchestrator edits; HEAD `cff438d`; GNOME Shell 50.5; gjs 1.88.1.
+- 2026-10-04 · 1.1 · ASSIGN · R-1 harden Timer (scope + `eslint.config.js`: drop timer.js from the no-undef demotion after the B-24 typo fix).

@@ -51,9 +51,9 @@ export default [
   },
   // Known bugs, tracked in agents/D2DA.md; restore to 'error' once fixed:
   // extension.js B-5 (dc_monitor), B-16 (duplicate case 'icon-size'),
-  // _onKeyPressed un-imported Clutter (6.3); timer.js B-24 (typeof func).
+  // _onKeyPressed un-imported Clutter (6.3).
   {
-    files: ['extension.js', 'timer.js'],
+    files: ['extension.js'],
     rules: {
       'no-undef': 'warn',
     },

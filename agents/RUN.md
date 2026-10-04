@@ -349,5 +349,5 @@ Format: `YYYY-MM-DD HH:MM · cycle · EVENT · details` where EVENT ∈ `SETUP, 
 - 2026-10-04 · 2.7 · PREFLIGHT · tree clean apart from agents/*; HEAD `8fab2a5`; GNOME Shell 50.5.
 - 2026-10-04 · 2.7 · ASSIGN · R-9b launchers in memory from GLib.KeyFile without /tmp (B-10). Stub expanded.
 - 2026-10-05 · 2.7 · AUDIT-PASS · `1553b9d`. check=PASS lint=0/145 (−5) settings=exit 0 timer_check 15/15 window_tracker_check 20/20 smoke=PASS(x2) strict=PASS all deltas 0 shutdown criticals 0. B-10 fixed: launchers built in memory via DesktopAppInfo.new_from_keyfile, paths quoted with GLib.shell_quote, 0 /tmp/*.desktop files created.
-- 2026-10-05 · 2.8 · PREFLIGHT · tree clean apart from agents/*; HEAD `1553b9d`; GNOME Shell 50.5.
-- 2026-10-05 · — · HUMAN · Replaced Makefile publish recipe with tools/publish.sh (explicit inclusion packaging, no temp tree cleanup, zero dev files in zip).
+- 2026-10-05 · — · HUMAN · Replaced Makefile publish recipe with tools/publish.sh (explicit inclusion packaging, no temp tree cleanup, zero dev files in zip) committed as `82740bc`.
+- 2026-10-05 · — · AUDIT-PASS · human request: defer frame when precreating animator pool resources. check=PASS lint=0/145 settings=exit 0 timer_check 15/15 window_tracker_check 20/20 smoke=PASS(x2) strict=PASS all deltas 0 shutdown criticals 0.

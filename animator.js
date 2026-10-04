@@ -87,6 +87,8 @@ export let Animator = class {
     }
     this._target = dock.renderArea;
 
+    let did_create = false;
+
     while (this._renderers.length < count) {
       // renderer
       let target = dock.renderArea;
@@ -111,12 +113,18 @@ export let Animator = class {
       badge.visible = false;
       target.add_child(badge);
       this._badges.push(badge);
+
+      did_create = true;
     }
 
     for (let i = dock._icons.length; i < this._renderers.length; i++) {
       this._renderers[i].visible = false;
       this._dots[i].visible = false;
       this._badges[i].visible = false;
+    }
+
+    if (did_create) {
+      return false;
     }
 
     return true;

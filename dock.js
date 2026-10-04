@@ -6,7 +6,6 @@ import * as Config from 'resource:///org/gnome/shell/misc/config.js';
 
 import Shell from 'gi://Shell';
 import GObject from 'gi://GObject';
-import Gio from 'gi://Gio';
 import Clutter from 'gi://Clutter';
 import Graphene from 'gi://Graphene';
 import St from 'gi://St';
@@ -26,6 +25,7 @@ import {
   get_distance,
   isInRect,
   isOverlapRect,
+  getDownloadsDir,
 } from './utils.js';
 
 const Point = Graphene.Point;
@@ -972,6 +972,10 @@ export let Dock = GObject.registerClass(
       // the folder icons
       //---------------
       //! add explanations
+      const downloadsPath =
+        this.extension.services?._downloadsDir?.get_path() ||
+        getDownloadsDir();
+
       let folders = [
         {
           icon: '_recentFilesIcon',
@@ -992,14 +996,14 @@ export let Dock = GObject.registerClass(
         },
         {
           icon: '_downloadsIcon',
-          folder: Gio.File.new_for_path('Downloads').get_path(),
+          folder: downloadsPath,
           path:
             this.extension.services?.folderApps?.downloads ||
             this.extension.services?.setupFolderIcon?.(
               'downloads',
               'Downloads',
               'folder-downloads',
-              'Downloads'
+              downloadsPath
             ),
           show: this.extension.downloads_icon,
           items: '_downloadFiles',

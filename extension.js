@@ -203,7 +203,9 @@ export default class Dash2DockLiteExt extends Extension {
     this._style = new Style();
 
     this._enableSettings();
-    this._loadConfig();
+    this._loadConfig().catch((err) => {
+      console.error('d2da: loadConfig', err);
+    });
 
     // no longer needed
     // this._disable_borders = this.border_radius > 0;
@@ -383,13 +385,19 @@ export default class Dash2DockLiteExt extends Extension {
 
   async _loadConfig() {
     this._config = {};
-    let fn_config = Gio.File.new_for_path('.config/d2da/config.json');
+    const configDir = GLib.build_filenamev([
+      GLib.get_user_config_dir(),
+      'd2da',
+    ]);
+    let fn_config = Gio.File.new_for_path(
+      GLib.build_filenamev([configDir, 'config.json'])
+    );
     if (fn_config.query_exists(null)) {
       try {
         const contents = await loadFile(fn_config);
         this._config = JSON.parse(contents);
       } catch (err) {
-        console.log(err);
+        console.error('d2da: loadConfig', err);
       }
 
       // precompute
@@ -416,7 +424,9 @@ export default class Dash2DockLiteExt extends Extension {
       }
     }
 
-    let fn_icons = Gio.File.new_for_path('.config/d2da/icons.json');
+    let fn_icons = Gio.File.new_for_path(
+      GLib.build_filenamev([configDir, 'icons.json'])
+    );
     if (fn_icons.query_exists(null)) {
       try {
         const contents = await loadFile(fn_icons);
@@ -427,7 +437,9 @@ export default class Dash2DockLiteExt extends Extension {
           Object.keys(this.icon_map).forEach((k) => {
             let path = this.icon_map[k];
             if (path.toLowerCase().endsWith('.svg')) {
-              let file = Gio.File.new_for_path(`.config/d2da/${path}`);
+              let file = Gio.File.new_for_path(
+                GLib.build_filenamev([configDir, path])
+              );
               if (file.query_exists(null)) {
                 console.log(`loading icon ${file.get_path()}`);
                 this.icon_map_cache[k] = new Gio.FileIcon({ file: file });
@@ -441,7 +453,9 @@ export default class Dash2DockLiteExt extends Extension {
           Object.keys(this.app_map).forEach((k) => {
             let path = this.app_map[k];
             if (path.toLowerCase().endsWith('.svg')) {
-              let file = Gio.File.new_for_path(`.config/d2da/${path}`);
+              let file = Gio.File.new_for_path(
+                GLib.build_filenamev([configDir, path])
+              );
               if (file.query_exists(null)) {
                 console.log(`loading icon ${file.get_path()}`);
                 this.app_map_cache[k] = new Gio.FileIcon({ file: file });
@@ -450,11 +464,13 @@ export default class Dash2DockLiteExt extends Extension {
           });
         }
       } catch (err) {
-        console.log(err);
+        console.error('d2da: loadConfig', err);
       }
     }
 
-    let fn_style = Gio.File.new_for_path('.config/d2da/style.css');
+    let fn_style = Gio.File.new_for_path(
+      GLib.build_filenamev([configDir, 'style.css'])
+    );
     if (fn_style.query_exists(null)) {
       let ctx = St.ThemeContext.get_for_stage(global.stage);
       let theme = ctx.get_theme();
@@ -467,7 +483,13 @@ export default class Dash2DockLiteExt extends Extension {
     this.icon_map_cache = {};
     this.app_map_cache = {};
 
-    let fn_style = Gio.File.new_for_path('.config/d2da/style.css');
+    const configDir = GLib.build_filenamev([
+      GLib.get_user_config_dir(),
+      'd2da',
+    ]);
+    let fn_style = Gio.File.new_for_path(
+      GLib.build_filenamev([configDir, 'style.css'])
+    );
     if (fn_style.query_exists(null)) {
       let ctx = St.ThemeContext.get_for_stage(global.stage);
       let theme = ctx.get_theme();

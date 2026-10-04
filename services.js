@@ -1,7 +1,11 @@
 'use strict';
 
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
-import { trySpawnCommandLine } from './utils.js';
+import {
+  trySpawnCommandLine,
+  getDownloadsDir,
+  getDocumentsDir,
+} from './utils.js';
 // import { trySpawnCommandLine } from 'resource:///org/gnome/shell/misc/util.js';
 
 import Gio from 'gi://Gio';
@@ -161,15 +165,17 @@ export const Services = class {
       this._downloadsMonitor = null;
     }
     this._downloadsUserDir = this.extension.downloads_path;
-    let fn = Gio.File.new_for_path(this._downloadsUserDir);
-    if (!fn.query_exists(null)) {
+    let fn = this._downloadsUserDir
+      ? Gio.File.new_for_path(this._downloadsUserDir)
+      : null;
+    if (!fn || !fn.query_exists(null)) {
       this._downloadsUserDir = null;
     }
     if (this._downloadsUserDir) {
       this._downloadsDir = Gio.File.new_for_path(this._downloadsUserDir);
     } else {
       // fallback
-      this._downloadsDir = Gio.File.new_for_path('Downloads');
+      this._downloadsDir = Gio.File.new_for_path(getDownloadsDir());
     }
 
     this._downloadsMonitor = this._downloadsDir.monitor(
@@ -267,13 +273,13 @@ export const Services = class {
       'downloads',
       'Downloads',
       'folder-downloads',
-      'Downloads'
+      getDownloadsDir()
     );
     this.setupFolderIcon(
       'documents',
       'Documents',
       'folder-documents',
-      'Documents'
+      getDocumentsDir()
     );
   }
 
@@ -502,7 +508,7 @@ export const Services = class {
           display: fileName,
           icon: icon,
           type: fileInfo.get_content_type(),
-          path: [path, fileName].join('/'),
+          path: GLib.build_filenamev([path, fileName]),
           date: fileModified ?? { tv_sec: 0 },
           fileInfo: fileInfo,
         });
@@ -576,7 +582,9 @@ export const Services = class {
           continue;
         fileStat.index = idx++;
 
-        const file = Gio.File.new_for_path(`Downloads/${fileName}`);
+        const file = Gio.File.new_for_path(
+          GLib.build_filenamev([path, fileName])
+        );
         const fileInfo = file.query_info(
           'standard::*,unix::uid',
           Gio.FileQueryInfoFlags.NOFOLLOW_SYMLINKS,

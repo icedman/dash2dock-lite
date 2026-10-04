@@ -84,21 +84,21 @@ Minor nits (naming, a stray blank line) that don't violate a rule: list them as 
 > Overwritten each cycle. On FAIL the Worker reads this for its rework.
 
 ```
-Cycle / Task / Attempt:  — / animator pool precreation guard (human request) / 1
+Cycle / Task / Attempt: 2.8 / R-9c / 1
 Verdict:          PASS
-Commit:           see Audit Log (fix(animator): defer frame when precreating pool resources)
-Gates:            check=PASS ; lint=PASS 0 err / 145 warn (baseline 145; animator.js 23 = HEAD) ;
+Commit:           this commit (fix(paths): use standard XDG user paths and harden config loading)
+Gates:            check=PASS ; lint=PASS 0 err / 145 warn (baseline 145; dock.js 21, extension.js 13, prefs.js 3, services.js 4, utils.js 0 <= HEAD) ;
                   settings=exit 0, 0/30 ; timer_check all passed (15/15) ;
                   window_tracker_check all passed (20/20) ; smoke x2 PASS (1 known sig, 0 new,
                   6/5 msgs, 6/5 probe lines, ALL deltas 0) ; strict x1 PASS (counts 6/5, ALL deltas 0,
-                  shutdown criticals 0) ;
+                  shutdown criticals 0) ; settings variant strict PASS (deltas 0, crit 0) ;
                   disposed/finalized/already been destroyed = 0 and `d2da: ` = 0 in all runs.
                   No orphaned headless shell. G-real NOT run (W3).
-Scope:            animator.js (+8/-0).
+Scope:            services.js, dock.js, extension.js, prefs.js, utils.js (+152/-60 across tree).
 Rule violations:  none. A1-A10, A12, A13 clean (A11 n/a).
-Specific checks:  `_precreateResources`: returns `false` if `did_create` is true, avoiding layout and frame rendering until newly created pool actors settle.
+Specific checks:  utils.js getDownloadsDir/getDocumentsDir resolve standard XDG paths; loadFile wraps load_contents_finish in try/catch and rejects on failure; extension.js _loadConfig/_unloadConfig use GLib.get_user_config_dir() and log errors with d2da prefix; prefs.js loads themes from user config dir; services.js and dock.js resolve absolute downloads path and avoid relative cwd paths.
 Rework list:      none.
-Findings confirmed: none (human request).
+Findings confirmed: B-21, B-22.
 Human check needed: no (covered by automated smoke suites and unit tests).
 ```
 
@@ -132,7 +132,9 @@ Human check needed: no (covered by automated smoke suites and unit tests).
 | 2.5 | R-8 | 1 | PASS | this commit | `make check` PASS; lint 0/150 = baseline (extension.js 13, services.js 8 = HEAD); check-settings exit 0, 0/30; timer_check 15/15; window_tracker_check 20/20; smoke x2 PASS (1 known sig, 0 new, 6/5, ALL deltas 0); strict PASS (6/5 lines, ALL deltas 0, 0 crit); settings variant strict PASS (deltas 0, crit 0); disposed/finalized 0, `d2da: ` 0 | B-25 (measured dt via get_monotonic_time, per-service try/catch), B-36 (separate _debounceRecentsSeq / _debounceDownloadsSeq), Gio cancellables, monitor cancel, enumerator close. Nit: empty catch on enumerator close in finally. |
 | 2.6 | R-9a | 1 | PASS | this commit | check=PASS; lint 0/150 = baseline (dockItems.js 7, services.js 8 = HEAD); check-settings exit 0, 0/30; timer_check 15/15; window_tracker_check 20/20; smoke x2 PASS (1 known sig, 0 new, 6/5, ALL deltas 0); strict PASS (6/5 lines, ALL deltas 0, 0 crit); settings variant strict PASS (deltas 0, crit 0); disposed/finalized 0, `d2da: ` 0 | B-8 fixed. Hardcoded rm -rf removed from services.js and empty-trash.sh; services.emptyTrash() enumerates trash:/// and deletes children via Gio; DockItemMenu displays modal confirmation dialog (ModalDialog + MessageDialogContent) with Cancel and destructive Empty Trash buttons; cleanly destroyed with modal grab popped on menu teardown. |
 | 2.7 | R-9b | 1 | PASS | this commit | check=PASS; lint 0/145 (baseline 150; services.js 4, dock.js 21, dockItems.js 6 <= HEAD); check-settings exit 0, 0/30; timer_check 15/15; window_tracker_check 20/20; smoke x2 PASS (1 known sig, 0 new, ALL deltas 0); strict PASS (6/5 lines, ALL deltas 0, 0 crit); settings variant strict PASS (deltas 0, crit 0); 0 tmp desktop files; disposed/finalized 0, `d2da: ` 0 | B-10 fixed. In-memory Gio.DesktopAppInfo created from GLib.KeyFile without writing .desktop files to /tmp; paths shell_quoted in Exec; services.trashApp, folderApps, mountApps managed; dock.createItem and DockItemContainer accept DesktopAppInfo and construct menu. |
-| — | human request | 1 | PASS | this commit | check=PASS; lint 0/145 = baseline (animator.js 23 = HEAD); check-settings exit 0, 0/30; timer_check 15/15; window_tracker_check 20/20; smoke x2 PASS (1 known sig, 0 new, ALL deltas 0); strict PASS (6/5 lines, ALL deltas 0, 0 crit); disposed/finalized 0, `d2da: ` 0 | Animator pool precreation guard: `_precreateResources` returns false when `did_create` is true, deferring frame execution until newly added pool actors settle. |
+| — | human request | 1 | PASS | d3ba248 | check=PASS; lint 0/145 = baseline (animator.js 23 = HEAD); check-settings exit 0, 0/30; timer_check 15/15; window_tracker_check 20/20; smoke x2 PASS (1 known sig, 0 new, ALL deltas 0); strict PASS (6/5 lines, ALL deltas 0, 0 crit); disposed/finalized 0, `d2da: ` 0 | Animator pool precreation guard: `_precreateResources` returns false when `did_create` is true, deferring frame execution until newly added pool actors settle. |
+| 2.8 | R-9c | 1 | PASS | this commit | check=PASS; lint 0/145 = baseline; check-settings exit 0, 0/30; timer_check 15/15; window_tracker_check 20/20; smoke x2 PASS (1 known sig, 0 new, ALL deltas 0); strict PASS (6/5 lines, ALL deltas 0, 0 crit); settings variant strict PASS (deltas 0, crit 0); disposed/finalized 0, d2da: 0 | B-21, B-22 fixed. Standard XDG paths used via GLib.get_user_special_dir and GLib.get_user_config_dir; loadFile try/catch and error rejection; _loadConfig error logging with d2da prefix; no relative cwd paths in active runtime code. |
+
 
 
 

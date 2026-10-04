@@ -59,17 +59,17 @@ Isolated smoke can't change settings from outside (memory backend is in-process)
 > Written by the ORCHESTRATOR only. Worker: do not edit this section.
 
 ```
-Cycle:      2.7
-Task:       R-9b — Launchers in memory from GLib.KeyFile without /tmp (B-10)
+Cycle:      2.8
+Task:       R-9c — Use standard XDG user paths and harden config loading (B-21, B-22)
 Attempt:    1
-Card:       §6 "R-9b"
-Notes:      HEAD 8fab2a5. Strict leaks are ON. Upstream GNOME Shell source is at ../gnome-shell.
-            (B-10) Stop writing .desktop files to /tmp for trash, folders, and mounts.
-            Build in-memory Gio.DesktopAppInfo from GLib.KeyFile (new_from_keyfile).
-            Quote paths in Exec with GLib.shell_quote.
-            Update dock.js and dockItems.js so createItem accepts in-memory app and creates menu.
+Card:       §6 "R-9c"
+Notes:      HEAD d3ba248. Strict leaks are ON.
+            (B-22) Replace relative 'Downloads', 'Documents', and '.config/d2da' paths with
+            GLib.get_user_special_dir / GLib.get_user_config_dir.
+            (B-21) Fix loadFile in utils.js: wrap load_contents_finish in try/catch, return after reject,
+            catch loadConfig errors in extension.js.
             G-real: NOT allowed (W3).
-            Gates: check; lint 0/150; check-settings exit 0 (0/30); timer_check 15/15;
+            Gates: check; lint 0/145; check-settings exit 0 (0/30); timer_check 15/15;
             window_tracker_check 20/20; smoke 1 known sig; strict PASS.
 ```
 
@@ -78,28 +78,34 @@ Notes:      HEAD 8fab2a5. Strict leaks are ON. Upstream GNOME Shell source is at
 > Overwritten by the WORKER each cycle; read by the AUDITOR.
 
 ```
-Cycle / Task / Attempt: 2.7 / R-9b / 1
+Cycle / Task / Attempt: 2.8 / R-9c / 1
 Status:            DONE (all items in one cycle, nothing deferred)
-Files changed:     services.js, dock.js, dockItems.js. HEAD 8fab2a5.
+Files changed:     utils.js, extension.js, prefs.js, services.js, dock.js. HEAD d3ba248.
                    agents/*.md untouched except this Report.
 What changed:
+  - utils.js:
+    - (B-22) Added `getDownloadsDir()` and `getDocumentsDir()` resolving standard XDG directories via
+      `GLib.get_user_special_dir` with fallbacks to `GLib.build_filenamev([GLib.get_home_dir(), ...])`.
+    - (B-21) In `loadFile`: wrapped `load_contents_finish` in a `try ... catch` block, added immediate
+      `return` after `reject(new Error('unable to load file'))`, and rejected with caught error on exception.
+  - extension.js:
+    - (B-22) In `_loadConfig()` and `_unloadConfig()`: resolved config directory via
+      `GLib.build_filenamev([GLib.get_user_config_dir(), 'd2da'])` instead of relative `'.config/d2da'`.
+      Constructed paths for `config.json`, `icons.json`, `style.css`, and SVG files via `GLib.build_filenamev`.
+    - (B-21) In `_loadConfig()`: logged errors with `console.error('d2da: loadConfig', err)`.
+      Added `.catch(...)` handler to the `_loadConfig()` invocation in `enable()`.
+  - prefs.js:
+    - (B-22) Resolved custom themes directory via `GLib.build_filenamev([GLib.get_user_config_dir(), 'd2da', 'themes'])`
+      instead of relative `'.config/d2da/themes'`.
   - services.js:
-    - (B-10 in-memory DesktopAppInfo) Added `_createAppInfoFromData(desktopContent)` which builds
-      a `GLib.KeyFile` in memory and returns `GioUnix.DesktopAppInfo.new_from_keyfile(kf)`.
-    - In `setupTrashIcon()`: removed `tempPath` and file write; stores in-memory `DesktopAppInfo` in `this.trashApp`.
-    - In `setupFolderIcon()`: removed `tempPath` and file write; quotes path with `GLib.shell_quote(full_path)`;
-      stores in `this.folderApps[name]`.
-    - In `setupMountIcon()`: removed `tempPath` and file write; quotes paths with `GLib.shell_quote(fullpath)`;
-      stores in `this.mountApps[appname]`.
-    - In `_onMountRemoved()` / `checkMounts()`: cleans up `this.mountApps`.
+    - (B-22) In `setupDownloads()`: initialized `_downloadsDir` with `getDownloadsDir()` fallback instead of `'Downloads'`.
+    - (B-22) In `setupFolderIcons()`: passed resolved `getDownloadsDir()` and `getDocumentsDir()` to `setupFolderIcon()`.
+    - (B-22) In `checkRecentFilesInFolder(path)`: constructed child file paths with `GLib.build_filenamev([path, fileName])`
+      instead of path concatenation or relative `Downloads/${fileName}`.
   - dock.js:
-    - Updated `createItem(appOrPath)` to accept either a `DesktopAppInfo` object or a path string.
-    - In `_updateExtraIcons()`: uses in-memory `DesktopAppInfo` from `this.extension.services` directly
-      for mounts, downloads, and trash.
-  - dockItems.js:
-    - Replaced the installed-app constructor lookup hack with `GioUnix?.DesktopAppInfo ?? Gio.DesktopAppInfo`.
-    - In `DockItemContainer._init`: enabled menu creation when `params.app` is provided (`if (params.appinfo_filename || params.app)`).
-    - Added defensive getters to dummy apps (`get_id`, `get_name`) and robust icon name lookup.
+    - (B-22) In `_updateExtraIcons()`: resolved `downloadsPath` from `this.extension.services?._downloadsDir?.get_path()`
+      with `getDownloadsDir()` fallback, used for `folder` and `setupFolderIcon(...)`.
+    - Removed unused `Gio` import.
 Self-verification:
   - `make check`: OK.
   - `make lint`: 0 errors / 145 warnings.
@@ -112,7 +118,6 @@ Self-verification:
     probe after-disable deltas all 0.
   - `D2DA_SMOKE_SETTINGS='trash-icon=true downloads-icon=true clock-icon=true calendar-icon=true autohide-dash=true' D2DA_SMOKE_STRICT_LEAKS=1 tools/smoke-shell.sh 5`: PASS,
     shutdown criticals 0, probe line counts 6/5, probe after-disable deltas all 0.
-  - Confirmed 0 `/tmp/*-dash2dock-lite.desktop` files created during smoke.
 New findings / notes: none.
 Scope request / blockers: none.
 ```
@@ -391,8 +396,40 @@ Phase 2-5 cards are *stubs*: the Orchestrator expands a stub into a full card (s
 - **Don't:** Don't touch CSS styling or theme handling (that's R-9d). Don't break dock item clicking or context menu activation. Don't write any new files to `/tmp`.
 - **Accept:** No `/tmp/*-dash2dock-lite.desktop` files created during extension lifecycle; right-clicking and clicking trash/mount/downloads icons work properly; `make check`, `make lint` (0 errors, ≤ 150 warnings), `tools/check-settings.py` (exit 0), unit tests pass, `make smoke` and strict smoke pass with 0 new signatures and all deltas 0.
 - **Verify:** `make check`; `make lint`; `python3 -B tools/check-settings.py`; `gjs -m tests/timer_check.js`; `gjs -m tests/window_tracker_check.js`; `D2DA_SMOKE_STRICT_LEAKS=1 tools/smoke-shell.sh 5`; `make smoke`.
+#### R-9c — Use standard XDG user paths and harden config loading (B-21, B-22)
+- **Fixes:** B-21, B-22.
+- **Scope:** `services.js`; `dock.js`; `extension.js`; `prefs.js`; `utils.js`.
+- **Do:**
+  - (B-22 XDG user dirs):
+    - Replace relative `'Downloads'` and `'Documents'` paths with standard GLib user directory resolution:
+      `GLib.get_user_special_dir(GLib.UserDirectory.DIRECTORY_DOWNLOAD) || GLib.build_filenamev([GLib.get_home_dir(), 'Downloads'])`
+      and
+      `GLib.get_user_special_dir(GLib.UserDirectory.DIRECTORY_DOCUMENTS) || GLib.build_filenamev([GLib.get_home_dir(), 'Documents'])`.
+    - In `services.js`:
+      - In `setupDownloads()`, initialize `this._downloadsDir` using the resolved downloads path.
+      - In `setupFolderIcons()`, pass the resolved downloads and documents paths into `setupFolderIcon()`.
+      - In `checkRecentFilesInFolder(path)`, construct child file paths using `GLib.build_filenamev([path, fileName])` instead of hardcoded relative path `Downloads/${fileName}` or string concatenation.
+    - In `dock.js`:
+      - In `_updateExtraIcons()` for downloads item, use `this.extension.services._downloadsDir?.get_path()` (with fallback to the resolved downloads path) for `folder` and `setupFolderIcon(...)`.
+    - In `extension.js`:
+      - In `_loadConfig()` and `_unloadConfig()`, resolve the d2da config directory via:
+        `const configDir = GLib.build_filenamev([GLib.get_user_config_dir(), 'd2da']);`
+        instead of relative `'.config/d2da'`. Build paths for `config.json`, `icons.json`, `style.css`, and custom SVG icon files using `GLib.build_filenamev([configDir, ...])`.
+    - In `prefs.js`:
+      - In theme loading, resolve the custom themes directory via `GLib.build_filenamev([GLib.get_user_config_dir(), 'd2da', 'themes'])` instead of relative `'.config/d2da/themes'`.
+  - (B-21 `loadFile` and `_loadConfig` error handling):
+    - In `utils.js:loadFile`:
+      - Wrap `load_contents_finish` in a `try ... catch` block.
+      - If `!ok`, return immediately after rejecting (`reject(new Error('unable to load file')); return;`).
+      - On error in the async callback, reject the promise (`reject(err); return;`).
+    - In `extension.js:_loadConfig`:
+      - Catch errors from `loadFile` and `JSON.parse` with `try ... catch (err) { console.error('d2da: loadConfig', err); }`.
+- **Don't:** Don't touch CSS stylesheet loading logic or theme generation (that's R-9d). Don't break desktop file generation in memory (R-9b). Don't add synchronous I/O or new polling timers.
+- **Accept:** All file paths resolve to absolute paths rooted at standard XDG directories; no relative paths to process cwd; `make check`, `make lint` (0 errors, ≤ 145 warnings), `tools/check-settings.py` (exit 0), unit tests pass, `make smoke` and strict smoke pass with 0 new signatures and all deltas 0.
+- **Verify:** `make check`; `make lint`; `python3 -B tools/check-settings.py`; `gjs -m tests/timer_check.js`; `gjs -m tests/window_tracker_check.js`; `D2DA_SMOKE_STRICT_LEAKS=1 tools/smoke-shell.sh 5`; `make smoke`.
 - **Human:** no.
-- **R-9c** XDG paths (B-22). **R-9d** CSS from runtime dir / in-memory, per shell instance (B-37).
+
+- **R-9d** CSS from runtime dir / in-memory, per shell instance (B-37).
 
 ### Phase 3 — Speed (stubs)
 - **R-10** split `layout()` → `relayout()` on dirty flag; `animate` must not call `layout()` (P-1).

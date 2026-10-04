@@ -98,6 +98,20 @@ export const trySpawnCommandLine = function (cmd) {
   });
 };
 
+export const getDownloadsDir = () => {
+  return (
+    GLib.get_user_special_dir(GLib.UserDirectory.DIRECTORY_DOWNLOAD) ||
+    GLib.build_filenamev([GLib.get_home_dir(), 'Downloads'])
+  );
+};
+
+export const getDocumentsDir = () => {
+  return (
+    GLib.get_user_special_dir(GLib.UserDirectory.DIRECTORY_DOCUMENTS) ||
+    GLib.build_filenamev([GLib.get_home_dir(), 'Documents'])
+  );
+};
+
 export const loadFile = function (fn) {
   return new Promise((resolve, reject) => {
     if (typeof fn == 'string') {
@@ -105,16 +119,21 @@ export const loadFile = function (fn) {
     }
     if (fn.query_exists(null)) {
       fn.load_contents_async(null, (f, res) => {
-        let [ok, contents] = f.load_contents_finish(res);
-        if (!ok) {
-          reject('unable to load file');
+        try {
+          let [ok, contents] = f.load_contents_finish(res);
+          if (!ok) {
+            reject(new Error('unable to load file'));
+            return;
+          }
+          const decoder = new TextDecoder();
+          let contentsString = decoder.decode(contents);
+          resolve(contentsString);
+        } catch (err) {
+          reject(err);
         }
-        const decoder = new TextDecoder();
-        let contentsString = decoder.decode(contents);
-        resolve(contentsString);
       });
     } else {
-      reject('file not found');
+      reject(new Error('file not found'));
     }
   });
 };

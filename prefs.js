@@ -251,7 +251,7 @@ export default class Preferences extends ExtensionPreferences {
     this._themed_presets = [];
     this.preloadPresets(`${this.path}/themes`);
     this.preloadPresets(
-      Gio.File.new_for_path('.config/d2da/themes').get_path()
+      GLib.build_filenamev([GLib.get_user_config_dir(), 'd2da', 'themes'])
     );
     this._buildThemesMenu(window);
 

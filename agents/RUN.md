@@ -135,7 +135,7 @@ Status: `[ ]` todo · `[~]` in progress · `[x]` done (hash) · `[!]` blocked ·
 | [x] c0391da | 2.5 | R-8 services cancellables / dt | 2.4 | B-25, B-36 |
 | [x] 8fab2a5 | 2.6 | R-9a trash via Gio | 2.5 | B-8 · human visual |
 | [x] 1553b9d | 2.7 | R-9b launchers in memory | 2.5 | B-10 |
-| [ ] | 2.8 | R-9c XDG paths | 2.5 | B-22 |
+| [~] | 2.8 | R-9c XDG paths | 2.5 | B-21, B-22 |
 | [ ] | 2.9 | R-9d CSS without /tmp | 2.5 | HUMAN — end of phase 2 |
 
 ### Phase 3 — Speed (G2)
@@ -350,4 +350,6 @@ Format: `YYYY-MM-DD HH:MM · cycle · EVENT · details` where EVENT ∈ `SETUP, 
 - 2026-10-04 · 2.7 · ASSIGN · R-9b launchers in memory from GLib.KeyFile without /tmp (B-10). Stub expanded.
 - 2026-10-05 · 2.7 · AUDIT-PASS · `1553b9d`. check=PASS lint=0/145 (−5) settings=exit 0 timer_check 15/15 window_tracker_check 20/20 smoke=PASS(x2) strict=PASS all deltas 0 shutdown criticals 0. B-10 fixed: launchers built in memory via DesktopAppInfo.new_from_keyfile, paths quoted with GLib.shell_quote, 0 /tmp/*.desktop files created.
 - 2026-10-05 · — · HUMAN · Replaced Makefile publish recipe with tools/publish.sh (explicit inclusion packaging, no temp tree cleanup, zero dev files in zip) committed as `82740bc`.
-- 2026-10-05 · — · AUDIT-PASS · human request: defer frame when precreating animator pool resources. check=PASS lint=0/145 settings=exit 0 timer_check 15/15 window_tracker_check 20/20 smoke=PASS(x2) strict=PASS all deltas 0 shutdown criticals 0.
+- 2026-10-05 · — · AUDIT-PASS · `d3ba248` (human request: defer frame when precreating animator pool resources). check=PASS lint=0/145 settings=exit 0 timer_check 15/15 window_tracker_check 20/20 smoke=PASS(x2) strict=PASS all deltas 0 shutdown criticals 0.
+- 2026-10-05 · 2.8 · PREFLIGHT · tree clean apart from agents/*; HEAD `d3ba248`; GNOME Shell 50.5.
+- 2026-10-05 · 2.8 · ASSIGN · R-9c XDG paths (B-21, B-22). Stub expanded.

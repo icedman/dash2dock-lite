@@ -494,10 +494,19 @@ export default class Dash2DockLiteExt extends Extension {
       switch (name) {
         case 'msg-to-ext': {
           if (value.length) {
-            try {
-              eval(value);
-            } catch (err) {
-              console.log(err);
+            const commands = {
+              'run-diagnostics': () => this.runDiagnostics(),
+              'dump-timers': () => this.dumpTimers(),
+            };
+            const command = commands[value];
+            if (command) {
+              try {
+                command();
+              } catch (err) {
+                console.error(`d2da: msg-to-ext ${value}`, err);
+              }
+            } else {
+              console.warn('d2da: unknown command', value);
             }
             this._settings.set_string('msg-to-ext', '');
           }

@@ -155,7 +155,7 @@ export default class Preferences extends ExtensionPreferences {
 
     if (builder.get_object('self-test')) {
       builder.get_object('self-test').connect('clicked', () => {
-        settings.set_string('msg-to-ext', 'this.runDiagnostics()');
+        settings.set_string('msg-to-ext', 'run-diagnostics');
       });
     }
   }

@@ -117,8 +117,8 @@ Status: `[ ]` todo · `[~]` in progress · `[x]` done (hash) · `[!]` blocked ·
 | [x] c9ca876 | 1.4 | R-4a extension.js one-liners | 0.3 | B-5, B-13, B-16, B-20 |
 | [x] 8f44419 | 1.5 | R-4b animator one-liners | 0.1 | B-14, B-15, B-34 · human visual |
 | [x] 1b03ca7 | 1.6 | R-4c dock.js input | 0.1 | B-17, B-18, B-19 · human visual |
-| [~] | 1.7 | R-4d mount names | 0.1 | B-9 |
-| [ ] | 1.8 | R-6 remove eval | 0.1 | B-11 |
+| [x] 0821a56 | 1.7 | R-4d mount names | 0.1 | B-9 |
+| [~] | 1.8 | R-6 remove eval | 0.1 | B-11 |
 | [ ] | 1.9 | R-5 prefs | 0.3, 1.8 | B-12, B-32, B-33 · human visual |
 | [ ] | 1.10 | B-35 NaN clip (BMS) | 0.1 | G-real required · HUMAN — end of phase 1 |
 
@@ -178,7 +178,7 @@ Status: `open` · `fixed <hash>` · `partial <hash>` · `blocked` · `wontfix (r
 | B-6 | R-1, R-2 | fixed ef879f9 + c84f252 | | B-24 | R-1, R-11b | partial ef879f9 (`typeof func` typo; resolution collapse in R-11b) |
 | B-7 | R-2 | fixed c84f252 | | B-25 | R-8 | open |
 | B-8 | R-9a | open | | B-26 | R-3 | fixed dda62a5 (dead check removed per human rule) |
-| B-9 | R-4d | open | | B-27 | R-3 | fixed dda62a5 |
+| B-9 | R-4d | fixed 0821a56 | | B-27 | R-3 | fixed dda62a5 |
 | B-10 | R-9b | open | | B-28 | (unassigned, needs St case check) | open |
 | B-11 | R-6 | open | | B-29 | R-7b | open |
 | B-12 | R-5 | open | | B-30 | (unassigned) | open |
@@ -207,7 +207,7 @@ Unassigned rows: when a phase ends, either add a card + board row for them or ma
 | Smoke baseline (real dconf, advisory) | 4 signatures (incl. B-35, search-light's DesktopAppInfo warning) | setup |
 | Probe after-disable deltas, 5 toggles (uiGroup / stage / dashes / docks / hi / lo / loop) | 0 / 0 / 0 / 0 / 0 / **+1** / 0. `lo` +1 = smoke-timing artifact (T-5). Stage-walk can't see B-1 (T-6). Absolute `stage` varies per run (2865-2885) ⇒ track deltas only | 2bbf52d |
 | Strict leaks (`D2DA_SMOKE_STRICT_LEAKS=1` in G-leaks) | **OFF** (turn ON after 2.4) | |
-| ESLint warnings (errors) | 162 (0) at c9ca876; 166 at ef879f9; 168 at 2a0ae6f. no-unused-vars 162, no-undef 5, no-duplicate-case 1; only remaining demotion: `no-undef: warn` in extension.js for the dead `_onKeyPressed` Clutter use (delete in R-18/R-21) | 2a0ae6f |
+| ESLint warnings (errors) | 154 (0) at 0821a56; 158 at 1b03ca7; 162 at c9ca876; 166 at ef879f9; 168 at 2a0ae6f. no-unused-vars 162, no-undef 5, no-duplicate-case 1; only remaining demotion: `no-undef: warn` in extension.js for the dead `_onKeyPressed` Clutter use (delete in R-18/R-21) | 2a0ae6f |
 | check-settings issues | c9ca876: 1 error (B-12) / 30 warnings. At cff438d: exit 1 by design. Errors 2: shared-adjustment 1 (B-12), duplicate-case 1 (B-16); missing-in-schema 0, widget-type 0. Warnings 30: missing-in-keys 5, key-no-widget 8, dead-setting 17 (§6.5 list + `msg-to-ext` false positive). Should exit 0 after R-4a + R-5 ⇒ then make G-settings a hard exit-code gate | cff438d |
 
 ### 5.1 Human-check queue
@@ -229,6 +229,7 @@ Items the agents can't see. The human runs `make test-shell` (needs `mutter-devk
 | 1.6 | 1b03ca7 | Running app: click (raise/minimize), shift-click, middle-click (new window), ctrl-click | |
 | 1.6 | 1b03ca7 | Ctrl+scroll over an icon cycles only current-workspace windows | |
 | 1.6 | 1b03ca7 | Tint/monochrome icon effect on, then disable extension ⇒ effect gone | |
+| 1.7 | 0821a56 | Two USB sticks (same label) ⇒ two icons with real names; unmount one removes only it; remount/rename updates label | |
 
 ## 6. Run Log (append-only, newest last)
 
@@ -284,3 +285,6 @@ Format: `YYYY-MM-DD HH:MM · cycle · EVENT · details` where EVENT ∈ `SETUP, 
 - 2026-10-04 · 1.6 · AUDIT-PASS · `1b03ca7`. check=PASS lint=0/158 (−4, all in edited functions) settings=1/30 timer_check 15/15 smoke=PASS(x2) after 2 flaky FAILs (new `Style.unloadAll` /tmp CSS signature, HEAD passed in a worktree, not reproduced). Activate patch now forwards `button` (matches Shell 50.5 `AppIcon.activate(button)`). B-17, B-18, B-19 fixed. New B-37: shared `/tmp/<user>-custom-d2dl.css` between live and nested shells ⇒ R-9d. 3 human-check items queued.
 - 2026-10-04 · 1.7 · PREFLIGHT · tree clean apart from agents/*; HEAD `1b03ca7`; GNOME Shell 50.5.
 - 2026-10-04 · 1.7 · ASSIGN · R-4d mount names (B-9).
+- 2026-10-04 · 1.7 · AUDIT-PASS · `0821a56`. check=PASS lint=0/154 (−4) settings=1/30 timer_check 15/15 smoke=PASS(x2), no B-37 flake. Always-rewrite of mount launchers runs on mount events only (checkMounts only at enable / setting change). B-9 fixed. Nits for R-9: unquoted/`null` Exec path, unused `_toSafeFileName`. 1 human-check item queued.
+- 2026-10-04 · 1.8 · PREFLIGHT · tree clean apart from agents/*; HEAD `0821a56`; GNOME Shell 50.5.
+- 2026-10-04 · 1.8 · ASSIGN · R-6 remove eval (B-11).

@@ -84,40 +84,32 @@ Minor nits (naming, a stray blank line) that don't violate a rule: list them as 
 > Overwritten each cycle. On FAIL the Worker reads this for its rework.
 
 ```
-Cycle / Task / Attempt:  1.7 / R-4d / 1
+Cycle / Task / Attempt:  1.8 / R-6 / 1
 Verdict:          PASS
-Commit:           see Audit Log (fix(services): ...)
-Gates:            check=PASS ; lint=PASS (0 err / 154 warn, baseline 158; services.js 8 vs HEAD 12:
-                  removed basename/mount_ids/appname + GLib now used; no new warnings) ;
-                  settings=exit 1, 1 err / 30 warn = baseline ; timer_check all passed ;
-                  smoke x2 PASS (1 known sig, 0 new, after-enable 0, after-disable 0/0/0/0/0/+1/0),
-                  no B-37 flake ; leaks=n/a ; real=not run ; card=PASS (check+smoke; mounts by reading).
-Scope:            services.js (+38/-44), mount code only. Matches Report. agents/*.md = bookkeeping.
+Commit:           see Audit Log (fix(prefs): ...)
+Gates:            check=PASS ; lint=PASS (0 err / 154 warn = baseline; extension.js+prefs.js 17 vs
+                  HEAD 18) ; settings=exit 1, 1 err / 30 warn = baseline ; timer_check all passed ;
+                  smoke x2 PASS (1 known sig, 0 new, after-disable 0/0/0/0/0/+1/0), no B-37 flake ;
+                  card: grep eval( / new Function in shipped *.js = nothing (only untracked build/).
+Scope:            extension.js (+13/-4), prefs.js (+1/-1). diagnostics.js untouched (no call site).
+                  Matches Report. agents/*.md = bookkeeping.
 Rule violations:  none. A1-A13 clean.
 Specific checks:
-  - Unused removals (checkMounts mount_ids/appname loop, _onMountAdded basename): pure locals
-    with no side effects (_getMountName/_toSafeFileName are getters). No behaviour change.
-  - Always-rewrite in setupMountIcon: called only from _onMountAdded <- volume-monitor
-    'mount-added' and _commitMounts. _commitMounts runs from the 5 s 'ping' counter, but it only
-    drains _deferredMounts, which is filled by checkMounts. checkMounts runs only in enable()
-    and on 'mounted-icon' changes. So writes happen once per mount per event, never periodically.
-    A7/A8 ok; I/O per event is 1 replace_contents (was query_exists + optional write).
-  - Key: setupMountIcon and _onMountRemoved both use tempPath(_getMountAppName(mount)) =
-    /tmp/<user>-mount-<sha1(root uri)>-dash2dock-lite.desktop. dock.js _updateExtraIcons
-    compares _mounts keys with extra._mountPath, so it agrees and removal is per-key.
-  - _escapeDesktopValue escapes backslash first, then \n \r \t: matches the Desktop Entry spec
-    escapes (\s for leading space not done, harmless). Applied to Name= only.
-  - A7: launchers stay in the existing B-10 /tmp/<user>-* scheme (utils.tempPath); only the
-    file-name pattern changes, no new dir. Old /tmp/<user>-mount-volume-... is orphaned until
-    reboot (unused).
+  - Whitelist is a fixed object literal of two closures; no this[value] lookup. Both
+    runDiagnostics/dumpTimers exist (extension.js ~1234/1242).
+  - '' is guarded by value.length -> reset write re-enters silently, no loop/warn.
+  - 'this.runDiagnostics()' -> commands[...] undefined -> warn + reset; never executes.
+    Stale dconf value at enable is ignored (changed:: only).
+  - prefs.js sends exactly 'run-diagnostics'.
 Rework list:      none.
 Nits:
-  - _toSafeFileName now unused (left in, fine; drop in R-9).
-  - Exec= fullpath unquoted / null for non-local mounts (pre-existing, B-10/R-9).
-  - checkMounts sets this._mounts = [] (array) when disabled (pre-existing, 6.3).
-Findings confirmed:  B-9 fixed.
-Human check needed:  two USB sticks (same label) => two icons with real names; unmount one
-                     removes only it; remount/rename updates the label.
+  - commands is a plain {} so inherited keys resolve: 'toString'/'constructor'/'hasOwnProperty'
+    call harmless Object.prototype fns, '__proto__' throws TypeError (caught, logged). No code
+    execution; prefer Object.hasOwn(commands, value) or a Map / Object.create(null) later.
+  - map rebuilt per non-empty message (cold path, fine).
+Findings confirmed:  B-11 fixed.
+Human check needed:  prefs -> self-test/diagnostics button still runs diagnostics;
+                     optional: gsettings set msg-to-ext 'bogus' -> one warning, key reset to ''.
 New findings spotted (for Orchestrator): none.
 ```
 
@@ -139,3 +131,4 @@ New findings spotted (for Orchestrator): none.
 | 1.5 | R-4b | 1 | PASS | this commit | `make check` PASS; `make lint` PASS (0 err / 162 warn = baseline; animator.js 23 = HEAD); check-settings exit 1 (1 err B-12 / 30 warn = baseline); `make smoke` PASS; smoke-x2 PASS (1 known sig, 0 new, 6/5 msgs, probe 6/5, after-disable deltas 0/0/0/0/0/+1/0 both); timer_check all passed | B-14, B-15, B-34 fixed; revived branches judged within intent (B-14 per 5c173eb; B-15 lock monotonic; B-34 X reset no conflict). Nits: bounce catch console.log; animate clears only appwell Y. Findings: none. |
 | 1.6 | R-4c | 1 | PASS | this commit | `make check` PASS; `make lint` PASS (0 err / 158 warn, baseline 162; dock.js 21 vs HEAD 25, -4 unused vars in edited code); check-settings exit 1 (1 err B-12 / 30 warn = baseline); smoke FAIL x2 (NEW Style.unloadAll /tmp css delete, environmental), HEAD worktree PASS, then `make smoke` PASS + smoke-x2 PASS (1 known sig, 0 new, 6/5, after-disable deltas 0/0/0/0/0/+1/0); `d2da: ` 0; timer_check all passed | B-17 get_state; B-18 activate(button) forwarded (Shell 50.5 AppIcon.activate(button) verified), original activate runs uncaught like stock Shell, judged within intent; B-19 symmetric removal on _effectTargets. Finding: smoke flake from /tmp css shared with the live session (style.js, B-10 class). |
 | 1.7 | R-4d | 1 | PASS | this commit | `make check` PASS; `make lint` PASS (0 err / 154 warn, was 158; services.js 12 -> 8); check-settings exit 1 (1 err / 30 warn = baseline); timer_check all passed; smoke-x2 PASS (1 known sig, 0 new, deltas 0/0/0/0/0/+1/0 both), no B-37 flake | B-9 fixed. Mount key = sha1(root URI) in the existing tempPath scheme; add/remove/dock.js agree. Always-rewrite only on mount events / enable / mounted-icon change (ping only drains the deferred queue), no periodic I/O. Name escaped per Desktop Entry spec. Nits: _toSafeFileName unused; Exec path unquoted (pre-existing); old shared Volume launcher orphaned in /tmp. |
+| 1.8 | R-6 | 1 | PASS | this commit | `make check` PASS; lint 0/154 = baseline; check-settings 1/30 = baseline; timer_check pass; smoke x2 PASS (1 known sig, 0 new, deltas 0/0/0/0/0/+1/0); no eval/new Function in shipped js | B-11 fixed: fixed two-entry whitelist, '' silent, legacy 'this.runDiagnostics()' warns+resets, prefs sends 'run-diagnostics'. Nit: plain-object map resolves Object.prototype keys (harmless; use Object.hasOwn). |

@@ -58,25 +58,24 @@ Isolated smoke can't change settings from outside (memory backend is in-process)
 > Written by the ORCHESTRATOR only. Worker: do not edit this section.
 
 ```
-Cycle:      1.7
-Task:       R-4d — Mount names
+Cycle:      1.8
+Task:       R-6 — Remove `eval` from `msg-to-ext`
 Attempt:    1
-Card:       §6 "R-4d"
-Notes:      HEAD 1b03ca7. Scope = services.js (mount code only). Mount items are backed
-            by generated `.desktop` launchers (that mechanism is B-10 / R-9b, so don't
-            redesign it). If keying by root URI puts the URI into a file name or desktop
-            id, sanitize it (stable, filesystem-safe, e.g. a GLib checksum of the URI)
-            and make sure removal/unmount deletes exactly that one item. Use the mount's
-            display name (`mount.get_name()`) with fallback 'Volume'; quote/escape it
-            where it goes into a `.desktop` file. No new sync I/O beyond what the
-            existing code already does per mount event (A7). Describe what happens to
-            launchers left over from the old shared-'Volume' scheme after upgrade.
-            Smoke has no mounts, so check by reading code; a gjs unit test of a pure
-            helper (name/key) is welcome if it needs no Shell imports.
-            Known flake: `Style.unloadAll` /tmp CSS signature (B-37, environment). If it
-            appears, rerun once and report it.
-            Baselines: lint 0/158; check-settings 1/30; smoke 1 known sig, deltas
-            0/0/0/0/0/+1/0; timer_check 15/15.
+Card:       §6 "R-6"
+Notes:      HEAD 0821a56. Call sites: extension.js `case 'msg-to-ext'` (~495, evals then
+            resets to ''), prefs.js:158 (sends 'this.runDiagnostics()'), prefs.js:190
+            (resets ''). Check that `runDiagnostics` / `dumpTimers` actually exist on the
+            extension (grep, incl. diagnostics.js). Only whitelist commands backed by an
+            existing method; report any that are missing rather than inventing them.
+            Keep the reset-to-'' handshake (and make sure the reset write doesn't
+            re-trigger a warning: '' must be a silent no-op). Old dconf values from
+            earlier versions (e.g. 'this.runDiagnostics()') must not execute; they fall
+            into the unknown-command warning or are ignored. Say which.
+            check-settings: `msg-to-ext` was a dead-setting false positive (its case
+            used `value` via eval). Report whether its status changes (count should
+            stay 1/30 or drop).
+            Baselines: lint 0/154; check-settings 1/30; smoke 1 known sig, deltas
+            0/0/0/0/0/+1/0; timer_check 15/15. Known flake B-37 (`Style.unloadAll`).
 ```
 
 ## 5. Report
@@ -84,42 +83,40 @@ Notes:      HEAD 1b03ca7. Scope = services.js (mount code only). Mount items are
 > Overwritten by the WORKER each cycle; read by the AUDITOR.
 
 ```
-Cycle / Task / Attempt: 1.7 / R-4d / 1
+Cycle / Task / Attempt: 1.8 / R-6 / 1
 Status:            DONE
-Files changed:     services.js only, vs HEAD 1b03ca7 (+38/-44)
+Files changed:     extension.js (+13/-4), prefs.js (+1/-1), vs HEAD 0821a56. diagnostics.js untouched
+                   (no msg-to-ext call site there).
 Findings addressed:
-  B-9 confirmed at HEAD (_getMountName computed a name, then `return 'Volume'`).
-   - _getMountName: mount.get_name() first, then drive / volume / location basename (old
-     chain), returns `name || 'Volume'`. Used as the .desktop Name=, escaped by new
-     _escapeDesktopValue (\\ \n \r \t per desktop-entry spec) so a label can't inject keys.
-   - New _getMountAppName(mount): `mount-<SHA1(root URI)>-dash2dock-lite.desktop` via
-     GLib.compute_checksum_for_string (stable, fs-safe; fallback to name if get_root() null).
-     Used by setupMountIcon and _onMountRemoved, so _mounts keys (tempPath(appname)) are per
-     root URI: two volumes -> two items; unmount deletes only that key; dock.js
-     _updateExtraIcons removes only the matching icon (unchanged code, keys are paths).
-     StartupWMClass = the same id minus .desktop.
-   - setupMountIcon now always replace_contents (was query_exists + write only if missing,
-     which kept stale labels/paths). Same sync I/O count per mount event (1 call instead of
-     1-2); no new I/O paths.
-   - checkMounts / _onMountAdded: removed dead `basename`/`appname`/`mount_ids` computations.
-   - _toSafeFileName is now unused; left in place (no drive-by removal). Auditor may drop it.
-  Upgrade: the old shared /tmp/<user>-mount-volume-dash2dock-lite.desktop is no longer
-    referenced by any key, so no dock item is created from it; the file just stays in /tmp
-    (no cleanup added, no new /tmp deletes) until reboot / R-9 moves launchers off /tmp.
-  Not changed (B-10/R-9 scope): Exec=xdg-open/umount with unquoted fullpath; fullpath is
-    `null` for mounts without a local path (MTP etc.) — pre-existing.
+  B-11 confirmed at HEAD (case 'msg-to-ext' did eval(value)).
+   - extension.js case 'msg-to-ext': whitelist map { 'run-diagnostics': runDiagnostics(),
+     'dump-timers': dumpTimers() } built only when value is non-empty. Known command runs in
+     try/catch -> console.error('d2da: msg-to-ext <cmd>', err) (was console.log). Unknown ->
+     console.warn('d2da: unknown command', value). Either way then resets to ''.
+   - '' is a silent no-op (value.length guard kept), so the reset write re-enters the handler
+     without warning.
+   - Both target methods exist on the extension (extension.js runDiagnostics / dumpTimers);
+     nothing missing, nothing invented.
+   - prefs.js self-test button now sends 'run-diagnostics'; prefs.js open-time reset to ''
+     unchanged.
+  Legacy values: a stale 'this.runDiagnostics()' (or any old string) is never executed. If it
+    arrives via changed:: it hits the unknown-command warning and is reset to ''. A stale value
+    already in dconf at enable is ignored (handler only runs on changed::) and is cleared next
+    time prefs opens.
+  check-settings: msg-to-ext still reported as 'never read at runtime [has case in extension.js]'
+    (the case uses value, not this.msgToExt) -> status unchanged, totals stay 1 / 30.
 Self-verification:
+  grep -n 'eval(' *.js = nothing (Accept met)
   make check = OK
-  make lint = 0 errors / 154 warnings (baseline 158; -4 from removed unused vars)
+  make lint = 0 errors / 154 warnings (= baseline)
   python3 -B tools/check-settings.py = 1 error / 30 warnings (= baseline)
   gjs -m tests/timer_check.js = all passed
-  gjs checksum sanity: compute_checksum_for_string(SHA1,'file:///media/a') -> 40-hex string
-  make smoke = PASS, 1 known sig, 0 new, 0 gone; msgs 6/5; probe 6/5; after-enable deltas all
-    0; after-disable 0/0/0/0/0/+1/0 = baseline; 'd2da: ' count 0. No B-37 flake.
-  Not covered by smoke: all of it (no mounts). No unit test: helpers live in services.js which
-    imports Shell's main.js, so not loadable from plain gjs without a scope change.
-Needs human visual check: yes — two USB sticks (ideally same label): two icons with real
-  names; unmount one -> only that icon goes; rename/remount -> label updated.
+  make smoke = PASS, 1 known sig, 0 new, 0 gone; msgs 6/5; probe 6/5; after-enable deltas all 0;
+    after-disable 0/0/0/0/0/+1/0 = baseline. No B-37 flake.
+  Not covered by smoke: the command path itself (isolated GSettings can't be written from outside).
+Needs human visual check: yes - prefs -> self-test/diagnostics button still runs diagnostics;
+  optionally gsettings set ... msg-to-ext 'bogus' -> one 'd2da: unknown command bogus' warning, key
+  reset to ''.
 New findings (proposed B-xx, with file:symbol and evidence): none
 Scope request / blockers: none
 ```

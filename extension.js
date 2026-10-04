@@ -37,7 +37,7 @@ import { Services } from './services.js';
 import { Integrations } from './integrations.js';
 import { WindowTracker } from './windowTracker.js';
 import { runTests } from './diagnostics.js';
-import { probe } from './probe.js';
+import { probe, applySmokeSettings } from './probe.js';
 
 import {
   Extension,
@@ -232,6 +232,9 @@ export default class Dash2DockLiteExt extends Extension {
     // todo follow animator and autohider protocol
     this.services.enable();
     this._onCheckServices();
+
+    // after integrations/services exist: the settings switch uses them
+    applySmokeSettings(this._settings);
 
     this._updateAnimationFPS();
     this._updateShrink();

@@ -12,6 +12,7 @@ import { DockPosition } from './dock.js';
 import { Vector } from './vector.js';
 
 import { DockItemDotsOverlay, DockItemBadgeOverlay } from './dockItems.js';
+import { live } from './probe.js';
 import {
   Bounce,
   Linear,
@@ -35,6 +36,10 @@ const ANIMATE_CACHE_LOOKUP = 4;
 const DOT_CANVAS_SIZE = 96;
 
 export let Animator = class {
+  constructor() {
+    live('animator', 1);
+  }
+
   enable() {
     if (!this._renderers) {
       this._renderers = [];
@@ -54,6 +59,7 @@ export let Animator = class {
   }
 
   destroy() {
+    live('animator', -1);
     this.disable();
     this.dock = null;
     this.extension = null;

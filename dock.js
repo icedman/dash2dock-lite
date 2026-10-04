@@ -20,6 +20,7 @@ import { DockIcon, DockItemContainer, DockBackground } from './dockItems.js';
 import { DockItemList } from './dockItemMenu.js';
 import { AutoHide } from './autohide.js';
 import { Animator } from './animator.js';
+import { live } from './probe.js';
 import {
   get_distance_sqr,
   get_distance,
@@ -68,6 +69,8 @@ export let Dock = GObject.registerClass(
       });
 
       this.extension = params.extension;
+      live('dock', 1);
+      this.connect('destroy', () => live('dock', -1));
 
       this._alignment = DockAlignment.CENTER;
       this._monitorIndex = Main.layoutManager.primaryIndex;
@@ -383,6 +386,8 @@ export let Dock = GObject.registerClass(
 
       this.Dash = Dash;
       let dash = new Dash();
+      live('dash', 1);
+      dash.connect('destroy', () => live('dash', -1));
 
       dash._adjustIconSize = () => {};
       let con = console;

@@ -58,19 +58,19 @@ Isolated smoke can't change settings from outside (memory backend is in-process)
 > Written by the ORCHESTRATOR only. Worker: do not edit this section.
 
 ```
-Cycle:      2.3
-Task:       R-7c — Per-extension WindowTracker, no Meta.Window expandos
+Cycle:      2.3a
+Task:       R-0e — Probe v2: fair timing, shutdown criticals, live instances, settings hook
 Attempt:    1
-Card:       §6 "R-7c"
-Notes:      HEAD 0a01a50. Expanded card; read its Context.
-            G-real: NOT allowed (W3). Last cycle a Worker ran it without approval; don't.
-            `unmanaged` is the Meta.Window signal for a window going away (GNOME 45-50).
-            Verify it exists in the installed Meta GIR or mutter, and say how you checked.
-            Lifecycle: tracker created once per enable, destroyed after docks in
-            disable, cleared when autohide-dash goes off. Report each place.
-            Gates: check; lint 0/151; check-settings exit 0 (0/30); smoke 1 known sig,
-            deltas 0/0/0/0/0/+1/0; timer_check 15/15 (+ the new test if added);
-            disposed/finalized grep 0. Report T-8 shutdown GC count (baseline 150).
+Card:       §6 "R-0e"
+Notes:      HEAD deb31fb. G-real: NOT allowed (W3). The settings hook must be impossible
+            to trigger against real dconf: check GSETTINGS_BACKEND === 'memory' inside
+            the extension, not just in the script. Key names: check them against the
+            schema (`schemas/*.gschema.xml`) before using them in the Accept run; adapt
+            the list if a key is named differently, and say so.
+            Size: if the diff goes past ~300 lines, ship 1-4 and report 5 as remaining.
+            Gates: check; lint 0/150; check-settings exit 0 (0/30); timer_check 15/15;
+            window_tracker_check 20/20; smoke 1 known sig; disposed/finalized grep 0.
+            Known flake B-37.
 ```
 
 ## 5. Report
@@ -78,70 +78,107 @@ Notes:      HEAD 0a01a50. Expanded card; read its Context.
 > Overwritten by the WORKER each cycle; read by the AUDITOR.
 
 ```
-Cycle / Task / Attempt: 2.3 / R-7c / 1
-Status:            DONE
-Files changed:     autohide.js (+2/-43), extension.js (+6), windowTracker.js (new, 49 lines),
-                   tests/window_tracker_check.js (new test). HEAD 0a01a50. agents/*.md untouched except this
-                   Report.
-Why windowTracker.js: autohide.js imports gi://Meta and ./dock.js (Shell modules), so a plain
-  `gjs -m` test can't import it. The card allows a separate windowTracker.js in that case. It has no
-  imports. `make install` (cp -R ./*) and `publish` (*.js) both ship it.
+Cycle / Task / Attempt: 2.3a / R-0e / 1
+Status:            DONE (all 5 items, code diff 160+/15-)
+Files changed:     tools/smoke-shell.sh (+93/-14), probe.js (+52), dock.js (+5), animator.js (+6),
+                   extension.js (+4/-1). HEAD deb31fb. agents/*.md untouched except this Report.
 What changed:
-  windowTracker.js `export class WindowTracker`:
-    constructor(onChange), Set of tracked Meta.Windows, `size` getter (for the test).
-    track(w): no-op if null, already tracked, or destroyed (onChange null). Otherwise
-      w.connectObject('position-changed', cb, 'size-changed', cb, 'unmanaged', () => this.untrack(w), this).
-    untrack(w): removes w from the Set first (so a throwing disconnect can't leave it stuck), then
-      w.disconnectObject(this) in try/catch -> console.error('d2da: window tracker untrack', e).
-      Every error is logged: tracked windows are always still managed when untracked (unmanaged ones are
-      already gone), so any throw is unexpected.
-    clear(): untrack all. destroy(): clear() + drop onChange.
-  autohide.js: removed _track/_untrack (the _tracked expando), the `w._parent = a` expando, and the
-    per-window untrack scan in disable(). _checkOverlap now calls this.extension.windowTracker?.track(w).
-    The overlap/dodge logic and filters are unchanged.
-  extension.js:
-    - Created: enable(), `this.windowTracker = new WindowTracker(() => this.checkHide())`, next to
-      listeners init. It is created once per enable, not in startUp() (startUp re-runs after destroyDocks
-      on monitor changes).
-    - Destroyed: disable(), right after destroyDocks()/docks = [] : windowTracker?.destroy(); = null.
-    - Cleared: _updateAutohide() else-branch (autohide-dash off, or disable=true), after the
-      autohiders are disabled: windowTracker?.clear(). (disable() also hits this via _updateAutohide(true),
-      before destroyDocks; destroy() afterwards is then a no-op clear plus dropping the callback.)
-  Multi-dock: one Set across all docks, so exactly one connection set per window. Any change calls
-    extension.checkHide(), which re-checks every dock (same as before). One dock's AutoHide.disable() (e.g.
-    undock) no longer disconnects windows other docks rely on.
-'unmanaged' verification: grep of the installed GIRs. /usr/lib64/mutter-18/Meta-18.gir (GNOME 50.5)
-  has <glib:signal name="unmanaged"> at L14940 inside <class name="Window"> (L12343, next to
-  position-changed L14901 and size-changed L14927). The same signal is in Meta-15/16/17.gir
-  (/usr/local/lib64/mutter-15,16, ~/Developer/gnome/mutter build), plus g_signal_new ("unmanaged",...)
-  in mutter src/core/window.c:741. That covers GNOME 47-50 directly. Meta-13/14 (GNOME 45/46) aren't
-  installed, so 45/46 is an inference: the signal predates them (mutter 3.x).
+  1 T-5: D2DA_SMOKE_SETTLE (default 2 s) after the initial enable (was 4 s) and after every re-enable
+    (was 1 s). I kept the final `sleep 2` after the loop, commented. Reason: see finding F1. lo
+    delta is now 0 in every run (the after-disable lo column is 0 in all rows, so real growth would
+    still show).
+  2 T-8: after the state checks, the alive check runs, then the stop: the script appends the marker
+    line `d2da-smoke: stopping shell` to the log, sends SIGTERM, polls up to 10 s, then SIGKILL, then
+    wait. Everything after that reads the complete log. Prints `shutdown criticals: N (sweeping phase
+    of GC: M)`, where N = lines after the marker matching CRITICAL|sweeping phase of GC. Signatures:
+    the pre-marker part is unchanged; from the shutdown part only JS ERROR/JS WARNING/TypeError/
+    ReferenceError lines go in (no criticals or their stack traces), so today's shutdown criticals
+    can't trip the NEW gate. STRICT: N > 0 fails. Documented in the header.
+    Also: the alive/"shell died" check now reads /proc/PID/status instead of `kill -0`. An exited,
+    unreaped child (zombie) still answers kill -0, so the old check could never fire, and the 10 s
+    poll needs the same test. In real-dconf mode, cleanup's safety re-enable now also runs before the
+    stop (it needs the shell's D-Bus). That path is untested (W3).
+  3 T-6: probe.js `live(kind, delta)` is a module-level integer map, always on, nothing else. The JSON
+    gets liveDock/liveDash/liveAnimator. Counter lines: Dock._init +1 plus this.connect('destroy') -1;
+    dock.js createDash `new Dash()` +1 plus dash.connect('destroy') -1 (separate connect: the existing
+    connectObject 'destroy' no-op could be disconnected first by a future disconnectObject);
+    Animator gets a trivial constructor +1, and Animator.destroy() -1. The probe table now sizes
+    columns to the field name (liveAnimator).
+  4 Strict: FAIL if probe line counts != TOGGLES+1/TOGGLES (only with D2DA_PROBE=1).
+  5 Settings hook: probe.js `applySmokeSettings(settings)`. It returns early unless
+    GLib.getenv('D2DA_PROBE') === '1' AND GLib.getenv('GSETTINGS_BACKEND') === 'memory', checked
+    inside the extension. Then it parses D2DA_SMOKE_SETTINGS (space-separated key=value). For each
+    pair: schema has_key check (avoids a GLib critical on unknown keys), get_key().get_value_type(),
+    GLib.Variant.parse, and set_value only if the value differs (the memory backend keeps values
+    across re-enables, so later enables write nothing). It logs `d2da-probe settings applied: ...`.
+    Each bad pair -> console.error('d2da: probe settings', e) and continue. The script passes
+    D2DA_SMOKE_SETTINGS only in memory mode with D2DA_PROBE=1, otherwise it prints a note and passes
+    an empty value.
+    PLACEMENT DEVIATION: the card says "right after this._settings exists". this._settings is created
+    inside _enableSettings(), and set_value fires the changed:: switch synchronously. Right after
+    _enableSettings(), this.integrations/this.services are null, and on the first enable this.docks
+    is undefined (e.g. trash-icon -> animate() -> this.docks.forEach TypeError; blur-background ->
+    integrations.hookBms). So the call sits in enable() right after services.enable() /
+    _onCheckServices(). That is still before _update*() and before docks are built (startUp() runs
+    250 ms later). Commented.
+  Key names: trash-icon, downloads-icon, clock-icon, calendar-icon, autohide-dash all exist in
+    schemas/org.gnome.shell.extensions.dash2dock-lite.gschema.xml (all type b). No changes needed.
 Self-verification:
-  make check = OK
-  make lint = 0 errors / 150 warnings (was 151; the dropped one is the unused `err` in the old _untrack
-    catch). eslint ignores tests/ (the new test included).
-  python3 -B tools/check-settings.py = 0 errors / 30 warnings, exit 0
-  gjs -m tests/timer_check.js = all passed (15/15)
-  gjs -m tests/window_tracker_check.js = all passed (20/20): connect once per window, signal set,
-    no expandos, callback on position/size, shared across 2 "docks", unmanaged releases (+ re-track),
-    idempotent untrack, clear/destroy release all, d2da:-prefixed error on disconnect throw.
-  make smoke + tools/smoke-shell.sh 5 = PASS both: 1 known sig, 0 new, 0 gone; msgs 6/5; probe 6/5;
-    after-enable deltas all 0; after-disable deltas 0/0/0/0/0/+1/0.
-  grep -c 'disposed\|finalized\|already been destroyed' /tmp/d2da-smoke.log = 0 (both runs).
-  T-8 shutdown "sweeping phase of GC" = 150 (both runs; unchanged vs baseline 150). Note: one grep right
-    after run 2 read 0 because the nested shell was still flushing its shutdown log; re-grep = 150.
-  G-real NOT run (W3).
-  CAVEAT: smoke has no windows and autohide off, so the tracker is only exercised by the unit test.
-  An earlier `make smoke` attempt was stopped by the user mid-run; both runs above are complete reruns.
-Needs human visual check: yes (per card). Autohide + dodge on: move/resize a window over the dock ->
-  dock hides/shows; close it -> dock shows; two monitors with docks (if available); autohide off/on.
+  make check = OK. make lint = 0 errors / 150 warnings. python3 -B tools/check-settings.py = 0/30,
+  exit 0. gjs -m tests/timer_check.js = all passed (15/15). gjs -m tests/window_tracker_check.js =
+  all passed (20/20).
+  Default smoke: 2x `make smoke` + 2x tools/smoke-shell.sh 5. Clean runs = PASS, 1 known sig, 0 new,
+  0 gone, msgs 6/5, probe lines 6/5, disposed/finalized grep 0. Baseline table (final make smoke):
+    probe after-enable:
+      #    uiGroup    stage   dashes    docks       hi       lo     loop liveDock liveDash liveAnimator
+      1         40     2848        2        1        1        2        1        1        1            1
+      ... rows 2-6 identical except live* = 2..6
+    delta        0        0        0        0        0        0        0       +5       +5           +5
+    probe after-disable:
+      1         36     2825        1        0        0        0        1        1        1            1
+      ... rows 2-5 identical except live* = 2..5
+    delta        0        0        0        0        0        0        0       +4       +4           +4
+    shutdown criticals: 150 (sweeping phase of GC: 150)   <- new metric baseline (T-8)
+  liveDock/liveAnimator +1 per toggle, as the card expects (B-1). liveDash also +1 per toggle:
+    destroyDash() only remove_child()s the Dash, and GC never disposes it during the run. That is
+    for R-7d.
+  Flakes seen (2 of 6 default-mode runs, neither reproduced on rerun):
+    a) first make smoke, before the final `sleep 2` was restored: 151 criticals = 150 sweep + 1
+       "Gjs_ui_dash_Dash ... already disposed" during shutdown. Stack: timer.js -> dock.js:1312
+       _beginAnimation loop -> animator.js:132 -> dock.js:1014 layout. Disposed grep = 1. See F1.
+    b) one run 5/4 msgs and probe lines: one `gnome-extensions disable` in the loop had no effect
+       (5 s gap between an enable and the next disable, no error in .log or .log.bus). PASS
+       (non-strict), but it would FAIL strict mode.
+    c) one run: stage +32 in both phases from toggle 4 on (uiGroup, live, timers unchanged). It's a
+       step outside d2da (Shell lazily building UI ~10 s into the run). It would FAIL strict mode
+       too; stage is noisy in absolute terms (T-6 already says so).
+  Accept settings variant: D2DA_SMOKE_SETTINGS='trash-icon=true downloads-icon=true clock-icon=true
+    calendar-icon=true autohide-dash=true' tools/smoke-shell.sh 5 -> PASS, 0 new sigs, disposed 0,
+    "settings applied" on all 6 enables. after-enable uiGroup 44 / stage 2890 (vs 40 / 2848), so
+    the item/menu paths ran. after-disable is back to 36/2825, deltas 0 except live* +4. Shutdown
+    criticals 200 (vs 150): extra items leak more at shutdown. Finding for R-7d, not fixed here.
+  Accept probe-off: D2DA_PROBE=0 D2DA_SMOKE_SETTINGS='trash-icon=true' tools/smoke-shell.sh 2 -> PASS,
+    0 `d2da-probe` lines (probe or settings), no probe table. (Script tweak after this run: it now
+    also prints "ignored without D2DA_PROBE=1".)
+  Error path (extra): D2DA_SMOKE_SETTINGS='no-such-key=1 trash-icon=maybe clock-icon=true' -> two
+    `d2da: probe settings` errors per enable (unknown key / VariantParseError), clock-icon still
+    applied, smoke FAIL on 2 NEW sigs (stack lines of the logged error). That's the intended visibility
+    for a typo; baseline not touched.
+  G-real NOT run (W3). Real-dconf code paths in the script (re-enable before stop, settings ignored)
+    are untested.
 New findings / notes:
-  - autohide-dodge off with autohide on doesn't clear the tracker (card only asks for autohide-dash).
-    Remaining connections just call checkHide(), and _checkOverlap returns before dodging. Harmless.
-    Could add a clear() on dodge off later.
-  - Windows that stop matching the filter (other monitor/workspace) stay tracked until unmanaged or
-    autohide off. That's bounded by the open windows and still one connection set each.
-Scope request / blockers: none. windowTracker.js and tests/window_tracker_check.js as allowed by the card.
+  F1 Shutdown race: the extension stays enabled while the shell shuts down. If the dock's animation
+    loop (_hiTimer) is still running, layout() touches the already-disposed Dash (Gjs critical +
+    console "unable to layout()"). The old script never looked at shutdown, and its final `sleep 2`
+    let the loop go idle. I kept that sleep so the stop measures leaks, not this race. Possible fix
+    (later card): stop the timers / guard layout on the Dash's destroy, or Timer source teardown at
+    shutdown.
+  F2 Probe flakes (b) and (c) above make strict mode not fully deterministic yet. Before turning
+    strict on (after R-7d), consider dropping `stage` from the strict delta check, or retry the
+    D-Bus toggle when the state doesn't change.
+  F3 Animator.destroy() decrements without an idempotence guard. Fine today (nothing calls it). R-7d
+    should call it exactly once, or add a guard.
+Scope request / blockers: none.
 ```
 
 ---
@@ -285,7 +322,6 @@ Phase 2-5 cards are *stubs*: the Orchestrator expands a stub into a full card (s
 - **Verify:** `make check`; `make lint`; `tools/check-settings.py` (exit 0); `gjs -m tests/timer_check.js`; `make smoke` + one more run; `grep -c 'disposed\|finalized\|already been destroyed' /tmp/d2da-smoke.log` = 0.
 - **Human:** yes. The dock renders icons, dots and badges after toggling the extension, after changing preferred monitor (redock), and during a bounce right before disabling.
 
-- **R-0e** Probe v2 (T-5, T-6, T-8: build the error signatures after shell exit so shutdown criticals count; plus an opt-in env hook to start isolated smoke with non-default settings, e.g. `D2DA_SMOKE_SETTINGS='trash-icon=true clock-icon=true …'` applied to the memory backend inside the nested shell, so trash/downloads/clock/calendar/autohide paths get exercised): same settle wait before every disable in `tools/smoke-shell.sh`; strict mode FAILs if probe line counts ≠ N+1/N; live-instance counters for the extension's `Dock` / `Dash` / `Animator` (counter bump in ctor + destroy is the only change allowed in those files) reported as new probe fields. Scope `probe.js`, `tools/smoke-shell.sh`, `dock.js`, `animator.js` (counter lines only). Accept: `lo` delta 0; live-instance deltas recorded (expected > 0 until R-7d).
 #### R-7b — Destroy menus, file lists, clock & calendar
 - **Fixes:** B-29 (destroy half). The "menu side always TOP" half stays open (visual/product call, separate item).
 - **Scope:** `dock.js` (`_cleanupIcon`, `_destroyList`), `dockItems.js` (`DockItemContainer` menu creation/teardown). `services.js` / `dockItemMenu.js` only if a reference must be nulled there; say why.
@@ -319,6 +355,27 @@ Phase 2-5 cards are *stubs*: the Orchestrator expands a stub into a full card (s
 - **Verify:** `make check`; `make lint`; `tools/check-settings.py` (exit 0); `gjs -m tests/timer_check.js`; `make smoke` ×2; disposed/finalized grep = 0. Smoke has no windows and default autohide off, so add a gjs unit test `tests/window_tracker_check.js` for `WindowTracker` with fake window objects (connectObject/disconnectObject stubs) **if `autohide.js` can be imported without Shell modules**. Otherwise put `WindowTracker` in a new `windowTracker.js` (allowed by this card) so it can be tested, and import it from `autohide.js`.
 - **Human:** yes. Autohide + dodge on: move/resize a window over the dock ⇒ dock hides/shows; close it ⇒ dock shows; two monitors with docks on both (if available); turn autohide off/on.
 
+#### R-0e — Probe v2: fair timing, shutdown criticals, live instances, settings hook
+- **Fixes:** T-5, T-6, T-8; prerequisite for strict leaks after R-7d.
+- **Scope:** `tools/smoke-shell.sh`, `probe.js`; `dock.js`, `animator.js`, `extension.js` **only** the counter / hook call lines described below.
+- **Context (HEAD deb31fb):**
+  - `smoke-shell.sh` sleeps 4 s after the initial enable but only 1 s after each later enable (T-5 ⇒ `lo` +1 artifact).
+  - The signature step (`.sig` + baseline compare) runs while the shell is alive; `cleanup()` kills it at EXIT. So criticals logged during shutdown (~150 "sweeping phase of GC" at HEAD) are never seen (T-8).
+  - `probe.js` walks `global.stage`; docks removed from the stage are invisible (T-6). Nothing calls `Dock.destroy()` / `Animator.destroy()` yet (R-7d).
+  - Isolated smoke uses `GSETTINGS_BACKEND=memory` with defaults only, so trash/downloads/clock/calendar/autohide paths never run.
+- **Do:**
+  1. **T-5:** one settle wait (`D2DA_SMOKE_SETTLE`, default 2 s) after the initial enable *and* after every re-enable, before the next disable. The `lo` delta must become 0 without hiding real growth.
+  2. **T-8:** after the toggles and the state checks, stop the shell (SIGTERM, wait up to ~10 s, then SIGKILL) **before** building signatures, so shutdown output is included. Keep the "shell died" check before the stop. Print `shutdown criticals: N` (count of CRITICAL/`sweeping phase of GC` lines after the last `dash2dock-lite` lifecycle line, or after a marker you log). Shutdown criticals must not break the NEW-signature gate today: keep them out of the signature comparison (report the count only) unless `D2DA_SMOKE_STRICT_LEAKS=1`, where N > 0 fails. Document this in the header.
+  3. **T-6 live instances:** `probe.js` exports `live(kind, delta)` (always counts; a plain integer map, no env check; nothing else) and adds the counts to the probe JSON as `liveDock`, `liveDash`, `liveAnimator`. Counter lines: `Dock` constructor/`_init` +1 and a `destroy` signal handler −1 (St actor); the extension-created Dash +1 where it's created in `dock.js` (`createDash`) and −1 on its `destroy` signal; `Animator` constructor +1 (add a trivial constructor if needed) and `Animator.destroy()` −1. Expected now: `liveDock`/`liveAnimator` grow by 1 per toggle (the B-1 leak), which is what R-7d must bring to 0.
+  4. **Strict mode:** FAIL if probe line counts ≠ N+1/N (currently only printed).
+  5. **Settings hook:** `probe.js` exports `applySmokeSettings(settings)`. It does nothing unless `D2DA_PROBE === '1'` **and** `GSETTINGS_BACKEND === 'memory'` (never touches real dconf). It parses `D2DA_SMOKE_SETTINGS` (`key=value` separated by spaces; value parsed with `GLib.Variant.parse` using the key's type from `settings.settings_schema.get_key(key).get_value_type()`), sets each key, and logs `d2da-probe settings applied: …`. Errors go to `console.error('d2da: probe settings', e)`. Call it from `extension.js` `enable()` right after `this._settings` exists and before docks are built. `smoke-shell.sh` passes `D2DA_SMOKE_SETTINGS` through.
+- **Don't:** change extension behaviour when `D2DA_PROBE` is unset; touch real dconf; fix the leaks themselves (R-7d); add anything per-frame.
+- **Accept:**
+  - `make smoke`: deltas all 0 except the live-instance growth, `shutdown criticals: N` printed, still PASS.
+  - `D2DA_SMOKE_SETTINGS='trash-icon=true downloads-icon=true clock-icon=true calendar-icon=true autohide-dash=true' make smoke` runs those paths (report any new signatures; don't fix them, list them as findings).
+  - `D2DA_PROBE=0 tools/smoke-shell.sh 2`: 0 probe lines and no settings applied.
+- **Verify:** `make check`; `make lint`; `tools/check-settings.py` exit 0; `gjs -m tests/timer_check.js`; `gjs -m tests/window_tracker_check.js`; `make smoke` ×2; the two Accept variants. Paste the probe table and shutdown count from a default run into the Report (they become the new metrics baseline).
+- **Human:** no.
 - **R-7d** Also B-39 (`_updateExtraIcons` must `destroy()` removed items) and B-40 (`destroyDash` cleans up all box children). `Dock.destroy()` (dash, struts, dwell, renderArea) and `extension.destroyDocks()` calls it. Fixes B-1, B-38 (`_findIcons` null `dash`). Order: `animator.destroy()` **before** `renderArea` is destroyed. Accept also: the shutdown GC-critical count (T-8, ~150 at 30ae2d5) drops. Accept: probe deltas = 0 **including R-0e live-instance counters** (stage-walk deltas are already 0 and can't see B-1, T-6) → Orchestrator turns on `D2DA_SMOKE_STRICT_LEAKS=1`.
 - **R-8** Services: one debounce handle per job (B-36), `Gio.Cancellable`s, `monitor.cancel()`, enumerator `close()`, per-service try/catch, measured `dt` (B-25).
 - **R-9a** Trash: empty via Gio with confirmation, no `rm -rf` (B-8). **R-9b** Launchers: `DesktopAppInfo` from in-memory `GLib.KeyFile`, `GLib.shell_quote` (B-10). **R-9c** XDG paths (B-22). **R-9d** CSS from runtime dir / in-memory, per shell instance (B-37).

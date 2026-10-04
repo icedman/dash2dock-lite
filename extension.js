@@ -74,7 +74,7 @@ export default class Dash2DockLiteExt extends Extension {
       }
       this._config.docks.forEach((dc) => {
         let index = -1;
-        let d_monitor = dc['monitor'] ?? {};
+        let dc_monitor = dc['monitor'] ?? {};
         for (let i = 0; i < Main.layoutManager.monitors.length; i++) {
           let m = Main.layoutManager.monitors[i];
           if (m.x == dc_monitor['x'] && m.y == dc_monitor['y']) {
@@ -164,6 +164,11 @@ export default class Dash2DockLiteExt extends Extension {
     Main.overview.dash._showAppsIcon.opacity = show ? 255 : 0;
     Main.overview.dash._showAppsIcon.child.reactive = show;
     Main.overview.dash._showAppsIcon.child.track_hover = show;
+
+    if (show && this._hiddenOverviewDashChild) {
+      this._hiddenOverviewDashChild.visible = true;
+      this._hiddenOverviewDashChild = null;
+    }
   }
 
   enable() {
@@ -590,7 +595,12 @@ export default class Dash2DockLiteExt extends Extension {
         case 'multi-monitor-preference':
           this._updateMultiMonitorPreference();
           break;
-        case 'icon-size':
+        case 'icon-size': {
+          this._updateShrink();
+          this._updateLayout();
+          this.animate({ refresh: true });
+          break;
+        }
         case 'preferred-monitor': {
           this._updateLayout();
           this.animate({ refresh: true });
@@ -606,8 +616,7 @@ export default class Dash2DockLiteExt extends Extension {
           this.animate();
           break;
         }
-        case 'shrink-icons':
-        case 'icon-size': {
+        case 'shrink-icons': {
           this._updateShrink();
           this.animate();
           break;
@@ -748,7 +757,12 @@ export default class Dash2DockLiteExt extends Extension {
     Main.layoutManager.connectObject(
       'startup-complete',
       () => {
-        Main.overview.dash.last_child.visible = false;
+        // remember exactly what was hidden so disable() can restore it
+        let child = Main.overview.dash?.last_child;
+        if (child?.visible) {
+          child.visible = false;
+          this._hiddenOverviewDashChild = child;
+        }
         Main.overview.dash.opacity = 0;
         // fix for topbar not blurring
         this._updateBlurredBackground();
@@ -846,7 +860,7 @@ export default class Dash2DockLiteExt extends Extension {
       this.services.disable();
       this.services.enable();
     }
-    this._iconTheme = St.IconTheme.new();
+    this.icon_theme = St.IconTheme.new();
     this._updateStyle();
     this.recreateAllDocks();
   }

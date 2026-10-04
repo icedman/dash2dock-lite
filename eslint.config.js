@@ -49,19 +49,12 @@ export default [
       ],
     },
   },
-  // Known bugs, tracked in agents/D2DA.md; restore to 'error' once fixed:
-  // extension.js B-5 (dc_monitor), B-16 (duplicate case 'icon-size'),
-  // _onKeyPressed un-imported Clutter (6.3).
+  // Known bug, tracked in agents/D2DA.md; restore to 'error' once fixed:
+  // extension.js _onKeyPressed un-imported Clutter (6.3).
   {
     files: ['extension.js'],
     rules: {
       'no-undef': 'warn',
-    },
-  },
-  {
-    files: ['extension.js'],
-    rules: {
-      'no-duplicate-case': 'warn',
     },
   },
 ];

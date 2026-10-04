@@ -84,65 +84,44 @@ Minor nits (naming, a stray blank line) that don't violate a rule: list them as 
 > Overwritten each cycle. On FAIL the Worker reads this for its rework.
 
 ```
-Cycle / Task / Attempt:  1.3 / R-3 / 2
+Cycle / Task / Attempt:  1.4 / R-4a / 1
 Verdict:          PASS
-Commit:           see Audit Log (fix(autohide): ...)
-Gates:            check=PASS ; lint=PASS (0 errors / 166 warnings = baseline; autohide.js 3 = HEAD 3,
-                  same three: get_distance_sqr, get_distance, err) ; settings=BASELINE (exit 1,
-                  2 err / 30 warn) ; smoke=PASS (1 known sig, 0 new, 6/5 msgs, probe 6/5,
-                  after-enable deltas 0, after-disable deltas 0/0/0/0/0/+1/0) ; smoke-x2=PASS (same
-                  deltas; absolute stage 2865 vs 2877 = T-6 variance) ; `d2da: ` = 0,
-                  'unable to layout' = 0 ; timer_check 15/15 ; leaks=n/a (strict OFF) ;
-                  real=not run (advisory, no integrations.js) ; card=PASS.
-Scope:            autohide.js only (+24/-18 vs HEAD, matches Report). agents/AUDITOR.md, D2DA.md
-                  (B-36 row), RUN.md (1.2 close, 1.3 log incl. HUMAN B-26 rule), WORKER.md
-                  (Rework 2 + Report) = bookkeeping.
+Commit:           see Audit Log (fix(extension): ...)
+Gates:            check=PASS ; lint=PASS (0 err / 162 warn, baseline 166; extension.js 13 warn /
+                  0 err vs HEAD 16 warn / 1 err) ; settings=IMPROVED (exit 1, 1 err = B-12 only /
+                  30 warn; duplicate-case gone) ; smoke=PASS (1 known sig, 0 new, 6/5 msgs, probe
+                  6/5, after-enable deltas 0, after-disable 0/0/0/0/0/+1/0) ; smoke-x2=PASS (same) ;
+                  `d2da: ` 0, 'unable to layout' 0 ; timer_check all passed ; leaks=n/a (strict
+                  OFF) ; real=not run (advisory, no integrations.js) ; card=PASS.
+Scope:            extension.js (+20/-6), eslint.config.js (override block only: no-duplicate-case
+                  override removed, no-undef comment narrowed to 6.3 Clutter). Matches Report.
+                  agents/D2DA.md, RUN.md, WORKER.md = bookkeeping.
 Rule violations:  none. A1-A13 clean.
 Specific checks:
-  - B-26 (human rule: hidden dock reveals only via the 2px edge strip; shown dock never
-    autohides while the pointer is over it). Resolved by REMOVING the term; zero behaviour
-    change vs HEAD. utils.js isInRect(r, p, pad) with pad undefined gives NaN comparisons,
-    so HEAD's `isInRect(arect, pointer)` was always false. Worker's claim verified:
-    dock.js _isWithinDash(p) = `if (this._hidden) return false;` + isInRect(struts
-    transformed pos/width/height, p, 20). Same rect as the removed `arect`, pad 20 is a
-    superset, so a shown-only guard would be dead code.
-    Every hide path checked: dock.slideOut() is called only from AutoHide.hide(), and
-    hide() only from _checkHide() when _checkOverlap() is true. Every caller (dock motion/
-    leave/focus/restack/fullscreen/apps-changed, _debouncedBeginAnimation, _endAnimation,
-    animator end-of-anim, dwell leave, extension.checkHide fan-out, tracked window
-    position/size-changed) goes through _debounceCheckHide -> _checkHide. In _checkOverlap,
-    the _isWithinDash early `return false` comes before every `return true` (dodge off,
-    fullscreen, overlap). So a shown dock with the pointer over it never hides on any path.
-    No other code sets dock._hidden = true (DockItemList._hidden is the popup list's own).
-    Hidden: _isWithinDash is false, so the pointer cannot reveal via _checkHide. Reveal paths
-    are dwell _onEnterEvent (pressure sense off) / _onMotionEvent dwell count (on),
-    plus dodge "no overlap -> show()" (not pointer driven, unchanged) and overview. The
-    animator.js `_hidden && isWithin -> slideIn` is dead for the same reason, so it can't
-    reveal either (untouched, separate card).
-  - Removed `pos`, `rect`, `arect`, `isInRect` import: grep shows no remaining references in
-    autohide.js; `make check` OK; lint did not flag anything new.
-  - B-3 comment now accurate (active workspace for sticky windows; null only while being
-    managed/unmanaged). Report text corrected; Attempt 1 claims withdrawn.
-  - B-4, B-27 hunks byte-identical to Attempt 1 (already reviewed).
+  - B-5: grep dc_monitor/d_monitor: declaration + both reads at line 80 use dc_monitor; no
+    d_monitor left. no-undef for it gone from lint.
+  - B-16: old flow: first 'icon-size' fell through to preferred-monitor (_updateLayout +
+    animate({refresh:true})); second label was dead (_updateShrink + animate). New case runs
+    _updateShrink, _updateLayout, animate({refresh:true}) = superset of both; refresh animate
+    covers plain animate. Shrink before layout is sound (layout reads scale). preferred-monitor
+    and shrink-icons bodies unchanged.
+  - B-20: `_iconTheme` 0 refs left in any .js; icon_theme set in enable, _onIconThemeChanged,
+    nulled in disable, read in lookup at ~1244.
+  - B-13: actor saved only when actually hidden by us (`child?.visible`); restored and ref
+    cleared in _showMainOverviewDash(true), which disable() calls unconditionally (no early
+    return before it). No ref survives disable. Enabled after startup => handler never fires =>
+    nothing hidden, nothing restored. last_child read via `?.`. A5: no new private access
+    (last_child is public Clutter API; _showAppsIcon access pre-existing). The ref is on the
+    extension object, not an expando on a Shell object.
 Rework list:      none.
 Nits:
-  - The `// console.log(pointer)` / `// console.log("checking pointer location...")` lines
-    that now sit next to each other are pre-existing; fine to prune in R-18.
-Findings confirmed:  B-26 closed (dead check removed, rule documented). B-4, B-27 fixed.
-                     B-3 not reproducible as described; defensive guard kept.
-Human check needed:  autohide+dodge on bottom and top dock (overlap hides, moving away shows);
-                     pressure sense ON with a top dock (push at top reveals, bottom does nothing);
-                     dialog/utility window over the dock dodges; on X11 with desktop icons the dock
-                     is not stuck hidden; hidden dock + pointer parked over its area + click another
-                     window => stays hidden (reveals only at the edge strip); shown dock + pointer
-                     resting on it while a window overlaps => never hides.
-New findings spotted (for Orchestrator):
-  - (pre-existing, Low) _checkOverlap tests _isWithinDash before inFullscreen, so a dock
-    with the pointer over it keeps `_hidden=false` when a window goes fullscreen. Not visible:
-    the dock actor is added with trackFullscreen:true and show() bails in fullscreen. Note
-    for R-18/R-7, no action now.
-  - (carried) monitor.index null deref in _checkOverlap (Low, 6.3 batch); animator.js dead
-    `_hidden && isWithin` slideIn (R-18).
+  - startup-complete handler: `Main.overview.dash.opacity = 0` right after uses no `?.`
+    (pre-existing; inconsistent with the new `dash?.`).
+  - `// remember exactly what was hidden...` comment is borderline restating; fine.
+Findings confirmed:  B-5, B-13, B-16, B-20 fixed.
+Human check needed:  enable at login, disable extension => overview dash icons + show-apps
+                     visible; change icon size in prefs => dock resizes, shrink still applies.
+New findings spotted (for Orchestrator): none.
 ```
 
 ## 7. Audit Log (append-only, newest last)
@@ -159,3 +138,4 @@ New findings spotted (for Orchestrator):
 | 1.2 | R-2 | 1 | PASS | this commit | `make check` PASS; `make lint` PASS (0 err / 166 warn = baseline; per-file = HEAD); check-settings exit 1 (2 err / 30 warn = baseline); `make smoke` PASS; smoke-x2 PASS (1 known sig, 0 new, 6/5 msgs, probe 6/5, after-disable deltas 0/-32(T-6)/0/0/0/+1/0 and 0/0/0/0/0/+1/0, hi=0 after every disable); card: `gjs -m tests/timer_check.js` 15/15 | B-7 fixed; B-6 extension side fixed (8 stored *Seq handles, each cancelled on its owner timer and nulled; inventory checked against grep of Seq and every run* call). Checked: undock() reset must be last because autohider.disable()->show()->slideIn()->_beginAnimation() re-arms _animationSeq/debounceEndSeq; nothing after it arms timers; listeners readers are the 4 fan-outs, services has no hooks; autohide early cancel safe (_checkHide no-op when !_enabled). Nits: Report diffstat +24 vs real +23; autohider._animationSeq null after the early return (dead field). Findings: services shared _debounceCheckSeq confirmed (downloads armed first, recents re-arms run checkDownloads); leaked docks can re-arm handles until R-7d. |
 | 1.3 | R-3 | 1 | ESCALATE | none | `make check` PASS; `make lint` PASS (0 err / 166 warn = baseline; autohide.js 3 = HEAD); check-settings exit 1 (2 err / 30 warn = baseline); `make smoke` PASS; smoke-x2 PASS (1 known sig, 0 new, 6/5 msgs, probe 6/5, after-disable deltas 0/0/0/0/0/+1/0 both); card PASS; `gjs -m tests/timer_check.js` all passed | B-26 needs a product decision: reviving the dead `isInRect(arect, pointer, 0)` only matters while the dock is hidden (struts keep edge geometry; `_isWithinDash` returns false when hidden), so a focus/restack with the pointer in the edge band reveals the dock, with pressure sense on OR off. That contradicts the author's `_hidden` guard. Recommend dropping the term (= shipped behaviour). B-3 premise is wrong: mutter 45.0/49.7 `get_workspace()` returns the active workspace for sticky windows (GIR 18 agrees), so no TypeError ever; the `?.` fix is defensive only and the code comment is wrong. B-4 (DESKTOP/DOCK no longer dodge = intended) and B-27 confirmed. `is_on_all_workspaces` in mutter 45.0 + GIR 15-18. Findings: animator.js `_hidden && isWithin` slideIn is dead; D2DA B-3 row needs re-labelling. Tree/index untouched. |
 | 1.3 | R-3 | 2 | PASS | this commit | `make check` PASS; `make lint` PASS (0 err / 166 warn = baseline; autohide.js 3 = HEAD); check-settings exit 1 (2 err / 30 warn = baseline); `make smoke` PASS; smoke-x2 PASS (1 known sig, 0 new, 6/5 msgs, probe 6/5, after-disable deltas 0/0/0/0/0/+1/0 both); `d2da: ` 0; timer_check 15/15 | B-26 per human rule: dead `isInRect(arect, pointer)` (pad undefined => NaN => always false) removed with `pos`/`rect`/`arect`/import; zero behaviour change. Verified `_isWithinDash` (hidden => false, same struts rect, pad 20) is checked before every `return true` in `_checkOverlap`, and `hide()`/`slideOut()` are reachable only via `_checkHide`, so a shown dock under the pointer never hides and pointer position never reveals a hidden one. B-3 comment corrected (defensive guard). B-4, B-27 unchanged from attempt 1. Human visual check required. Finding (pre-existing, Low): `_isWithinDash` precedes the fullscreen check; masked by trackFullscreen. |
+| 1.4 | R-4a | 1 | PASS | this commit | `make check` PASS; `make lint` PASS (0 err / 162 warn, baseline 166; extension.js 13 warn vs HEAD 16 warn + 1 err); check-settings exit 1 (1 err B-12 / 30 warn, was 2/30); `make smoke` PASS; smoke-x2 PASS (1 known sig, 0 new, 6/5 msgs, probe 6/5, after-disable deltas 0/0/0/0/0/+1/0 both); `d2da: ` 0; timer_check all passed | B-5 dc_monitor rename (all refs). B-16 merged icon-size case = superset of both old bodies (shrink -> layout -> animate refresh). B-20 `_iconTheme` gone, unified on icon_theme. B-13 hidden actor remembered only if we hid it, restored+cleared in _showMainOverviewDash(true) from disable(); no-op if enabled after startup; no new private access. eslint: no-duplicate-case override removed, no-undef comment narrowed to 6.3 Clutter. Human visual check required. Nit: `Main.overview.dash.opacity` lacks `?.` (pre-existing). |

@@ -113,8 +113,8 @@ Status: `[ ]` todo · `[~]` in progress · `[x]` done (hash) · `[!]` blocked ·
 |---|---|---|---|---|
 | [x] ef879f9 | 1.1 | R-1 harden Timer | 0.1 | B-2, B-23, B-6(timer), B-24(typo) |
 | [x] c84f252 | 1.2 | R-2 reset `*Seq` + listeners | 1.1 | B-6, B-7 |
-| [~] | 1.3 | R-3 autohide | 1.1 | B-3, B-4, B-26, B-27 · human visual |
-| [ ] | 1.4 | R-4a extension.js one-liners | 0.3 | B-5, B-13, B-16, B-20 |
+| [x] dda62a5 | 1.3 | R-3 autohide | 1.1 | B-3, B-4, B-26, B-27 · human visual |
+| [~] | 1.4 | R-4a extension.js one-liners | 0.3 | B-5, B-13, B-16, B-20 |
 | [ ] | 1.5 | R-4b animator one-liners | 0.1 | B-14, B-15, B-34 · human visual |
 | [ ] | 1.6 | R-4c dock.js input | 0.1 | B-17, B-18, B-19 · human visual |
 | [ ] | 1.7 | R-4d mount names | 0.1 | B-9 |
@@ -172,13 +172,13 @@ Status: `open` · `fixed <hash>` · `partial <hash>` · `blocked` · `wontfix (r
 |---|---|---|---|---|---|---|
 | B-1 | R-7d | open | | B-19 | R-4c | open |
 | B-2 | R-1 | fixed ef879f9 | | B-20 | R-4a | open |
-| B-3 | R-3 | open | | B-21 | R-8 | open |
-| B-4 | R-3 | open | | B-22 | R-9c | open |
+| B-3 | R-3 | fixed dda62a5 (defensive guard only; premise wrong, see D2DA) | | B-21 | R-8 | open |
+| B-4 | R-3 | fixed dda62a5 | | B-22 | R-9c | open |
 | B-5 | R-4a | open | | B-23 | R-1 | fixed ef879f9 |
 | B-6 | R-1, R-2 | fixed ef879f9 + c84f252 | | B-24 | R-1, R-11b | partial ef879f9 (`typeof func` typo; resolution collapse in R-11b) |
 | B-7 | R-2 | fixed c84f252 | | B-25 | R-8 | open |
-| B-8 | R-9a | open | | B-26 | R-3 | open |
-| B-9 | R-4d | open | | B-27 | R-3 | open |
+| B-8 | R-9a | open | | B-26 | R-3 | fixed dda62a5 (dead check removed per human rule) |
+| B-9 | R-4d | open | | B-27 | R-3 | fixed dda62a5 |
 | B-10 | R-9b | open | | B-28 | (unassigned, needs St case check) | open |
 | B-11 | R-6 | open | | B-29 | R-7b | open |
 | B-12 | R-5 | open | | B-30 | (unassigned) | open |
@@ -215,7 +215,12 @@ Items the agents can't see. The human runs `make test-shell` (needs `mutter-devk
 
 | Cycle | Commit | What to check | OK? |
 |---|---|---|---|
-| | | | |
+| 1.3 | dda62a5 | Autohide + dodge on a bottom and a top dock | |
+| 1.3 | dda62a5 | Top dock, pressure sense on: pushing at the top edge reveals it; bottom edge does nothing | |
+| 1.3 | dda62a5 | Dialog / utility window over the dock ⇒ dock dodges | |
+| 1.3 | dda62a5 | X11 + desktop icons: dock not stuck hidden | |
+| 1.3 | dda62a5 | Hidden dock, pointer parked over its area, click another window ⇒ stays hidden (reveal only via 2px edge) | |
+| 1.3 | dda62a5 | Shown dock, pointer resting on it while a window overlaps ⇒ never hides | |
 
 ## 6. Run Log (append-only, newest last)
 
@@ -259,3 +264,6 @@ Format: `YYYY-MM-DD HH:MM · cycle · EVENT · details` where EVENT ∈ `SETUP, 
 - 2026-10-04 · 1.3 · STOP · HUMAN decision needed on B-26: (a) drop the check (keep shipped behaviour, B-26 → wontfix) or (b) keep it (dock reveals when the pointer rests over a hidden dock's area).
 - 2026-10-04 · 1.3 · HUMAN · B-26 rule: hidden dock reveals ONLY via the 2px edge strip; a shown dock stays revealed (no autohide) while the pointer is over its area. Pointer position over a hidden dock's area must never reveal it.
 - 2026-10-04 · 1.3 · REWORK · Attempt 2 sent to the Worker session: implement the rule (drop the `isInRect` term if `_isWithinDash` already covers the shown case, else guard it to shown-only), fix the B-3 comment.
+- 2026-10-04 · 1.3 · AUDIT-PASS · `dda62a5` attempt 2. check=PASS lint=0/166 settings=2/30 timer_check 15/15 smoke=PASS(x2). B-26 resolved by removing the dead `isInRect` term; Auditor verified every hide path passes `_isWithinDash` first, and pointer position never reveals a hidden dock. B-3 premise corrected in D2DA (defensive guard only). Ledger: B-3, B-4, B-26, B-27 fixed. 6 human-check items queued (§5.1). Low items added to §6.3 (`monitor.index` null deref; dead animator slideIn check ⇒ R-18).
+- 2026-10-04 · 1.4 · PREFLIGHT · tree clean apart from agents/*; HEAD `dda62a5`; GNOME Shell 50.5.
+- 2026-10-04 · 1.4 · ASSIGN · R-4a extension.js one-liners (B-5, B-13, B-16, B-20) + restore eslint overrides.

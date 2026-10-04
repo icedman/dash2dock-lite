@@ -131,8 +131,8 @@ Status: `[ ]` todo · `[~]` in progress · `[x]` done (hash) · `[!]` blocked ·
 | [x] deb31fb | 2.3 | R-7c WindowTracker, no Meta.Window expandos | 1.3 | B-31 |
 | [x] 523cec2 | 2.3a | R-0e probe v2 (smoke timing, live-instance counters) | 0.1 | T-5, T-6 · prerequisite for strict leaks |
 | [x] d95bb11 | 2.4 | R-7d Dock.destroy + destroyDocks | 2.1-2.3a | B-1 · then turn **strict leaks ON** (§5) |
-| [ ] | 2.4a | R-7e smoke per-toggle state wait (T-9) + createTheDocks duplicate guard (B-41) | 2.4 | small; makes strict leaks reliable |
-| [ ] | 2.5 | R-8 services cancellables / dt | 2.4 | B-25 |
+| [x] e5ba736 | 2.4a | R-7e smoke per-toggle state wait (T-9) + createTheDocks duplicate guard (B-41) | 2.4 | small; makes strict leaks reliable |
+| [~] | 2.5 | R-8 services cancellables / dt | 2.4 | B-25, B-36 |
 | [ ] | 2.6 | R-9a trash via Gio | 2.5 | B-8 · human visual |
 | [ ] | 2.7 | R-9b launchers in memory | 2.5 | B-10 |
 | [ ] | 2.8 | R-9c XDG paths | 2.5 | B-22 |
@@ -174,7 +174,7 @@ Status: `open` · `fixed <hash>` · `partial <hash>` · `blocked` · `wontfix (r
 |---|---|---|---|---|---|---|
 | B-1 | R-7d | fixed d95bb11 (dock side; lock-screen session-modes separate) | | B-19 | R-4c | fixed 1b03ca7 |
 | B-2 | R-1 | fixed ef879f9 | | B-20 | R-4a | fixed c9ca876 |
-| B-3 | R-3 | fixed dda62a5 (defensive guard only; premise wrong, see D2DA) | | B-21 | R-8 | open |
+| B-3 | R-3 | fixed dda62a5 (defensive guard only; premise wrong, see D2DA) | | B-21 | R-9c | open |
 | B-4 | R-3 | fixed dda62a5 | | B-22 | R-9c | open |
 | B-5 | R-4a | fixed c9ca876 | | B-23 | R-1 | fixed ef879f9 |
 | B-6 | R-1, R-2 | fixed ef879f9 + c84f252 | | B-24 | R-1, R-11b | partial ef879f9 (`typeof func` typo; resolution collapse in R-11b) |
@@ -198,7 +198,7 @@ Status: `open` · `fixed <hash>` · `partial <hash>` · `blocked` · `wontfix (r
 | B-36 | R-8 | open | | B-37 | R-9d | open |
 | B-38 | R-7d | fixed d95bb11 | | T-8 | R-0e | fixed 523cec2 (counted; strict-only gate) |
 | B-39 | R-7d | fixed d95bb11 | | B-40 | R-7d | fixed d95bb11 |
-| B-41 | R-7e | open [inference] | | T-9 | R-7e | open |
+| B-41 | R-7e | fixed e5ba736 | | T-9 | R-7e | fixed e5ba736 |
 | T-7 | R-0b, R-0d | partial 2a0ae6f (interim rm lines; dev docs still installed; R-0d pack list must exclude `eslint.config.js`) | | | | |
 
 Unassigned rows: when a phase ends, either add a card + board row for them or mark `wontfix (reason)`.
@@ -338,3 +338,6 @@ Format: `YYYY-MM-DD HH:MM · cycle · EVENT · details` where EVENT ∈ `SETUP, 
 - 2026-10-04 · 2.4 · NOTE · **Strict leaks turned ON** (RUN §5, AUDITOR G-leaks) with a one-rerun policy for line-count-only failures. New: B-41 (createTheDocks may duplicate docks, inference), T-9 (missed toggle in smoke) ⇒ new row 2.4a R-7e.
 - 2026-10-04 · 2.4a · PREFLIGHT · tree clean apart from agents/*; HEAD `d95bb11`; GNOME Shell 50.5.
 - 2026-10-04 · 2.4a · ASSIGN · R-7e smoke per-toggle state wait + createTheDocks guard.
+- 2026-10-04 · 2.4a · AUDIT-PASS · `e5ba736`. check=PASS lint=0/150 settings=exit 0 timer_check 15/15 window_tracker_check 20/20 smoke=PASS(x2) strict(x3)=PASS all deltas 0 shutdown criticals 0. State polling on toggle (T-9) and multi-monitor createTheDocks idempotency guard (B-41) fixed.
+- 2026-10-04 · 2.5 · PREFLIGHT · tree clean apart from agents/*; HEAD `e5ba736`; GNOME Shell 50.5.
+- 2026-10-04 · 2.5 · ASSIGN · R-8 services cancellables / dt (B-25, B-36). Stub expanded.

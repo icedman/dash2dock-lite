@@ -29,7 +29,11 @@ class ServiceCounter {
     if (this._ticks >= this._interval) {
       this._ticks -= this._interval;
       if (this._callback) {
-        this._callback();
+        try {
+          this._callback();
+        } catch (e) {
+          console.error(`d2da: service ${this.name} update`, e);
+        }
       }
       return true;
     }
@@ -39,6 +43,7 @@ class ServiceCounter {
 
 export const Services = class {
   enable() {
+    this._cancellable = new Gio.Cancellable();
     this._mounts = {};
     this._services = [
       new ServiceCounter('trash', 1000 * 15, this.checkTrash.bind(this)),
@@ -123,20 +128,27 @@ export const Services = class {
   }
 
   disable() {
-    this._downloadsMonitor.disconnectObject(this);
+    this._cancellable?.cancel();
+    this._cancellable = null;
+    this._downloadsMonitor?.cancel();
+    this._downloadsMonitor?.disconnectObject(this);
     this._downloadsMonitor = null;
     this._services = [];
-    this._volumeMonitor.disconnectObject(this);
+    this._volumeMonitor?.disconnectObject(this);
     this._volumeMonitor = null;
-    this._trashMonitor.disconnectObject(this);
+    this._trashMonitor?.cancel();
+    this._trashMonitor?.disconnectObject(this);
     this._trashMonitor = null;
     this._trashDir = null;
-    this.extension._loTimer?.cancel(this._debounceCheckSeq);
-    this._debounceCheckSeq = null;
+    this.extension._loTimer?.cancel(this._debounceRecentsSeq);
+    this.extension._loTimer?.cancel(this._debounceDownloadsSeq);
+    this._debounceRecentsSeq = null;
+    this._debounceDownloadsSeq = null;
   }
 
   setupDownloads() {
     if (this._downloadsMonitor) {
+      this._downloadsMonitor.cancel();
       this._downloadsMonitor.disconnectObject(this);
       this._downloadsMonitor = null;
     }
@@ -202,7 +214,11 @@ export const Services = class {
 
   update(elapsed) {
     this._services.forEach((s) => {
-      s.update(elapsed);
+      try {
+        s.update(elapsed);
+      } catch (e) {
+        console.error(`d2da: service ${s.name} update`, e);
+      }
     });
   }
 
@@ -373,19 +389,37 @@ export const Services = class {
   }
 
   checkTrash() {
-    if (!this.extension.trash_icon) return;
+    if (!this.extension.trash_icon || !this._trashDir) return;
 
-    let iter = this._trashDir.enumerate_children(
-      'standard::*',
-      Gio.FileQueryInfoFlags.NONE,
-      null
-    );
-    let prev = this.trashFull;
-    this.trashFull = iter.next_file(null) != null;
-    if (prev != this.trashFull) {
-      this.extension.animate({ refresh: true });
+    let iter = null;
+    try {
+      iter = this._trashDir.enumerate_children(
+        'standard::*',
+        Gio.FileQueryInfoFlags.NONE,
+        this._cancellable ?? null
+      );
+      let prev = this.trashFull;
+      this.trashFull = iter.next_file(this._cancellable ?? null) != null;
+      if (prev != this.trashFull) {
+        this.extension.animate({ refresh: true });
+      }
+      return this.trashFull;
+    } catch (e) {
+      if (
+        this._cancellable?.is_cancelled() ||
+        (e?.matches && e.matches(Gio.IOErrorEnum, Gio.IOErrorEnum.CANCELLED))
+      ) {
+        return this.trashFull;
+      }
+      console.error('d2da: services checkTrash', e);
+      return this.trashFull;
+    } finally {
+      try {
+        iter?.close(null);
+      } catch {
+        // ignore close error
+      }
     }
-    return this.trashFull;
   }
 
   async checkRecentFilesInFolder(path) {
@@ -396,55 +430,73 @@ export const Services = class {
     let downloadFilesLength = 0;
 
     let directory = Gio.File.new_for_path(path);
-    let enumerator = directory.enumerate_children(
-      [
-        Gio.FILE_ATTRIBUTE_STANDARD_CONTENT_TYPE,
-        Gio.FILE_ATTRIBUTE_STANDARD_NAME,
-        Gio.FILE_ATTRIBUTE_STANDARD_ICON,
-        Gio.FILE_ATTRIBUTE_TIME_MODIFIED,
-      ].join(','),
-      Gio.FileQueryInfoFlags.NONE,
-      null
-    );
+    let enumerator = null;
+    try {
+      enumerator = directory.enumerate_children(
+        [
+          Gio.FILE_ATTRIBUTE_STANDARD_CONTENT_TYPE,
+          Gio.FILE_ATTRIBUTE_STANDARD_NAME,
+          Gio.FILE_ATTRIBUTE_STANDARD_ICON,
+          Gio.FILE_ATTRIBUTE_TIME_MODIFIED,
+        ].join(','),
+        Gio.FileQueryInfoFlags.NONE,
+        this._cancellable ?? null
+      );
 
-    let fileInfo;
-    while ((fileInfo = enumerator.next_file(null)) !== null) {
-      let fileName = fileInfo.get_name();
-      let fileModified = fileInfo.get_modification_time();
+      let fileInfo;
+      while (
+        (fileInfo = enumerator.next_file(this._cancellable ?? null)) !== null
+      ) {
+        let fileName = fileInfo.get_name();
+        let fileModified = fileInfo.get_modification_time();
 
-      let icon = 'file';
-      if (fileInfo.get_icon() && fileInfo.get_icon().names) {
-        icon =
-          this.extension.lookup_icon_from_names(fileInfo.get_icon().names) ??
-          icon;
+        let icon = 'file';
+        if (fileInfo.get_icon() && fileInfo.get_icon().names) {
+          icon =
+            this.extension.lookup_icon_from_names(fileInfo.get_icon().names) ??
+            icon;
+        }
+
+        downloadFiles.push({
+          index: 0,
+          name: fileName,
+          display: fileName,
+          icon: icon,
+          type: fileInfo.get_content_type(),
+          path: [path, fileName].join('/'),
+          date: fileModified ?? { tv_sec: 0 },
+          fileInfo: fileInfo,
+        });
       }
 
-      downloadFiles.push({
-        index: 0,
-        name: fileName,
-        display: fileName,
-        icon: icon,
-        type: fileInfo.get_content_type(),
-        path: [path, fileName].join('/'),
-        date: fileModified ?? { tv_sec: 0 },
-        fileInfo: fileInfo,
+      downloadFilesLength = downloadFiles.length;
+      downloadFiles.sort((a, b) => {
+        return a.date.tv_sec > b.date.tv_sec ? -1 : 1;
       });
+
+      let index = 0;
+      downloadFiles.forEach((f) => {
+        f.index = index++;
+      });
+
+      downloadFiles.splice(max_recent_items);
+      return [downloadFiles, downloadFilesLength];
+    } catch (e) {
+      if (
+        this._cancellable?.is_cancelled() ||
+        (e?.matches && e.matches(Gio.IOErrorEnum, Gio.IOErrorEnum.CANCELLED))
+      ) {
+        return [[], 0];
+      }
+      console.error('d2da: services checkRecentFilesInFolder', e);
+      return [[], 0];
+    } finally {
+      try {
+        enumerator?.close(null);
+      } catch {
+        // ignore close error
+      }
     }
-
-    downloadFilesLength = downloadFiles.length;
-    downloadFiles.sort((a, b) => {
-      return a.date.tv_sec > b.date.tv_sec ? -1 : 1;
-    });
-
-    let index = 0;
-    downloadFiles.forEach((f) => {
-      f.index = index++;
-    });
-
-    downloadFiles.splice(max_recent_items);
-    // console.log(downloadFiles);
-
-    return Promise.resolve([downloadFiles, downloadFilesLength]);
   }
 
   /*
@@ -536,7 +588,9 @@ export const Services = class {
     let fn = Gio.File.new_for_path(recentsPath);
     if (fn.query_exists(null)) {
       try {
-        const [success, contents] = await fn.load_contents_async(null);
+        const [success, contents] = await fn.load_contents_async(
+          this._cancellable ?? null
+        );
         const decoder = new TextDecoder();
         let contentsString = decoder.decode(contents);
         let idx = 0;
@@ -563,7 +617,14 @@ export const Services = class {
           recentFilesLength++;
         });
       } catch (err) {
-        console.log(err);
+        if (
+          this._cancellable?.is_cancelled() ||
+          (err?.matches &&
+            err.matches(Gio.IOErrorEnum, Gio.IOErrorEnum.CANCELLED))
+        ) {
+          return [[], 0];
+        }
+        console.error('d2da: services load recents', err);
       }
     }
 
@@ -582,8 +643,8 @@ export const Services = class {
 
   _debounceCheckRecents() {
     if (this.extension._loTimer) {
-      if (!this._debounceCheckSeq) {
-        this._debounceCheckSeq = this.extension._loTimer.runDebounced(
+      if (!this._debounceRecentsSeq) {
+        this._debounceRecentsSeq = this.extension._loTimer.runDebounced(
           () => {
             this.checkRecents();
           },
@@ -591,25 +652,33 @@ export const Services = class {
           'debounceCheckRecents'
         );
       } else {
-        this.extension._loTimer.runDebounced(this._debounceCheckSeq);
+        this.extension._loTimer.runDebounced(this._debounceRecentsSeq);
       }
     }
   }
 
   async checkDownloads() {
     try {
-      let path = this._downloadsDir.get_path();
+      let path = this._downloadsDir?.get_path();
+      if (!path) return;
       [this._downloadFiles, this._downloadFilesLength] =
         await this.checkRecentFilesInFolder(path);
     } catch (err) {
-      console.log(err);
+      if (
+        this._cancellable?.is_cancelled() ||
+        (err?.matches &&
+          err.matches(Gio.IOErrorEnum, Gio.IOErrorEnum.CANCELLED))
+      ) {
+        return;
+      }
+      console.error('d2da: services checkDownloads', err);
     }
   }
 
   _debounceCheckDownloads() {
     if (this.extension._loTimer) {
-      if (!this._debounceCheckSeq) {
-        this._debounceCheckSeq = this.extension._loTimer.runDebounced(
+      if (!this._debounceDownloadsSeq) {
+        this._debounceDownloadsSeq = this.extension._loTimer.runDebounced(
           () => {
             this.checkDownloads();
           },
@@ -617,7 +686,7 @@ export const Services = class {
           'debounceCheckDownloads'
         );
       } else {
-        this.extension._loTimer.runDebounced(this._debounceCheckSeq);
+        this.extension._loTimer.runDebounced(this._debounceDownloadsSeq);
       }
     }
   }

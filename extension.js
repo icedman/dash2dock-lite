@@ -231,6 +231,7 @@ export default class Dash2DockLiteExt extends Extension {
 
     // todo follow animator and autohider protocol
     this.services.enable();
+    this._lastServicesUpdate = 0;
     this._onCheckServices();
 
     // after integrations/services exist: the settings switch uses them
@@ -288,6 +289,7 @@ export default class Dash2DockLiteExt extends Extension {
 
     this.services.disable();
     this.services = null;
+    this._lastServicesUpdate = 0;
 
     this._hiTimer?.cancel(this._debounceStyleSeq);
     this._loTimer?.cancel(this._iconSpacingDebounceSeq);
@@ -876,6 +878,7 @@ export default class Dash2DockLiteExt extends Extension {
     if (this.animate_icons) {
       this.services.disable();
       this.services.enable();
+      this._lastServicesUpdate = 0;
     }
     this.icon_theme = St.IconTheme.new();
     this._updateStyle();
@@ -941,8 +944,16 @@ export default class Dash2DockLiteExt extends Extension {
 
   _onCheckServices() {
     if (!this.services) return; // todo why does this happen?
-    // todo convert services time in seconds
-    this.services.update(SERVICES_UPDATE_INTERVAL);
+    let now = GLib.get_monotonic_time();
+    let elapsed = SERVICES_UPDATE_INTERVAL;
+    if (this._lastServicesUpdate) {
+      elapsed = Math.max(
+        0,
+        Math.round((now - this._lastServicesUpdate) / 1000)
+      );
+    }
+    this._lastServicesUpdate = now;
+    this.services.update(elapsed);
   }
 
   _updateWidgetStyle() {

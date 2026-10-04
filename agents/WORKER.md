@@ -58,16 +58,19 @@ Isolated smoke can't change settings from outside (memory backend is in-process)
 > Written by the ORCHESTRATOR only. Worker: do not edit this section.
 
 ```
-Cycle:      2.4a
-Task:       R-7e — Reliable toggles in smoke (T-9) + createTheDocks duplicate guard (B-41)
+Cycle:      2.5
+Task:       R-8 — Services cancellables, debounces, enumerator cleanup and measured dt
 Attempt:    1
-Card:       §6 "R-7e"
-Notes:      HEAD d95bb11. Strict leaks are now ON (G-leaks required). Baseline at
-            d95bb11: all probe deltas 0 incl. live*, shutdown criticals 0. The only strict
-            failure seen was a missed disable (line counts 3/2).
+Card:       §6 "R-8"
+Notes:      HEAD e5ba736. Strict leaks are ON. Baseline at e5ba736: all probe deltas 0,
+            shutdown criticals 0, strict smoke passes reliably.
+            Focus: Services lifecycle & timing.
+            (B-36) separate debounce handles for recents and downloads.
+            (B-25) per-service try/catch, measure actual dt in extension.js.
+            (Gio) cancellable for file ops, monitor.cancel(), enumerator.close().
             G-real: NOT allowed (W3).
             Gates: check; lint 0/150; check-settings exit 0 (0/30); timer_check 15/15;
-            window_tracker_check 20/20; smoke 1 known sig; strict ×3 PASS.
+            window_tracker_check 20/20; smoke 1 known sig; strict PASS.
 ```
 
 ## 5. Report
@@ -75,31 +78,35 @@ Notes:      HEAD d95bb11. Strict leaks are now ON (G-leaks required). Baseline a
 > Overwritten by the WORKER each cycle; read by the AUDITOR.
 
 ```
-Cycle / Task / Attempt: 2.4a / R-7e / 1
+Cycle / Task / Attempt: 2.5 / R-8 / 1
 Status:            DONE (all items in one cycle, nothing deferred)
-Files changed:     tools/smoke-shell.sh (+34/-3), extension.js (+2/-1). HEAD d95bb11.
+Files changed:     services.js (+138/-67), extension.js (+14/-5). HEAD e5ba736.
                    agents/*.md untouched except this Report.
 What changed:
-  - tools/smoke-shell.sh (T-9):
-    - Added `wait_toggle(cmd, target, tnum)`: executes `gnome-extensions $cmd $UUID`, then polls
-      `state` (≤ 5 s, 0.25 s steps) until state matches `target` (`ACTIVE` or `!ACTIVE`). If it never
-      changes in 5 s, retries the command once; if it still fails after another 5 s, prints
-      `FAIL: $cmd not applied (toggle $tnum)` and sets `RESULT=1`.
-    - In the toggle loop, replaced the fixed `sleep 0.5` with `wait_toggle disable NOT_ACTIVE "$n"`,
-      `wait_toggle enable ACTIVE "$n"`, followed by `sleep "$SETTLE"`.
-    - In `probe_table()`, excluded `stage` from setting `bad = 1` while keeping `stage` printed in
-      the table header, row output, and delta summary. Documented why (run-to-run actor noise
-      outside the extension) in the script header comments and in `probe_table()`.
-  - extension.js (B-41):
-    - In `createTheDocks()` multi-monitor branch (`Main.layoutManager.monitors.length > 0 &&
-      this.multi_monitor_preference == 1`), guarded against dock duplication by returning early
-      when the right number of docks is already alive: `if (this.docks.length == count) return;`,
-      followed by `this.destroyDocks()` and the creation loop.
-    - Callers analysis: `startUp()` is called from `enable()` (`_loTimer.runOnce(..., 250)`) and
-      `_updateMultiMonitorPreference()` (`_loTimer.runOnce(..., 500)`). Rapid monitor change events
-      or monitor configuration updates overlapping with startup could fire `startUp()` when docks
-      already exist. The single-dock branch already returned early when `docks.length == 1`; the
-      multi-monitor branch now has equivalent idempotency.
+  - services.js:
+    - (B-36) Split `_debounceCheckSeq` into `_debounceRecentsSeq` (used by `_debounceCheckRecents()`)
+      and `_debounceDownloadsSeq` (used by `_debounceCheckDownloads()`). In `disable()`, cancelled
+      both handles via `this.extension._loTimer?.cancel(...)` and nulled both handles.
+    - (B-25 per-service try/catch) Wrapped callback invocation in `ServiceCounter.update(elapsed)`
+      inside `try ... catch (e)` logging with `console.error('d2da: service ' + this.name + ' update', e)`.
+      Also wrapped `s.update(elapsed)` in `Services.update(elapsed)` defensively with
+      `console.error('d2da: service ' + s.name + ' update', e)`.
+    - (Cancellables) Initialized `this._cancellable = new Gio.Cancellable()` in `enable()`. In `disable()`,
+      cancelled via `this._cancellable?.cancel()` and nulled. Passed `this._cancellable ?? null` to cancellable
+      operations: `_trashDir.enumerate_children`, `iter.next_file`, `directory.enumerate_children`,
+      `enumerator.next_file`, and `fn.load_contents_async`. Caught cancellation errors gracefully
+      (`this._cancellable?.is_cancelled() || (e?.matches && e.matches(Gio.IOErrorEnum, Gio.IOErrorEnum.CANCELLED))`).
+    - (Monitor cancel) Added `this._downloadsMonitor?.cancel()` before `disconnectObject(this)` in
+      `setupDownloads()` and in `disable()`. Added `this._trashMonitor?.cancel()` before
+      `disconnectObject(this)` in `disable()`.
+    - (Enumerator close) Wrapped enumerator operations in `checkTrash()` and `checkRecentFilesInFolder(path)`
+      in `try ... finally` blocks and called `iter?.close(null)` / `enumerator?.close(null)` to release
+      file descriptors promptly.
+  - extension.js:
+    - (B-25 measured dt) In `_onCheckServices()`, measured actual elapsed milliseconds between calls using
+      `GLib.get_monotonic_time()` (`Math.max(0, Math.round((now - this._lastServicesUpdate) / 1000))`),
+      defaulting to `SERVICES_UPDATE_INTERVAL` (2500 ms) on first call. Initialized/reset
+      `this._lastServicesUpdate = 0` in `enable()`, `disable()`, and `_onIconThemeChanged()`.
 Self-verification:
   - `make check`: OK.
   - `make lint`: 0 errors / 150 warnings.
@@ -108,11 +115,13 @@ Self-verification:
   - `gjs -m tests/window_tracker_check.js`: all passed (20/20).
   - `make smoke`: PASS, 0 new sigs (1 known), shutdown criticals 0, msgs 6/5, probe lines 6/5,
     probe after-disable deltas all 0.
-  - `D2DA_SMOKE_STRICT_LEAKS=1 tools/smoke-shell.sh 5` x 3: all 3 consecutive runs PASS,
+  - `D2DA_SMOKE_STRICT_LEAKS=1 tools/smoke-shell.sh 5`: PASS, shutdown criticals 0, probe line counts 6/5,
+    probe after-disable deltas all 0.
+  - `D2DA_SMOKE_SETTINGS='trash-icon=true downloads-icon=true clock-icon=true calendar-icon=true autohide-dash=true' D2DA_SMOKE_STRICT_LEAKS=1 tools/smoke-shell.sh 5`: PASS,
     shutdown criticals 0, probe line counts 6/5, probe after-disable deltas all 0.
 New findings / notes:
-  - T-9 resolution confirmed: toggles transition reliably, and stage run-to-run noise (+17/+24)
-    no longer causes false-positive strict leak failures.
+  - In GJS, GLib.Error inspection uses `err.matches(domain, code)` rather than `GLib.Error.matches`.
+    Used `this._cancellable?.is_cancelled() || (err?.matches && err.matches(Gio.IOErrorEnum, Gio.IOErrorEnum.CANCELLED))`.
 Scope request / blockers: none.
 ```
 
@@ -343,7 +352,20 @@ Phase 2-5 cards are *stubs*: the Orchestrator expands a stub into a full card (s
 - **Verify:** `make check`; `make lint`; `tools/check-settings.py` exit 0; `gjs -m tests/timer_check.js`; `gjs -m tests/window_tracker_check.js`; strict ×3; `make smoke`.
 - **Human:** no (multi-monitor rebuild is already on the 2.4 human-check list).
 
-- **R-8** Services: one debounce handle per job (B-36), `Gio.Cancellable`s, `monitor.cancel()`, enumerator `close()`, per-service try/catch, measured `dt` (B-25).
+#### R-8 — Services cancellables, debounces, enumerator cleanup and measured dt
+- **Fixes:** B-25, B-36.
+- **Scope:** `services.js`; `extension.js`.
+- **Do:**
+  - (B-36) In `services.js`, split `_debounceCheckSeq` into two distinct handles on `this.extension._loTimer`: `_debounceRecentsSeq` (used by `_debounceCheckRecents`) and `_debounceDownloadsSeq` (used by `_debounceCheckDownloads`). In `disable()`, cancel and null both handles.
+  - (B-25 per-service try/catch) In `ServiceCounter.update(elapsed)` (or `Services.update`), wrap the callback in `try { ... } catch (e) { console.error('d2da: service ' + this.name + ' update', e); }` so a failure in one service does not crash the loop or starve remaining services.
+  - (B-25 measured dt) In `extension.js`, measure actual elapsed milliseconds using `GLib.get_monotonic_time()` between calls to `services.update(elapsed)` instead of passing the hardcoded `SERVICES_UPDATE_INTERVAL` (2500 ms) while `_timer` resolution is 3500 ms. Default to 2500 on the first call. Reset timestamp on `disable()` / `enable()`.
+  - (Cancellables) In `services.js`, create `this._cancellable = new Gio.Cancellable()` in `enable()`. In `disable()`, call `this._cancellable.cancel()` and null it. Pass `this._cancellable` to cancellable Gio operations (`enumerate_children`, `next_file`, `load_contents_async`). Catch cancelled errors gracefully (`GLib.Error.matches(e, Gio.IOErrorEnum, Gio.IOErrorEnum.CANCELLED)` or `this._cancellable?.is_cancelled()`).
+  - (Monitor cancel) In `services.js`, call `this._trashMonitor?.cancel()` and `this._downloadsMonitor?.cancel()` on `disable()` (and before re-creating `_downloadsMonitor` in `setupDownloads()`).
+  - (Enumerator close) In `checkTrash()` and `checkRecentFilesInFolder()`, wrap the enumerator usage in `try ... finally` and call `iter?.close(null)` (or `close_async`) to release file descriptors promptly.
+- **Don't:** Change desktop file generation or shell spawn paths (that's R-9a/R-9b). Don't touch real dconf or run interactive tests.
+- **Accept:** `make check`, `make lint` (0 errors, ≤ 150 warnings), `tools/check-settings.py` (exit 0), unit tests pass, `make smoke` and strict smoke pass with 0 new signatures and all deltas 0.
+- **Verify:** `make check`; `make lint`; `python3 -B tools/check-settings.py`; `gjs -m tests/timer_check.js`; `gjs -m tests/window_tracker_check.js`; `D2DA_SMOKE_STRICT_LEAKS=1 tools/smoke-shell.sh 5`; `make smoke`.
+- **Human:** no.
 - **R-9a** Trash: empty via Gio with confirmation, no `rm -rf` (B-8). **R-9b** Launchers: `DesktopAppInfo` from in-memory `GLib.KeyFile`, `GLib.shell_quote` (B-10). **R-9c** XDG paths (B-22). **R-9d** CSS from runtime dir / in-memory, per shell instance (B-37).
 
 ### Phase 3 — Speed (stubs)

@@ -58,26 +58,8 @@ Isolated smoke can't change settings from outside (memory backend is in-process)
 > Written by the ORCHESTRATOR only. Worker: do not edit this section.
 
 ```
-Cycle:      1.9
-Task:       R-5 — Prefs fixes
-Attempt:    1
-Card:       §6 "R-5"
-Notes:      HEAD 3311461. !! NEVER open prefs against the user's real dconf. B-12/B-32
-            are exactly "opening prefs overwrites settings". Allowed: reading dconf
-            (`dconf dump`), running prefs/test code with `GSETTINGS_BACKEND=memory` (plus
-            GSETTINGS_SCHEMA_DIR to the repo schemas) if it works headless, and code
-            reading. If you can't exercise prefs safely, say so; the human runs
-            `make test-prefs`. W3 applies: no gsettings set / dconf write.
-            Size: B-33 has several parts (scale case, color-button refresh, disconnect
-            on close, changed:: → widgets, JSON.parse try/catch, downloads-path cleared
-            before the folder dialog). If the total diff goes past ~300 lines, do B-12
-            + B-32 + the safety parts of B-33 (JSON.parse, disconnects,
-            downloads-path) and report the rest as remaining. Don't half-do a part.
-            check-settings must then report 0 errors (B-12 was the last) ⇒ exit 0.
-            Report the new counts. Lint baseline 0/154 (prefs.js and prefKeys.js counts
-            must not increase). Smoke baseline 1 sig / deltas 0/0/0/0/0/+1/0
-            (prefs isn't loaded in the shell, so it should be unchanged). timer_check
-            15/15.
+Cycle:      —
+Task:       none. Loop paused by the human after phase 1 (B-35 skipped). Next: 2.1 R-7a.
 ```
 
 ## 5. Report

@@ -44,7 +44,7 @@ Inputs: `git diff`, the task card + "Current Assignment" + "Report" in `agents/W
 |---|---|---|
 | G-syntax | `make check` | `check: OK` |
 | G-lint | `make lint` *(only once R-0b is committed)* | 0 errors; per changed file, warnings not higher than at HEAD (compare `npx eslint FILE` with `git show HEAD:FILE \| npx eslint --stdin --stdin-filename FILE`) |
-| G-settings | `python3 tools/check-settings.py` *(once R-0c is committed)* | no **new** issues vs. last Audit Log entry |
+| G-settings | `python3 tools/check-settings.py` *(once R-0c is committed)* | **exit 0** (0 errors since 5840f29) and warnings not above the last Audit Log entry |
 | G-smoke | `make smoke` | `SMOKE: PASS` (extension ACTIVE after start and after 5 toggles, shell alive, **no NEW error signatures**) |
 | G-smoke-x2 | `tools/smoke-shell.sh 5` again | PASS again (flake guard). One PASS + one FAIL ⇒ rerun a third time; report flakiness in the log |
 | G-real | `D2DA_SMOKE_REAL_DCONF=1 D2DA_SMOKE_BASELINE=agents/smoke-baseline-real.txt tools/smoke-shell.sh 3` | *advisory* (depends on the user's other extensions). Required for tasks touching `integrations.js` |
@@ -84,41 +84,40 @@ Minor nits (naming, a stray blank line) that don't violate a rule: list them as 
 > Overwritten each cycle. On FAIL the Worker reads this for its rework.
 
 ```
-Cycle / Task / Attempt:  1.9 / R-5 / 1
+Cycle / Task / Attempt:  1.11 / diagnostics access (Auditor-only, no Worker) / 1
 Verdict:          PASS
-Commit:           see Audit Log (fix(prefs): ...)
-Gates:            check=PASS ; lint=PASS (0 err / 151 warn, baseline 154; prefs.js 3 = HEAD,
-                  prefKeys.js 3 vs HEAD 6) ; settings=exit 0, 0 err / 30 warn (was 1/30, B-12 gone) ;
-                  timer_check all passed ; tweaks.ui xmllint OK ; smoke x2 PASS (1 known sig, 0 new,
-                  after-disable 0/0/0/0/0/+1/0), no B-37 flake.
-Scope:            ui/tweaks.ui, prefs.js, preferences/prefKeys.js only (+125/-56). Matches Report.
-Rule violations:  none. A1-A13 clean.
+Commit:           see Audit Log (fix(prefs): make self-test reachable via Experimental Features)
+Gates:            check=PASS ; lint=PASS (0 err / 151 warn = baseline; prefs.js 3 = HEAD) ;
+                  settings=exit 0, 0 err / 30 warn (= baseline) ; xmllint ui/general.ui OK ;
+                  timer_check all passed ; smoke x2 PASS (1 known sig, 0 new, after-disable
+                  0/0/0/0/0/+1/0 both), no B-37 flake.
+Scope:            prefs.js (1 line) + ui/general.ui (1 line) + agents/*.md. Nothing else dirty.
+Rule violations:  none. A1, A3, A4, A6, A7, A12 clean.
 Specific checks:
-  - withoutWriteback: counter (re-entrant/nested safe) + try/finally; updateWidget catches and logs.
-    All four writing handlers (state-set, notify::selected-item, value-changed, color-set) bail on _syncing.
-  - Auditor memory-backend harness (real keys.js/prefKeys.js, fake GTK-like widgets, deleted):
-    preferred-monitor=2 + pressure=0.7 -> open = 0 writes, widgets show 2/0.7; model rebuild re-selects 2
-    with 0 writes; throw inside guard -> _syncing 0; scroll slider write leaves pressure; reset -> widget
-    follows; after disconnectSettings+disconnectBuilder 0 handlers left.
-  - Monitor model filled after connectBuilder, before connectSettings; 'updated' re-selects without writing.
-  - close-request disconnects experimental-features, MonitorsConfig updated, settings changed::*, builder
-    handlers. loadPreset reuses this._settingsKeys (no per-click connect).
-  - A4: Gtk.FileDialog 4.10, Adw.Toast, close-request all <= GNOME 45. Nothing newer.
-  - Adjustment 0..1 step 0.01 = scroll one; schema key has no range (default 0.4).
+  - A4: Gio.Settings.get_boolean + GtkWidget visible only; nothing newer than GNOME 45, no version sniffing.
+  - A6: changed::experimental-features handler (experimentalId) is disconnected in close-request
+    (unchanged code, confirmed). No new signals.
+  - experimental-features is read only in prefs.js (extension just mirrors it), so the switch changes
+    nothing in the shell; it only shows self-test-row.
+  - Chain intact: self-test clicked -> set_string('msg-to-ext','run-diagnostics') -> extension.js
+    _enableSettings whitelist {run-diagnostics, dump-timers} -> runDiagnostics() (lazy Timer
+    'diagnostics', 50) -> diagnostics.js runTests(this, this._settingsKeys) -> runSequence; msg reset to ''.
+  - Note (no FAIL): runTests (addPreferenceTests/add_test_values) sets every switch/scale/color/dropdown
+    key to test values and then writes back the original; addMotionTests does the same for animate-icons /
+    autohide-dash. The writes go to real dconf (keys at default may appear in dconf dump). If the run is
+    interrupted (disable/lock/logout, a few minutes long) settings stay mutated. experimental-features
+    itself is toggled during the run, so the Test row flickers.
 Rework list:      none.
 Nits:
-  - downloads-folder/self-test 'clicked' handlers not disconnected (die with the window, acceptable).
-  - MonitorsConfig DBus proxy itself not torn down on close (pre-existing).
-Findings confirmed:  B-12, B-32, B-33 fixed.
-Human check needed:  make test-prefs: dconf dump identical before/after open+close (preferred monitor != first);
-                     pressure/scroll sliders independent; Reset + preset update widgets incl. colors; cancel
-                     downloads dialog keeps path; monitor dropdown shows saved monitor.
+  - D2DA 6.5 lists experimental-features as a dead setting; it now gates the Test row in prefs
+    (check-settings still counts it as dead-setting, runtime = extension only; count unchanged 30).
+  - Stale commented-out dock-location-row / lamp-app-animation-row lines in toggle_experimental (pre-existing).
+Findings confirmed:  diagnostics access restored (regression since e70c3db). No B-ids.
+Human check needed:  Prefs -> General -> Experimental Features on -> Test row appears -> Run executes
+                     diagnostics (journalctl -f); settings restored afterwards.
 New findings spotted (for Orchestrator):
-  - prefs.js fillPreferencesWindow still does settings.set_string('msg-to-ext', '') on open (R-6). If the key
-    is unset in dconf this may materialize msg-to-ext='' in `dconf dump`, so the "identical dump" human
-    check may differ on that one line. Suggest guarding with get_string() !== ''.
-  - Worker's two prefKeys findings (switch reads old state in state-set + double callback; dropdown maps not
-    reversed) agreed, latent.
+  - diagnostics runTests has no abort/restore-on-disable path; consider a snapshot+restore in disable()
+    when a diagnostics run is in progress (Low).
 ```
 
 ## 7. Audit Log (append-only, newest last)
@@ -141,3 +140,4 @@ New findings spotted (for Orchestrator):
 | 1.7 | R-4d | 1 | PASS | this commit | `make check` PASS; `make lint` PASS (0 err / 154 warn, was 158; services.js 12 -> 8); check-settings exit 1 (1 err / 30 warn = baseline); timer_check all passed; smoke-x2 PASS (1 known sig, 0 new, deltas 0/0/0/0/0/+1/0 both), no B-37 flake | B-9 fixed. Mount key = sha1(root URI) in the existing tempPath scheme; add/remove/dock.js agree. Always-rewrite only on mount events / enable / mounted-icon change (ping only drains the deferred queue), no periodic I/O. Name escaped per Desktop Entry spec. Nits: _toSafeFileName unused; Exec path unquoted (pre-existing); old shared Volume launcher orphaned in /tmp. |
 | 1.8 | R-6 | 1 | PASS | this commit | `make check` PASS; lint 0/154 = baseline; check-settings 1/30 = baseline; timer_check pass; smoke x2 PASS (1 known sig, 0 new, deltas 0/0/0/0/0/+1/0); no eval/new Function in shipped js | B-11 fixed: fixed two-entry whitelist, '' silent, legacy 'this.runDiagnostics()' warns+resets, prefs sends 'run-diagnostics'. Nit: plain-object map resolves Object.prototype keys (harmless; use Object.hasOwn). |
 | 1.9 | R-5 | 1 | PASS | this commit | `make check` PASS; lint 0/151 (baseline 154; prefKeys.js 6 -> 3, prefs.js 3 = HEAD); check-settings exit 0, 0 err / 30 warn (B-12 gone); timer_check pass; xmllint tweaks.ui OK; smoke x2 PASS (1 known sig, 0 new, deltas 0/0/0/0/0/+1/0), no B-37 flake | B-12, B-32, B-33 fixed. Guard = counter + try/finally; memory-backend harness (deleted): 0 writes on open and on monitor-model rebuild, saved monitor re-selected, sliders independent, 0 handlers after close. Finding: open-time msg-to-ext empty-string write may show in dconf dump. |
+| 1.11 | diagnostics access (Auditor-only) | 1 | PASS | this commit | `make check` PASS; lint 0/151 = baseline (prefs.js 3 = HEAD); check-settings exit 0, 0/30 = baseline; xmllint general.ui OK; timer_check pass; smoke x2 PASS (1 known sig, 0 new, deltas 0/0/0/0/0/+1/0), no B-37 flake | prefs.js toggle_experimental reads experimental-features; general.ui experimental-features-row visible. Chain button -> msg-to-ext run-diagnostics -> whitelist -> runDiagnostics -> runTests intact. close-request disconnect confirmed. Note: runTests changes every setting and restores it (real dconf; not restored if interrupted). Nit: D2DA 6.5 still lists experimental-features as dead. |

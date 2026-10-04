@@ -119,8 +119,9 @@ Status: `[ ]` todo · `[~]` in progress · `[x]` done (hash) · `[!]` blocked ·
 | [x] 1b03ca7 | 1.6 | R-4c dock.js input | 0.1 | B-17, B-18, B-19 · human visual |
 | [x] 0821a56 | 1.7 | R-4d mount names | 0.1 | B-9 |
 | [x] 3311461 | 1.8 | R-6 remove eval | 0.1 | B-11 |
-| [~] | 1.9 | R-5 prefs | 0.3, 1.8 | B-12, B-32, B-33 · human visual |
-| [ ] | 1.10 | B-35 NaN clip (BMS) | 0.1 | G-real required · HUMAN — end of phase 1 |
+| [x] 5840f29 | 1.9 | R-5 prefs | 0.3, 1.8 | B-12, B-32, B-33 · human visual |
+| SKIPPED | 1.10 | B-35 NaN clip (BMS) — human 2026-10-04: skip for now (needs real-dconf smoke) | 0.1 | G-real required · HUMAN — end of phase 1 |
+| [~] | 1.11 | Restore prefs diagnostics access (human request, Auditor-only; Orchestrator made the edits during the pause) | 1.8 | `prefs.js` toggle_experimental reads `experimental-features`; `ui/general.ui` experimental-features-row visible |
 
 ### Phase 2 — Lifecycle (G1) — expand stubs before assigning
 | | Cycle | Task | Depends | Notes |
@@ -181,12 +182,12 @@ Status: `open` · `fixed <hash>` · `partial <hash>` · `blocked` · `wontfix (r
 | B-9 | R-4d | fixed 0821a56 | | B-27 | R-3 | fixed dda62a5 |
 | B-10 | R-9b | open | | B-28 | (unassigned, needs St case check) | open |
 | B-11 | R-6 | fixed 3311461 | | B-29 | R-7b | open |
-| B-12 | R-5 | open | | B-30 | (unassigned) | open |
+| B-12 | R-5 | fixed 5840f29 | | B-30 | (unassigned) | open |
 | B-13 | R-4a | fixed c9ca876 | | B-31 | R-7c | open |
-| B-14 | R-4b | fixed 8f44419 | | B-32 | R-5 | open |
-| B-15 | R-4b | fixed 8f44419 | | B-33 | R-5 | open |
+| B-14 | R-4b | fixed 8f44419 | | B-32 | R-5 | fixed 5840f29 |
+| B-15 | R-4b | fixed 8f44419 | | B-33 | R-5 | fixed 5840f29 |
 | B-16 | R-4a | fixed c9ca876 | | B-34 | R-4b | fixed 8f44419 |
-| B-17 | R-4c | fixed 1b03ca7 | | B-35 | B-35 | open |
+| B-17 | R-4c | fixed 1b03ca7 | | B-35 | B-35 | deferred (needs real-dconf / BMS test) |
 | B-18 | R-4c | fixed 1b03ca7 | | T-4 | R-0d | deferred (no release for now) |
 | P-1 | R-10 | open | | P-7 | R-12 | open |
 | P-2 | R-11a | open | | P-8 | (unassigned, BMS) | open |
@@ -207,8 +208,8 @@ Unassigned rows: when a phase ends, either add a card + board row for them or ma
 | Smoke baseline (real dconf, advisory) | 4 signatures (incl. B-35, search-light's DesktopAppInfo warning) | setup |
 | Probe after-disable deltas, 5 toggles (uiGroup / stage / dashes / docks / hi / lo / loop) | 0 / 0 / 0 / 0 / 0 / **+1** / 0. `lo` +1 = smoke-timing artifact (T-5). Stage-walk can't see B-1 (T-6). Absolute `stage` varies per run (2865-2885) ⇒ track deltas only | 2bbf52d |
 | Strict leaks (`D2DA_SMOKE_STRICT_LEAKS=1` in G-leaks) | **OFF** (turn ON after 2.4) | |
-| ESLint warnings (errors) | 154 (0) at 0821a56; 158 at 1b03ca7; 162 at c9ca876; 166 at ef879f9; 168 at 2a0ae6f. no-unused-vars 162, no-undef 5, no-duplicate-case 1; only remaining demotion: `no-undef: warn` in extension.js for the dead `_onKeyPressed` Clutter use (delete in R-18/R-21) | 2a0ae6f |
-| check-settings issues | c9ca876: 1 error (B-12) / 30 warnings. At cff438d: exit 1 by design. Errors 2: shared-adjustment 1 (B-12), duplicate-case 1 (B-16); missing-in-schema 0, widget-type 0. Warnings 30: missing-in-keys 5, key-no-widget 8, dead-setting 17 (§6.5 list + `msg-to-ext` false positive). Should exit 0 after R-4a + R-5 ⇒ then make G-settings a hard exit-code gate | cff438d |
+| ESLint warnings (errors) | 151 (0) at 5840f29; 154 at 0821a56; 158 at 1b03ca7; 162 at c9ca876; 166 at ef879f9; 168 at 2a0ae6f. no-unused-vars 162, no-undef 5, no-duplicate-case 1; only remaining demotion: `no-undef: warn` in extension.js for the dead `_onKeyPressed` Clutter use (delete in R-18/R-21) | 2a0ae6f |
+| check-settings issues | **5840f29: exit 0, 0 errors / 30 warnings ⇒ G-settings is now a hard gate (must exit 0).** c9ca876: 1 error (B-12) / 30 warnings. At cff438d: exit 1 by design. Errors 2: shared-adjustment 1 (B-12), duplicate-case 1 (B-16); missing-in-schema 0, widget-type 0. Warnings 30: missing-in-keys 5, key-no-widget 8, dead-setting 17 (§6.5 list + `msg-to-ext` false positive). Should exit 0 after R-4a + R-5 ⇒ then make G-settings a hard exit-code gate | cff438d |
 
 ### 5.1 Human-check queue
 Items the agents can't see. The human runs `make test-shell` (needs `mutter-devkit`) or uses their real session, then ticks them here.
@@ -231,6 +232,10 @@ Items the agents can't see. The human runs `make test-shell` (needs `mutter-devk
 | 1.6 | 1b03ca7 | Tint/monochrome icon effect on, then disable extension ⇒ effect gone | |
 | 1.7 | 0821a56 | Two USB sticks (same label) ⇒ two icons with real names; unmount one removes only it; remount/rename updates label | |
 | 1.8 | 3311461 | Prefs → diagnostics / self-test button still runs diagnostics | |
+| 1.9 | 5840f29 | `make test-prefs`: `dconf dump /org/gnome/shell/extensions/dash2dock-lite/` identical before/after open+close, preferred monitor ≠ first (a new `msg-to-ext=''` line is a known nit) | |
+| 1.9 | 5840f29 | Pressure and scroll sliders move independently | |
+| 1.9 | 5840f29 | Reset and a theme preset update the widgets, incl. colors | |
+| 1.9 | 5840f29 | Cancel the downloads-folder dialog ⇒ old path kept; monitor dropdown shows the saved monitor | |
 
 ## 6. Run Log (append-only, newest last)
 
@@ -292,3 +297,11 @@ Format: `YYYY-MM-DD HH:MM · cycle · EVENT · details` where EVENT ∈ `SETUP, 
 - 2026-10-04 · 1.8 · AUDIT-PASS · `3311461`. check=PASS lint=0/154 settings=1/30 timer_check 15/15 smoke=PASS(x2). No eval/new Function in shipped code; fixed whitelist {run-diagnostics, dump-timers}; '' is a silent no-op. B-11 fixed. Nit (plain-object map matches built-ins, harmless) added to §6.3. 1 human-check item queued.
 - 2026-10-04 · 1.9 · PREFLIGHT · tree clean apart from agents/*; HEAD `3311461`; GNOME Shell 50.5.
 - 2026-10-04 · 1.9 · ASSIGN · R-5 prefs (B-12, B-32, B-33). Worker must not open prefs against real dconf (memory backend or code reading only); split B-33 if > ~300 lines.
+- 2026-10-04 · 1.9 · AUDIT-PASS · `5840f29`. check=PASS lint=0/151 (−3) settings=**exit 0** (0/30) timer_check 15/15 smoke=PASS(x2). Auditor checked with a memory-backend harness: opening prefs makes 0 writes, the monitor rebuild re-selects without writing, the guard resets on exception, no handlers survive close. B-12, B-32, B-33 fixed. G-settings now a hard gate (AUDITOR.md updated). New low items in §6.3 (`msg-to-ext=''` write on prefs open; prefKeys switch handler / key_maps). 4 human-check items queued.
+- 2026-10-04 · 1.10 · STOP · B-35 requires G-real (`D2DA_SMOKE_REAL_DCONF=1`): the nested shell uses the user's live dconf, `gnome-extensions enable/disable` writes `enabled-extensions`, and the extension runs on the real settings. That touches the user's dconf (§2.6) ⇒ asking the human before assigning.
+- 2026-10-04 · 1.10 · HUMAN · Skip B-35 for now (row SKIPPED, ledger deferred). End of phase 1.
+- 2026-10-04 · — · STOP · Paused by the human for intermediate work. On resume: run preflight. Expect the uncommitted Orchestrator edits in agents/*.md (or a human commit that includes them). Anything else is the human's work, so ask before going on. Next: phase 2. Expand stubs, starting with 2.1 R-7a.
+- 2026-10-04 · — · NOTE · Human request during pause: the prefs self-test (diagnostics) button was unreachable. Cause: `prefs.js toggle_experimental` had `exp = false` hard-coded since e70c3db (2023), so `self-test-row` was always hidden. The R-6 `run-diagnostics` path was intact. Orchestrator one-line fix (uncommitted): `exp = settings.get_boolean('experimental-features')` ⇒ the Experimental Features switch shows the Test row. check OK, prefs.js lint 3 (unchanged), check-settings 0/30. On resume, preflight should treat `prefs.js` as this known change.
+- 2026-10-04 · — · NOTE · Follow-up: the Test row still didn't show, because `ui/general.ui` `experimental-features-row` had `visible=false`, so the gating switch was unreachable. Set it to `visible=true` (uncommitted). xmllint OK, check-settings 0/30. `make install` run so prefs picks it up. Known uncommitted human-requested changes: `prefs.js`, `ui/general.ui`.
+- 2026-10-04 · 1.11 · PREFLIGHT · Resume. Dirt = agents/* + known `prefs.js`, `ui/general.ui` (diagnostics access, see NOTEs). HEAD `5840f29`; GNOME Shell 50.5.
+- 2026-10-04 · 1.11 · ASSIGN · Auditor-only commit of the diagnostics-access change, so phase 2 starts from a clean tree.

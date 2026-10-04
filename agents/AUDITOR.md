@@ -84,20 +84,47 @@ Minor nits (naming, a stray blank line) that don't violate a rule: list them as 
 > Overwritten each cycle. On FAIL the Worker reads this for its rework.
 
 ```
-Cycle / Task / Attempt:  0.0 / bootstrap / 1
+Cycle / Task / Attempt:  0.1 / R-0a / 1
 Verdict:          PASS
-Commit:           this commit (chore(agents): bootstrap agent workflow and headless smoke test)
-Gates:            check=PASS ; smoke=PASS (1 known sig, 0 new, 6/5 enable/disable) ; smoke-x2=PASS (same) ; lint=n/a (R-0b) ; settings=n/a (R-0c) ; real=not run (advisory) ; card=n/a
-Rule violations:  none (A3, A7, A12 checked)
+Commit:           this commit (test(probe): ...) adds probe.js. The extension.js and
+                  tools/smoke-shell.sh parts of R-0a already landed in 888baf5 (human
+                  commit "Readme updated"); audited as `git diff 861b7c1 HEAD -- extension.js
+                  tools/smoke-shell.sh` + new probe.js. README.md in 888baf5 not audited (human's).
+Gates:            check=PASS ; smoke=PASS (1 known sig, 0 new, 6/5 msgs, probe 6/5) ;
+                  smoke-x2=PASS (identical) ; lint=n/a (R-0b) ; settings=n/a (R-0c) ;
+                  real=not run (advisory, no integrations.js change) ;
+                  card=PASS: probe table + delta row printed; D2DA_PROBE=0 → PASS, 0 `d2da-probe`
+                  and 0 `d2da: probe` lines in the log; D2DA_SMOKE_STRICT_LEAKS=1 (2 toggles) →
+                  SMOKE: FAIL, exit≠0 on lo +1, as designed.
+Rule violations:  none (A1-A13 checked). Scope = probe.js, extension.js (import + 2 calls +
+                  probeTimers literal), tools/smoke-shell.sh. No actors/signals/sources created
+                  (A6); not per-frame (A8); no I/O, only GLib.getenv (A7); catch logs
+                  'd2da: probe' (A9); `_subscribers` is the extension's own Timer, not Shell (A5);
+                  get_first_child/get_next_sibling are pre-45 Clutter API (A4).
 Rework list:
   —
 Nits:
-  - agents/WORKER.md:79-80 report template carries trailing whitespace (`git diff --check`).
-  - tools/smoke-shell.sh: default log path /tmp/d2da-smoke.log is predictable. Dev-only tool (stripped by `make install`, never in `publish`), so A7 doesn't apply; could use $XDG_RUNTIME_DIR later.
-  - Makefile `install` copies `agents/` into the installed extension dir (`publish` strips it, `install` doesn't). Harmless for smoke, but it bloats the local install.
-Findings confirmed fixed:  — (bootstrap, no findings claimed)
+  - tools/smoke-shell.sh:probe_table: awk exits 0 when there are no probe lines, so
+    STRICT_LEAKS passes if the probe never logs. The N+1/N count is printed but not enforced.
+    Consider failing in strict mode when PE/PD != expected.
+  - probe.js:probe takes a 3rd optional `timers` arg (the card says `probe(ext, phase)`); the card
+    allows "or pass them in", so this is fine.
+  - probe.js ships in `publish` (cp *.js) because extension.js imports it. No-op without the env var;
+    R-0d should keep it in the pack list.
+Findings confirmed fixed:  — (measuring tool, no findings claimed)
+Baseline probe deltas (isolated, 5 toggles), reproduced in both smoke runs:
+  after-enable   uiGroup 40 stage 2877 dashes 2 docks 1 hi 1 lo 2 loop 1 ; deltas all 0
+  after-disable  uiGroup 36 stage 2854 dashes 1 docks 0 hi 0 lo 1→2 loop 1 ; deltas 0 0 0 0 0 +1 0
 Human check needed:  none
-New findings spotted (for Orchestrator):  none
+New findings spotted (for Orchestrator):
+  - Absolute `stage` count is not stable across runs or environments (Worker 2885/2862, Auditor
+    2877/2854, 2-toggle run 2865/2842). Only first→last deltas within one run mean anything;
+    don't record absolute stage counts as a cross-run metric.
+  - Confirms Worker P-a: smoke sleeps 4 s before the 1st disable vs 1 s after each re-enable
+    (tools/smoke-shell.sh toggle loop), which matches the lo 1→2 at disable #2+. Equalise this
+    before strict leaks go ON.
+  - Agrees with Worker P-b: stage-walk deltas are already 0, so they can't prove the R-7 (B-1)
+    off-stage leak fix; R-7d needs a live Dock/Dash instance counter.
 ```
 
 ## 7. Audit Log (append-only, newest last)
@@ -106,3 +133,4 @@ New findings spotted (for Orchestrator):  none
 |---|---|---|---|---|---|---|
 | — | setup | — | — | — | `make check` OK; smoke PASS ×3 isolated, PASS real-dconf | Tooling created by setup session (uncommitted). Baselines: isolated 1 signature (NM GI warning, shell-side); real 4 (incl. B-35 NaN clip, search-light's DesktopAppInfo warning). |
 | 0.0 | bootstrap | 1 | PASS | this commit | `make check` PASS; `make smoke` PASS; smoke-x2 PASS (1 known sig, 0 new, 6/5 msgs each run) | Auditor-only bootstrap commit: Makefile, tools/smoke-shell.sh, agents/*.md, agents/smoke-baseline*.txt. A3/A7/A12 clean. Verified `make check` fails on a syntax error. Nits: WORKER.md template trailing whitespace; smoke log default in /tmp (dev-only); `make install` copies agents/ into the install dir. |
+| 0.1 | R-0a | 1 | PASS | this commit (probe.js) + 888baf5 (extension.js, smoke-shell.sh) | `make check` PASS; `make smoke` PASS; smoke-x2 PASS (1 known sig, 0 new, 6/5 msgs, probe 6/5); card: probe-off 0 lines PASS, strict FAIL on lo +1 as designed | Split landing: the R-0a code parts were swept into the human commit 888baf5; this commit adds the missing probe.js (HEAD imported an untracked file). Probe deltas after-disable 0/0/0/0/0/+1(lo)/0. Nits: strict mode doesn't fail on missing probe lines; probe.js must stay in the R-0d pack list. Findings: absolute stage count varies across runs (deltas only); Worker P-a timing cause confirmed, P-b agreed. |

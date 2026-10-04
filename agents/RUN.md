@@ -103,8 +103,8 @@ Status: `[ ]` todo · `[~]` in progress · `[x]` done (hash) · `[!]` blocked ·
 | | Cycle | Task | Depends | Notes |
 |---|---|---|---|---|
 | [x] 861b7c1 | 0.0 | **Bootstrap commit** (Auditor only, no Worker) | — | Commit setup: `Makefile` (devkit check, flag cleanup, `check`, `smoke`), `tools/smoke-shell.sh`, `agents/*.md`, `agents/smoke-baseline*.txt`. Gates: `make check`, `make smoke`. Message `chore(agents): bootstrap agent workflow and headless smoke test`. |
-| [~] | 0.1 | R-0a leak/regression probe | 0.0 | Records first leak deltas (expected ≠ 0) |
-| [ ] | 0.2 | R-0b ESLint flat config | 0.0 | Needs network for `npm install` |
+| [x] 2bbf52d | 0.1 | R-0a leak/regression probe | 0.0 | Records first leak deltas (expected ≠ 0) |
+| [~] | 0.2 | R-0b ESLint flat config | 0.0 | Needs network for `npm install` |
 | [ ] | 0.3 | R-0c settings checker | 0.0 | Must flag B-12, B-16 |
 | [ ] | 0.4 | R-0d release via `gnome-extensions pack` | 0.0 | HUMAN — end of phase 0 |
 
@@ -128,7 +128,8 @@ Status: `[ ]` todo · `[~]` in progress · `[x]` done (hash) · `[!]` blocked ·
 | [ ] | 2.1 | R-7a animator teardown | 1.2 | |
 | [ ] | 2.2 | R-7b menus/lists/clock/calendar destroy | 2.1 | B-29 |
 | [ ] | 2.3 | R-7c WindowTracker, no Meta.Window expandos | 1.3 | B-31 |
-| [ ] | 2.4 | R-7d Dock.destroy + destroyDocks | 2.1-2.3 | B-1 · then turn **strict leaks ON** (§5) |
+| [ ] | 2.3a | R-0e probe v2 (smoke timing, live-instance counters) | 0.1 | T-5, T-6 · prerequisite for strict leaks |
+| [ ] | 2.4 | R-7d Dock.destroy + destroyDocks | 2.1-2.3a | B-1 · then turn **strict leaks ON** (§5) |
 | [ ] | 2.5 | R-8 services cancellables / dt | 2.4 | B-25 |
 | [ ] | 2.6 | R-9a trash via Gio | 2.5 | B-8 · human visual |
 | [ ] | 2.7 | R-9b launchers in memory | 2.5 | B-10 |
@@ -191,6 +192,7 @@ Status: `open` · `fixed <hash>` · `partial <hash>` · `blocked` · `wontfix (r
 | P-2 | R-11a | open | | P-8 | (unassigned, BMS) | open |
 | P-3..P-6 | R-12 | open | | P-9, P-10 | R-13 | open |
 | P-11 | R-12 | open | | §6.3 low bugs | batch after phase 1 | open |
+| T-5 | R-0e | open | | T-6 | R-0e | open |
 
 Unassigned rows: when a phase ends, either add a card + board row for them or mark `wontfix (reason)`.
 
@@ -201,7 +203,7 @@ Unassigned rows: when a phase ends, either add a card + board row for them or ma
 | GNOME Shell | 50.5 (Fedora 44) | setup |
 | Smoke baseline (isolated) | 1 signature (NM GI warning — shell side, not ours) | setup |
 | Smoke baseline (real dconf, advisory) | 4 signatures (incl. B-35, search-light's DesktopAppInfo warning) | setup |
-| Probe leak deltas after N toggles (uiGroup / stage / dashes / hi / lo / loop) | — (R-0a) | |
+| Probe after-disable deltas, 5 toggles (uiGroup / stage / dashes / docks / hi / lo / loop) | 0 / 0 / 0 / 0 / 0 / **+1** / 0. `lo` +1 = smoke-timing artifact (T-5). Stage-walk can't see B-1 (T-6). Absolute `stage` varies per run (2865-2885) ⇒ track deltas only | 2bbf52d |
 | Strict leaks (`D2DA_SMOKE_STRICT_LEAKS=1` in G-leaks) | **OFF** (turn ON after 2.4) | |
 | ESLint warnings | — (R-0b) | |
 | check-settings issues | — (R-0c) | |
@@ -227,3 +229,12 @@ Format: `YYYY-MM-DD HH:MM · cycle · EVENT · details` where EVENT ∈ `SETUP, 
 - 2026-10-04 · 0.1 · STOP · Foreign change found before audit: `README.md` **staged** in the index (AI-maintenance announcement + GNOME 50 support line). Not created by this loop. Auditor not run, because a commit would include it. Waiting for the human: commit it separately, or unstage it (`git restore --staged README.md`), then resume with the 0.1 AUDIT.
 - 2026-10-04 · 0.1 · PREFLIGHT · Human committed `888baf5 Readme updated`, which also included the unaudited R-0a code (`extension.js`, `tools/smoke-shell.sh`) and Orchestrator edits to `agents/RUN.md`, `agents/WORKER.md`. `probe.js` was left untracked ⇒ HEAD imports a file that isn't in git. No history rewrite. Auditor will audit the range `861b7c1..HEAD` (code files) + untracked `probe.js`; its PASS commit adds `probe.js` and completes R-0a. GNOME Shell 50.5.
 - 2026-10-04 · 0.1 · NOTE · Orchestrator edit tool can't match text in RUN.md (stale editor buffer?); appending log lines via shell.
+- 2026-10-04 · 0.1 · AUDIT-PASS · `2bbf52d` (adds `probe.js`; extension.js/smoke-shell.sh parts landed in `888baf5`). check=PASS smoke=PASS(x2) card=PASS (probe off ⇒ 0 lines; strict ⇒ FAIL on lo +1 as designed). Metrics recorded in §5.
+- 2026-10-04 · 0.1 · NOTE · New findings T-5 (smoke wait asymmetry, strict doesn't enforce probe line count) and T-6 (stage-walk can't see off-stage leaks) added to D2DA §6.6 → new card R-0e (board row 2.3a, before R-7d). R-7d Accept now requires live-instance counters. R-0d card: keep `probe.js` in zip; `install` stops copying `agents/` etc.
+- 2026-10-04 · 0.2 · PREFLIGHT · tree = only agents/* Orchestrator edits; HEAD `2bbf52d`; GNOME Shell 50.5; network + npm OK.
+- 2026-10-04 · 0.2 · ASSIGN · R-0b ESLint flat config (scope + `package-lock.json`, `lint/`, `.eslintrc.yml`).
+- 2026-10-04 · 0.2 · WORK · Report DONE: `eslint.config.js` (new), `package.json` (`type: module`, eslint/@eslint/js ^9, `lint` script), `package-lock.json`, Makefile `lint` → `npx eslint .`, deleted `.eslintrc.yml` + `lint/`. 0 errors / 168 warnings (no-unused-vars 162, no-undef 5, no-duplicate-case 1). Known-bug rules demoted only in `extension.js`/`timer.js` (B-5, B-16, §6.3 Clutter, B-24); restore in R-4a / R-1. Skipped `globals` dep (unused). New: T-7 `make install` copies `node_modules/` (14 MB), `eslint.config.js`, `package*.json`, `agents/` into the installed extension; `publish` would ship `eslint.config.js` ⇒ R-0d.
+- 2026-10-04 · 0.2 · ESCALATE · Auditor: R-0b passes all gates (check OK, lint 0 err/168 warn, smoke PASS x2), but `Makefile` changed at 10:26:51 during the audit. Two foreign lines (`rm -rf …/extensions/<uuid>/node_modules` in `install`, `rm -rf build/node_modules` in `publish`), not written by Worker, Auditor or Orchestrator. Nothing committed, index cleared.
+- 2026-10-04 · 0.2 · STOP · Waiting for the human: (a) revert those 2 lines ⇒ Auditor re-runs and commits R-0b; or (b) keep them and the Orchestrator adds them to R-0b scope (interim T-7 fix; R-0d replaces it with `gnome-extensions pack`) ⇒ re-audit.
+- 2026-10-04 · 0.2 · HUMAN · Human chose option (b): keep the 2 `node_modules` rm lines. Added to R-0b scope with the T-7 interim fix (install drops agents/, eslint.config.js, package*.json; publish drops eslint.config.js; `lint` in .PHONY).
+- 2026-10-04 · 0.2 · REWORK · Attempt 2 sent to the Worker session (Makefile only).

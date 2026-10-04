@@ -1,6 +1,6 @@
 all: build install lint
 
-.PHONY: build install check-devkit test-shell test-shell2 check smoke
+.PHONY: build install check-devkit test-shell test-shell2 check smoke lint
 
 RUNTIME_DIR ?= $(or $(XDG_RUNTIME_DIR),/run/user/$(shell id -u))
 # gnome-shell writes this at startup as a crash marker; if it is left behind
@@ -29,6 +29,11 @@ install: build
 	rm -rf ~/.local/share/gnome-shell/extensions/dash2dock-lite@icedman.github.com/tests
 	rm -rf ~/.local/share/gnome-shell/extensions/dash2dock-lite@icedman.github.com/tools
 	rm -rf ~/.local/share/gnome-shell/extensions/dash2dock-lite@icedman.github.com/screenshots
+	rm -rf ~/.local/share/gnome-shell/extensions/dash2dock-lite@icedman.github.com/node_modules
+	rm -rf ~/.local/share/gnome-shell/extensions/dash2dock-lite@icedman.github.com/agents
+	rm -rf ~/.local/share/gnome-shell/extensions/dash2dock-lite@icedman.github.com/eslint.config.js
+	rm -rf ~/.local/share/gnome-shell/extensions/dash2dock-lite@icedman.github.com/package.json
+	rm -rf ~/.local/share/gnome-shell/extensions/dash2dock-lite@icedman.github.com/package-lock.json
 
 clean:
 	rm -rf ./build
@@ -54,6 +59,8 @@ publish:
 	rm -rf build/*_.js
 	rm -rf build/imports*.js
 	rm -rf build/apps/mount-dash2dock-lite.desktop
+	rm -rf build/node_modules
+	rm -f build/eslint.config.js
 	cd build ; \
 	zip -qr ../dash2dock-lite@icedman.github.com.zip .
 
@@ -121,9 +128,9 @@ test-shell-g44: g44
 	rm -f $(DISABLE_EXT_FLAG)
 
 lint:
-	eslint ./
+	npx eslint .
 
-# Parse-only syntax check of all shipped JS (stand-in until ESLint works, R-0b).
+# Fast parse-only syntax check of all shipped JS (ESLint: `make lint`).
 check:
 	find . -path ./node_modules -prune -o -path ./build -prune -o -path ./tests -prune \
 		-o -path ./tools -prune -o -name '*.js' -print \

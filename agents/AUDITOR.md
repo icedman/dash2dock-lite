@@ -84,47 +84,57 @@ Minor nits (naming, a stray blank line) that don't violate a rule: list them as 
 > Overwritten each cycle. On FAIL the Worker reads this for its rework.
 
 ```
-Cycle / Task / Attempt:  0.1 / R-0a / 1
+Cycle / Task / Attempt:  0.2 / R-0b / 2
 Verdict:          PASS
-Commit:           this commit (test(probe): ...) adds probe.js. The extension.js and
-                  tools/smoke-shell.sh parts of R-0a already landed in 888baf5 (human
-                  commit "Readme updated"); audited as `git diff 861b7c1 HEAD -- extension.js
-                  tools/smoke-shell.sh` + new probe.js. README.md in 888baf5 not audited (human's).
-Gates:            check=PASS ; smoke=PASS (1 known sig, 0 new, 6/5 msgs, probe 6/5) ;
-                  smoke-x2=PASS (identical) ; lint=n/a (R-0b) ; settings=n/a (R-0c) ;
-                  real=not run (advisory, no integrations.js change) ;
-                  card=PASS: probe table + delta row printed; D2DA_PROBE=0 → PASS, 0 `d2da-probe`
-                  and 0 `d2da: probe` lines in the log; D2DA_SMOKE_STRICT_LEAKS=1 (2 toggles) →
-                  SMOKE: FAIL, exit≠0 on lo +1, as designed.
-Rule violations:  none (A1-A13 checked). Scope = probe.js, extension.js (import + 2 calls +
-                  probeTimers literal), tools/smoke-shell.sh. No actors/signals/sources created
-                  (A6); not per-frame (A8); no I/O, only GLib.getenv (A7); catch logs
-                  'd2da: probe' (A9); `_subscribers` is the extension's own Timer, not Shell (A5);
-                  get_first_child/get_next_sibling are pre-45 Clutter API (A4).
+Commit:           see Audit Log (short hash)
+Gates:            check=PASS ; lint=PASS (exit 0, 0 errors / 168 warnings = baseline, unchanged) ;
+                  smoke=PASS (1 known sig, 0 new, 6/5 msgs, probe 6/5, after-disable deltas
+                  0 0 0 0 0 +1 0 = T-5) ; smoke-x2=PASS (identical) ; settings=n/a (R-0c) ;
+                  leaks=n/a (strict OFF) ; real=not run (advisory, no integrations.js change) ;
+                  card=PASS (make lint, make check, make smoke).
+Scope (attempt 2 = Makefile only; rest re-verified unchanged since attempt 1):
+  install: + rm -rf <ext>/{node_modules (human), agents, eslint.config.js, package.json,
+  package-lock.json}; publish: + rm -rf build/node_modules (human), rm -f build/eslint.config.js;
+  .PHONY + lint; check comment updated. No other target touched. A7 "no rm -rf" is about
+  shipped extension code (G5), not Makefile recipes that already use rm -rf -> not a violation.
+Rule violations:  none (A1-A13).
+Specific checks:
+  - Installed dir after `make smoke` (ls -1A): animator.js apps autohide.js CHANGELOG.md
+    CHECKLIST.md DESIGN.md diagnostics.js dockItemMenu.js dockItems.js dock.js drawing.js effects
+    ERRORS.md extension.js HACKING.md integrations.js LICENSE metadata.json monitors.js
+    preferences prefs.js probe.js README.md schemas services.js style.js stylesheet.css themes
+    timer.js ui utils.js vector.js -> matches Worker Report exactly; no node_modules, agents,
+    eslint.config.js, package*.json. Smoke reads baselines from the repo (passes without agents/).
+  - `make publish` run in a temp copy (git ls-files -co + working tree, Makefile cmp-identical):
+    zip = 80 entries, 610347 bytes: root *.js (animator autohide diagnostics dockItemMenu
+    dockItems dock drawing extension integrations monitors prefs probe services style timer
+    utils vector), metadata.json, stylesheet.css, LICENSE, CHANGELOG.md, README.md,
+    schemas/*.gschema.xml (no gschemas.compiled), apps/, effects/, preferences/, ui/ (incl.
+    ui/legacy/ 4 files). NOT present: eslint.config.js, node_modules/, agents/, package*.json.
+    themes/ missing = known T-4 (R-0d). ui/legacy in zip = R-0d (already in its card).
+  - File hashes of Makefile/eslint.config.js/package*.json identical before gates and before
+    commit; status unchanged (no foreign edits this time).
 Rework list:
   —
 Nits:
-  - tools/smoke-shell.sh:probe_table: awk exits 0 when there are no probe lines, so
-    STRICT_LEAKS passes if the probe never logs. The N+1/N count is printed but not enforced.
-    Consider failing in strict mode when PE/PD != expected.
-  - probe.js:probe takes a 3rd optional `timers` arg (the card says `probe(ext, phase)`); the card
-    allows "or pass them in", so this is fine.
-  - probe.js ships in `publish` (cp *.js) because extension.js imports it. No-op without the env var;
-    R-0d should keep it in the pack list.
-Findings confirmed fixed:  — (measuring tool, no findings claimed)
-Baseline probe deltas (isolated, 5 toggles), reproduced in both smoke runs:
-  after-enable   uiGroup 40 stage 2877 dashes 2 docks 1 hi 1 lo 2 loop 1 ; deltas all 0
-  after-disable  uiGroup 36 stage 2854 dashes 1 docks 0 hi 0 lo 1→2 loop 1 ; deltas 0 0 0 0 0 +1 0
+  - install uses `rm -rf` for single files (eslint.config.js, package*.json); `rm -f` would do.
+    Matches the existing line style the rework asked for; R-0d replaces it anyway.
+  - package.json `"main": "index.js"` points at a non-existent file (pre-existing).
+  - Dev docs CHECKLIST.md, DESIGN.md, ERRORS.md, HACKING.md still installed (Worker noted; R-0d).
+Findings confirmed fixed:  D2DA §1 "broken lint"; T-7 (interim, install + publish).
+G-lint baseline (HEAD after this commit; compare per changed file):
+  total 0 errors / 168 warnings; by rule no-unused-vars 162, no-undef 5, no-duplicate-case 1.
+  effects/easing.js 37, dock.js 25, animator.js 23, extension.js 17, dockItemMenu.js 12,
+  services.js 12, dockItems.js 7, preferences/prefKeys.js 6, apps/clock.js 5, apps/dot.js 5,
+  apps/calendar.js 3, autohide.js 3, prefs.js 3, apps/overlay.js 2, diagnostics.js 2, style.js 2,
+  timer.js 2, apps/recents.js 1, integrations.js 1; all others 0.
 Human check needed:  none
 New findings spotted (for Orchestrator):
-  - Absolute `stage` count is not stable across runs or environments (Worker 2885/2862, Auditor
-    2877/2854, 2-toggle run 2865/2842). Only first→last deltas within one run mean anything;
-    don't record absolute stage counts as a cross-run metric.
-  - Confirms Worker P-a: smoke sleeps 4 s before the 1st disable vs 1 s after each re-enable
-    (tools/smoke-shell.sh toggle loop), which matches the lo 1→2 at disable #2+. Equalise this
-    before strict leaks go ON.
-  - Agrees with Worker P-b: stage-walk deltas are already 0, so they can't prove the R-7 (B-1)
-    off-stage leak fix; R-7d needs a live Dock/Dash instance counter.
+  - Screenshot filenames under screenshots/ contain spaces, so the Orchestrator's suggested
+    `git ls-files -co | xargs cp --parents` breaks on them (harmless here; they aren't
+    published). Use `git ls-files -z | xargs -0` in future tooling.
+  - R-0d: the pack extra-source list must exclude eslint.config.js (it's a root *.js) and should
+    leave out ui/legacy (still shipped by the current publish).
 ```
 
 ## 7. Audit Log (append-only, newest last)
@@ -134,3 +144,5 @@ New findings spotted (for Orchestrator):
 | — | setup | — | — | — | `make check` OK; smoke PASS ×3 isolated, PASS real-dconf | Tooling created by setup session (uncommitted). Baselines: isolated 1 signature (NM GI warning, shell-side); real 4 (incl. B-35 NaN clip, search-light's DesktopAppInfo warning). |
 | 0.0 | bootstrap | 1 | PASS | this commit | `make check` PASS; `make smoke` PASS; smoke-x2 PASS (1 known sig, 0 new, 6/5 msgs each run) | Auditor-only bootstrap commit: Makefile, tools/smoke-shell.sh, agents/*.md, agents/smoke-baseline*.txt. A3/A7/A12 clean. Verified `make check` fails on a syntax error. Nits: WORKER.md template trailing whitespace; smoke log default in /tmp (dev-only); `make install` copies agents/ into the install dir. |
 | 0.1 | R-0a | 1 | PASS | this commit (probe.js) + 888baf5 (extension.js, smoke-shell.sh) | `make check` PASS; `make smoke` PASS; smoke-x2 PASS (1 known sig, 0 new, 6/5 msgs, probe 6/5); card: probe-off 0 lines PASS, strict FAIL on lo +1 as designed | Split landing: the R-0a code parts were swept into the human commit 888baf5; this commit adds the missing probe.js (HEAD imported an untracked file). Probe deltas after-disable 0/0/0/0/0/+1(lo)/0. Nits: strict mode doesn't fail on missing probe lines; probe.js must stay in the R-0d pack list. Findings: absolute stage count varies across runs (deltas only); Worker P-a timing cause confirmed, P-b agreed. |
+| 0.2 | R-0b | 1 | ESCALATE | none | `make check` PASS; `make lint` PASS (exit 0, 0 errors, 168 warnings, 30 files); `make smoke` PASS; smoke-x2 PASS (1 known sig, 0 new, 6/5 msgs, probe 6/5, deltas 0/0/0/0/0/+1/0) | ESLint 9.39.5 flat config. **G-lint baseline:** 168 warnings (no-unused-vars 162, no-undef 5, no-duplicate-case 1). Per file: effects/easing.js 37, dock.js 25, animator.js 23, extension.js 17, dockItemMenu.js 12, services.js 12, dockItems.js 7, preferences/prefKeys.js 6, apps/clock.js 5, apps/dot.js 5, apps/calendar.js 3, autohide.js 3, prefs.js 3, apps/overlay.js 2, diagnostics.js 2, style.js 2, timer.js 2, apps/recents.js 1, integrations.js 1, all others 0. "type":"module" safe (no CJS run by node; tests/ are gjs). `globals` dep skip accepted (unused). The per-file no-undef/no-duplicate-case demotions in extension.js/timer.js mask exactly the 6 tracked bugs (B-5 x2, B-16, 6.3 Clutter, B-24 x2); drop them in R-4a/R-1. Nits: lint not .PHONY; stale check comment; package.json main=index.js. Finding: T-7 confirmed (install copies node_modules 14 MB + eslint/package files), to R-0d. | **Not committed:** Makefile was edited by someone else at 10:26:51 during the audit (+2 rm -rf node_modules lines in install/publish, unaudited, out of scope); staged set != audited diff. Index unstaged, tree untouched. Awaiting Orchestrator/human. |
+| 0.2 | R-0b | 2 | PASS | this commit | `make check` PASS; `make lint` PASS (0 errors / 168 warnings = baseline); `make smoke` PASS; smoke-x2 PASS (1 known sig, 0 new, 6/5 msgs, probe 6/5, deltas 0/0/0/0/0/+1/0); card PASS; publish verified in temp copy | Attempt 2 = Makefile T-7 interim (human node_modules lines kept + agents/eslint.config.js/package*.json removed from install, eslint.config.js from publish; lint .PHONY; check comment). Installed dir and zip contain no node_modules/agents/eslint.config.js/package*.json. Zip: 80 entries, no themes/ (T-4), still has ui/legacy (R-0d). G-lint baseline 168 warnings (per-file list in Last verdict). Nits: rm -rf for single files; package.json main=index.js; dev *.md docs installed. Finding: screenshot names with spaces break xargs cp. |

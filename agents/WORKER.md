@@ -58,8 +58,18 @@ Isolated smoke can't change settings from outside (memory backend is in-process)
 > Written by the ORCHESTRATOR only. Worker: do not edit this section.
 
 ```
-Cycle:      —
-Task:       none. Loop paused by the human after phase 1 (B-35 skipped). Next: 2.1 R-7a.
+Cycle:      2.1
+Task:       R-7a — Animator teardown
+Attempt:    1
+Card:       §6 "R-7a"
+Notes:      HEAD 03940ad. First Phase 2 card, expanded by the Orchestrator. Read its
+            Context. The main risk is use-after-destroy: GJS logs criticals when a
+            destroyed actor is touched, so look for every holder of a pool actor (grep
+            `_renderer`, `_dots`, `_badges`, `_renderers` in all .js) and say how each one
+            is safe after disable.
+            Gates: check; lint 0/151; check-settings exit 0 (0/30, hard gate); smoke 1
+            known sig, deltas 0/0/0/0/0/+1/0 (stage-walk can't see off-stage leaks, T-6,
+            so deltas staying the same is expected); timer_check 15/15. Known flake B-37.
 ```
 
 ## 5. Report
@@ -67,63 +77,71 @@ Task:       none. Loop paused by the human after phase 1 (B-35 skipped). Next: 2
 > Overwritten by the WORKER each cycle; read by the AUDITOR.
 
 ```
-Cycle / Task / Attempt: 1.9 / R-5 / 1
-Status:            DONE (all parts of B-12, B-32, B-33; total diff +125/-56, under the ~300 cap)
-Files changed:     ui/tweaks.ui (+6/-1), preferences/prefKeys.js (+59/-26), prefs.js (+60/-29), vs HEAD 3311461.
-Findings addressed (all confirmed at HEAD first):
-  B-12 tweaks.ui: new GtkAdjustment pressure-sense-sensitivity-adjust (0..1, step 0.01, same as the
-    scroll one); the pressure-sense-sensitivity GtkScale uses it. scroll-sensitivity keeps its own.
-  B-32 / write-on-open (root cause): prefKeys gets a _syncing counter + withoutWriteback(fn) +
-    updateWidget(name). Every widget handler (state-set, notify::selected-item, value-changed,
-    color-set) returns early while _syncing, so settings->widget updates never write back to
-    settings. prefs.js now creates MonitorsConfig and fills the monitor model (updateMonitors)
-    AFTER connectBuilder and BEFORE connectSettings. updateMonitors swaps the model inside
-    withoutWriteback and then re-selects the stored preferred-monitor via updateWidget, so a later
-    'updated' signal (async DBus) doesn't reset it to 0 either.
-  B-33:
-   - changed:: -> widgets: the connectSettings changed:: handler now calls updateWidget(name). Reset
-     button and presets now visibly update switches/dropdowns/scales/color buttons (color-button
-     refresh comes from this as well).
-   - Initial load also goes through updateWidget (replaces the inline per-type set_* code). The
-     color length guard stays in changed::. Silent catches replaced with console.error('d2da: prefs
-     update widget <name>').
-   - Presets: loadPreset reuses this._settingsKeys (no second SettingsKeys/connectSettings pair any
-     more, so no more leaked changed:: handlers on each preset click). Added a 'scale' case
-     (set_double). Each key write is in try/catch -> console.error('d2da: preset <title> key <k>').
-     Export path unchanged (getValue on the main instance; tempPath export stays as it was).
-   - preloadPresets: JSON.parse in try/catch -> console.error('d2da: invalid preset <path>').
-   - Disconnect on close: window 'close-request' disconnects experimental-features, MonitorsConfig
-     'updated', settingsKeys.disconnectSettings() and the new disconnectBuilder(); returns false.
-     disconnectSettings is now null-safe. The stale 'when do we clean this up?' comment is removed.
-   - downloads-path: the '' write before the folder dialog is removed. select_folder_finish is in
-     try/catch (it throws when the dialog is dismissed), so the stored path stays the same on cancel.
-  Not changed: open-time settings.set_string('msg-to-ext', '') (R-6 behavior; it's a no-op write when
-    already ''). extension.js also uses PrefKeys.connectSettings with no builder: updateWidget returns
-    early when there's no widget, so runtime behavior is unchanged (smoke confirms).
+Cycle / Task / Attempt: 2.1 / R-7a / 1
+Status:            DONE
+Files changed:     animator.js only (+24/-11 vs HEAD 03940ad). No dock.js change needed.
+What changed (animator.js):
+  - _destroyPool(): destroy() every actor in _renderers/_dots/_badges (null-safe, `actor?.destroy()`),
+    then reset the three arrays to []. Overlays are St.Widgets, so destroy() also takes their Dot child.
+  - disable(): _destroyPool() first, then `this._target?.remove_all_children()` for the remaining
+    non-pool children (services' clock/calendar, unparented only until R-7b; commented), then
+    _target = null, _computed = null. The old "if (!this._renderers) init arrays" block is gone
+    (_destroyPool always leaves [] arrays).
+  - _precreateResources(): the bare `this._renderers = []` etc. (renderArea has 0 children) is now
+    _destroyPool(). After disable the arrays are already empty, so this is a no-op there; it only
+    matters if renderArea is emptied some other way.
+  - destroy(): disable(), then dock = null, extension = null. Not called anywhere yet (R-7d).
+  - bounceIcon getTarget(): `if (!this._target) return [null, null];` first. Every bounce frame goes
+    through getTarget, so after disable() no frame touches container._renderer (destroyed) or the
+    appwell. Bounce-only path, nothing added to animate() (W8).
+  enable() and animate() math untouched; _bms untouched.
+Pool-actor holders after disable (grepped _renderer/_renderers/_dots/_badges in all .js):
+  - animator._renderers/_dots/_badges: destroyed and emptied in disable().
+  - icon._renderer on Dash containers (animator.js:593, reassigned every frame from the pool before use):
+      * dock._updateFocusedIcon (dock.js) reads dock._icons[*]._renderer. undock() calls _endAnimation()
+        (which runs _updateFocusedIcon and then sets _icons = null) BEFORE animator.disable(), so it
+        sees live actors. Its only other caller is debounceEndSeq, which undock() cancels.
+      * destroyDash() re-runs _findIcons() + _cleanupIcon(); _cleanupIcon doesn't touch _renderer, and
+        _icons is nulled again after. The dash is then dropped along with the old Dock (destroyDocks
+        empties docks/listeners), so the stale refs can't be reached.
+      * bounceIcon frames (container._renderer): guarded by the new _target check. extension.disable()
+        shuts the timers down anyway; _updateMultiMonitorPreference keeps _hiTimer running, so this
+        guard is what covers it there.
+      * integrations.compiz_getIcon (dashElement._renderer): iterates extension.docks, i.e. only live
+        docks whose animator owns live pool actors.
+      * services.updateIcon (item._renderer): called only from Animator.animate after the per-frame
+        reassignment at animator.js:593.
+  - Dock.animate() between undock and redock: undock cancels _animationSeq and the Dock is dropped.
+    If animate() did run, renderArea has 0 children -> _destroyPool() (no-op) -> pool rebuilt, and
+    icon._renderer is reassigned before any use. Self-healing, no stale access.
+Card context note: recreateDash() doesn't call animator.enable() and doesn't undock. Only Dock.dock()
+  calls enable(). Every path that runs undock() (disable, monitors/preferred-monitor change via
+  destroyDocks) builds a NEW Dock + Animator through createDock(). recreateDash (dock-location, scale,
+  separator, icon theme) keeps the live pool, which is correct.
 Self-verification:
   make check = OK
-  make lint = 0 errors / 151 warnings (baseline 154). prefs.js 3 -> 3, prefKeys.js 6 -> 3 (removed
-    the unused vars in the rewritten block). No increase.
-  python3 -B tools/check-settings.py = 0 errors / 30 warnings, exit 0 (was 1 / 30). No shared adjustment.
+  make lint = 0 errors / 151 warnings (unchanged)
+  python3 -B tools/check-settings.py = 0 errors / 30 warnings, exit 0
   gjs -m tests/timer_check.js = all passed (15/15)
-  make smoke = PASS, 1 known sig, 0 new, 0 gone; msgs 6/5; probe 6/5; after-enable deltas all 0;
-    after-disable 0/0/0/0/0/+1/0 = baseline.
-  Headless prefKeys check (temporary gjs script, deleted afterwards; GSETTINGS_BACKEND=memory, repo
-    schemas, fake widgets that emit their change signal on programmatic set like GTK does):
-    connectBuilder+connectSettings = 0 settings writes; external set_double -> widget follows; user
-    widget change -> setting written; disconnect OK.
-  Not run: real prefs window (needs a display, and I wasn't going to risk the real dconf). No dconf
-    reads or writes made. No artifacts left (/tmp scratch removed, no __pycache__).
-Needs human visual check: yes - make test-prefs: (1) dconf dump /org/gnome/shell/extensions/dash2dock-lite/
-  before/after open+close = identical (preferred-monitor set to non-0 included); (2) moving the pressure
-  slider doesn't move scroll sensitivity; (3) Reset and a theme preset update the widgets, colors included;
-  (4) downloads folder: cancel keeps the old path; (5) monitor dropdown shows the saved monitor.
-New findings (proposed B-xx, with file:symbol and evidence):
-  - prefKeys.js connectBuilder 'switch': the state-set handler reads w.get_active() (the old state while
-    state-set is being emitted; the new state is the handler's 2nd arg). It also calls key.callback twice
-    (here and inside setValue). Pre-existing, left as is (out of card scope).
-  - prefKeys.js 'dropdown': key_maps are applied on write but not reversed on set_selected. Latent only;
-    every key_maps in keys.js is {}.
+  make smoke x3 = PASS each time: 1 known sig, 0 new, 0 gone; msgs 6/5; probe 6/5; after-enable deltas
+    all 0; after-disable 0/0/0/0/0/+1/0 (= expected; T-6, stage walk can't see off-stage leaks).
+  grep -c 'disposed\|finalized\|already been destroyed' /tmp/d2da-smoke.log = 0 (all runs).
+  Note: every smoke log ends with 150 "Gjs-CRITICAL ... call back into JSAPI during the sweeping phase
+    of GC" lines, timestamped AFTER the last probe (shell teardown). They aren't in .sig because they
+    land after the signature step. They're pre-existing: I copied `git show HEAD:animator.js` over the
+    installed copy, ran tools/smoke-shell.sh 5 and also got 150. Then `make smoke` reinstalled my
+    version (installed animator.js == working tree, verified with diff). Likely B-1 (undestroyed
+    Dash/Dock with ::destroy handlers finalized by GC at exit). Suggest R-0e/R-7d count them.
+Needs human visual check: yes (per card) - icons, dots and badges render after toggling the
+  extension, after changing the preferred monitor, and when disabling during a bounce.
+New findings (proposed B-xx):
+  - dock.js _findIcons: after destroyDash() (dash = null), the first call sets _icons = [] and returns
+    []. The next call sees _icons truthy and dereferences this.dash._box -> TypeError. Bounce frames
+    used to reach this after a monitors change (timers still alive); the new getTarget guard avoids it
+    from animator, but _findIcons itself needs `if (!this.dash)` before the cache check (dock.js, out
+    of scope).
+  - For R-7d: Dock.destroy() must call animator.destroy() BEFORE destroying renderArea. Otherwise
+    _destroyPool calls destroy() on already-disposed wrappers (GJS criticals).
 Scope request / blockers: none
 ```
 
@@ -253,8 +271,22 @@ Phase 2-5 cards are *stubs*: the Orchestrator expands a stub into a full card (s
 - **Human:** yes — blur-my-shell dock blur still correct.
 
 ### Phase 2 — Lifecycle (stubs — expand before assigning)
+#### R-7a — Animator teardown
+- **Fixes:** G1, animator-owned actors (part of the B-1 class). Pooled actors are currently removed from `renderArea` but never destroyed.
+- **Scope:** `animator.js`. (`dock.js` only if a call site must change; say why.)
+- **Context (HEAD 03940ad):** `Animator.enable/disable/_precreateResources` (top of `animator.js`). The pools are `_renderers` (`St.Icon`), `_dots` (`DockItemDotsOverlay`), `_badges` (`DockItemBadgeOverlay`), all children of `dock.renderArea`. `disable()` does `this._target.remove_all_children()`, which unparents the pool *and* the services-owned clock/calendar actors (`services.js` adds them to `renderArea`; their destroy is R-7b), and then keeps the pool arrays. `_precreateResources` resets the arrays to `[]` when `renderArea` has 0 children, so the old actors are dropped undestroyed. Icons cache `icon._renderer = this._renderers[icon._idx]`; `bounceIcon` frames touch `container._renderer`. `undock()` calls `animator.disable()`; `recreateDash()` calls `animator.enable()`. `_bms` is owned by `integrations.js`: don't touch it.
+- **Do:**
+  - Add `_destroyPool()`: `destroy()` every actor in the three pools (null-safe), then reset the arrays to `[]`.
+  - `disable()`: `_destroyPool()` first, then keep `this._target?.remove_all_children()` for the remaining non-pool children (current clock/calendar behaviour until R-7b). Comment that. Then `_target = null`, `_computed = null`.
+  - `_precreateResources`: replace the bare array reset with `_destroyPool()`.
+  - Add `destroy()`: `disable()` then null `dock`, `extension`. Not called yet: R-7d wires it into `Dock.destroy()`.
+  - Make sure nothing touches a destroyed pool actor after `disable()`: stale `icon._renderer` / `_dots` / `_badges` refs on icons that outlive undock, bounce frames still running on `_hiTimer` (≤ ~1 s, guarded by `getTarget`), `animate()` called between undock and redock. Clear the refs or guard them, without adding per-frame work (A8).
+- **Don't:** change `animate()` math; destroy clock/calendar (R-7b); add `Dock.destroy` (R-7d); touch `_bms`.
+- **Accept:** after `undock()` no pool actor is alive; redock (`recreateDash` → `enable` → `_precreateResources`) rebuilds the pool and renders; no "already disposed" / "has been finalized" warnings in the smoke log.
+- **Verify:** `make check`; `make lint`; `tools/check-settings.py` (exit 0); `gjs -m tests/timer_check.js`; `make smoke` + one more run; `grep -c 'disposed\|finalized\|already been destroyed' /tmp/d2da-smoke.log` = 0.
+- **Human:** yes. The dock renders icons, dots and badges after toggling the extension, after changing preferred monitor (redock), and during a bounce right before disabling.
+
 - **R-0e** Probe v2 (T-5, T-6): same settle wait before every disable in `tools/smoke-shell.sh`; strict mode FAILs if probe line counts ≠ N+1/N; live-instance counters for the extension's `Dock` / `Dash` / `Animator` (counter bump in ctor + destroy is the only change allowed in those files) reported as new probe fields. Scope `probe.js`, `tools/smoke-shell.sh`, `dock.js`, `animator.js` (counter lines only). Accept: `lo` delta 0; live-instance deltas recorded (expected > 0 until R-7d).
-- **R-7a** Animator teardown: `Animator.destroy()` destroys renderer/dot/badge pools. Scope `animator.js`, `dock.js`.
 - **R-7b** Menus & lists: `DockItemContainer` destroy handler → `menu.destroy()` + `menuManager.removeMenu`; `_destroyList` → `list.destroy()`; clock/calendar destroyed with their item. Fixes B-29. Scope `dockItems.js`, `dockItemMenu.js`, `dock.js`, `services.js`.
 - **R-7c** Autohide window tracking via a per-extension `WindowTracker` (Map), no `_tracked`/`_parent` expandos. Fixes B-31. Scope `autohide.js`, `extension.js`.
 - **R-7d** `Dock.destroy()` (dash, struts, dwell, renderArea) and `extension.destroyDocks()` calls it. Fixes B-1. Accept: probe deltas = 0 **including R-0e live-instance counters** (stage-walk deltas are already 0 and can't see B-1, T-6) → Orchestrator turns on `D2DA_SMOKE_STRICT_LEAKS=1`.

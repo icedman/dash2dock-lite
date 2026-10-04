@@ -84,40 +84,57 @@ Minor nits (naming, a stray blank line) that don't violate a rule: list them as 
 > Overwritten each cycle. On FAIL the Worker reads this for its rework.
 
 ```
-Cycle / Task / Attempt:  1.11 / diagnostics access (Auditor-only, no Worker) / 1
+Cycle / Task / Attempt:  2.1 / R-7a animator teardown / 1
 Verdict:          PASS
-Commit:           see Audit Log (fix(prefs): make self-test reachable via Experimental Features)
-Gates:            check=PASS ; lint=PASS (0 err / 151 warn = baseline; prefs.js 3 = HEAD) ;
-                  settings=exit 0, 0 err / 30 warn (= baseline) ; xmllint ui/general.ui OK ;
-                  timer_check all passed ; smoke x2 PASS (1 known sig, 0 new, after-disable
-                  0/0/0/0/0/+1/0 both), no B-37 flake.
-Scope:            prefs.js (1 line) + ui/general.ui (1 line) + agents/*.md. Nothing else dirty.
-Rule violations:  none. A1, A3, A4, A6, A7, A12 clean.
+Commit:           see Audit Log (fix(animator): destroy pooled actors on disable)
+Gates:            check=PASS ; lint=PASS (0 err / 151 warn = baseline; animator.js 23 = HEAD) ;
+                  settings=exit 0, 0 err / 30 warn (= baseline) ; timer_check 15/15 ;
+                  smoke x2 PASS (1 known sig, 0 new, 6/5 msgs, probe 6/5, after-enable deltas 0,
+                  after-disable 0/0/0/0/0/+1/0 both), disposed/finalized/already-destroyed = 0 both,
+                  no B-37 flake. Installed animator.js == working tree.
+Scope:            animator.js (+24/-11) + agents/*.md bookkeeping. Nothing else dirty.
+Rule violations:  none. A1, A3-A10, A12, A13 clean.
 Specific checks:
-  - A4: Gio.Settings.get_boolean + GtkWidget visible only; nothing newer than GNOME 45, no version sniffing.
-  - A6: changed::experimental-features handler (experimentalId) is disconnected in close-request
-    (unchanged code, confirmed). No new signals.
-  - experimental-features is read only in prefs.js (extension just mirrors it), so the switch changes
-    nothing in the shell; it only shows self-test-row.
-  - Chain intact: self-test clicked -> set_string('msg-to-ext','run-diagnostics') -> extension.js
-    _enableSettings whitelist {run-diagnostics, dump-timers} -> runDiagnostics() (lazy Timer
-    'diagnostics', 50) -> diagnostics.js runTests(this, this._settingsKeys) -> runSequence; msg reset to ''.
-  - Note (no FAIL): runTests (addPreferenceTests/add_test_values) sets every switch/scale/color/dropdown
-    key to test values and then writes back the original; addMotionTests does the same for animate-icons /
-    autohide-dash. The writes go to real dconf (keys at default may appear in dconf dump). If the run is
-    interrupted (disable/lock/logout, a few minutes long) settings stay mutated. experimental-features
-    itself is toggled during the run, so the Test row flickers.
+  - Holders (grep _renderer/_renderers/_dots/_badges, all .js): pool arrays only in animator.js;
+    icon._renderer read by dock._updateFocusedIcon (runs from _endAnimation, which undock() calls
+    BEFORE animator.disable(); debounceEndSeq cancelled after), bounceIcon frames (new getTarget guard),
+    integrations.compiz_getIcon (live docks only, via extension.docks), services.updateIcon (only from
+    animate() after the per-frame reassignment). DockItemOverlay adds its Dot as a child, so
+    destroy() takes it. No signals on pool actors. Worker's per-holder claims all hold.
+  - disable() order: _destroyPool() (destroy unparents) then remove_all_children() => only services'
+    clock/calendar are unparented, not destroyed (R-7b). _target/_computed nulled.
+  - Card context is wrong (for Orchestrator, not a FAIL): dock.js:192 `this.animator.enable()` is
+    in Dock.dock(), called only from extension.createDock() (new Dock + new Animator). recreateDash()
+    never calls enable() and never undocks; undock() is only reached via destroyDocks() (disable,
+    createTheDocks count change, _updateMultiMonitorPreference), and every one drops the Dock and
+    creates a new one. So "redock = recreateDash -> enable" does not exist; recreateDash keeps the
+    live pool (correct).
+  - A8: guard is in bounceIcon's getTarget (per bounce frame, one field read), nothing new in
+    animate(); _precreateResources calls _destroyPool only on the old renderArea-empty condition.
+  - destroy() uncalled (R-7d), fine.
+  - "sweeping phase of GC" criticals: 150 in each working-tree smoke; an independent HEAD 03940ad
+    smoke (temporary worktree, removed) also gives 150 => pre-existing. They are logged after
+    "Shutting down GNOME Shell", i.e. in the EXIT-trap cleanup, AFTER the .sig step => smoke can't
+    see them (tooling gap).
 Rework list:      none.
 Nits:
-  - D2DA 6.5 lists experimental-features as a dead setting; it now gates the Test row in prefs
-    (check-settings still counts it as dead-setting, runtime = extension only; count unchanged 30).
-  - Stale commented-out dock-location-row / lamp-app-animation-row lines in toggle_experimental (pre-existing).
-Findings confirmed:  diagnostics access restored (regression since e70c3db). No B-ids.
-Human check needed:  Prefs -> General -> Experimental Features on -> Test row appears -> Run executes
-                     diagnostics (journalctl -f); settings restored afterwards.
+  - getTarget guard also skips a bounce requested before the first animate() frame (_target
+    still undefined); at most one frame after dock(), negligible.
+  - A bounce cut off by disable leaves appwell._bounce=true / translation on the old dash's appwell;
+    that dash is dropped with the Dock, so it's harmless.
+Findings confirmed:  G1 animator part (pool actors now destroyed). Worker's _findIcons finding confirmed
+                     by reading code.
+Human check needed:  dock renders icons/dots/badges after toggling the extension, after changing
+                     preferred monitor, and when disabling during a bounce.
 New findings spotted (for Orchestrator):
-  - diagnostics runTests has no abort/restore-on-disable path; consider a snapshot+restore in disable()
-    when a diagnostics run is in progress (Low).
+  - dock.js _findIcons: after destroyDash() (dash=null) the 1st call sets _icons=[] and returns [];
+    the 2nd call dereferences this.dash._box => TypeError. Needs `if (!this.dash)` before the cache
+    check (Low/Med; no longer reachable from bounce frames).
+  - Tooling (T-class, for R-0e): smoke-shell.sh computes .sig before cleanup kills the shell, so
+    shutdown-time Gjs criticals (150 "sweeping phase of GC" at HEAD and now) aren't checked. Kill the
+    shell and wait before the signature step, or count them as a probe field (expected to drop with R-7d/B-1).
+  - R-7d: Dock.destroy() must call animator.destroy() before renderArea is destroyed (else destroy()
+    on disposed wrappers). Card context for R-7a should be corrected (see above).
 ```
 
 ## 7. Audit Log (append-only, newest last)
@@ -141,3 +158,4 @@ New findings spotted (for Orchestrator):
 | 1.8 | R-6 | 1 | PASS | this commit | `make check` PASS; lint 0/154 = baseline; check-settings 1/30 = baseline; timer_check pass; smoke x2 PASS (1 known sig, 0 new, deltas 0/0/0/0/0/+1/0); no eval/new Function in shipped js | B-11 fixed: fixed two-entry whitelist, '' silent, legacy 'this.runDiagnostics()' warns+resets, prefs sends 'run-diagnostics'. Nit: plain-object map resolves Object.prototype keys (harmless; use Object.hasOwn). |
 | 1.9 | R-5 | 1 | PASS | this commit | `make check` PASS; lint 0/151 (baseline 154; prefKeys.js 6 -> 3, prefs.js 3 = HEAD); check-settings exit 0, 0 err / 30 warn (B-12 gone); timer_check pass; xmllint tweaks.ui OK; smoke x2 PASS (1 known sig, 0 new, deltas 0/0/0/0/0/+1/0), no B-37 flake | B-12, B-32, B-33 fixed. Guard = counter + try/finally; memory-backend harness (deleted): 0 writes on open and on monitor-model rebuild, saved monitor re-selected, sliders independent, 0 handlers after close. Finding: open-time msg-to-ext empty-string write may show in dconf dump. |
 | 1.11 | diagnostics access (Auditor-only) | 1 | PASS | this commit | `make check` PASS; lint 0/151 = baseline (prefs.js 3 = HEAD); check-settings exit 0, 0/30 = baseline; xmllint general.ui OK; timer_check pass; smoke x2 PASS (1 known sig, 0 new, deltas 0/0/0/0/0/+1/0), no B-37 flake | prefs.js toggle_experimental reads experimental-features; general.ui experimental-features-row visible. Chain button -> msg-to-ext run-diagnostics -> whitelist -> runDiagnostics -> runTests intact. close-request disconnect confirmed. Note: runTests changes every setting and restores it (real dconf; not restored if interrupted). Nit: D2DA 6.5 still lists experimental-features as dead. |
+| 2.1 | R-7a | 1 | PASS | this commit | `make check` PASS; lint 0/151 = baseline (animator.js 23 = HEAD); check-settings exit 0, 0/30 = baseline; timer_check 15/15; smoke x2 PASS (1 known sig, 0 new, deltas 0/0/0/0/0/+1/0), disposed/finalized 0, no B-37 flake | Pool destroyed before remove_all_children (clock/calendar only unparented, R-7b); all _renderer holders safe after disable; getTarget guard is bounce-only (A8 ok); destroy() uncalled (R-7d). Card wrong: dock.js:192 enable() is in Dock.dock() (createDock only); recreateDash never enables/undocks; every undock path builds a new Dock. 150 post-shutdown "sweeping phase of GC" criticals = HEAD (independent worktree smoke); .sig step runs before shutdown (tooling gap). Findings: _findIcons TypeError after destroyDash; R-7d call order. |

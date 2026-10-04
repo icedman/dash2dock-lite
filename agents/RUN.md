@@ -121,12 +121,12 @@ Status: `[ ]` todo · `[~]` in progress · `[x]` done (hash) · `[!]` blocked ·
 | [x] 3311461 | 1.8 | R-6 remove eval | 0.1 | B-11 |
 | [x] 5840f29 | 1.9 | R-5 prefs | 0.3, 1.8 | B-12, B-32, B-33 · human visual |
 | SKIPPED | 1.10 | B-35 NaN clip (BMS) — human 2026-10-04: skip for now (needs real-dconf smoke) | 0.1 | G-real required · HUMAN — end of phase 1 |
-| [~] | 1.11 | Restore prefs diagnostics access (human request, Auditor-only; Orchestrator made the edits during the pause) | 1.8 | `prefs.js` toggle_experimental reads `experimental-features`; `ui/general.ui` experimental-features-row visible |
+| [x] 03940ad | 1.11 | Restore prefs diagnostics access (human request, Auditor-only; Orchestrator made the edits during the pause) | 1.8 | `prefs.js` toggle_experimental reads `experimental-features`; `ui/general.ui` experimental-features-row visible |
 
 ### Phase 2 — Lifecycle (G1) — expand stubs before assigning
 | | Cycle | Task | Depends | Notes |
 |---|---|---|---|---|
-| [ ] | 2.1 | R-7a animator teardown | 1.2 | |
+| [~] | 2.1 | R-7a animator teardown | 1.2 | |
 | [ ] | 2.2 | R-7b menus/lists/clock/calendar destroy | 2.1 | B-29 |
 | [ ] | 2.3 | R-7c WindowTracker, no Meta.Window expandos | 1.3 | B-31 |
 | [ ] | 2.3a | R-0e probe v2 (smoke timing, live-instance counters) | 0.1 | T-5, T-6 · prerequisite for strict leaks |
@@ -236,6 +236,7 @@ Items the agents can't see. The human runs `make test-shell` (needs `mutter-devk
 | 1.9 | 5840f29 | Pressure and scroll sliders move independently | |
 | 1.9 | 5840f29 | Reset and a theme preset update the widgets, incl. colors | |
 | 1.9 | 5840f29 | Cancel the downloads-folder dialog ⇒ old path kept; monitor dropdown shows the saved monitor | |
+| 1.11 | 03940ad | Prefs → General → Experimental Features on ⇒ Test row appears → Run executes diagnostics (`journalctl -f`); settings restored at the end | |
 
 ## 6. Run Log (append-only, newest last)
 
@@ -305,3 +306,6 @@ Format: `YYYY-MM-DD HH:MM · cycle · EVENT · details` where EVENT ∈ `SETUP, 
 - 2026-10-04 · — · NOTE · Follow-up: the Test row still didn't show, because `ui/general.ui` `experimental-features-row` had `visible=false`, so the gating switch was unreachable. Set it to `visible=true` (uncommitted). xmllint OK, check-settings 0/30. `make install` run so prefs picks it up. Known uncommitted human-requested changes: `prefs.js`, `ui/general.ui`.
 - 2026-10-04 · 1.11 · PREFLIGHT · Resume. Dirt = agents/* + known `prefs.js`, `ui/general.ui` (diagnostics access, see NOTEs). HEAD `5840f29`; GNOME Shell 50.5.
 - 2026-10-04 · 1.11 · ASSIGN · Auditor-only commit of the diagnostics-access change, so phase 2 starts from a clean tree.
+- 2026-10-04 · 1.11 · AUDIT-PASS · `03940ad` (Auditor-only). check=PASS lint=0/151 settings=exit 0 (0/30) xmllint OK timer_check pass smoke=PASS(x2). Diagnostics chain verified end to end. D2DA §6.5 updated (`experimental-features` now gates the Test row); low item: diagnostics has no abort/restore when disabled mid-run. 1 human-check item queued.
+- 2026-10-04 · 2.1 · PREFLIGHT · tree clean apart from agents/*; HEAD `03940ad`; GNOME Shell 50.5.
+- 2026-10-04 · 2.1 · ASSIGN · R-7a animator teardown. Stub expanded into a full card (pool destroy, clock/calendar left to R-7b, `destroy()` for R-7d).

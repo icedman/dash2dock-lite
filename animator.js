@@ -45,14 +45,27 @@ export let Animator = class {
   }
 
   disable() {
-    if (this._target) {
-      this._target.remove_all_children();
-    }
-    if (!this._renderers) {
-      this._renderers = [];
-      this._dots = [];
-      this._badges = [];
-    }
+    this._destroyPool();
+    // only non-pool children are left (services' clock/calendar); they are
+    // just unparented until R-7b destroys them with their item
+    this._target?.remove_all_children();
+    this._target = null;
+    this._computed = null;
+  }
+
+  destroy() {
+    this.disable();
+    this.dock = null;
+    this.extension = null;
+  }
+
+  _destroyPool() {
+    [this._renderers, this._dots, this._badges].forEach((pool) => {
+      (pool || []).forEach((actor) => actor?.destroy());
+    });
+    this._renderers = [];
+    this._dots = [];
+    this._badges = [];
   }
 
   _precreateResources(dock) {
@@ -62,9 +75,7 @@ export let Animator = class {
 
     let count = dock._icons.length;
     if (dock.renderArea.get_children().length == 0) {
-      this._renderers = [];
-      this._dots = [];
-      this._badges = [];
+      this._destroyPool();
     }
     this._target = dock.renderArea;
 
@@ -1054,6 +1065,8 @@ export let Animator = class {
     appwell.translation_y = 0;
 
     const getTarget = (app_id) => {
+      // disabled: the pool is destroyed and container._renderer is stale
+      if (!this._target) return [null, null];
       if (dock._dragging) return [null, null];
       let icons = dock._findIcons();
       let icon = icons.find((icon) => {

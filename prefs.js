@@ -111,7 +111,13 @@ export default class Preferences extends ExtensionPreferences {
   async selectFolder(window, builder, settings, target) {
     const dialog = new Gtk.FileDialog();
     dialog.select_folder(window, null, (dialog, task) => {
-      let folder = dialog.select_folder_finish(task);
+      let folder = null;
+      try {
+        folder = dialog.select_folder_finish(task);
+      } catch (err) {
+        // dismissed or failed; keep the current path
+        console.log(`d2da: select folder: ${err.message}`);
+      }
       if (folder instanceof Gio.File) {
         let path = folder.get_path();
         console.log(`${target} = ${path}`);
@@ -133,7 +139,6 @@ export default class Preferences extends ExtensionPreferences {
 
     if (builder.get_object('downloads-folder')) {
       builder.get_object('downloads-folder').connect('clicked', () => {
-        settings.set_string('downloads-path', '');
         this.selectFolder(window, builder, settings, 'downloads-path')
           .then((path) => {
             console.log(path);
@@ -194,7 +199,16 @@ export default class Preferences extends ExtensionPreferences {
         return new Gdk.RGBA(rgba);
       }
     });
+    this._settingsKeys = settingsKeys;
     settingsKeys.connectBuilder(builder);
+
+    // the monitor model must exist before preferred-monitor is selected (B-32)
+    this._monitorsConfig = new MonitorsConfig();
+    let monitorsId = this._monitorsConfig.connect('updated', () =>
+      this.updateMonitors()
+    );
+    this.updateMonitors();
+
     settingsKeys.connectSettings(settings);
 
     this._settings = settings;
@@ -217,15 +231,22 @@ export default class Preferences extends ExtensionPreferences {
       }
     };
 
-    settings.connect('changed::experimental-features', () => {
-      toggle_experimental();
-    });
+    let experimentalId = settings.connect(
+      'changed::experimental-features',
+      () => {
+        toggle_experimental();
+      }
+    );
 
     toggle_experimental();
 
-    this._monitorsConfig = new MonitorsConfig();
-    this._monitorsConfig.connect('updated', () => this.updateMonitors());
-    // settings.connect('changed::preferred-monitor', () => this.updateMonitors());
+    window.connect('close-request', () => {
+      settings.disconnect(experimentalId);
+      this._monitorsConfig.disconnect(monitorsId);
+      settingsKeys.disconnectSettings();
+      settingsKeys.disconnectBuilder();
+      return false;
+    });
 
     this._themed_presets = [];
     this.preloadPresets(`${this.path}/themes`);
@@ -233,7 +254,6 @@ export default class Preferences extends ExtensionPreferences {
       Gio.File.new_for_path('.config/d2da/themes').get_path()
     );
     this._buildThemesMenu(window);
-    this.updateMonitors();
 
     this.window = window;
   }
@@ -257,9 +277,13 @@ export default class Preferences extends ExtensionPreferences {
         const [success, contents] = fn.load_contents(null);
         const decoder = new TextDecoder();
         let contentsString = decoder.decode(contents);
-        let json = JSON.parse(contentsString);
-        if (json && json['meta'] && json['meta']['title']) {
-          themed_presets.push(json);
+        try {
+          let json = JSON.parse(contentsString);
+          if (json && json['meta'] && json['meta']['title']) {
+            themed_presets.push(json);
+          }
+        } catch (err) {
+          console.error(`d2da: invalid preset ${fn.get_path()}`, err);
         }
       }
       f = iter.next_file(null);
@@ -292,8 +316,7 @@ export default class Preferences extends ExtensionPreferences {
   }
 
   loadPreset(i) {
-    let settingsKeys = SettingsKeys();
-    settingsKeys.connectSettings(this._settings);
+    let settingsKeys = this._settingsKeys;
     if (i == this._themed_presets.length - 1) {
       // export
       let keys = settingsKeys.keys();
@@ -336,22 +359,26 @@ export default class Preferences extends ExtensionPreferences {
       let v = p[k];
       let def = settingsKeys.getKey(k);
       if (!def) return;
-      switch (def.widget_type) {
-        case 'color':
-          this._settings.set_value(k, new GLib.Variant('(dddd)', v));
-          break;
-        case 'switch':
-          this._settings.set_boolean(k, v);
-          break;
-        case 'dropdown':
-          this._settings.set_int(k, v);
-          break;
+      // widgets follow via changed:: in settingsKeys
+      try {
+        switch (def.widget_type) {
+          case 'color':
+            this._settings.set_value(k, new GLib.Variant('(dddd)', v));
+            break;
+          case 'switch':
+            this._settings.set_boolean(k, v);
+            break;
+          case 'dropdown':
+            this._settings.set_int(k, v);
+            break;
+          case 'scale':
+            this._settings.set_double(k, v);
+            break;
+        }
+      } catch (err) {
+        console.error(`d2da: preset ${p['meta']['title']} key ${k}`, err);
       }
     });
-
-    // settingsKeys.connectBuilder(this._builder);
-    settingsKeys._builder = this._builder;
-    settingsKeys.connectSettings(this._settings);
 
     this.window.add_toast(new Adw.Toast({ title: `${p['meta']['title']}` }));
   }
@@ -366,6 +393,10 @@ export default class Preferences extends ExtensionPreferences {
       if (!m.active) continue;
       list.append(m.displayName);
     }
-    this._builder.get_object('preferred-monitor').set_model(list);
+    let dropdown = this._builder.get_object('preferred-monitor');
+    let keys = this._settingsKeys;
+    // replacing the model resets the selection; don't let that reach settings (B-32)
+    keys.withoutWriteback(() => dropdown.set_model(list));
+    keys.updateWidget('preferred-monitor');
   }
 }

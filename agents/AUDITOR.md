@@ -84,33 +84,41 @@ Minor nits (naming, a stray blank line) that don't violate a rule: list them as 
 > Overwritten each cycle. On FAIL the Worker reads this for its rework.
 
 ```
-Cycle / Task / Attempt:  1.8 / R-6 / 1
+Cycle / Task / Attempt:  1.9 / R-5 / 1
 Verdict:          PASS
 Commit:           see Audit Log (fix(prefs): ...)
-Gates:            check=PASS ; lint=PASS (0 err / 154 warn = baseline; extension.js+prefs.js 17 vs
-                  HEAD 18) ; settings=exit 1, 1 err / 30 warn = baseline ; timer_check all passed ;
-                  smoke x2 PASS (1 known sig, 0 new, after-disable 0/0/0/0/0/+1/0), no B-37 flake ;
-                  card: grep eval( / new Function in shipped *.js = nothing (only untracked build/).
-Scope:            extension.js (+13/-4), prefs.js (+1/-1). diagnostics.js untouched (no call site).
-                  Matches Report. agents/*.md = bookkeeping.
+Gates:            check=PASS ; lint=PASS (0 err / 151 warn, baseline 154; prefs.js 3 = HEAD,
+                  prefKeys.js 3 vs HEAD 6) ; settings=exit 0, 0 err / 30 warn (was 1/30, B-12 gone) ;
+                  timer_check all passed ; tweaks.ui xmllint OK ; smoke x2 PASS (1 known sig, 0 new,
+                  after-disable 0/0/0/0/0/+1/0), no B-37 flake.
+Scope:            ui/tweaks.ui, prefs.js, preferences/prefKeys.js only (+125/-56). Matches Report.
 Rule violations:  none. A1-A13 clean.
 Specific checks:
-  - Whitelist is a fixed object literal of two closures; no this[value] lookup. Both
-    runDiagnostics/dumpTimers exist (extension.js ~1234/1242).
-  - '' is guarded by value.length -> reset write re-enters silently, no loop/warn.
-  - 'this.runDiagnostics()' -> commands[...] undefined -> warn + reset; never executes.
-    Stale dconf value at enable is ignored (changed:: only).
-  - prefs.js sends exactly 'run-diagnostics'.
+  - withoutWriteback: counter (re-entrant/nested safe) + try/finally; updateWidget catches and logs.
+    All four writing handlers (state-set, notify::selected-item, value-changed, color-set) bail on _syncing.
+  - Auditor memory-backend harness (real keys.js/prefKeys.js, fake GTK-like widgets, deleted):
+    preferred-monitor=2 + pressure=0.7 -> open = 0 writes, widgets show 2/0.7; model rebuild re-selects 2
+    with 0 writes; throw inside guard -> _syncing 0; scroll slider write leaves pressure; reset -> widget
+    follows; after disconnectSettings+disconnectBuilder 0 handlers left.
+  - Monitor model filled after connectBuilder, before connectSettings; 'updated' re-selects without writing.
+  - close-request disconnects experimental-features, MonitorsConfig updated, settings changed::*, builder
+    handlers. loadPreset reuses this._settingsKeys (no per-click connect).
+  - A4: Gtk.FileDialog 4.10, Adw.Toast, close-request all <= GNOME 45. Nothing newer.
+  - Adjustment 0..1 step 0.01 = scroll one; schema key has no range (default 0.4).
 Rework list:      none.
 Nits:
-  - commands is a plain {} so inherited keys resolve: 'toString'/'constructor'/'hasOwnProperty'
-    call harmless Object.prototype fns, '__proto__' throws TypeError (caught, logged). No code
-    execution; prefer Object.hasOwn(commands, value) or a Map / Object.create(null) later.
-  - map rebuilt per non-empty message (cold path, fine).
-Findings confirmed:  B-11 fixed.
-Human check needed:  prefs -> self-test/diagnostics button still runs diagnostics;
-                     optional: gsettings set msg-to-ext 'bogus' -> one warning, key reset to ''.
-New findings spotted (for Orchestrator): none.
+  - downloads-folder/self-test 'clicked' handlers not disconnected (die with the window, acceptable).
+  - MonitorsConfig DBus proxy itself not torn down on close (pre-existing).
+Findings confirmed:  B-12, B-32, B-33 fixed.
+Human check needed:  make test-prefs: dconf dump identical before/after open+close (preferred monitor != first);
+                     pressure/scroll sliders independent; Reset + preset update widgets incl. colors; cancel
+                     downloads dialog keeps path; monitor dropdown shows saved monitor.
+New findings spotted (for Orchestrator):
+  - prefs.js fillPreferencesWindow still does settings.set_string('msg-to-ext', '') on open (R-6). If the key
+    is unset in dconf this may materialize msg-to-ext='' in `dconf dump`, so the "identical dump" human
+    check may differ on that one line. Suggest guarding with get_string() !== ''.
+  - Worker's two prefKeys findings (switch reads old state in state-set + double callback; dropdown maps not
+    reversed) agreed, latent.
 ```
 
 ## 7. Audit Log (append-only, newest last)
@@ -132,3 +140,4 @@ New findings spotted (for Orchestrator): none.
 | 1.6 | R-4c | 1 | PASS | this commit | `make check` PASS; `make lint` PASS (0 err / 158 warn, baseline 162; dock.js 21 vs HEAD 25, -4 unused vars in edited code); check-settings exit 1 (1 err B-12 / 30 warn = baseline); smoke FAIL x2 (NEW Style.unloadAll /tmp css delete, environmental), HEAD worktree PASS, then `make smoke` PASS + smoke-x2 PASS (1 known sig, 0 new, 6/5, after-disable deltas 0/0/0/0/0/+1/0); `d2da: ` 0; timer_check all passed | B-17 get_state; B-18 activate(button) forwarded (Shell 50.5 AppIcon.activate(button) verified), original activate runs uncaught like stock Shell, judged within intent; B-19 symmetric removal on _effectTargets. Finding: smoke flake from /tmp css shared with the live session (style.js, B-10 class). |
 | 1.7 | R-4d | 1 | PASS | this commit | `make check` PASS; `make lint` PASS (0 err / 154 warn, was 158; services.js 12 -> 8); check-settings exit 1 (1 err / 30 warn = baseline); timer_check all passed; smoke-x2 PASS (1 known sig, 0 new, deltas 0/0/0/0/0/+1/0 both), no B-37 flake | B-9 fixed. Mount key = sha1(root URI) in the existing tempPath scheme; add/remove/dock.js agree. Always-rewrite only on mount events / enable / mounted-icon change (ping only drains the deferred queue), no periodic I/O. Name escaped per Desktop Entry spec. Nits: _toSafeFileName unused; Exec path unquoted (pre-existing); old shared Volume launcher orphaned in /tmp. |
 | 1.8 | R-6 | 1 | PASS | this commit | `make check` PASS; lint 0/154 = baseline; check-settings 1/30 = baseline; timer_check pass; smoke x2 PASS (1 known sig, 0 new, deltas 0/0/0/0/0/+1/0); no eval/new Function in shipped js | B-11 fixed: fixed two-entry whitelist, '' silent, legacy 'this.runDiagnostics()' warns+resets, prefs sends 'run-diagnostics'. Nit: plain-object map resolves Object.prototype keys (harmless; use Object.hasOwn). |
+| 1.9 | R-5 | 1 | PASS | this commit | `make check` PASS; lint 0/151 (baseline 154; prefKeys.js 6 -> 3, prefs.js 3 = HEAD); check-settings exit 0, 0 err / 30 warn (B-12 gone); timer_check pass; xmllint tweaks.ui OK; smoke x2 PASS (1 known sig, 0 new, deltas 0/0/0/0/0/+1/0), no B-37 flake | B-12, B-32, B-33 fixed. Guard = counter + try/finally; memory-backend harness (deleted): 0 writes on open and on monitor-model rebuild, saved monitor re-selected, sliders independent, 0 handlers after close. Finding: open-time msg-to-ext empty-string write may show in dconf dump. |

@@ -58,24 +58,26 @@ Isolated smoke can't change settings from outside (memory backend is in-process)
 > Written by the ORCHESTRATOR only. Worker: do not edit this section.
 
 ```
-Cycle:      1.8
-Task:       R-6 — Remove `eval` from `msg-to-ext`
+Cycle:      1.9
+Task:       R-5 — Prefs fixes
 Attempt:    1
-Card:       §6 "R-6"
-Notes:      HEAD 0821a56. Call sites: extension.js `case 'msg-to-ext'` (~495, evals then
-            resets to ''), prefs.js:158 (sends 'this.runDiagnostics()'), prefs.js:190
-            (resets ''). Check that `runDiagnostics` / `dumpTimers` actually exist on the
-            extension (grep, incl. diagnostics.js). Only whitelist commands backed by an
-            existing method; report any that are missing rather than inventing them.
-            Keep the reset-to-'' handshake (and make sure the reset write doesn't
-            re-trigger a warning: '' must be a silent no-op). Old dconf values from
-            earlier versions (e.g. 'this.runDiagnostics()') must not execute; they fall
-            into the unknown-command warning or are ignored. Say which.
-            check-settings: `msg-to-ext` was a dead-setting false positive (its case
-            used `value` via eval). Report whether its status changes (count should
-            stay 1/30 or drop).
-            Baselines: lint 0/154; check-settings 1/30; smoke 1 known sig, deltas
-            0/0/0/0/0/+1/0; timer_check 15/15. Known flake B-37 (`Style.unloadAll`).
+Card:       §6 "R-5"
+Notes:      HEAD 3311461. !! NEVER open prefs against the user's real dconf. B-12/B-32
+            are exactly "opening prefs overwrites settings". Allowed: reading dconf
+            (`dconf dump`), running prefs/test code with `GSETTINGS_BACKEND=memory` (plus
+            GSETTINGS_SCHEMA_DIR to the repo schemas) if it works headless, and code
+            reading. If you can't exercise prefs safely, say so; the human runs
+            `make test-prefs`. W3 applies: no gsettings set / dconf write.
+            Size: B-33 has several parts (scale case, color-button refresh, disconnect
+            on close, changed:: → widgets, JSON.parse try/catch, downloads-path cleared
+            before the folder dialog). If the total diff goes past ~300 lines, do B-12
+            + B-32 + the safety parts of B-33 (JSON.parse, disconnects,
+            downloads-path) and report the rest as remaining. Don't half-do a part.
+            check-settings must then report 0 errors (B-12 was the last) ⇒ exit 0.
+            Report the new counts. Lint baseline 0/154 (prefs.js and prefKeys.js counts
+            must not increase). Smoke baseline 1 sig / deltas 0/0/0/0/0/+1/0
+            (prefs isn't loaded in the shell, so it should be unchanged). timer_check
+            15/15.
 ```
 
 ## 5. Report
@@ -83,41 +85,63 @@ Notes:      HEAD 0821a56. Call sites: extension.js `case 'msg-to-ext'` (~495, ev
 > Overwritten by the WORKER each cycle; read by the AUDITOR.
 
 ```
-Cycle / Task / Attempt: 1.8 / R-6 / 1
-Status:            DONE
-Files changed:     extension.js (+13/-4), prefs.js (+1/-1), vs HEAD 0821a56. diagnostics.js untouched
-                   (no msg-to-ext call site there).
-Findings addressed:
-  B-11 confirmed at HEAD (case 'msg-to-ext' did eval(value)).
-   - extension.js case 'msg-to-ext': whitelist map { 'run-diagnostics': runDiagnostics(),
-     'dump-timers': dumpTimers() } built only when value is non-empty. Known command runs in
-     try/catch -> console.error('d2da: msg-to-ext <cmd>', err) (was console.log). Unknown ->
-     console.warn('d2da: unknown command', value). Either way then resets to ''.
-   - '' is a silent no-op (value.length guard kept), so the reset write re-enters the handler
-     without warning.
-   - Both target methods exist on the extension (extension.js runDiagnostics / dumpTimers);
-     nothing missing, nothing invented.
-   - prefs.js self-test button now sends 'run-diagnostics'; prefs.js open-time reset to ''
-     unchanged.
-  Legacy values: a stale 'this.runDiagnostics()' (or any old string) is never executed. If it
-    arrives via changed:: it hits the unknown-command warning and is reset to ''. A stale value
-    already in dconf at enable is ignored (handler only runs on changed::) and is cleared next
-    time prefs opens.
-  check-settings: msg-to-ext still reported as 'never read at runtime [has case in extension.js]'
-    (the case uses value, not this.msgToExt) -> status unchanged, totals stay 1 / 30.
+Cycle / Task / Attempt: 1.9 / R-5 / 1
+Status:            DONE (all parts of B-12, B-32, B-33; total diff +125/-56, under the ~300 cap)
+Files changed:     ui/tweaks.ui (+6/-1), preferences/prefKeys.js (+59/-26), prefs.js (+60/-29), vs HEAD 3311461.
+Findings addressed (all confirmed at HEAD first):
+  B-12 tweaks.ui: new GtkAdjustment pressure-sense-sensitivity-adjust (0..1, step 0.01, same as the
+    scroll one); the pressure-sense-sensitivity GtkScale uses it. scroll-sensitivity keeps its own.
+  B-32 / write-on-open (root cause): prefKeys gets a _syncing counter + withoutWriteback(fn) +
+    updateWidget(name). Every widget handler (state-set, notify::selected-item, value-changed,
+    color-set) returns early while _syncing, so settings->widget updates never write back to
+    settings. prefs.js now creates MonitorsConfig and fills the monitor model (updateMonitors)
+    AFTER connectBuilder and BEFORE connectSettings. updateMonitors swaps the model inside
+    withoutWriteback and then re-selects the stored preferred-monitor via updateWidget, so a later
+    'updated' signal (async DBus) doesn't reset it to 0 either.
+  B-33:
+   - changed:: -> widgets: the connectSettings changed:: handler now calls updateWidget(name). Reset
+     button and presets now visibly update switches/dropdowns/scales/color buttons (color-button
+     refresh comes from this as well).
+   - Initial load also goes through updateWidget (replaces the inline per-type set_* code). The
+     color length guard stays in changed::. Silent catches replaced with console.error('d2da: prefs
+     update widget <name>').
+   - Presets: loadPreset reuses this._settingsKeys (no second SettingsKeys/connectSettings pair any
+     more, so no more leaked changed:: handlers on each preset click). Added a 'scale' case
+     (set_double). Each key write is in try/catch -> console.error('d2da: preset <title> key <k>').
+     Export path unchanged (getValue on the main instance; tempPath export stays as it was).
+   - preloadPresets: JSON.parse in try/catch -> console.error('d2da: invalid preset <path>').
+   - Disconnect on close: window 'close-request' disconnects experimental-features, MonitorsConfig
+     'updated', settingsKeys.disconnectSettings() and the new disconnectBuilder(); returns false.
+     disconnectSettings is now null-safe. The stale 'when do we clean this up?' comment is removed.
+   - downloads-path: the '' write before the folder dialog is removed. select_folder_finish is in
+     try/catch (it throws when the dialog is dismissed), so the stored path stays the same on cancel.
+  Not changed: open-time settings.set_string('msg-to-ext', '') (R-6 behavior; it's a no-op write when
+    already ''). extension.js also uses PrefKeys.connectSettings with no builder: updateWidget returns
+    early when there's no widget, so runtime behavior is unchanged (smoke confirms).
 Self-verification:
-  grep -n 'eval(' *.js = nothing (Accept met)
   make check = OK
-  make lint = 0 errors / 154 warnings (= baseline)
-  python3 -B tools/check-settings.py = 1 error / 30 warnings (= baseline)
-  gjs -m tests/timer_check.js = all passed
+  make lint = 0 errors / 151 warnings (baseline 154). prefs.js 3 -> 3, prefKeys.js 6 -> 3 (removed
+    the unused vars in the rewritten block). No increase.
+  python3 -B tools/check-settings.py = 0 errors / 30 warnings, exit 0 (was 1 / 30). No shared adjustment.
+  gjs -m tests/timer_check.js = all passed (15/15)
   make smoke = PASS, 1 known sig, 0 new, 0 gone; msgs 6/5; probe 6/5; after-enable deltas all 0;
-    after-disable 0/0/0/0/0/+1/0 = baseline. No B-37 flake.
-  Not covered by smoke: the command path itself (isolated GSettings can't be written from outside).
-Needs human visual check: yes - prefs -> self-test/diagnostics button still runs diagnostics;
-  optionally gsettings set ... msg-to-ext 'bogus' -> one 'd2da: unknown command bogus' warning, key
-  reset to ''.
-New findings (proposed B-xx, with file:symbol and evidence): none
+    after-disable 0/0/0/0/0/+1/0 = baseline.
+  Headless prefKeys check (temporary gjs script, deleted afterwards; GSETTINGS_BACKEND=memory, repo
+    schemas, fake widgets that emit their change signal on programmatic set like GTK does):
+    connectBuilder+connectSettings = 0 settings writes; external set_double -> widget follows; user
+    widget change -> setting written; disconnect OK.
+  Not run: real prefs window (needs a display, and I wasn't going to risk the real dconf). No dconf
+    reads or writes made. No artifacts left (/tmp scratch removed, no __pycache__).
+Needs human visual check: yes - make test-prefs: (1) dconf dump /org/gnome/shell/extensions/dash2dock-lite/
+  before/after open+close = identical (preferred-monitor set to non-0 included); (2) moving the pressure
+  slider doesn't move scroll sensitivity; (3) Reset and a theme preset update the widgets, colors included;
+  (4) downloads folder: cancel keeps the old path; (5) monitor dropdown shows the saved monitor.
+New findings (proposed B-xx, with file:symbol and evidence):
+  - prefKeys.js connectBuilder 'switch': the state-set handler reads w.get_active() (the old state while
+    state-set is being emitted; the new state is the handler's 2nd arg). It also calls key.callback twice
+    (here and inside setValue). Pre-existing, left as is (out of card scope).
+  - prefKeys.js 'dropdown': key_maps are applied on write but not reversed on set_selected. Latent only;
+    every key_maps in keys.js is {}.
 Scope request / blockers: none
 ```
 

@@ -118,8 +118,8 @@ Status: `[ ]` todo · `[~]` in progress · `[x]` done (hash) · `[!]` blocked ·
 | [x] 8f44419 | 1.5 | R-4b animator one-liners | 0.1 | B-14, B-15, B-34 · human visual |
 | [x] 1b03ca7 | 1.6 | R-4c dock.js input | 0.1 | B-17, B-18, B-19 · human visual |
 | [x] 0821a56 | 1.7 | R-4d mount names | 0.1 | B-9 |
-| [~] | 1.8 | R-6 remove eval | 0.1 | B-11 |
-| [ ] | 1.9 | R-5 prefs | 0.3, 1.8 | B-12, B-32, B-33 · human visual |
+| [x] 3311461 | 1.8 | R-6 remove eval | 0.1 | B-11 |
+| [~] | 1.9 | R-5 prefs | 0.3, 1.8 | B-12, B-32, B-33 · human visual |
 | [ ] | 1.10 | B-35 NaN clip (BMS) | 0.1 | G-real required · HUMAN — end of phase 1 |
 
 ### Phase 2 — Lifecycle (G1) — expand stubs before assigning
@@ -180,7 +180,7 @@ Status: `open` · `fixed <hash>` · `partial <hash>` · `blocked` · `wontfix (r
 | B-8 | R-9a | open | | B-26 | R-3 | fixed dda62a5 (dead check removed per human rule) |
 | B-9 | R-4d | fixed 0821a56 | | B-27 | R-3 | fixed dda62a5 |
 | B-10 | R-9b | open | | B-28 | (unassigned, needs St case check) | open |
-| B-11 | R-6 | open | | B-29 | R-7b | open |
+| B-11 | R-6 | fixed 3311461 | | B-29 | R-7b | open |
 | B-12 | R-5 | open | | B-30 | (unassigned) | open |
 | B-13 | R-4a | fixed c9ca876 | | B-31 | R-7c | open |
 | B-14 | R-4b | fixed 8f44419 | | B-32 | R-5 | open |
@@ -230,6 +230,7 @@ Items the agents can't see. The human runs `make test-shell` (needs `mutter-devk
 | 1.6 | 1b03ca7 | Ctrl+scroll over an icon cycles only current-workspace windows | |
 | 1.6 | 1b03ca7 | Tint/monochrome icon effect on, then disable extension ⇒ effect gone | |
 | 1.7 | 0821a56 | Two USB sticks (same label) ⇒ two icons with real names; unmount one removes only it; remount/rename updates label | |
+| 1.8 | 3311461 | Prefs → diagnostics / self-test button still runs diagnostics | |
 
 ## 6. Run Log (append-only, newest last)
 
@@ -288,3 +289,6 @@ Format: `YYYY-MM-DD HH:MM · cycle · EVENT · details` where EVENT ∈ `SETUP, 
 - 2026-10-04 · 1.7 · AUDIT-PASS · `0821a56`. check=PASS lint=0/154 (−4) settings=1/30 timer_check 15/15 smoke=PASS(x2), no B-37 flake. Always-rewrite of mount launchers runs on mount events only (checkMounts only at enable / setting change). B-9 fixed. Nits for R-9: unquoted/`null` Exec path, unused `_toSafeFileName`. 1 human-check item queued.
 - 2026-10-04 · 1.8 · PREFLIGHT · tree clean apart from agents/*; HEAD `0821a56`; GNOME Shell 50.5.
 - 2026-10-04 · 1.8 · ASSIGN · R-6 remove eval (B-11).
+- 2026-10-04 · 1.8 · AUDIT-PASS · `3311461`. check=PASS lint=0/154 settings=1/30 timer_check 15/15 smoke=PASS(x2). No eval/new Function in shipped code; fixed whitelist {run-diagnostics, dump-timers}; '' is a silent no-op. B-11 fixed. Nit (plain-object map matches built-ins, harmless) added to §6.3. 1 human-check item queued.
+- 2026-10-04 · 1.9 · PREFLIGHT · tree clean apart from agents/*; HEAD `3311461`; GNOME Shell 50.5.
+- 2026-10-04 · 1.9 · ASSIGN · R-5 prefs (B-12, B-32, B-33). Worker must not open prefs against real dconf (memory backend or code reading only); split B-33 if > ~300 lines.

@@ -114,8 +114,8 @@ Status: `[ ]` todo · `[~]` in progress · `[x]` done (hash) · `[!]` blocked ·
 | [x] ef879f9 | 1.1 | R-1 harden Timer | 0.1 | B-2, B-23, B-6(timer), B-24(typo) |
 | [x] c84f252 | 1.2 | R-2 reset `*Seq` + listeners | 1.1 | B-6, B-7 |
 | [x] dda62a5 | 1.3 | R-3 autohide | 1.1 | B-3, B-4, B-26, B-27 · human visual |
-| [~] | 1.4 | R-4a extension.js one-liners | 0.3 | B-5, B-13, B-16, B-20 |
-| [ ] | 1.5 | R-4b animator one-liners | 0.1 | B-14, B-15, B-34 · human visual |
+| [x] c9ca876 | 1.4 | R-4a extension.js one-liners | 0.3 | B-5, B-13, B-16, B-20 |
+| [~] | 1.5 | R-4b animator one-liners | 0.1 | B-14, B-15, B-34 · human visual |
 | [ ] | 1.6 | R-4c dock.js input | 0.1 | B-17, B-18, B-19 · human visual |
 | [ ] | 1.7 | R-4d mount names | 0.1 | B-9 |
 | [ ] | 1.8 | R-6 remove eval | 0.1 | B-11 |
@@ -171,10 +171,10 @@ Status: `open` · `fixed <hash>` · `partial <hash>` · `blocked` · `wontfix (r
 | ID | Task | Status | | ID | Task | Status |
 |---|---|---|---|---|---|---|
 | B-1 | R-7d | open | | B-19 | R-4c | open |
-| B-2 | R-1 | fixed ef879f9 | | B-20 | R-4a | open |
+| B-2 | R-1 | fixed ef879f9 | | B-20 | R-4a | fixed c9ca876 |
 | B-3 | R-3 | fixed dda62a5 (defensive guard only; premise wrong, see D2DA) | | B-21 | R-8 | open |
 | B-4 | R-3 | fixed dda62a5 | | B-22 | R-9c | open |
-| B-5 | R-4a | open | | B-23 | R-1 | fixed ef879f9 |
+| B-5 | R-4a | fixed c9ca876 | | B-23 | R-1 | fixed ef879f9 |
 | B-6 | R-1, R-2 | fixed ef879f9 + c84f252 | | B-24 | R-1, R-11b | partial ef879f9 (`typeof func` typo; resolution collapse in R-11b) |
 | B-7 | R-2 | fixed c84f252 | | B-25 | R-8 | open |
 | B-8 | R-9a | open | | B-26 | R-3 | fixed dda62a5 (dead check removed per human rule) |
@@ -182,10 +182,10 @@ Status: `open` · `fixed <hash>` · `partial <hash>` · `blocked` · `wontfix (r
 | B-10 | R-9b | open | | B-28 | (unassigned, needs St case check) | open |
 | B-11 | R-6 | open | | B-29 | R-7b | open |
 | B-12 | R-5 | open | | B-30 | (unassigned) | open |
-| B-13 | R-4a | open | | B-31 | R-7c | open |
+| B-13 | R-4a | fixed c9ca876 | | B-31 | R-7c | open |
 | B-14 | R-4b | open | | B-32 | R-5 | open |
 | B-15 | R-4b | open | | B-33 | R-5 | open |
-| B-16 | R-4a | open | | B-34 | R-4b | open |
+| B-16 | R-4a | fixed c9ca876 | | B-34 | R-4b | open |
 | B-17 | R-4c | open | | B-35 | B-35 | open |
 | B-18 | R-4c | open | | T-4 | R-0d | deferred (no release for now) |
 | P-1 | R-10 | open | | P-7 | R-12 | open |
@@ -207,8 +207,8 @@ Unassigned rows: when a phase ends, either add a card + board row for them or ma
 | Smoke baseline (real dconf, advisory) | 4 signatures (incl. B-35, search-light's DesktopAppInfo warning) | setup |
 | Probe after-disable deltas, 5 toggles (uiGroup / stage / dashes / docks / hi / lo / loop) | 0 / 0 / 0 / 0 / 0 / **+1** / 0. `lo` +1 = smoke-timing artifact (T-5). Stage-walk can't see B-1 (T-6). Absolute `stage` varies per run (2865-2885) ⇒ track deltas only | 2bbf52d |
 | Strict leaks (`D2DA_SMOKE_STRICT_LEAKS=1` in G-leaks) | **OFF** (turn ON after 2.4) | |
-| ESLint warnings (errors) | 166 (0) at ef879f9; was 168 at 2a0ae6f. no-unused-vars 162, no-undef 5, no-duplicate-case 1; known-bug rule demotions now only in `extension.js` (restore in R-4a); timer.js restored in ef879f9 | 2a0ae6f |
-| check-settings issues | exit 1 by design. Errors 2: shared-adjustment 1 (B-12), duplicate-case 1 (B-16); missing-in-schema 0, widget-type 0. Warnings 30: missing-in-keys 5, key-no-widget 8, dead-setting 17 (§6.5 list + `msg-to-ext` false positive). Should exit 0 after R-4a + R-5 ⇒ then make G-settings a hard exit-code gate | cff438d |
+| ESLint warnings (errors) | 162 (0) at c9ca876; 166 at ef879f9; 168 at 2a0ae6f. no-unused-vars 162, no-undef 5, no-duplicate-case 1; only remaining demotion: `no-undef: warn` in extension.js for the dead `_onKeyPressed` Clutter use (delete in R-18/R-21) | 2a0ae6f |
+| check-settings issues | c9ca876: 1 error (B-12) / 30 warnings. At cff438d: exit 1 by design. Errors 2: shared-adjustment 1 (B-12), duplicate-case 1 (B-16); missing-in-schema 0, widget-type 0. Warnings 30: missing-in-keys 5, key-no-widget 8, dead-setting 17 (§6.5 list + `msg-to-ext` false positive). Should exit 0 after R-4a + R-5 ⇒ then make G-settings a hard exit-code gate | cff438d |
 
 ### 5.1 Human-check queue
 Items the agents can't see. The human runs `make test-shell` (needs `mutter-devkit`) or uses their real session, then ticks them here.
@@ -221,6 +221,8 @@ Items the agents can't see. The human runs `make test-shell` (needs `mutter-devk
 | 1.3 | dda62a5 | X11 + desktop icons: dock not stuck hidden | |
 | 1.3 | dda62a5 | Hidden dock, pointer parked over its area, click another window ⇒ stays hidden (reveal only via 2px edge) | |
 | 1.3 | dda62a5 | Shown dock, pointer resting on it while a window overlaps ⇒ never hides | |
+| 1.4 | c9ca876 | Log in with the extension on, disable it, open overview ⇒ dash icons + show-apps visible | |
+| 1.4 | c9ca876 | Change icon size in prefs ⇒ dock resizes, shrink still applies | |
 
 ## 6. Run Log (append-only, newest last)
 
@@ -267,3 +269,6 @@ Format: `YYYY-MM-DD HH:MM · cycle · EVENT · details` where EVENT ∈ `SETUP, 
 - 2026-10-04 · 1.3 · AUDIT-PASS · `dda62a5` attempt 2. check=PASS lint=0/166 settings=2/30 timer_check 15/15 smoke=PASS(x2). B-26 resolved by removing the dead `isInRect` term; Auditor verified every hide path passes `_isWithinDash` first, and pointer position never reveals a hidden dock. B-3 premise corrected in D2DA (defensive guard only). Ledger: B-3, B-4, B-26, B-27 fixed. 6 human-check items queued (§5.1). Low items added to §6.3 (`monitor.index` null deref; dead animator slideIn check ⇒ R-18).
 - 2026-10-04 · 1.4 · PREFLIGHT · tree clean apart from agents/*; HEAD `dda62a5`; GNOME Shell 50.5.
 - 2026-10-04 · 1.4 · ASSIGN · R-4a extension.js one-liners (B-5, B-13, B-16, B-20) + restore eslint overrides.
+- 2026-10-04 · 1.4 · AUDIT-PASS · `c9ca876`. check=PASS lint=0/162 (−4) settings=1/30 (duplicate-case gone) timer_check 15/15 smoke=PASS(x2). B-5, B-13, B-16, B-20 fixed. 2 human-check items queued.
+- 2026-10-04 · 1.5 · PREFLIGHT · tree clean apart from agents/*; HEAD `c9ca876`; GNOME Shell 50.5.
+- 2026-10-04 · 1.5 · ASSIGN · R-4b animator one-liners (B-14, B-15, B-34). Worker told to report the on-screen effect of each revived branch and hold any ID that looks harmful.

@@ -84,43 +84,39 @@ Minor nits (naming, a stray blank line) that don't violate a rule: list them as 
 > Overwritten each cycle. On FAIL the Worker reads this for its rework.
 
 ```
-Cycle / Task / Attempt:  1.4 / R-4a / 1
+Cycle / Task / Attempt:  1.5 / R-4b / 1
 Verdict:          PASS
-Commit:           see Audit Log (fix(extension): ...)
-Gates:            check=PASS ; lint=PASS (0 err / 162 warn, baseline 166; extension.js 13 warn /
-                  0 err vs HEAD 16 warn / 1 err) ; settings=IMPROVED (exit 1, 1 err = B-12 only /
-                  30 warn; duplicate-case gone) ; smoke=PASS (1 known sig, 0 new, 6/5 msgs, probe
-                  6/5, after-enable deltas 0, after-disable 0/0/0/0/0/+1/0) ; smoke-x2=PASS (same) ;
-                  `d2da: ` 0, 'unable to layout' 0 ; timer_check all passed ; leaks=n/a (strict
-                  OFF) ; real=not run (advisory, no integrations.js) ; card=PASS.
-Scope:            extension.js (+20/-6), eslint.config.js (override block only: no-duplicate-case
-                  override removed, no-undef comment narrowed to 6.3 Clutter). Matches Report.
-                  agents/D2DA.md, RUN.md, WORKER.md = bookkeeping.
-Rule violations:  none. A1-A13 clean.
+Commit:           see Audit Log (fix(animator): ...)
+Gates:            check=PASS ; lint=PASS (0 err / 162 warn = baseline; animator.js 23 = HEAD) ;
+                  settings=exit 1, 1 err (B-12) / 30 warn = baseline ; smoke=PASS (1 known sig,
+                  0 new, probe 6/5, after-enable deltas 0, after-disable 0/0/0/0/0/+1/0) ;
+                  smoke-x2=PASS (same) ; `d2da: ` 0 ; timer_check all passed ; leaks=n/a ;
+                  real=not run (advisory) ; card=PASS.
+Scope:            animator.js (+6/-2, 3 hunks). Matches Report. agents/RUN.md, WORKER.md,
+                  AUDITOR.md = bookkeeping.
+Rule violations:  none. A1-A13 clean. A8: one attribute read per icon in animate; bounce reset
+                  is once per bounce.
 Specific checks:
-  - B-5: grep dc_monitor/d_monitor: declaration + both reads at line 80 use dc_monitor; no
-    d_monitor left. no-undef for it gone from lint.
-  - B-16: old flow: first 'icon-size' fell through to preferred-monitor (_updateLayout +
-    animate({refresh:true})); second label was dead (_updateShrink + animate). New case runs
-    _updateShrink, _updateLayout, animate({refresh:true}) = superset of both; refresh animate
-    covers plain animate. Shrink before layout is sound (layout reads scale). preferred-monitor
-    and shrink-icons bodies unchanged.
-  - B-20: `_iconTheme` 0 refs left in any .js; icon_theme set in enable, _onIconThemeChanged,
-    nulled in disable, read in lookup at ~1244.
-  - B-13: actor saved only when actually hidden by us (`child?.visible`); restored and ref
-    cleared in _showMainOverviewDash(true), which disable() calls unconditionally (no early
-    return before it). No ref survives disable. Enabled after startup => handler never fires =>
-    nothing hidden, nothing restored. last_child read via `?.`. A5: no new private access
-    (last_child is public Clutter API; _showAppsIcon access pre-existing). The ref is on the
-    extension object, not an expando on a Shell object.
+  - B-14: within intent. 5c173eb "restore smoothness for high fps" wrote this exact
+    if(fps>0) direct / else smoothing split; before that, translation was always direct.
+    Only the receiver was wrong. Default fps 0 unchanged; Medium/Low get the direct path the
+    author designed.
+  - B-15: lock is one-way (cache only grows while _hoverProgress==0, cleared on hover), so
+    no oscillation; real neighbour only lowers threshold 48->32 frames (~0.5-1.4 s at 15-45 ms
+    ticks), after a neighbour has already settled. Not "too early". Separator _prev/_next
+    (dock.js _findIcons) untouched: separators not in dock._icons; separator code reads only
+    its own fields.
+  - B-34: bounce frames write renderer.translationX only on vertical docks; nothing else ever
+    resets it (animate resets renderer Y at ~598 only, translateDecor copies Y). Zeroing X on
+    the end frame is a no-op for top/bottom. animate never writes appwell/renderer X, so no
+    fight; animate's per-frame _icon translation is a different actor.
 Rework list:      none.
 Nits:
-  - startup-complete handler: `Main.overview.dash.opacity = 0` right after uses no `?.`
-    (pre-existing; inconsistent with the new `dash?.`).
-  - `// remember exactly what was hidden...` comment is borderline restating; fine.
-Findings confirmed:  B-5, B-13, B-16, B-20 fixed.
-Human check needed:  enable at login, disable extension => overview dash icons + show-apps
-                     visible; change icon size in prefs => dock resizes, shrink still applies.
+  - bounce catch uses console.log(err) (pre-existing, not d2da: prefixed).
+  - animate still clears only _appwell.translationY per frame (harmless now).
+Findings confirmed:  B-14, B-15, B-34 fixed.
+Human check needed:  hover magnify settle without jitter + separators in place; animation-fps
+                     Medium/Low magnify; bounce on left/right dock returns fully.
 New findings spotted (for Orchestrator): none.
 ```
 
@@ -139,3 +135,4 @@ New findings spotted (for Orchestrator): none.
 | 1.3 | R-3 | 1 | ESCALATE | none | `make check` PASS; `make lint` PASS (0 err / 166 warn = baseline; autohide.js 3 = HEAD); check-settings exit 1 (2 err / 30 warn = baseline); `make smoke` PASS; smoke-x2 PASS (1 known sig, 0 new, 6/5 msgs, probe 6/5, after-disable deltas 0/0/0/0/0/+1/0 both); card PASS; `gjs -m tests/timer_check.js` all passed | B-26 needs a product decision: reviving the dead `isInRect(arect, pointer, 0)` only matters while the dock is hidden (struts keep edge geometry; `_isWithinDash` returns false when hidden), so a focus/restack with the pointer in the edge band reveals the dock, with pressure sense on OR off. That contradicts the author's `_hidden` guard. Recommend dropping the term (= shipped behaviour). B-3 premise is wrong: mutter 45.0/49.7 `get_workspace()` returns the active workspace for sticky windows (GIR 18 agrees), so no TypeError ever; the `?.` fix is defensive only and the code comment is wrong. B-4 (DESKTOP/DOCK no longer dodge = intended) and B-27 confirmed. `is_on_all_workspaces` in mutter 45.0 + GIR 15-18. Findings: animator.js `_hidden && isWithin` slideIn is dead; D2DA B-3 row needs re-labelling. Tree/index untouched. |
 | 1.3 | R-3 | 2 | PASS | this commit | `make check` PASS; `make lint` PASS (0 err / 166 warn = baseline; autohide.js 3 = HEAD); check-settings exit 1 (2 err / 30 warn = baseline); `make smoke` PASS; smoke-x2 PASS (1 known sig, 0 new, 6/5 msgs, probe 6/5, after-disable deltas 0/0/0/0/0/+1/0 both); `d2da: ` 0; timer_check 15/15 | B-26 per human rule: dead `isInRect(arect, pointer)` (pad undefined => NaN => always false) removed with `pos`/`rect`/`arect`/import; zero behaviour change. Verified `_isWithinDash` (hidden => false, same struts rect, pad 20) is checked before every `return true` in `_checkOverlap`, and `hide()`/`slideOut()` are reachable only via `_checkHide`, so a shown dock under the pointer never hides and pointer position never reveals a hidden one. B-3 comment corrected (defensive guard). B-4, B-27 unchanged from attempt 1. Human visual check required. Finding (pre-existing, Low): `_isWithinDash` precedes the fullscreen check; masked by trackFullscreen. |
 | 1.4 | R-4a | 1 | PASS | this commit | `make check` PASS; `make lint` PASS (0 err / 162 warn, baseline 166; extension.js 13 warn vs HEAD 16 warn + 1 err); check-settings exit 1 (1 err B-12 / 30 warn, was 2/30); `make smoke` PASS; smoke-x2 PASS (1 known sig, 0 new, 6/5 msgs, probe 6/5, after-disable deltas 0/0/0/0/0/+1/0 both); `d2da: ` 0; timer_check all passed | B-5 dc_monitor rename (all refs). B-16 merged icon-size case = superset of both old bodies (shrink -> layout -> animate refresh). B-20 `_iconTheme` gone, unified on icon_theme. B-13 hidden actor remembered only if we hid it, restored+cleared in _showMainOverviewDash(true) from disable(); no-op if enabled after startup; no new private access. eslint: no-duplicate-case override removed, no-undef comment narrowed to 6.3 Clutter. Human visual check required. Nit: `Main.overview.dash.opacity` lacks `?.` (pre-existing). |
+| 1.5 | R-4b | 1 | PASS | this commit | `make check` PASS; `make lint` PASS (0 err / 162 warn = baseline; animator.js 23 = HEAD); check-settings exit 1 (1 err B-12 / 30 warn = baseline); `make smoke` PASS; smoke-x2 PASS (1 known sig, 0 new, 6/5 msgs, probe 6/5, after-disable deltas 0/0/0/0/0/+1/0 both); timer_check all passed | B-14, B-15, B-34 fixed; revived branches judged within intent (B-14 per 5c173eb; B-15 lock monotonic; B-34 X reset no conflict). Nits: bounce catch console.log; animate clears only appwell Y. Findings: none. |

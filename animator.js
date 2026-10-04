@@ -223,7 +223,7 @@ export let Animator = class {
       icon._prev = prevIcon;
       icon._next = null;
       if (prevIcon) {
-        icon._next = icon;
+        prevIcon._next = icon;
       }
       prevIcon = icon;
     });
@@ -522,7 +522,7 @@ export let Animator = class {
         icon._positionCache = null;
       }
 
-      if (dock.animation_fps > 0) {
+      if (dock.extension.animation_fps > 0) {
         icon._icon.translationX = translationX;
         icon._icon.translationY = translationY;
       } else {
@@ -1165,7 +1165,11 @@ export let Animator = class {
           if (!appwell) return;
           try {
             appwell._bounce = true;
+            appwell.translation_x = 0;
             appwell.translation_y = 0;
+            if (container._renderer) {
+              container._renderer.translationX = 0;
+            }
           } catch (err) {
             console.log(err);
           }

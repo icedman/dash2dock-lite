@@ -58,24 +58,20 @@ Isolated smoke can't change settings from outside (memory backend is in-process)
 > Written by the ORCHESTRATOR only. Worker: do not edit this section.
 
 ```
-Cycle:      1.4
-Task:       R-4a — `extension.js` one-liners
+Cycle:      1.5
+Task:       R-4b — `animator.js` one-liners
 Attempt:    1
-Card:       §6 "R-4a"
-Notes:      HEAD dda62a5. Scope addition: `eslint.config.js`, the known-bug overrides only.
-            After B-16, remove the `no-duplicate-case: warn` override for extension.js.
-            After B-5, check whether `no-undef` still fires in extension.js. The
-            un-imported `Clutter` in dead `_onKeyPressed` (§6.3) stays (deletion is
-            R-18/R-21), so keep the `no-undef: warn` override but update its comment to
-            name only what remains. Lint total should drop (baseline 0 err / 166 warn).
-            check-settings: duplicate-case error must disappear ⇒ expect 1 error
-            (B-12) / 30 warnings; report the new counts.
-            B-13: GNOME Shell 45-50 overview dash. Use `?.` and don't assume
-            `last_child` is the show-apps button on every version; restore exactly what
-            enable hid. B-20: unify on the name lookups actually read; grep both names.
-            B-5: the `docks` config.json path is rarely used. Fix the name and say what
-            the code does with it; no feature work.
-            Other baselines: smoke 1 known sig, deltas 0/0/0/0/0/+1/0; timer_check 15/15.
+Card:       §6 "R-4b"
+Notes:      HEAD c9ca876. These are one-line fixes to code that has never run, so fixing
+            them CHANGES visible behaviour. For each ID, describe in the Report what the
+            newly-live code will do on screen (B-14: which fps branch now runs and at
+            what animation-fps values; B-15: what jitter-lock does with a real neighbour).
+            If a revived branch looks harmful or its intent is unclear, don't guess: make
+            no edit for that ID and report it (the Orchestrator asks the human, as for
+            B-26). B-15: report every `_next` writer (`grep -n '_next' *.js`). A8:
+            nothing new per frame (these are in `animate`; an attribute fix is fine).
+            Baselines: lint 0/162; check-settings 1/30; smoke 1 known sig, deltas
+            0/0/0/0/0/+1/0; timer_check 15/15.
 ```
 
 ## 5. Report
@@ -83,46 +79,65 @@ Notes:      HEAD dda62a5. Scope addition: `eslint.config.js`, the known-bug over
 > Overwritten by the WORKER each cycle; read by the AUDITOR.
 
 ```
-Cycle / Task / Attempt: 1.4 / R-4a / 1
+Cycle / Task / Attempt: 1.5 / R-4b / 1
 Status:            DONE
-Files changed:     extension.js, eslint.config.js (known-bug overrides only), vs HEAD dda62a5
+Files changed:     animator.js only, vs HEAD c9ca876 (3 hunks, +6/-2)
 Findings addressed:
-  B-5  createTheDocks: `let d_monitor` renamed to `dc_monitor`, which is the name the loop reads,
-       so there is no ReferenceError any more. What the path does (only when ~/.config/d2da/config.json
-       has a `docks` array): for each entry, find the monitor whose x/y equal entry.monitor.x/y. If
-       one matches, create a dock with `_monitorIndex` = that monitor and `_config` = the entry.
-       Entries with no match are skipped. If the entry count differs from the dock count, the docks
-       are destroyed first. No feature work.
-  B-16 The duplicate `case 'icon-size'` is gone. `icon-size` now has its own case placed where the
-       first one was: _updateShrink(), then _updateLayout(), then animate({ refresh: true }).
-       Both side effects are kept. Shrink runs first because layout reads this.scale.
-       'preferred-monitor' and 'shrink-icons' keep their original bodies.
-  B-20 _onIconThemeChanged assigns `this.icon_theme` (the name lookup_icon_from_names reads,
-       created in enable and nulled in disable). grep: `_iconTheme` has no other refs.
-  B-13 startup-complete: `Main.overview.dash?.last_child` is hidden only if it is visible, and that
-       actor is saved in `this._hiddenOverviewDashChild`. _showMainOverviewDash(true) (disable() is
-       the only show=true caller) sets that actor visible again and clears the ref. No assumption
-       about what last_child is: we restore the exact actor we hid, not whatever is last_child at
-       disable time. If startup-complete never fired (enabled after startup) nothing is touched.
-       The other overview-dash restores (opacity, _background style, box children, _showAppsIcon) are unchanged.
-eslint.config.js: removed the `no-duplicate-case: warn` override. `no-undef` still fires once
-  in extension.js ('Clutter' in dead _onKeyPressed). The B-5 hit is gone. The override is kept, and
-  its comment now names only _onKeyPressed/Clutter (6.3).
+  B-14 animate(): `dock.animation_fps` -> `dock.extension.animation_fps`. Before this, the else
+       (smoothing) branch always ran. Values come from the schema `animation-fps` (int, default 0)
+       and the prefs dropdown: 0 = High (15 ms tick), 1 = Medium (30 ms), 2 = Low (45 ms)
+       (extension._updateAnimationFPS). Now:
+         fps 0 (default): same as before. icon translation eases 3/4 toward the target each tick
+           ("retain this for smoothness at high fps").
+         fps 1/2: the direct branch runs. icon._icon.translationX/Y = the computed target on
+           every tick, with no 1/4 lag. On screen, Medium/Low icons follow the spread at once
+           instead of easing over ~4 ticks. That fits the comment: smoothing only at high fps,
+           because at a 30-45 ms tick the extra lag would look sluggish. Not harmful. Only users
+           who changed animation-fps see a change.
+  B-15 Linking loop in animate(): `icon._next = icon` -> `prevIcon._next = icon`. Now A._next = B
+       (the next animated icon) and the last icon's _next is null. Effect in jitter-lock
+       (lockPosition && _hoverProgress == 0): the lock threshold drops 48 -> 32 cached frames when
+       _prev OR _next is already _locked. Before, the self-reference meant `_next._locked`
+       checked the icon itself, so after it locked, the cond was always true (harmless, it was
+       already locked). Before it locked, it only counted _prev, so locking cascaded left-to-right
+       only. Now it cascades in both directions: neighbours of a settled icon freeze ~16 frames
+       sooner, so the dock settles a bit sooner after magnification ends. No new per-frame work.
+       All `_next` writers (grep -n '_next' *.js):
+         animator.js:224  icon._next = null            (animate, per animated icon)
+         animator.js:226  prevIcon._next = icon        (animate, this fix)
+         dock.js:855      prev._next = c               (_findIcons, links all _dashItems incl. separators)
+       Readers: animator.js:492 (jitter lock, icons), animator.js:864 (separator: actor._next).
+       Both files write _next on icons: dock.js sets A._next = Separator, then animate overwrites
+       A._next = B. This clobbering existed before too (it was set to null/self). Separators are
+       not in dock._icons, so animate never writes a separator's own _prev/_next. The separator code
+       reads only the separator's fields, so it is unaffected. animate also already overwrote
+       icon._prev (B._prev = A instead of Separator) before this change.
+  B-34 bounceIcon end frame now resets translation_x and translation_y, plus
+       container._renderer.translationX (null-checked). Verified: the vertical bounce frames set
+       the renderer's translationX, and nothing else ever resets it. animate only resets renderer
+       translationY (animator.js:598), and translateDecor only copies Y. So on left/right docks the
+       appwell and renderer kept an x offset after a bounce. Runs once per bounce, not per frame.
+       Related, not changed: animate() line ~538 clears only `_appwell.translationY` per frame.
+       After this fix that's harmless, since the end frame zeroes X.
 Self-verification:
   make check = OK
-  make lint = 0 errors / 162 warnings (baseline 166)
-  python3 -B tools/check-settings.py = 1 error (B-12) / 30 warnings; duplicate-case error is gone
-  gjs -m tests/timer_check.js = 15/15 ok
-  make smoke = PASS, 1 known sig, 0 new, 0 gone; msgs 6/5; probe 6/5.
-    after-enable deltas all 0 (uiGroup 40, stage 2857, dashes 2, docks 1, hi 1, lo 2, loop 1).
-    after-disable deltas 0/0/0/0/0/+1/0 (= baseline; lo +1 = known T-5).
-    grep -c 'd2da: ' /tmp/d2da-smoke.log = 0; 'unable to layout' = 0.
-  Not covered by smoke: B-13 (headless, can't see the overview dash), B-5 (needs a user config.json).
-  No artifacts left (python run with -B, helper script deleted).
-Needs human visual check: yes. Log in with the extension enabled (so startup-complete fires),
-  disable it, then open the overview: dash icons and the show-apps button must be visible. Also
-  change the icon size in prefs: the dock resizes and shrink still applies.
-New findings (proposed B-xx, with file:symbol and evidence): none
+  make lint = 0 errors / 162 warnings (= baseline)
+  python3 -B tools/check-settings.py = 1 error (B-12) / 30 warnings (= baseline)
+  gjs -m tests/timer_check.js = all passed (15/15)
+  make smoke = PASS, 1 known sig, 0 new, 0 gone; msgs 6/5; probe 6/5;
+    grep -c 'd2da: ' /tmp/d2da-smoke.log = 0.
+    Run 1: after-disable deltas 0/-24/0/0/0/+1/0. The stage count dropped 2857->2833 between
+    toggles 3 and 4, in both after-enable AND after-disable rows equally (shell-side actors, not
+    ours; it shrank, it didn't grow).
+    Rerun (tools/smoke-shell.sh 5): after-enable all 0 (uiGroup 40, stage 2833, dashes 2, docks 1,
+    hi 1, lo 2, loop 1); after-disable 0/0/0/0/0/+1/0 = baseline (lo +1 = known T-5).
+    Absolute stage is 24 lower than last cycle in every row. Environmental [inference].
+  Not covered by smoke: all three IDs (headless, no hover/bounce; default fps 0 = old branch).
+Needs human visual check: yes. (1) Hover magnify on a bottom dock and let it settle: no jitter,
+  separators sit between their neighbours. (2) Set prefs Animation FPS to Medium/Low: magnify
+  still looks OK (no easing lag now). (3) Launch an app on a LEFT and a RIGHT dock: after the bounce
+  the icon returns fully to its column with no sideways offset.
+New findings (proposed B-xx, with file:symbol and evidence): none (renderer-X residue folded into B-34)
 Scope request / blockers: none
 ```
 

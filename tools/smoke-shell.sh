@@ -14,13 +14,17 @@
 #   D2DA_SMOKE_UPDATE=1  overwrite the baseline with this run's signatures
 #   D2DA_SMOKE_REAL_DCONF=1  use the user's real dconf (their settings and
 #                        *all* their enabled extensions) instead of isolation
+#   D2DA_PROBE           passed to the shell (default 1): probe.js logs
+#                        `d2da-probe {json}` after each enable/disable; the
+#                        table and first->last deltas are printed. 0 = off.
+#   D2DA_SMOKE_STRICT_LEAKS=1  fail if any after-disable probe delta != 0
 #
 # Default is isolated: the nested shell uses an in-memory GSettings backend,
 # so only this extension is loaded, with schema-default settings, and the
 # user's dconf is never written. (~/.config/d2da overrides still apply.)
 #
 # Exit codes: 0 pass, 1 not ACTIVE / shell died / NEW error signatures,
-#             2 shell failed to start.
+#             (strict) probe leak deltas, 2 shell failed to start.
 # Run `make install` first - this tests the *installed* copy.
 
 UUID=dash2dock-lite@icedman.github.com
@@ -44,7 +48,8 @@ else
 	echo "mode: isolated (memory GSettings, only $UUID)"
 	BACKEND=memory
 fi
-GSETTINGS_BACKEND=$BACKEND MUTTER_DEBUG_DUMMY_MODE_SPECS=1200x800 \
+PROBE=${D2DA_PROBE:-1}
+D2DA_PROBE=$PROBE GSETTINGS_BACKEND=$BACKEND MUTTER_DEBUG_DUMMY_MODE_SPECS=1200x800 \
 	gnome-shell --headless --no-x11 --virtual-monitor 1200x800 >>"$LOG" 2>&1 &
 SHELL_PID=$!
 
@@ -98,6 +103,60 @@ kill -0 "$SHELL_PID" 2>/dev/null || { echo "FAIL: gnome-shell died"; RESULT=1; }
 ENABLED=$(grep -c 'dash2dock-lite enabled' "$LOG")
 DISABLED=$(grep -c 'dash2dock-lite disabled' "$LOG")
 echo "enable/disable messages: $ENABLED/$DISABLED (expect $((TOGGLES + 1))/$TOGGLES)"
+
+# Prints the probe lines of phase $1 as a table plus the first->last delta of
+# every numeric field. Returns 1 if any delta != 0.
+probe_table() {
+	sed -n 's/.*d2da-probe //p' "$LOG" | grep -F "\"phase\":\"$1\"" | awk '
+	{
+		line = $0
+		gsub(/[{}"]/, "", line)
+		n = split(line, kv, ",")
+		row = ""
+		for (i = 1; i <= n; i++) {
+			split(kv[i], p, ":")
+			if (p[1] == "phase") continue
+			if (NR == 1) { keys[++nk] = p[1]; first[p[1]] = p[2] }
+			last[p[1]] = p[2]
+			row = row sprintf("%9s", p[2])
+		}
+		if (NR == 1) {
+			hdr = ""
+			for (k = 1; k <= nk; k++) hdr = hdr sprintf("%9s", keys[k])
+			print "    #  " hdr
+		}
+		printf "    %-3d%s\n", NR, row
+	}
+	END {
+		if (NR == 0) { print "    (no probe lines)"; exit 0 }
+		row = ""
+		bad = 0
+		for (k = 1; k <= nk; k++) {
+			d = last[keys[k]] - first[keys[k]]
+			if (d != 0) bad = 1
+			row = row sprintf("%9s", (d > 0 ? "+" : "") d)
+		}
+		print "  delta" row
+		exit bad
+	}'
+}
+
+if [ "$PROBE" = "1" ]; then
+	PE=$(grep -c 'd2da-probe .*"phase":"after-enable"' "$LOG")
+	PD=$(grep -c 'd2da-probe .*"phase":"after-disable"' "$LOG")
+	echo "probe lines after-enable/after-disable: $PE/$PD (expect $((TOGGLES + 1))/$TOGGLES)"
+	echo "probe after-enable:"
+	probe_table after-enable
+	echo "probe after-disable (leak deltas first->last):"
+	if ! probe_table after-disable; then
+		if [ "$D2DA_SMOKE_STRICT_LEAKS" = "1" ]; then
+			echo "FAIL: probe after-disable deltas != 0 (D2DA_SMOKE_STRICT_LEAKS=1)"
+			RESULT=1
+		else
+			echo "note: probe deltas != 0 (leaks expected until Phase 2; not failing)"
+		fi
+	fi
+fi
 
 # Error signatures: only classes an extension can cause (JS + GObject/Clutter/
 # St/Gjs criticals). Headless/session noise (cogl viewport, systemd scopes,

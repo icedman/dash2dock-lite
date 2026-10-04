@@ -8,10 +8,17 @@ A GNOME Shell 40+ Extension
 
 ![Screen Shot](https://raw.githubusercontent.com/icedman/dash2dock-lite/main/screenshots/Screenshot%20from%202024-03-19%2015-31-27.png)
 
+### Announcement/Warning
+
+Maintenance and GNOME version compatibility updates are now primarily assisted by AI.
+
+Due to GNOME Extensions reviewer policies regarding AI tooling, updates will no longer be submitted to extensions.gnome.org and will be published exclusively through this repository. Releases will include simple installation instructions.
+
+If you prefer strictly human-written code, feel free to skip this extension. If you enjoy having updates keep pace with new GNOME releases and want to help fund the AI compute tokens keeping it alive, support via ["Buy Me A Coffee"](https://www.buymeacoffee.com/icedman). is greatly appreciated. 
+
 ### Notice
 
-* Supports GNOME 42, 43, 44, 45, 46, 47, 48, 49
-* Initial support for GNOME 50
+* Supports GNOME 42, 43, 44, 45, 46, 47, 48, 49, 50
 * Older versions are largely unsupported
 
 ### Features

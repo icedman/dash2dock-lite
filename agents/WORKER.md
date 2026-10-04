@@ -62,8 +62,10 @@ Cycle:      0.1
 Task:       R-0a — Leak / regression probe
 Attempt:    1
 Card:       §6 "R-0a"
-Notes:      Bootstrap (cycle 0.0) must be committed by the Auditor first; if `git log -1`
-            is not "chore(agents): …bootstrap…", stop with Status: BLOCKED.
+Notes:      Bootstrap committed as 861b7c1. Smoke baseline (isolated) = 1 signature (NM GI
+            warning). Probe must be a pure no-op when D2DA_PROBE is unset. The smoke log
+            path is /tmp/d2da-smoke.log (dev-only tool, OK); don't add new /tmp paths in
+            shipped code. Report the first->last deltas for every probe field.
 ```
 
 ## 5. Report
@@ -71,16 +73,50 @@ Notes:      Bootstrap (cycle 0.0) must be committed by the Auditor first; if `gi
 > Overwritten by the WORKER each cycle; read by the AUDITOR.
 
 ```
-Cycle / Task / Attempt:
-Status:            DONE | BLOCKED
-Files changed:
-Findings addressed: (ID → what changed, file:symbol)
-Findings not reproduced / already fixed:
-Self-verification:  make check = ; make smoke = ; card Verify = 
-Smoke signatures:   NEW = ; GONE = 
-Needs human visual check: yes/no — what to look at
+Cycle / Task / Attempt: 0.1 / R-0a / 1
+Status:            DONE
+Files changed:     probe.js (new), extension.js (import + 2 calls + probeTimers local),
+                   tools/smoke-shell.sh (D2DA_PROBE passthrough, probe_table, strict mode)
+Findings addressed: (measuring tool, no bug fix)
+  - probe.js:probe(ext, phase, timers?) — returns immediately unless
+    GLib.getenv('D2DA_PROBE') === '1'. Logs `d2da-probe {phase,uiGroup,stage,dashes,docks,hi,lo,loop}`.
+    stage/dashes = iterative walk of global.stage via get_first_child/get_next_sibling,
+    Dash matched by constructor.name === 'Dash'. Timer counts = timer?._subscribers?.length ?? 0.
+    Whole body in try/catch → console.error('d2da: probe', e) so it can never break disable().
+  - extension.js:startUp — probe(this, 'after-enable') as last statement.
+  - extension.js:disable — captures {loop,hi,lo} timers in `probeTimers` before shutdown/null,
+    probe(this, 'after-disable', probeTimers) as last statement (after the 'disabled' log).
+    Only cost when probe is off: one 3-field object literal + a getenv per enable/disable.
+  - tools/smoke-shell.sh — shell gets D2DA_PROBE=${D2DA_PROBE:-1} (D2DA_PROBE=0 turns it off);
+    prints line counts (expect N+1/N), a table + first->last delta row per phase (pure sed/awk,
+    no new deps). D2DA_SMOKE_STRICT_LEAKS=1 → RESULT=1 if any *after-disable* delta != 0
+    (after-enable table is informational only). Header comment documents both env vars.
+Findings not reproduced / already fixed: n/a
+Self-verification:  make check = OK; make smoke = PASS (5 toggles); card Verify = OK
+  - probe off: `D2DA_PROBE=0 tools/smoke-shell.sh 2` → PASS, `grep -c d2da-probe` log = 0.
+  - strict: `D2DA_SMOKE_STRICT_LEAKS=1 tools/smoke-shell.sh 3` → FAIL on lo +1 (exit 1) as designed.
+Smoke signatures:   NEW = none; GONE = none (1 known)
+Baseline probe deltas (make smoke, isolated, 5 toggles; lines 6/5 = expected):
+  phase          uiGroup stage dashes docks hi lo loop
+  after-enable   40      2885  2      1     1  2  1     (all 6 rows identical, deltas all 0)
+  after-disable  36      2862  1      0     0  1→2 1    (deltas: 0 0 0 0 0 +1 0)
+  Reproduced identically on the 3-toggle strict run.
+Needs human visual check: no
 New findings (proposed B-xx, with file:symbol and evidence):
-Scope request / blockers:
+  - P-a (tool caveat, not a code bug): after-disable `lo` +1 is a smoke-timing artifact, not a
+    leak. The first disable happens 4 s after enable, later ones 1 s after enable. With the
+    750 ms lo timer, startUp's inner `_loTimer.runOnce(..., 10)` (extension.js:startUp) is still
+    pending at a 1 s disable → 2 subscribers instead of 1. hi/lo/loop at after-disable count
+    subscribers still held by the *dead* per-enable Timers ("pending work at disable"), not
+    cross-cycle accumulation. Before turning on STRICT_LEAKS the Orchestrator should either
+    equalise the wait (e.g. same sleep before the first disable and after each enable) or
+    compare from cycle 2. I did not change smoke timings (outside the card's Do).
+  - P-b (relevant to R-7d Accept): stage/uiGroup/dashes deltas are already 0 today, because
+    destroyDocks() removes docks from the stage (B-1 leaks are off-stage, unreachable by a
+    stage walk). So "R-0a deltas = 0" is not a sufficient acceptance for R-7d; consider a
+    probe field for live Dock/Dash instances (e.g. a module-level counter or WeakRef set) or
+    GLib source / signal-handler counts in a later card.
+Scope request / blockers: none
 ```
 
 ---

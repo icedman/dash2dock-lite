@@ -36,6 +36,7 @@ import { Dock } from './dock.js';
 import { Services } from './services.js';
 import { Integrations } from './integrations.js';
 import { runTests } from './diagnostics.js';
+import { probe } from './probe.js';
 
 import {
   Extension,
@@ -242,6 +243,12 @@ export default class Dash2DockLiteExt extends Extension {
   }
 
   disable() {
+    const probeTimers = {
+      loop: this._timer,
+      hi: this._hiTimer,
+      lo: this._loTimer,
+    };
+
     this._timer?.shutdown();
     this._hiTimer?.shutdown();
     this._loTimer?.shutdown();
@@ -280,6 +287,8 @@ export default class Dash2DockLiteExt extends Extension {
 
     Main.overview.d2dl = null;
     console.log('dash2dock-lite disabled');
+
+    probe(this, 'after-disable', probeTimers);
   }
 
   animate(settings = {}) {
@@ -316,6 +325,8 @@ export default class Dash2DockLiteExt extends Extension {
         dock._debounceEndAnimation();
       });
     }, 10);
+
+    probe(this, 'after-enable');
   }
 
   _autohiders() {

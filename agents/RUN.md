@@ -130,7 +130,8 @@ Status: `[ ]` todo · `[~]` in progress · `[x]` done (hash) · `[!]` blocked ·
 | [x] 0a01a50 | 2.2 | R-7b menus/lists/clock/calendar destroy | 2.1 | B-29 |
 | [x] deb31fb | 2.3 | R-7c WindowTracker, no Meta.Window expandos | 1.3 | B-31 |
 | [x] 523cec2 | 2.3a | R-0e probe v2 (smoke timing, live-instance counters) | 0.1 | T-5, T-6 · prerequisite for strict leaks |
-| [~] | 2.4 | R-7d Dock.destroy + destroyDocks | 2.1-2.3a | B-1 · then turn **strict leaks ON** (§5) |
+| [x] d95bb11 | 2.4 | R-7d Dock.destroy + destroyDocks | 2.1-2.3a | B-1 · then turn **strict leaks ON** (§5) |
+| [ ] | 2.4a | R-7e smoke per-toggle state wait (T-9) + createTheDocks duplicate guard (B-41) | 2.4 | small; makes strict leaks reliable |
 | [ ] | 2.5 | R-8 services cancellables / dt | 2.4 | B-25 |
 | [ ] | 2.6 | R-9a trash via Gio | 2.5 | B-8 · human visual |
 | [ ] | 2.7 | R-9b launchers in memory | 2.5 | B-10 |
@@ -171,7 +172,7 @@ Status: `open` · `fixed <hash>` · `partial <hash>` · `blocked` · `wontfix (r
 
 | ID | Task | Status | | ID | Task | Status |
 |---|---|---|---|---|---|---|
-| B-1 | R-7d | open | | B-19 | R-4c | fixed 1b03ca7 |
+| B-1 | R-7d | fixed d95bb11 (dock side; lock-screen session-modes separate) | | B-19 | R-4c | fixed 1b03ca7 |
 | B-2 | R-1 | fixed ef879f9 | | B-20 | R-4a | fixed c9ca876 |
 | B-3 | R-3 | fixed dda62a5 (defensive guard only; premise wrong, see D2DA) | | B-21 | R-8 | open |
 | B-4 | R-3 | fixed dda62a5 | | B-22 | R-9c | open |
@@ -195,8 +196,9 @@ Status: `open` · `fixed <hash>` · `partial <hash>` · `blocked` · `wontfix (r
 | P-11 | R-12 | open | | §6.3 low bugs | batch after phase 1 | open |
 | T-5 | R-0e | fixed 523cec2 | | T-6 | R-0e | fixed 523cec2 (live counters) |
 | B-36 | R-8 | open | | B-37 | R-9d | open |
-| B-38 | R-7d | open | | T-8 | R-0e | fixed 523cec2 (counted; strict-only gate) |
-| B-39 | R-7d | open | | B-40 | R-7d | open |
+| B-38 | R-7d | fixed d95bb11 | | T-8 | R-0e | fixed 523cec2 (counted; strict-only gate) |
+| B-39 | R-7d | fixed d95bb11 | | B-40 | R-7d | fixed d95bb11 |
+| B-41 | R-7e | open [inference] | | T-9 | R-7e | open |
 | T-7 | R-0b, R-0d | partial 2a0ae6f (interim rm lines; dev docs still installed; R-0d pack list must exclude `eslint.config.js`) | | | | |
 
 Unassigned rows: when a phase ends, either add a card + board row for them or mark `wontfix (reason)`.
@@ -208,9 +210,9 @@ Unassigned rows: when a phase ends, either add a card + board row for them or ma
 | GNOME Shell | 50.5 (Fedora 44) | setup |
 | Smoke baseline (isolated) | 1 signature (NM GI warning — shell side, not ours) | setup |
 | Smoke baseline (real dconf, advisory) | 4 signatures (incl. B-35, search-light's DesktopAppInfo warning) | setup |
-| Probe after-disable deltas, 5 toggles (uiGroup / stage / dashes / docks / hi / lo / loop / liveDock / liveDash / liveAnimator) | **523cec2:** 0 / 0 / 0 / 0 / 0 / 0 / 0 / **+4 / +4 / +4** (B-1). At 2bbf52d `lo` was +1 (T-5 artifact, fixed). Absolute `stage` varies per run ⇒ deltas only | 523cec2 |
-| Shutdown criticals (T-8, "sweeping phase of GC") | 150 at 5 toggles = 30 per toggle (90 @3, 60 @2); 200 with the settings variant. R-7d target ≈ 0 | 523cec2 |
-| Strict leaks (`D2DA_SMOKE_STRICT_LEAKS=1` in G-leaks) | **OFF** (turn ON after 2.4) | |
+| Probe after-disable deltas, 5 toggles (uiGroup / stage / dashes / docks / hi / lo / loop / liveDock / liveDash / liveAnimator) | **d95bb11: all 0.** 523cec2: 0 / 0 / 0 / 0 / 0 / 0 / 0 / **+4 / +4 / +4** (B-1). At 2bbf52d `lo` was +1 (T-5 artifact, fixed). Absolute `stage` varies per run ⇒ deltas only | 523cec2 |
+| Shutdown criticals (T-8, "sweeping phase of GC") | **d95bb11: 0** (default and settings variant). 523cec2: 150 at 5 toggles = 30 per toggle (90 @3, 60 @2); 200 with the settings variant. R-7d target ≈ 0 | 523cec2 |
+| Strict leaks (`D2DA_SMOKE_STRICT_LEAKS=1` in G-leaks) | **ON** since d95bb11. Flake policy: a strict FAIL only on probe line counts (missed `gnome-extensions disable`, T-9) ⇒ rerun once; fail if it repeats | d95bb11 |
 | ESLint warnings (errors) | 150 (0) at deb31fb; 151 at 5840f29; 154 at 0821a56; 158 at 1b03ca7; 162 at c9ca876; 166 at ef879f9; 168 at 2a0ae6f. no-unused-vars 162, no-undef 5, no-duplicate-case 1; only remaining demotion: `no-undef: warn` in extension.js for the dead `_onKeyPressed` Clutter use (delete in R-18/R-21) | 2a0ae6f |
 | check-settings issues | **5840f29: exit 0, 0 errors / 30 warnings ⇒ G-settings is now a hard gate (must exit 0).** c9ca876: 1 error (B-12) / 30 warnings. At cff438d: exit 1 by design. Errors 2: shared-adjustment 1 (B-12), duplicate-case 1 (B-16); missing-in-schema 0, widget-type 0. Warnings 30: missing-in-keys 5, key-no-widget 8, dead-setting 17 (§6.5 list + `msg-to-ext` false positive). Should exit 0 after R-4a + R-5 ⇒ then make G-settings a hard exit-code gate | cff438d |
 
@@ -245,6 +247,7 @@ Items the agents can't see. The human runs `make test-shell` (needs `mutter-devk
 | 2.2 | 0a01a50 | Open downloads/recents list, toggle the extension, open it again | |
 | 2.2 | 0a01a50 | Clock + calendar icons on, toggle the extension ⇒ each renders once, no duplicates; change dock position ⇒ menus/clock/calendar come back | |
 | 2.3 | deb31fb | Autohide + dodge on: move/resize a window over the dock ⇒ hides/shows; close it ⇒ shows; two monitors if available; autohide off/on | |
+| 2.4 | d95bb11 | Toggle extension several times; change preferred monitor + multi-monitor setting; lock/unlock; plug/unplug monitor ⇒ dock always renders, no duplicates, overview dash fine, clock/calendar/trash/downloads back after rebuild | |
 
 ## 6. Run Log (append-only, newest last)
 
@@ -331,3 +334,7 @@ Format: `YYYY-MM-DD HH:MM · cycle · EVENT · details` where EVENT ∈ `SETUP, 
 - 2026-10-04 · 2.3a · AUDIT-PASS · `523cec2`. check=PASS lint=0/150 settings=exit 0 timer_check 15/15 window_tracker_check 20/20 smoke=PASS(x2) + settings variant PASS + D2DA_PROBE=0 PASS. New baseline: all probe deltas 0 except liveDock/liveDash/liveAnimator +1 per toggle (B-1); shutdown criticals 30 per toggle (150 @5). Strict @3 fails only on live +2 and 90 shutdown criticals (expected until R-7d). Settings hook gated on D2DA_PROBE=1 AND GSETTINGS_BACKEND=memory inside the extension. T-5, T-6, T-8 fixed. Smoke nits (F1 shutdown race, kill -0 startup loop, rare strict flakes) to §6.3.
 - 2026-10-04 · 2.4 · PREFLIGHT · tree clean apart from agents/*; HEAD `523cec2`; GNOME Shell 50.5.
 - 2026-10-04 · 2.4 · ASSIGN · R-7d Dock.destroy + destroy Shell Dash/struts/dwell (B-1, B-38, B-39, B-40). Stub expanded. Accept = live* deltas 0, shutdown criticals ≈ 0.
+- 2026-10-04 · 2.4 · AUDIT-PASS · `d95bb11`. check=PASS lint=0/150 settings=exit 0 timer_check/window_tracker_check pass. Smoke ×2 + settings variant PASS with liveDock/liveDash/liveAnimator deltas **0** (were +4) and shutdown criticals **0** (were 150/200); disposed/finalized/d2da errors 0. Strict @3: run 1 FAIL on line counts only (missed disable, T-9), run 2 PASS. B-1 (dock side), B-38, B-39, B-40 fixed. recreateDash path reviewed by reading (not smoke-covered). 1 human-check item queued.
+- 2026-10-04 · 2.4 · NOTE · **Strict leaks turned ON** (RUN §5, AUDITOR G-leaks) with a one-rerun policy for line-count-only failures. New: B-41 (createTheDocks may duplicate docks, inference), T-9 (missed toggle in smoke) ⇒ new row 2.4a R-7e.
+- 2026-10-04 · 2.4a · PREFLIGHT · tree clean apart from agents/*; HEAD `d95bb11`; GNOME Shell 50.5.
+- 2026-10-04 · 2.4a · ASSIGN · R-7e smoke per-toggle state wait + createTheDocks guard.

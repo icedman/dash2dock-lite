@@ -25,7 +25,8 @@
 #   D2DA_SMOKE_SETTINGS  'key=value key=value' (GVariant text, strings quoted)
 #                        applied by probe.js on every enable. Isolated mode
 #                        with D2DA_PROBE=1 only; ignored with real dconf.
-#   D2DA_SMOKE_STRICT_LEAKS=1  also fail if any after-disable probe delta != 0,
+#   D2DA_SMOKE_STRICT_LEAKS=1  also fail if any after-disable probe delta != 0
+#                        (stage delta excluded due to run-to-run noise outside the extension),
 #                        if probe line counts != TOGGLES+1/TOGGLES, or if
 #                        shutdown criticals > 0
 #
@@ -96,6 +97,36 @@ state() {
 	gnome-extensions info "$UUID" 2>/dev/null | sed -n 's/^ *State: *//p'
 }
 
+wait_toggle() {
+	cmd="$1"
+	target="$2"
+	tnum="$3"
+
+	gnome-extensions "$cmd" "$UUID"
+	attempt=0
+	while [ $attempt -lt 2 ]; do
+		step=0
+		while [ $step -lt 20 ]; do
+			s=$(state)
+			if [ "$target" = "ACTIVE" ]; then
+				[ "$s" = "ACTIVE" ] && return 0
+			else
+				[ -n "$s" ] && [ "$s" != "ACTIVE" ] && return 0
+			fi
+			sleep 0.25
+			step=$((step + 1))
+		done
+		attempt=$((attempt + 1))
+		if [ $attempt -lt 2 ]; then
+			gnome-extensions "$cmd" "$UUID"
+		fi
+	done
+
+	echo "FAIL: $cmd not applied (toggle $tnum)"
+	RESULT=1
+	return 1
+}
+
 # Wait for the shell's extension D-Bus API (up to 30 s).
 i=0
 until gnome-extensions list >/dev/null 2>&1; do
@@ -118,11 +149,10 @@ S=$(state)
 echo "initial state: $S"
 [ "$S" = "ACTIVE" ] || { echo "FAIL: extension not ACTIVE after startup"; RESULT=1; }
 
-n=0
-while [ $n -lt "$TOGGLES" ]; do
-	gnome-extensions disable "$UUID"
-	sleep 0.5
-	gnome-extensions enable "$UUID"
+n=1
+while [ $n -le "$TOGGLES" ]; do
+	wait_toggle disable NOT_ACTIVE "$n"
+	wait_toggle enable ACTIVE "$n"
 	sleep "$SETTLE"
 	n=$((n + 1))
 done
@@ -203,7 +233,8 @@ probe_table() {
 		bad = 0
 		for (k = 1; k <= nk; k++) {
 			d = last[keys[k]] - first[keys[k]]
-			if (d != 0) bad = 1
+			# stage is excluded from strict delta failure due to run-to-run noise outside the extension
+			if (keys[k] != "stage" && d != 0) bad = 1
 			row = row sprintf(fmt[k], (d > 0 ? "+" : "") d)
 		}
 		print "  delta" row

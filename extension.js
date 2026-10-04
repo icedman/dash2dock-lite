@@ -111,9 +111,10 @@ export default class Dash2DockLiteExt extends Extension {
       this.multi_monitor_preference == 1
     ) {
       let count = Main.layoutManager.monitors.length;
-      if (count != this.docks.length) {
-        this.destroyDocks();
+      if (this.docks.length == count) {
+        return;
       }
+      this.destroyDocks();
 
       for (let i = 0; i < count; i++) {
         let d = this.createDock();

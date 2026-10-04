@@ -58,24 +58,16 @@ Isolated smoke can't change settings from outside (memory backend is in-process)
 > Written by the ORCHESTRATOR only. Worker: do not edit this section.
 
 ```
-Cycle:      2.4
-Task:       R-7d — Dock.destroy(); destroy the Shell Dash and chrome actors
+Cycle:      2.4a
+Task:       R-7e — Reliable toggles in smoke (T-9) + createTheDocks duplicate guard (B-41)
 Attempt:    1
-Card:       §6 "R-7d"
-Notes:      HEAD 523cec2. This is the key lifecycle card. Probe v2 shows the leak directly
-            (live* +1 per toggle, 30 shutdown criticals per toggle). Main risk:
-            use-after-destroy from pending timers/signals into a destroyed dock. Check
-            the smoke log for "disposed" / "finalized" / "already been destroyed" /
-            "Object .* has been finalized" and `d2da:` errors after every run.
-            Shell Dash on 45-50: say whether `Dash.destroy()` disconnects its own
-            AppSystem/AppFavorites/overview handlers (read
-            /usr/share/gnome-shell or the installed libshell resources for 50.5);
-            if not, report it, don't monkeypatch.
-            Size: if over ~300 lines, ship destroyDash/B-38/B-39/B-40 + Dock.destroy
-            first and report the rest.
+Card:       §6 "R-7e"
+Notes:      HEAD d95bb11. Strict leaks are now ON (G-leaks required). Baseline at
+            d95bb11: all probe deltas 0 incl. live*, shutdown criticals 0. The only strict
+            failure seen was a missed disable (line counts 3/2).
             G-real: NOT allowed (W3).
             Gates: check; lint 0/150; check-settings exit 0 (0/30); timer_check 15/15;
-            window_tracker_check 20/20; smoke 1 known sig. Known flake B-37.
+            window_tracker_check 20/20; smoke 1 known sig; strict ×3 PASS.
 ```
 
 ## 5. Report
@@ -83,107 +75,44 @@ Notes:      HEAD 523cec2. This is the key lifecycle card. Probe v2 shows the lea
 > Overwritten by the WORKER each cycle; read by the AUDITOR.
 
 ```
-Cycle / Task / Attempt: 2.4 / R-7d / 1
-Status:            DONE (code diff 65+/19-, all items in one cycle, nothing deferred)
-Files changed:     dock.js (+61/-16), extension.js (+2/-3), animator.js (+2). HEAD 523cec2.
+Cycle / Task / Attempt: 2.4a / R-7e / 1
+Status:            DONE (all items in one cycle, nothing deferred)
+Files changed:     tools/smoke-shell.sh (+34/-3), extension.js (+2/-1). HEAD d95bb11.
                    agents/*.md untouched except this Report.
 What changed:
-  - Dock.destroy() (dock.js): a JS override that ends in super.destroy(). The file had no destroy
-    pattern yet (no _onDestroy anywhere in the repo). Guarded by this._destroyed. Order: undock()
-    -> cancelAnimations() -> destroyDash() -> animator.destroy() (before renderArea goes) + null
-    -> autohider.disable() + null its dock/extension + null -> dwell.disconnectObject(this),
-    struts.destroy(), dwell.destroy() + null -> _slider = null -> super.destroy() (destroys
-    _background, fake_dash, renderArea and any BMS child).
-    Deviation: I call undock() unconditionally, not just "if on chrome". This keeps the old
-    destroyDocks behaviour: undock also cancels the anim/debounce seqs and destroys _list, and
-    removeFromChrome is already guarded by _onChrome. this.extension is NOT nulled. The dock holds
-    no actor through it, and a late reader would get a TypeError instead of a harmless no-op.
-  - destroyDash() (B-40): calls _destroyList() first (the list's _target can be a downloads item
-    that goes with the dash). Runs _cleanupIcon over every dash._box child, every _extraIcons child
-    and dash._showAppsIcon (kept for parity: the old _findIcons path covered it). Then
-    this.dash.destroy() replaces remove_child. Nulled/reset: dash, _extraIcons, _separator,
-    _icons, _dashItems=[], _separators=[], _hoveredIcon, _lastHoveredIcon, _nearestIcon, _dragged,
-    _dragging=false, trash/recent/downloads refs. recreateDash() is unchanged: createDash()
-    destroys the old dash and builds a new one.
-  - _findIcons() (B-38): `if (!this.dash) { this._icons = null; return []; }` runs before the
-    cache branch. The old, now unreachable, check further down was removed.
-  - _updateExtraIcons() (B-39): unmounted mounts, the unpinned downloads item and the unpinned
-    trash item now get destroy() instead of remove_child. Unpinning downloads calls _destroyList()
-    first, same reason as in destroyDash. The "move trash to end" remove/add is unchanged (not a
-    removal).
-  - extension.destroyDocks(): dock.destroy() per dock. Comment added.
-  - Animator.destroy(): idempotent (_destroyed guard before live(-1)). Resolves R-0e F3.
-Shell Dash teardown (read from GNOME Shell 50.5 resources in libshell-18.so, extracted to /tmp and
-  deleted afterwards):
-  YES, Dash.destroy() releases its own handlers. Dash._init uses connectObject(..., this) for
-  AppSystem 'installed-changed'/'app-state-changed', AppFavorites 'changed' and the Main.overview
-  item/window-drag signals. environment.js does registerDestroyableType(Clutter.Actor), so the
-  signal tracker disconnects all of them when the Dash emits destroy. Also released on destroy:
-  Main.initializeDeferredWork(this._box) (actor 'destroy' -> deleted from _deferredWorkData) and
-  Main.ctrlAltTabManager.addGroup(this) (root 'destroy' -> removeGroup). Before this change every
-  leaked Dash also left a "Dash" Ctrl-Alt-Tab group and a focus_manager group behind.
-  Per-item: _hookUpLabel's Main.overview 'hiding' handler is keyed on item.child, so it goes with
-  the item.
-  NOT released: Dash._showLabelTimeoutId / _resetHoverTimeoutId (GLib.timeout_add_once, at most
-  DASH_ITEM_HOVER_TIMEOUT). They only exist if the pointer was hovering an item at destroy time;
-  showLabel's callback would then call item.showLabel() on a destroyed item. Short-lived and rare.
-  Reported, not patched (no monkeypatch).
-  45-49 not read (only 50.5 is installed). [inference] The same connectObject/signalTracker
-  pattern has been in dash.js since 42, so behaviour should match.
-Use-after-destroy audit (readers of a destroyed dock):
-  - _hiTimer/_loTimer: _animationSeq, debounceEndSeq and _debounceBeginAnimateSeq are cancelled in
-    undock(); _animationSeq and autohider._animationSeq in cancelAnimations();
-    autohider._debounceCheckSeq in autohider.disable(). undock's autohider.disable() -> show() ->
-    slideIn() re-arm is cancelled right after (existing R-2 code). In disable() the timers are
-    already shut down.
-  - Bounce runAnimation frames: getTarget bails out on animator._target == null (R-7a). The frames
-    capture `dock` locally, so a nulled animator.dock doesn't matter.
-  - dock.js runOnce callbacks (_raiseAndFocus, minimize/unminimize, _lockCycle) only touch windows
-    or plain JS fields, never actors.
-  - listeners: cleared in destroyDocks (R-2). extension.checkHide / windowTracker callbacks,
-    services.js and integrations.js iterate extension.docks, which no longer contains the dock.
-  - dwell handlers: explicit disconnectObject(this) before destroy. Dash scroll/motion/enter/leave
-    handlers go with the dash. DockItemContainer menus: R-7b destroy handler. Clock/calendar:
-    _cleanupIcon.
-  - BMS (not testable, W3): blur-my-shell's components/dash_to_dock.js (installed copy, read only)
-    connects 'destroy' on the dash it blurs and runs remove_dash_blur(false). So destroying the dock
-    (and its bms-dash-backgroundgroup child) should be handled on its side. The G-real path is
-    unverified.
+  - tools/smoke-shell.sh (T-9):
+    - Added `wait_toggle(cmd, target, tnum)`: executes `gnome-extensions $cmd $UUID`, then polls
+      `state` (≤ 5 s, 0.25 s steps) until state matches `target` (`ACTIVE` or `!ACTIVE`). If it never
+      changes in 5 s, retries the command once; if it still fails after another 5 s, prints
+      `FAIL: $cmd not applied (toggle $tnum)` and sets `RESULT=1`.
+    - In the toggle loop, replaced the fixed `sleep 0.5` with `wait_toggle disable NOT_ACTIVE "$n"`,
+      `wait_toggle enable ACTIVE "$n"`, followed by `sleep "$SETTLE"`.
+    - In `probe_table()`, excluded `stage` from setting `bad = 1` while keeping `stage` printed in
+      the table header, row output, and delta summary. Documented why (run-to-run actor noise
+      outside the extension) in the script header comments and in `probe_table()`.
+  - extension.js (B-41):
+    - In `createTheDocks()` multi-monitor branch (`Main.layoutManager.monitors.length > 0 &&
+      this.multi_monitor_preference == 1`), guarded against dock duplication by returning early
+      when the right number of docks is already alive: `if (this.docks.length == count) return;`,
+      followed by `this.destroyDocks()` and the creation loop.
+    - Callers analysis: `startUp()` is called from `enable()` (`_loTimer.runOnce(..., 250)`) and
+      `_updateMultiMonitorPreference()` (`_loTimer.runOnce(..., 500)`). Rapid monitor change events
+      or monitor configuration updates overlapping with startup could fire `startUp()` when docks
+      already exist. The single-dock branch already returned early when `docks.length == 1`; the
+      multi-monitor branch now has equivalent idempotency.
 Self-verification:
-  make check = OK. make lint = 0 errors / 150 warnings. python3 -B tools/check-settings.py = 0/30,
-  exit 0. gjs -m tests/timer_check.js = all passed. gjs -m tests/window_tracker_check.js = all
-  passed.
-  make smoke: PASS, 1 known sig, 0 new, msgs 6/5, probe lines 6/5. disposed/finalized/already been
-  destroyed grep = 0. `d2da:` / "unable to layout" grep = 0. New metrics baseline:
-    probe after-enable:
-      #    uiGroup    stage   dashes    docks       hi       lo     loop liveDock liveDash liveAnimator
-      1..6      40     2848        2        1        1        2        1        1        1            1
-    delta        0        0        0        0        0        0        0        0        0            0
-    probe after-disable:
-      1..5      36     2825        1        0        0        0        1        0        0            0
-    delta        0        0        0        0        0        0        0        0        0            0
-    shutdown criticals: 0 (sweeping phase of GC: 0)   <- was 150 at 523cec2
-  tools/smoke-shell.sh 5 (2nd default run): identical. PASS, criticals 0, disposed 0, d2da: 0.
-  Settings variant (D2DA_SMOKE_SETTINGS='trash-icon=true downloads-icon=true clock-icon=true
-    calendar-icon=true autohide-dash=true' tools/smoke-shell.sh 5): PASS, 0 new sigs, "settings
-    applied" x6, live deltas 0 in both phases, shutdown criticals 0 (was 200), disposed 0.
-    after-enable 44/2858, after-disable 36/2793.
-  D2DA_SMOKE_STRICT_LEAKS=1 tools/smoke-shell.sh 3: PASS, shutdown criticals 0, live deltas 0.
-    after-disable deltas all 0. after-enable stage went 2816 -> 2840 (+24; uiGroup/live/timers
-    flat), the same noise as R-0e F2(c). Strict mode didn't fail on it, but stage noise remains a
-    strict-mode flake risk.
-  Not run: G-real (W3), make test-shell. recreateDash() (recreateAllDocks) and
-    _updateMultiMonitorPreference rebuilds aren't exercised by isolated smoke. Code-reviewed only;
-    Human check needed (card says yes).
+  - `make check`: OK.
+  - `make lint`: 0 errors / 150 warnings.
+  - `python3 -B tools/check-settings.py`: 0 errors, 30 warnings, exit 0.
+  - `gjs -m tests/timer_check.js`: all passed (15/15).
+  - `gjs -m tests/window_tracker_check.js`: all passed (20/20).
+  - `make smoke`: PASS, 0 new sigs (1 known), shutdown criticals 0, msgs 6/5, probe lines 6/5,
+    probe after-disable deltas all 0.
+  - `D2DA_SMOKE_STRICT_LEAKS=1 tools/smoke-shell.sh 5` x 3: all 3 consecutive runs PASS,
+    shutdown criticals 0, probe line counts 6/5, probe after-disable deltas all 0.
 New findings / notes:
-  F1 (from R-0e): shutdown criticals are now 0 even though the shell stops with the extension
-    enabled. Shell teardown destroys the dock through C, which doesn't call the JS destroy()
-    override, and that no longer produced the disposed-Dash critical in 4 runs. The final `sleep 2`
-    in smoke-shell.sh is still there, so the race isn't proven gone. A future card could also
-    connect the dock's own 'destroy' signal to cancel its timer seqs.
-  F2: Dash label timeouts (see above). Shell-side, tiny.
-  F3: stage noise (+24/+32 steps) still shows up in after-enable. Recommend dropping `stage` from
-    the strict delta check before making strict the default.
+  - T-9 resolution confirmed: toggles transition reliably, and stage run-to-run noise (+17/+24)
+    no longer causes false-positive strict leak failures.
 Scope request / blockers: none.
 ```
 
@@ -405,6 +334,14 @@ Phase 2-5 cards are *stubs*: the Orchestrator expands a stub into a full card (s
 - **Accept:** `make smoke`: `liveDock`/`liveDash`/`liveAnimator` after-disable deltas **0** (after-enable deltas 0 too); shutdown criticals drop substantially (report the number; target ≈ 0); 0 disposed/finalized; no new signatures. The settings variant (`D2DA_SMOKE_SETTINGS='trash-icon=true downloads-icon=true clock-icon=true calendar-icon=true autohide-dash=true' make smoke`) is also clean with live deltas 0. `D2DA_SMOKE_STRICT_LEAKS=1 tools/smoke-shell.sh 3` reported (expected PASS if shutdown criticals reach 0; if some remain, list what they are).
 - **Verify:** `make check`; `make lint`; `tools/check-settings.py` exit 0; `gjs -m tests/timer_check.js`; `gjs -m tests/window_tracker_check.js`; the Accept runs.
 - **Human:** yes. Toggle the extension several times; change preferred monitor and multi-monitor setting (dock rebuild); lock/unlock the screen; plug/unplug a monitor if possible. The dock always renders, no duplicate docks, no stuck dash in the overview.
+
+#### R-7e — Reliable toggles in smoke (T-9) + createTheDocks duplicate guard (B-41)
+- **Fixes:** T-9, B-41.
+- **Scope:** `tools/smoke-shell.sh`; `extension.js` (`createTheDocks` only).
+- **Do:** (T-9) In the toggle loop, after `gnome-extensions disable`, poll `state` (≤ 5 s, 0.25 s steps) until it isn't ACTIVE. If it never changes, retry the command once; if it still fails, print `FAIL: disable not applied (toggle n)` and set RESULT=1. Same for enable ⇒ ACTIVE. Then the existing settle wait. Exclude `stage` from the strict delta check (keep printing it); document why (run-to-run noise outside the extension). (B-41) Read `createTheDocks` and the callers of `startUp`. If the multi-monitor branch can run with the right number of docks alive, make it idempotent (return when `docks.length == count`, else destroyDocks + create). If it can't, say why and leave a one-line comment instead of a code change.
+- **Accept:** strict smoke (`D2DA_SMOKE_STRICT_LEAKS=1 tools/smoke-shell.sh 5`) passes 3 runs in a row; default `make smoke` passes.
+- **Verify:** `make check`; `make lint`; `tools/check-settings.py` exit 0; `gjs -m tests/timer_check.js`; `gjs -m tests/window_tracker_check.js`; strict ×3; `make smoke`.
+- **Human:** no (multi-monitor rebuild is already on the 2.4 human-check list).
 
 - **R-8** Services: one debounce handle per job (B-36), `Gio.Cancellable`s, `monitor.cancel()`, enumerator `close()`, per-service try/catch, measured `dt` (B-25).
 - **R-9a** Trash: empty via Gio with confirmation, no `rm -rf` (B-8). **R-9b** Launchers: `DesktopAppInfo` from in-memory `GLib.KeyFile`, `GLib.shell_quote` (B-10). **R-9c** XDG paths (B-22). **R-9d** CSS from runtime dir / in-memory, per shell instance (B-37).

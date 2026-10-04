@@ -59,15 +59,16 @@ Isolated smoke can't change settings from outside (memory backend is in-process)
 > Written by the ORCHESTRATOR only. Worker: do not edit this section.
 
 ```
-Cycle:      2.6
-Task:       R-9a — Trash emptying via Gio with confirmation (B-8)
+Cycle:      2.7
+Task:       R-9b — Launchers in memory from GLib.KeyFile without /tmp (B-10)
 Attempt:    1
-Card:       §6 "R-9a"
-Notes:      HEAD c0391da. Strict leaks are ON.
-            (B-8) Remove rm -rf and Terminal=true. Empty trash via Gio.
-            Show confirmation dialog on Empty Trash from the dock menu.
-            Delete or replace apps/empty-trash.sh.
-            G-real: NOT allowed (W3). Do not touch the user's real trash in automated tests.
+Card:       §6 "R-9b"
+Notes:      HEAD 8fab2a5. Strict leaks are ON. Upstream GNOME Shell source is at ../gnome-shell.
+            (B-10) Stop writing .desktop files to /tmp for trash, folders, and mounts.
+            Build in-memory Gio.DesktopAppInfo from GLib.KeyFile (new_from_keyfile).
+            Quote paths in Exec with GLib.shell_quote.
+            Update dock.js and dockItems.js so createItem accepts in-memory app and creates menu.
+            G-real: NOT allowed (W3).
             Gates: check; lint 0/150; check-settings exit 0 (0/30); timer_check 15/15;
             window_tracker_check 20/20; smoke 1 known sig; strict PASS.
 ```
@@ -77,46 +78,41 @@ Notes:      HEAD c0391da. Strict leaks are ON.
 > Overwritten by the WORKER each cycle; read by the AUDITOR.
 
 ```
-Cycle / Task / Attempt: 2.6 / R-9a / 1
+Cycle / Task / Attempt: 2.7 / R-9b / 1
 Status:            DONE (all items in one cycle, nothing deferred)
-Files changed:     apps/empty-trash.sh (+1/-1), dockItems.js (+74/-1), services.js (+53/-10). HEAD c0391da.
+Files changed:     services.js, dock.js, dockItems.js. HEAD 8fab2a5.
                    agents/*.md untouched except this Report.
 What changed:
-  - apps/empty-trash.sh:
-    - (B-8) Replaced `rm -rf ~/.local/share/Trash/*` with `gio trash --empty`.
   - services.js:
-    - (B-8 remove rm -rf) In `setupTrashIcon()`, removed `rm -rf` command string, cwd-relative `.local/share/Trash`
-      lookup, and `Terminal=true`. Set desktop action `Exec` to `gio trash --empty` with `Terminal=false`.
-    - (Gio emptyTrash) Added `emptyTrash()` method: enumerates children of `this._trashDir` (`trash:///`) via
-      `enumerate_children` with `this._cancellable ?? null`, iterates child files via `iter.next_file`, and deletes
-      each child item via `child.delete(this._cancellable ?? null)` wrapped in per-item `try ... catch`. Closes
-      the enumerator promptly in `finally`, calls `this.checkTrash()`, and triggers dock refresh
-      via `this.extension?.animate?.({ refresh: true })`.
+    - (B-10 in-memory DesktopAppInfo) Added `_createAppInfoFromData(desktopContent)` which builds
+      a `GLib.KeyFile` in memory and returns `GioUnix.DesktopAppInfo.new_from_keyfile(kf)`.
+    - In `setupTrashIcon()`: removed `tempPath` and file write; stores in-memory `DesktopAppInfo` in `this.trashApp`.
+    - In `setupFolderIcon()`: removed `tempPath` and file write; quotes path with `GLib.shell_quote(full_path)`;
+      stores in `this.folderApps[name]`.
+    - In `setupMountIcon()`: removed `tempPath` and file write; quotes paths with `GLib.shell_quote(fullpath)`;
+      stores in `this.mountApps[appname]`.
+    - In `_onMountRemoved()` / `checkMounts()`: cleans up `this.mountApps`.
+  - dock.js:
+    - Updated `createItem(appOrPath)` to accept either a `DesktopAppInfo` object or a path string.
+    - In `_updateExtraIcons()`: uses in-memory `DesktopAppInfo` from `this.extension.services` directly
+      for mounts, downloads, and trash.
   - dockItems.js:
-    - (Confirmation dialog) Imported `* as ModalDialog` and `* as Dialog` from `resource:///org/gnome/shell/ui/`.
-    - In `DockItemMenu`:
-      - Handled `action === 'trash' || name === 'Empty Trash'` to show a modal confirmation dialog
-        (`ModalDialog.ModalDialog` containing `Dialog.MessageDialogContent` with title `'Empty Trash?'`
-        and description `'All items in the Trash will be permanently deleted.'`).
-      - Added "Cancel" button (`key: Clutter.KEY_Escape`) which closes the dialog without emptying trash.
-      - Added "Empty Trash" button (`default: true`, styled with `.destructive-action`) which closes the dialog
-        and calls `this.item?.dock?.extension?.services?.emptyTrash()` (with fallback to desktop action launch).
-      - Tracked active dialog in `this._confirmDialog` with cleanup listeners on `closed` and `destroy`.
-      - Added `destroy()` to `DockItemMenu`: cleanly closes and destroys `this._confirmDialog` if active,
-        popping the modal grab and releasing actors before calling `super.destroy()`.
-    - In `DockItemContainer._init`: passed `item: this` into `DockItemMenu` options.
+    - Replaced the installed-app constructor lookup hack with `GioUnix?.DesktopAppInfo ?? Gio.DesktopAppInfo`.
+    - In `DockItemContainer._init`: enabled menu creation when `params.app` is provided (`if (params.appinfo_filename || params.app)`).
+    - Added defensive getters to dummy apps (`get_id`, `get_name`) and robust icon name lookup.
 Self-verification:
   - `make check`: OK.
-  - `make lint`: 0 errors / 150 warnings.
+  - `make lint`: 0 errors / 145 warnings.
   - `python3 -B tools/check-settings.py`: 0 errors, 30 warnings, exit 0.
   - `gjs -m tests/timer_check.js`: all passed (15/15).
   - `gjs -m tests/window_tracker_check.js`: all passed (20/20).
   - `make smoke`: PASS, 0 new sigs (1 known), shutdown criticals 0, msgs 6/5, probe lines 6/5,
     probe after-disable deltas all 0.
   - `D2DA_SMOKE_STRICT_LEAKS=1 tools/smoke-shell.sh 5`: PASS, shutdown criticals 0, probe line counts 6/5,
-    probe after-disable deltas all 0 (stage delta -40, all others 0).
+    probe after-disable deltas all 0.
   - `D2DA_SMOKE_SETTINGS='trash-icon=true downloads-icon=true clock-icon=true calendar-icon=true autohide-dash=true' D2DA_SMOKE_STRICT_LEAKS=1 tools/smoke-shell.sh 5`: PASS,
-    shutdown criticals 0, probe line counts 6/5, probe after-disable deltas all 0 (including stage delta 0).
+    shutdown criticals 0, probe line counts 6/5, probe after-disable deltas all 0.
+  - Confirmed 0 `/tmp/*-dash2dock-lite.desktop` files created during smoke.
 New findings / notes: none.
 Scope request / blockers: none.
 ```
@@ -372,8 +368,31 @@ Phase 2-5 cards are *stubs*: the Orchestrator expands a stub into a full card (s
 - **Don't:** Never execute `rm -rf`. Never empty trash without confirmation when triggered from the dock menu. Never delete files outside `trash:///`. Don't empty real trash during automated test suites.
 - **Accept:** `make check`, `make lint` (0 errors, ≤ 150 warnings), `tools/check-settings.py` (exit 0), unit tests pass, `make smoke` and strict smoke pass with 0 new signatures and all deltas 0.
 - **Verify:** `make check`; `make lint`; `python3 -B tools/check-settings.py`; `gjs -m tests/timer_check.js`; `gjs -m tests/window_tracker_check.js`; `D2DA_SMOKE_STRICT_LEAKS=1 tools/smoke-shell.sh 5`; `make smoke`.
-- **Human:** yes. Right-click trash icon in dock -> click "Empty Trash". Verify confirmation dialog appears with Cancel and Empty Trash. Cancel leaves trash intact. Empty Trash empties trash and updates icon to empty.
-- **R-9b** Launchers: `DesktopAppInfo` from in-memory `GLib.KeyFile`, `GLib.shell_quote` (B-10). **R-9c** XDG paths (B-22). **R-9d** CSS from runtime dir / in-memory, per shell instance (B-37).
+#### R-9b — Launchers in memory from GLib.KeyFile without /tmp (B-10)
+- **Fixes:** B-10.
+- **Scope:** `services.js`; `dock.js`; `dockItems.js`.
+- **Do:**
+  - (B-10 in-memory DesktopAppInfo) In `services.js`, replace writing `.desktop` files into `/tmp` via `tempPath` with in-memory `Gio.DesktopAppInfo` construction:
+    - Create a helper to build `Gio.DesktopAppInfo` from `GLib.KeyFile` in memory:
+      ```javascript
+      const kf = new GLib.KeyFile();
+      kf.load_from_data(desktopContent, -1, GLib.KeyFileFlags.NONE);
+      const appInfo = Gio.DesktopAppInfo.new_from_keyfile(kf);
+      ```
+    - Apply this to `setupTrashIcon()`, `setupFolderIcon()`, and `setupMountIcon()`, storing the in-memory app info objects in `services` (e.g. `this.trashApp`, `this.folderApps = {}`, `this.mountApps = {}`).
+    - Use `GLib.shell_quote` for any dynamic path injected into `Exec=` (e.g. folder paths, mount locations).
+    - Remove the `fn.replace_contents(...)` calls that write `.desktop` files to `/tmp`.
+  - In `dock.js`:
+    - Update `createItem(appOrPath)` to accept either a `DesktopAppInfo` object or a path string.
+    - In `_updateExtraIcons()`: pass the in-memory app info from `this.extension.services` directly to `createItem` for mounts, downloads, and trash instead of `tempPath(...)`.
+  - In `dockItems.js`:
+    - In `DockItemContainer._init`: enable menu creation when `params.app` is provided (`if (params.appinfo_filename || params.app)`).
+    - Replace the `Shell.AppSystem.get_default().get_installed()[0].constructor` hack with standard `Gio.DesktopAppInfo`.
+- **Don't:** Don't touch CSS styling or theme handling (that's R-9d). Don't break dock item clicking or context menu activation. Don't write any new files to `/tmp`.
+- **Accept:** No `/tmp/*-dash2dock-lite.desktop` files created during extension lifecycle; right-clicking and clicking trash/mount/downloads icons work properly; `make check`, `make lint` (0 errors, ≤ 150 warnings), `tools/check-settings.py` (exit 0), unit tests pass, `make smoke` and strict smoke pass with 0 new signatures and all deltas 0.
+- **Verify:** `make check`; `make lint`; `python3 -B tools/check-settings.py`; `gjs -m tests/timer_check.js`; `gjs -m tests/window_tracker_check.js`; `D2DA_SMOKE_STRICT_LEAKS=1 tools/smoke-shell.sh 5`; `make smoke`.
+- **Human:** no.
+- **R-9c** XDG paths (B-22). **R-9d** CSS from runtime dir / in-memory, per shell instance (B-37).
 
 ### Phase 3 — Speed (stubs)
 - **R-10** split `layout()` → `relayout()` on dirty flag; `animate` must not call `layout()` (P-1).

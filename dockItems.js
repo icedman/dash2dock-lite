@@ -11,8 +11,8 @@ import { trySpawnCommandLine } from './utils.js';
 
 import { Dash } from 'resource:///org/gnome/shell/ui/dash.js';
 
-import Shell from 'gi://Shell';
 import Gio from 'gi://Gio';
+import GioUnix from 'gi://GioUnix';
 import GObject from 'gi://GObject';
 import Clutter from 'gi://Clutter';
 import St from 'gi://St';
@@ -48,20 +48,22 @@ class DockItemMenu extends PopupMenu.PopupMenu {
       this._onActivate();
     });
 
-    desktopApp.list_actions().forEach((action) => {
-      let name = desktopApp.get_action_name(action);
-      this.addAction(name, () => {
-        if (action === 'trash' || name === 'Empty Trash') {
-          this._confirmEmptyTrash(desktopApp, action);
-          return;
-        }
-        let workspaceManager = global.workspace_manager;
-        let workspace = workspaceManager.get_active_workspace();
-        let ctx = global.create_app_launch_context(0, workspace);
-        desktopApp.launch_action(action, ctx);
-        this.item?.dock?.extension?.animate?.({ refresh: true });
+    if (desktopApp.list_actions) {
+      desktopApp.list_actions().forEach((action) => {
+        let name = desktopApp.get_action_name(action);
+        this.addAction(name, () => {
+          if (action === 'trash' || name === 'Empty Trash') {
+            this._confirmEmptyTrash(desktopApp, action);
+            return;
+          }
+          let workspaceManager = global.workspace_manager;
+          let workspace = workspaceManager.get_active_workspace();
+          let ctx = global.create_app_launch_context(0, workspace);
+          desktopApp.launch_action(action, ctx);
+          this.item?.dock?.extension?.animate?.({ refresh: true });
+        });
       });
-    });
+    }
   }
 
   _confirmEmptyTrash(desktopApp, action) {
@@ -324,22 +326,17 @@ export const DockItemContainer = GObject.registerClass(
 
       this.custom_icon = true;
 
-      // hack to get DesktopAppInfo class
-      let DesktopAppInfo = Main.overview.d2dl.DesktopAppInfo;
-      if (!DesktopAppInfo) {
-        try {
-          DesktopAppInfo =
-            Shell.AppSystem.get_default().get_installed()[0].constructor;
-        } catch (err) {
-          // should be unreachable
-          console.log(err);
-        }
-        Main.overview.d2dl.DesktopAppInfo = DesktopAppInfo;
-      }
+      const DesktopAppInfo = GioUnix?.DesktopAppInfo ?? Gio.DesktopAppInfo;
 
       let desktopApp = params.app;
       if (desktopApp) {
         // monkey patch dummy app
+        if (!desktopApp.get_id) {
+          desktopApp.get_id = () => null;
+        }
+        if (!desktopApp.get_name) {
+          desktopApp.get_name = () => '';
+        }
         if (!desktopApp.get_icon) {
           desktopApp.can_open_new_window = () => false;
           desktopApp.create_icon_texture = () => null;
@@ -350,7 +347,7 @@ export const DockItemContainer = GObject.registerClass(
             };
           };
         }
-      } else {
+      } else if (params.appinfo_filename) {
         desktopApp = DesktopAppInfo.new_from_filename(params.appinfo_filename);
       }
 
@@ -364,14 +361,18 @@ export const DockItemContainer = GObject.registerClass(
 
       try {
         this.setLabelText(desktopApp.get_name());
-        dashIcon._default_icon_name = desktopApp.get_icon().get_names()[0];
+        let iconNames =
+          desktopApp.get_icon()?.get_names?.() ||
+          desktopApp.get_icon()?.names ||
+          [];
+        dashIcon._default_icon_name = iconNames[0] || 'file';
       } catch (err) {
         console.log(err);
         console.log(params);
       }
 
       // menu
-      if (params.appinfo_filename) {
+      if (params.appinfo_filename || params.app) {
         this._menu = new DockItemMenu(this, St.Side.TOP, {
           desktopApp,
           item: this,

@@ -1,10 +1,11 @@
 'use strict';
 
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
-import { tempPath, trySpawnCommandLine } from './utils.js';
+import { trySpawnCommandLine } from './utils.js';
 // import { trySpawnCommandLine } from 'resource:///org/gnome/shell/misc/util.js';
 
 import Gio from 'gi://Gio';
+import GioUnix from 'gi://GioUnix';
 import GLib from 'gi://GLib';
 import Graphene from 'gi://Graphene';
 
@@ -45,6 +46,9 @@ export const Services = class {
   enable() {
     this._cancellable = new Gio.Cancellable();
     this._mounts = {};
+    this.trashApp = null;
+    this.folderApps = {};
+    this.mountApps = {};
     this._services = [
       new ServiceCounter('trash', 1000 * 15, this.checkTrash.bind(this)),
       new ServiceCounter(
@@ -144,6 +148,10 @@ export const Services = class {
     this.extension._loTimer?.cancel(this._debounceDownloadsSeq);
     this._debounceRecentsSeq = null;
     this._debounceDownloadsSeq = null;
+    this._mounts = {};
+    this.trashApp = null;
+    this.folderApps = {};
+    this.mountApps = {};
   }
 
   setupDownloads() {
@@ -207,8 +215,11 @@ export const Services = class {
   }
 
   _onMountRemoved(monitor, mount) {
-    let mount_id = tempPath(this._getMountAppName(mount));
-    delete this._mounts[mount_id];
+    let appname = this._getMountAppName(mount);
+    delete this._mounts[appname];
+    if (this.mountApps) {
+      delete this.mountApps[appname];
+    }
     this.extension.animate();
   }
 
@@ -222,40 +233,32 @@ export const Services = class {
     });
   }
 
-  setupTrashIcon() {
-    let appname = `trash-dash2dock-lite.desktop`;
-    let app_id = tempPath(appname);
-    let fn = Gio.File.new_for_path(app_id);
-    let open_app = 'nautilus --select';
+  _createAppInfoFromData(desktopContent) {
+    const kf = new GLib.KeyFile();
+    const length = new TextEncoder().encode(desktopContent).length;
+    kf.load_from_data(desktopContent, length, GLib.KeyFileFlags.NONE);
+    return (GioUnix?.DesktopAppInfo ?? Gio.DesktopAppInfo).new_from_keyfile(kf);
+  }
 
-    let content = `[Desktop Entry]\nVersion=1.0\nTerminal=false\nType=Application\nName=Trash\nExec=${open_app} trash:///\nIcon=user-trash\nStartupWMClass=trash-dash2dock-lite\nActions=trash\n\n[Desktop Action trash]\nName=Empty Trash\nExec=gio trash --empty\nTerminal=false\n`;
-    const [, etag] = fn.replace_contents(
-      content,
-      null,
-      false,
-      Gio.FileCreateFlags.REPLACE_DESTINATION,
-      null
-    );
+  setupTrashIcon() {
+    let open_app = 'nautilus --select';
+    let content = `[Desktop Entry]\nVersion=1.0\nTerminal=false\nType=Application\nName=Trash\nExec=${open_app} trash:///\nIcon=user-trash\nStartupWMClass=trash-dash2dock-lite\nActions=trash;\n\n[Desktop Action trash]\nName=Empty Trash\nExec=gio trash --empty\nTerminal=false\n`;
+    this.trashApp = this._createAppInfoFromData(content);
+    return this.trashApp;
   }
 
   setupFolderIcon(name, title, icon, path) {
-    // expand
-    let full_path = Gio.file_new_for_path(path).get_path();
-    let extension_path = this.extension.path;
-    let appname = `${name}-dash2dock-lite.desktop`;
-    let app_id = tempPath(appname);
-    let fn = Gio.File.new_for_path(app_id);
-    // let open_app = 'xdg-open';
+    let full_path = Gio.File.new_for_path(path).get_path();
+    let quoted_path = GLib.shell_quote(full_path);
     let open_app = 'nautilus --select';
 
-    let content = `[Desktop Entry]\nVersion=1.0\nTerminal=false\nType=Application\nName=${title}\nExec=${open_app} ${full_path}\nIcon=${icon}\nStartupWMClass=${name}-dash2dock-lite\n`;
-    const [, etag] = fn.replace_contents(
-      content,
-      null,
-      false,
-      Gio.FileCreateFlags.REPLACE_DESTINATION,
-      null
-    );
+    let content = `[Desktop Entry]\nVersion=1.0\nTerminal=false\nType=Application\nName=${title}\nExec=${open_app} ${quoted_path}\nIcon=${icon}\nStartupWMClass=${name}-dash2dock-lite\n`;
+    let appInfo = this._createAppInfoFromData(content);
+    if (!this.folderApps) {
+      this.folderApps = {};
+    }
+    this.folderApps[name] = appInfo;
+    return appInfo;
   }
 
   setupFolderIcons() {
@@ -286,31 +289,30 @@ export const Services = class {
   setupMountIcon(mount) {
     let label = this._escapeDesktopValue(this._getMountName(mount));
     let appname = this._getMountAppName(mount);
-    let fullpath = mount.get_default_location().get_path();
+    let location = mount.get_default_location();
+    let fullpath = location?.get_path() || location?.get_uri() || '';
+    let quoted_path = GLib.shell_quote(fullpath);
     let icon = 'drive-harddisk-solidstate';
     if (mount.get_icon() && mount.get_icon().names) {
       icon =
         this.extension.lookup_icon_from_names(mount.get_icon().names) ?? icon;
     }
     let mount_exec = 'echo "not implemented"';
-    let unmount_exec = `umount ${fullpath}`;
-    let mount_id = tempPath(appname);
-    let fn = Gio.File.new_for_path(mount_id);
+    let unmount_exec = `umount ${quoted_path}`;
 
     // always rewrite: same root URI may come back with a new label/path
-    let content = `[Desktop Entry]\nVersion=1.0\nTerminal=false\nType=Application\nName=${label}\nExec=xdg-open ${fullpath}\nIcon=${icon}\nStartupWMClass=${appname.replace(
+    let content = `[Desktop Entry]\nVersion=1.0\nTerminal=false\nType=Application\nName=${label}\nExec=xdg-open ${quoted_path}\nIcon=${icon}\nStartupWMClass=${appname.replace(
       /\.desktop$/,
       ''
     )}\nActions=unmount;\n\n[Desktop Action mount]\nName=Mount\nExec=${mount_exec}\n\n[Desktop Action unmount]\nName=Unmount\nExec=${unmount_exec}\n`;
-    const [, etag] = fn.replace_contents(
-      content,
-      null,
-      false,
-      Gio.FileCreateFlags.REPLACE_DESTINATION,
-      null
-    );
 
-    this._mounts[mount_id] = mount;
+    let appInfo = this._createAppInfoFromData(content);
+    if (!this.mountApps) {
+      this.mountApps = {};
+    }
+    this.mountApps[appname] = appInfo;
+    this._mounts[appname] = mount;
+    return appInfo;
   }
 
   checkNotifications() {
@@ -771,7 +773,8 @@ export const Services = class {
 
   checkMounts() {
     if (!this.extension.mounted_icon) {
-      this._mounts = [];
+      this._mounts = {};
+      this.mountApps = {};
       return;
     }
 

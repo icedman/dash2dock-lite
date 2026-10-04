@@ -26,7 +26,6 @@ import {
   get_distance,
   isInRect,
   isOverlapRect,
-  tempPath,
 } from './utils.js';
 
 const Point = Graphene.Point;
@@ -217,14 +216,20 @@ export let Dock = GObject.registerClass(
       this._beginAnimation();
     }
 
-    createItem(appinfo_filename) {
-      let item = new DockItemContainer({
-        appinfo_filename,
-      });
+    createItem(appOrPath) {
+      let params = {};
+      if (typeof appOrPath === 'string') {
+        params.appinfo_filename = appOrPath;
+      } else if (appOrPath) {
+        params.app = appOrPath;
+      }
+      let item = new DockItemContainer(params);
       item.dock = this;
-      item._menu._onActivate = () => {
-        this._maybeBounce(item);
-      };
+      if (item._menu) {
+        item._menu._onActivate = () => {
+          this._maybeBounce(item);
+        };
+      }
       this._extraIcons.add_child(item);
       return item;
     }
@@ -935,26 +940,29 @@ export let Dock = GObject.registerClass(
       // the mount icons
       //---------------
       {
-        //! avoid creating app_info & /tmp/*.desktop files
         let extras = [...this._extraIcons.get_children()];
-        let extraMountPaths = extras.map((e) => e._mountPath);
-        let mounted = Object.keys(this.extension.services._mounts);
+        let extraMountIds = extras.map((e) => e._mountId || e._mountPath);
+        let mountApps = this.extension.services?.mountApps || {};
+        let mountedIds = Object.keys(mountApps);
 
         extras.forEach((extra) => {
           if (!extra._mountType) {
             return;
           }
-          if (!mounted.includes(extra._mountPath)) {
+          let id = extra._mountId || extra._mountPath;
+          if (!mountedIds.includes(id)) {
             extra.destroy();
             this._icons = null;
           }
         });
 
-        mounted.forEach((mount) => {
-          if (!extraMountPaths.includes(mount)) {
-            let mountedIcon = this.createItem(mount);
+        mountedIds.forEach((mountId) => {
+          if (!extraMountIds.includes(mountId)) {
+            let app = mountApps[mountId];
+            let mountedIcon = this.createItem(app);
             mountedIcon._mountType = true;
-            mountedIcon._mountPath = mount;
+            mountedIcon._mountId = mountId;
+            mountedIcon._mountPath = mountId;
             this._icons = null;
           }
         });
@@ -985,8 +993,14 @@ export let Dock = GObject.registerClass(
         {
           icon: '_downloadsIcon',
           folder: Gio.File.new_for_path('Downloads').get_path(),
-          //! find a way to avoid this
-          path: tempPath('downloads-dash2dock-lite.desktop'),
+          path:
+            this.extension.services?.folderApps?.downloads ||
+            this.extension.services?.setupFolderIcon?.(
+              'downloads',
+              'Downloads',
+              'folder-downloads',
+              'Downloads'
+            ),
           show: this.extension.downloads_icon,
           items: '_downloadFiles',
           itemsLength: '_downloadFilesLength',
@@ -1016,10 +1030,10 @@ export let Dock = GObject.registerClass(
       //---------------
       if (!this._trashIcon && this.extension.trash_icon) {
         // pin trash icon
-        //! avoid creating app_info & /tmp/*.desktop files
-        this._trashIcon = this.createItem(
-          tempPath('trash-dash2dock-lite.desktop')
-        );
+        let trashApp =
+          this.extension.services?.trashApp ||
+          this.extension.services?.setupTrashIcon?.();
+        this._trashIcon = this.createItem(trashApp);
         this._icons = null;
       } else if (this._trashIcon && !this.extension.trash_icon) {
         // unpin trash icon

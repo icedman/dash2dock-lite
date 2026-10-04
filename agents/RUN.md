@@ -133,8 +133,8 @@ Status: `[ ]` todo · `[~]` in progress · `[x]` done (hash) · `[!]` blocked ·
 | [x] d95bb11 | 2.4 | R-7d Dock.destroy + destroyDocks | 2.1-2.3a | B-1 · then turn **strict leaks ON** (§5) |
 | [x] e5ba736 | 2.4a | R-7e smoke per-toggle state wait (T-9) + createTheDocks duplicate guard (B-41) | 2.4 | small; makes strict leaks reliable |
 | [x] c0391da | 2.5 | R-8 services cancellables / dt | 2.4 | B-25, B-36 |
-| [~] | 2.6 | R-9a trash via Gio | 2.5 | B-8 · human visual |
-| [ ] | 2.7 | R-9b launchers in memory | 2.5 | B-10 |
+| [x] 8fab2a5 | 2.6 | R-9a trash via Gio | 2.5 | B-8 · human visual |
+| [~] | 2.7 | R-9b launchers in memory | 2.5 | B-10 |
 | [ ] | 2.8 | R-9c XDG paths | 2.5 | B-22 |
 | [ ] | 2.9 | R-9d CSS without /tmp | 2.5 | HUMAN — end of phase 2 |
 
@@ -179,7 +179,7 @@ Status: `open` · `fixed <hash>` · `partial <hash>` · `blocked` · `wontfix (r
 | B-5 | R-4a | fixed c9ca876 | | B-23 | R-1 | fixed ef879f9 |
 | B-6 | R-1, R-2 | fixed ef879f9 + c84f252 | | B-24 | R-1, R-11b | partial ef879f9 (`typeof func` typo; resolution collapse in R-11b) |
 | B-7 | R-2 | fixed c84f252 | | B-25 | R-8 | fixed c0391da |
-| B-8 | R-9a | open | | B-26 | R-3 | fixed dda62a5 (dead check removed per human rule) |
+| B-8 | R-9a | fixed 8fab2a5 | | B-26 | R-3 | fixed dda62a5 (dead check removed per human rule) |
 | B-9 | R-4d | fixed 0821a56 | | B-27 | R-3 | fixed dda62a5 |
 | B-10 | R-9b | open | | B-28 | (unassigned, needs St case check) | open |
 | B-11 | R-6 | fixed 3311461 | | B-29 | R-7b | partial 0a01a50 (destroy done; "menu side always TOP" open) |
@@ -248,6 +248,7 @@ Items the agents can't see. The human runs `make test-shell` (needs `mutter-devk
 | 2.2 | 0a01a50 | Clock + calendar icons on, toggle the extension ⇒ each renders once, no duplicates; change dock position ⇒ menus/clock/calendar come back | |
 | 2.3 | deb31fb | Autohide + dodge on: move/resize a window over the dock ⇒ hides/shows; close it ⇒ shows; two monitors if available; autohide off/on | |
 | 2.4 | d95bb11 | Toggle extension several times; change preferred monitor + multi-monitor setting; lock/unlock; plug/unplug monitor ⇒ dock always renders, no duplicates, overview dash fine, clock/calendar/trash/downloads back after rebuild | |
+| 2.6 | 8fab2a5 | Right-click trash icon -> click "Empty Trash". Confirmation dialog appears (Cancel / Empty Trash). Cancel keeps trash, Empty Trash empties and updates icon | |
 
 ## 6. Run Log (append-only, newest last)
 
@@ -344,3 +345,6 @@ Format: `YYYY-MM-DD HH:MM · cycle · EVENT · details` where EVENT ∈ `SETUP, 
 - 2026-10-04 · 2.5 · AUDIT-PASS · `c0391da`. check=PASS lint=0/150 settings=exit 0 timer_check 15/15 window_tracker_check 20/20 smoke=PASS(x2) strict=PASS all deltas 0 shutdown criticals 0. B-25 (measured dt, per-service try/catch), B-36 (separate debounce handles) fixed; Gio cancellable, monitor.cancel, enumerator.close added.
 - 2026-10-04 · 2.6 · PREFLIGHT · tree clean apart from agents/*; HEAD `c0391da`; GNOME Shell 50.5.
 - 2026-10-04 · 2.6 · ASSIGN · R-9a trash via Gio with confirmation (B-8). Stub expanded.
+- 2026-10-04 · 2.6 · AUDIT-PASS · `8fab2a5`. check=PASS lint=0/150 settings=exit 0 timer_check 15/15 window_tracker_check 20/20 smoke=PASS(x2) strict=PASS all deltas 0 shutdown criticals 0. B-8 fixed: empty trash via Gio, modal confirmation dialog in DockItemMenu, rm -rf removed. 1 human-check item queued.
+- 2026-10-04 · 2.7 · PREFLIGHT · tree clean apart from agents/*; HEAD `8fab2a5`; GNOME Shell 50.5.
+- 2026-10-04 · 2.7 · ASSIGN · R-9b launchers in memory from GLib.KeyFile without /tmp (B-10). Stub expanded.

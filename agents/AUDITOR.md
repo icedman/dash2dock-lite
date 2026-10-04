@@ -84,38 +84,39 @@ Minor nits (naming, a stray blank line) that don't violate a rule: list them as 
 > Overwritten each cycle. On FAIL the Worker reads this for its rework.
 
 ```
-Cycle / Task / Attempt:  2.6 / R-9a Trash emptying via Gio with confirmation (B-8) / 1
+Cycle / Task / Attempt:  2.7 / R-9b Launchers in memory from GLib.KeyFile without /tmp (B-10) / 1
 Verdict:          PASS
-Commit:           see Audit Log (fix(services): empty trash via Gio with modal confirmation dialog)
-Gates:            check=PASS ; lint=PASS 0 err / 150 warn (= baseline; dockItems.js 7, services.js 8 = HEAD) ;
+Commit:           see Audit Log (fix(services): launchers in memory from GLib.KeyFile without /tmp)
+Gates:            check=PASS ; lint=PASS 0 err / 145 warn (baseline 150; services.js 4, dock.js 21, dockItems.js 6 <= HEAD) ;
                   settings=exit 0, 0/30 ; timer_check all passed (15/15) ;
                   window_tracker_check all passed (20/20) ; smoke x2 PASS (1 known sig, 0 new,
                   6/5 msgs, 6/5 probe lines, ALL deltas 0) ; strict x1 PASS (counts 6/5, ALL deltas 0,
                   shutdown criticals 0) ; settings variant strict PASS (deltas 0, criticals 0) ;
+                  0 /tmp/*-dash2dock-lite.desktop files created ;
                   disposed/finalized/already been destroyed = 0 and `d2da: ` = 0 in all runs.
                   No orphaned headless shell. G-real NOT run (W3).
-Scope:            apps/empty-trash.sh (+1/-1), dockItems.js (+74/-1), services.js (+53/-10) + agents/*.md bookkeeping.
+Scope:            services.js (+46/-42), dock.js (+34/-24), dockItems.js (+30/-29) + agents/*.md bookkeeping.
                   Matches Scope and Report.
 Rule violations:  none. A1-A10, A12, A13 clean (A11 n/a).
 Specific checks:
-  1. B-8 rm -rf elimination: removed hardcoded `rm -rf` command, cwd-relative `.local/share/Trash`
-     lookup, and `Terminal=true` from `services.js:setupTrashIcon`. Desktop action Exec is `gio trash --empty`
-     with `Terminal=false`. `apps/empty-trash.sh` replaced `rm -rf` with `gio trash --empty`.
-  2. Gio emptyTrash(): `services.js:emptyTrash()` enumerates children of `trash:///` (`this._trashDir`),
-     deletes each child via `child.delete(this._cancellable ?? null)` wrapped in per-item try/catch,
-     closes enumerator in finally block, calls `this.checkTrash()`, and triggers dock icon refresh
-     via `this.extension?.animate?.({ refresh: true })`.
-  3. Confirmation dialog: `dockItems.js:DockItemMenu` intercepts `action === 'trash' || name === 'Empty Trash'`,
-     displaying a `ModalDialog.ModalDialog` with `Dialog.MessageDialogContent` (title 'Empty Trash?',
-     description 'All items in the Trash will be permanently deleted.').
-  4. Dialog actions: "Cancel" button on `Clutter.KEY_Escape` closes without action; "Empty Trash"
-     destructive button closes dialog and calls `services.emptyTrash()` (with fallback to desktop action launch).
-  5. Dialog lifecycle: active dialog stored in `this._confirmDialog`, nulled on `closed` and `destroy`.
-     `DockItemMenu.destroy()` closes and destroys active dialog cleanly, popping the modal grab before `super.destroy()`.
-Nit:              none.
+  1. B-10 in-memory DesktopAppInfo: `services.js:_createAppInfoFromData(desktopContent)` constructs
+     `GLib.KeyFile` in memory and builds `GioUnix.DesktopAppInfo.new_from_keyfile(kf)` (fallback to `Gio.DesktopAppInfo`).
+  2. Removal of /tmp desktop files: Removed `tempPath` and `fn.replace_contents(...)` file writes from
+     `setupTrashIcon()`, `setupFolderIcon()`, and `setupMountIcon()`. Confirmed zero temporary desktop files
+     created in `/tmp` during full smoke runs.
+  3. Dynamic path quoting: All dynamic paths injected into launcher `Exec=` (`full_path` in `setupFolderIcon`,
+     `fullpath` in `setupMountIcon`) are quoted with `GLib.shell_quote()`.
+  4. In-memory launcher references and lifecycle: `services.js` stores in-memory app infos in `this.trashApp`,
+     `this.folderApps = {}`, and `this.mountApps = {}`. Cleaned up on `_onMountRemoved`, `checkMounts`, and `disable()`.
+  5. Dock and DockItemContainer integration: `dock.js:createItem(appOrPath)` accepts either `DesktopAppInfo`
+     object or string path. `_updateExtraIcons()` consumes in-memory app infos directly from `services`.
+     `dockItems.js:DockItemContainer` initializes menu for both filename and in-memory app (`params.app`),
+     replaces installed-app constructor lookup with standard `GioUnix?.DesktopAppInfo ?? Gio.DesktopAppInfo`,
+     and provides robust icon name resolution and dummy app defensive getters.
+Nit:              Stray untracked tools/publish.sh created by user in working tree not staged.
 Rework list:      none.
-Findings confirmed: B-8 resolved.
-Human check needed: yes (right-click trash icon in dock -> click "Empty Trash"; verify confirmation dialog appears with Cancel and Empty Trash, Cancel preserves trash, Empty Trash empties trash and updates icon).
+Findings confirmed: B-10 resolved.
+Human check needed: no (covered by automated smoke suites and unit tests).
 ```
 
 ## 7. Audit Log (append-only, newest last)
@@ -147,5 +148,7 @@ Human check needed: yes (right-click trash icon in dock -> click "Empty Trash"; 
 | 2.4a | R-7e | 1 | PASS | this commit | `make check` PASS; lint 0/150 = baseline (extension.js 13 = HEAD); check-settings exit 0, 0/30; timer_check 15/15; window_tracker_check 20/20; smoke x2 PASS (1 known sig, 0 new, 6/5, ALL deltas 0); strict x3 PASS consecutively (6/5 lines, ALL deltas 0, 0 crit); settings variant strict PASS (deltas 0, crit 0); disposed/finalized 0, `d2da: ` 0 | T-9 wait_toggle polls state (≤5s, retry once); stage excluded from strict delta failure; B-41 createTheDocks returns early when docks.length == count. Strict leaks 100% reliable. |
 | 2.5 | R-8 | 1 | PASS | this commit | `make check` PASS; lint 0/150 = baseline (extension.js 13, services.js 8 = HEAD); check-settings exit 0, 0/30; timer_check 15/15; window_tracker_check 20/20; smoke x2 PASS (1 known sig, 0 new, 6/5, ALL deltas 0); strict PASS (6/5 lines, ALL deltas 0, 0 crit); settings variant strict PASS (deltas 0, crit 0); disposed/finalized 0, `d2da: ` 0 | B-25 (measured dt via get_monotonic_time, per-service try/catch), B-36 (separate _debounceRecentsSeq / _debounceDownloadsSeq), Gio cancellables, monitor cancel, enumerator close. Nit: empty catch on enumerator close in finally. |
 | 2.6 | R-9a | 1 | PASS | this commit | check=PASS; lint 0/150 = baseline (dockItems.js 7, services.js 8 = HEAD); check-settings exit 0, 0/30; timer_check 15/15; window_tracker_check 20/20; smoke x2 PASS (1 known sig, 0 new, 6/5, ALL deltas 0); strict PASS (6/5 lines, ALL deltas 0, 0 crit); settings variant strict PASS (deltas 0, crit 0); disposed/finalized 0, `d2da: ` 0 | B-8 fixed. Hardcoded rm -rf removed from services.js and empty-trash.sh; services.emptyTrash() enumerates trash:/// and deletes children via Gio; DockItemMenu displays modal confirmation dialog (ModalDialog + MessageDialogContent) with Cancel and destructive Empty Trash buttons; cleanly destroyed with modal grab popped on menu teardown. |
+| 2.7 | R-9b | 1 | PASS | this commit | check=PASS; lint 0/145 (baseline 150; services.js 4, dock.js 21, dockItems.js 6 <= HEAD); check-settings exit 0, 0/30; timer_check 15/15; window_tracker_check 20/20; smoke x2 PASS (1 known sig, 0 new, ALL deltas 0); strict PASS (6/5 lines, ALL deltas 0, 0 crit); settings variant strict PASS (deltas 0, crit 0); 0 tmp desktop files; disposed/finalized 0, `d2da: ` 0 | B-10 fixed. In-memory Gio.DesktopAppInfo created from GLib.KeyFile without writing .desktop files to /tmp; paths shell_quoted in Exec; services.trashApp, folderApps, mountApps managed; dock.createItem and DockItemContainer accept DesktopAppInfo and construct menu. |
+
 
 

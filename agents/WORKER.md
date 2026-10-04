@@ -58,25 +58,25 @@ Isolated smoke can't change settings from outside (memory backend is in-process)
 > Written by the ORCHESTRATOR only. Worker: do not edit this section.
 
 ```
-Cycle:      1.6
-Task:       R-4c — `dock.js` input fixes
+Cycle:      1.7
+Task:       R-4d — Mount names
 Attempt:    1
-Card:       §6 "R-4c"
-Notes:      HEAD 8f44419. As in 1.5: revived code changes behaviour. Describe the
-            on-screen effect of each fix, and hold (no edit, report) any ID whose intent
-            is unclear. B-17: confirm `get_state()` exists on Clutter events for GNOME
-            45-50 and which mask "current workspace only" checks. B-18: verify the mask
-            and button constants against Clutter (BUTTON1/2/3 = left/middle/right; the
-            card's BUTTON3_MASK remark suggests the current code tests RIGHT). Also, a
-            press-time `get_state()` doesn't include the button being pressed, so prefer
-            `get_button()` on button events. The activate patch must fall back to the
-            original activate if our handler throws, logged with
-            `console.error('d2da: …', e)`. The patch is existing coupling (§4): no new
-            private access, and don't move it (R-14 does that). B-19: report which actors
-            effects are added to and removed from (grep `add_effect`/`remove_effect`/
-            `clear_effects`); make removal symmetric, null-safe.
-            Baselines: lint 0/162 (dock.js 25); check-settings 1/30; smoke 1 known sig,
-            deltas 0/0/0/0/0/+1/0; timer_check 15/15.
+Card:       §6 "R-4d"
+Notes:      HEAD 1b03ca7. Scope = services.js (mount code only). Mount items are backed
+            by generated `.desktop` launchers (that mechanism is B-10 / R-9b, so don't
+            redesign it). If keying by root URI puts the URI into a file name or desktop
+            id, sanitize it (stable, filesystem-safe, e.g. a GLib checksum of the URI)
+            and make sure removal/unmount deletes exactly that one item. Use the mount's
+            display name (`mount.get_name()`) with fallback 'Volume'; quote/escape it
+            where it goes into a `.desktop` file. No new sync I/O beyond what the
+            existing code already does per mount event (A7). Describe what happens to
+            launchers left over from the old shared-'Volume' scheme after upgrade.
+            Smoke has no mounts, so check by reading code; a gjs unit test of a pure
+            helper (name/key) is welcome if it needs no Shell imports.
+            Known flake: `Style.unloadAll` /tmp CSS signature (B-37, environment). If it
+            appears, rerun once and report it.
+            Baselines: lint 0/158; check-settings 1/30; smoke 1 known sig, deltas
+            0/0/0/0/0/+1/0; timer_check 15/15.
 ```
 
 ## 5. Report
@@ -84,56 +84,42 @@ Notes:      HEAD 8f44419. As in 1.5: revived code changes behaviour. Describe th
 > Overwritten by the WORKER each cycle; read by the AUDITOR.
 
 ```
-Cycle / Task / Attempt: 1.6 / R-4c / 1
+Cycle / Task / Attempt: 1.7 / R-4d / 1
 Status:            DONE
-Files changed:     dock.js only, vs HEAD 8f44419 (+33/-15)
+Files changed:     services.js only, vs HEAD 1b03ca7 (+38/-44)
 Findings addressed:
-  B-17 _cycleWindows: `evt.modifier_state` -> `evt.get_state()`. evt is the Clutter scroll event
-       from _onScrollEvent (only caller). ClutterEvent.get_state() is a long-standing C method,
-       present on 45-50; `modifier_state` is not a JS property of Clutter.Event, so it was always
-       undefined -> 0. The check is CONTROL_MASK. On screen: Ctrl+scroll over an icon now cycles
-       only that app's windows on the active workspace (as intended); plain scroll unchanged.
-  B-18 Activate patch (_findIcons) + _maybeMinimizeOrMaximize:
-       - Constants (Clutter): BUTTON_PRIMARY=1, BUTTON_MIDDLE=2, BUTTON_SECONDARY=3;
-         BUTTON1_MASK=left, BUTTON2_MASK=middle, BUTTON3_MASK=right. Old code used BUTTON3_MASK
-         as "middle", i.e. it tested RIGHT. Removed unused button1/button2/pressed vars.
-       - The old `event.type()` ran unguarded -> TypeError when there's no current event
-         (keyboard/a11y activation), swallowed by the silent catch, which also skipped
-         `_activate()` => app not activated at all. Now: `event` null-safe; middle detection =
-         (button arg ?? event.get_button() on BUTTON_PRESS/RELEASE) == BUTTON_MIDDLE, OR
-         BUTTON2_MASK in state (St.Button activates on release; release state still has the mask).
-       - Wrapper now takes `(button)` and forwards it: `_activate(button)`. Previously it called
-         the original with no args, so Shell's AppIcon.activate(button) never saw the middle
-         button. Our handler (bounce + minimize/maximize) is in try/catch with
-         console.error('d2da: appwell activate', e); the original activate then ALWAYS runs
-         (fallback), outside the catch, so its own errors reach Shell as they would unpatched.
-         The old comment said errors "happen with dummy DashIcons"; if those were from the original
-         activate they'd now show in the log [unverified; smoke shows 0 'd2da:' and no new sigs].
-       - On screen: middle-click on a running app opens a new window (Shell's behaviour) and
-         doesn't minimize; right-click no longer counts as middle (right opens the menu anyway, so
-         that path was mostly unreachable). Keyboard activation works again. Left/Shift click same.
-       - No new private access; patch not moved (existing _appwell/_activate coupling).
-  B-19 Effects added only in _updateIconEffect to _effectTargets() = [renderArea, _list?._box]
-       (also called from dockItemMenu.js slideIn). Removed before from dash._box (undock) and
-       dash._box.get_parent() (removeFromChrome) — never the actors holding them. New
-       _removeIconEffect(): same targets, null-safe, remove_effect_by_name + iconEffect = null;
-       called at both old sites. In undock _destroyList runs first so _list is null there; the
-       list's box is destroyed with the list anyway. No clear_effects usage exists.
-       On screen: tint/monochrome effect is actually dropped on disable/undock (renderArea kept
-       a stale effect until re-add before).
+  B-9 confirmed at HEAD (_getMountName computed a name, then `return 'Volume'`).
+   - _getMountName: mount.get_name() first, then drive / volume / location basename (old
+     chain), returns `name || 'Volume'`. Used as the .desktop Name=, escaped by new
+     _escapeDesktopValue (\\ \n \r \t per desktop-entry spec) so a label can't inject keys.
+   - New _getMountAppName(mount): `mount-<SHA1(root URI)>-dash2dock-lite.desktop` via
+     GLib.compute_checksum_for_string (stable, fs-safe; fallback to name if get_root() null).
+     Used by setupMountIcon and _onMountRemoved, so _mounts keys (tempPath(appname)) are per
+     root URI: two volumes -> two items; unmount deletes only that key; dock.js
+     _updateExtraIcons removes only the matching icon (unchanged code, keys are paths).
+     StartupWMClass = the same id minus .desktop.
+   - setupMountIcon now always replace_contents (was query_exists + write only if missing,
+     which kept stale labels/paths). Same sync I/O count per mount event (1 call instead of
+     1-2); no new I/O paths.
+   - checkMounts / _onMountAdded: removed dead `basename`/`appname`/`mount_ids` computations.
+   - _toSafeFileName is now unused; left in place (no drive-by removal). Auditor may drop it.
+  Upgrade: the old shared /tmp/<user>-mount-volume-dash2dock-lite.desktop is no longer
+    referenced by any key, so no dock item is created from it; the file just stays in /tmp
+    (no cleanup added, no new /tmp deletes) until reboot / R-9 moves launchers off /tmp.
+  Not changed (B-10/R-9 scope): Exec=xdg-open/umount with unquoted fullpath; fullpath is
+    `null` for mounts without a local path (MTP etc.) — pre-existing.
 Self-verification:
   make check = OK
-  make lint = 0 errors / 158 warnings (baseline 162; -4 from removed unused vars)
+  make lint = 0 errors / 154 warnings (baseline 158; -4 from removed unused vars)
   python3 -B tools/check-settings.py = 1 error / 30 warnings (= baseline)
   gjs -m tests/timer_check.js = all passed
-  make smoke = PASS, 1 known sig, 0 new, 0 gone; msgs 6/5; probe 6/5; 'd2da: ' count 0.
-    Run 1: stage +32 between toggles 4 and 5 in both after-enable and after-disable rows
-    equally (same pattern as 1.5, environmental [inference]); lo +1 = known.
-    Rerun tools/smoke-shell.sh 5: after-enable all 0; after-disable 0/0/0/0/0/+1/0 = baseline.
-  Not covered by smoke: all three (no clicks/scroll, default icon_effect 0).
-Needs human visual check: yes — left-click focused app minimizes / unfocused raises; Shift-click
-  maximize toggle; middle-click and Ctrl-click on running app open a new window; Ctrl+scroll cycles
-  only current-workspace windows; set icon effect tint, then disable extension: no leftover tint.
+  gjs checksum sanity: compute_checksum_for_string(SHA1,'file:///media/a') -> 40-hex string
+  make smoke = PASS, 1 known sig, 0 new, 0 gone; msgs 6/5; probe 6/5; after-enable deltas all
+    0; after-disable 0/0/0/0/0/+1/0 = baseline; 'd2da: ' count 0. No B-37 flake.
+  Not covered by smoke: all of it (no mounts). No unit test: helpers live in services.js which
+    imports Shell's main.js, so not loadable from plain gjs without a scope change.
+Needs human visual check: yes — two USB sticks (ideally same label): two icons with real
+  names; unmount one -> only that icon goes; rename/remount -> label updated.
 New findings (proposed B-xx, with file:symbol and evidence): none
 Scope request / blockers: none
 ```
@@ -270,7 +256,7 @@ Phase 2-5 cards are *stubs*: the Orchestrator expands a stub into a full card (s
 - **R-7c** Autohide window tracking via a per-extension `WindowTracker` (Map), no `_tracked`/`_parent` expandos. Fixes B-31. Scope `autohide.js`, `extension.js`.
 - **R-7d** `Dock.destroy()` (dash, struts, dwell, renderArea) and `extension.destroyDocks()` calls it. Fixes B-1. Accept: probe deltas = 0 **including R-0e live-instance counters** (stage-walk deltas are already 0 and can't see B-1, T-6) → Orchestrator turns on `D2DA_SMOKE_STRICT_LEAKS=1`.
 - **R-8** Services: one debounce handle per job (B-36), `Gio.Cancellable`s, `monitor.cancel()`, enumerator `close()`, per-service try/catch, measured `dt` (B-25).
-- **R-9a** Trash: empty via Gio with confirmation, no `rm -rf` (B-8). **R-9b** Launchers: `DesktopAppInfo` from in-memory `GLib.KeyFile`, `GLib.shell_quote` (B-10). **R-9c** XDG paths (B-22). **R-9d** CSS from runtime dir / in-memory.
+- **R-9a** Trash: empty via Gio with confirmation, no `rm -rf` (B-8). **R-9b** Launchers: `DesktopAppInfo` from in-memory `GLib.KeyFile`, `GLib.shell_quote` (B-10). **R-9c** XDG paths (B-22). **R-9d** CSS from runtime dir / in-memory, per shell instance (B-37).
 
 ### Phase 3 — Speed (stubs)
 - **R-10** split `layout()` → `relayout()` on dirty flag; `animate` must not call `layout()` (P-1).

@@ -116,8 +116,8 @@ Status: `[ ]` todo · `[~]` in progress · `[x]` done (hash) · `[!]` blocked ·
 | [x] dda62a5 | 1.3 | R-3 autohide | 1.1 | B-3, B-4, B-26, B-27 · human visual |
 | [x] c9ca876 | 1.4 | R-4a extension.js one-liners | 0.3 | B-5, B-13, B-16, B-20 |
 | [x] 8f44419 | 1.5 | R-4b animator one-liners | 0.1 | B-14, B-15, B-34 · human visual |
-| [~] | 1.6 | R-4c dock.js input | 0.1 | B-17, B-18, B-19 · human visual |
-| [ ] | 1.7 | R-4d mount names | 0.1 | B-9 |
+| [x] 1b03ca7 | 1.6 | R-4c dock.js input | 0.1 | B-17, B-18, B-19 · human visual |
+| [~] | 1.7 | R-4d mount names | 0.1 | B-9 |
 | [ ] | 1.8 | R-6 remove eval | 0.1 | B-11 |
 | [ ] | 1.9 | R-5 prefs | 0.3, 1.8 | B-12, B-32, B-33 · human visual |
 | [ ] | 1.10 | B-35 NaN clip (BMS) | 0.1 | G-real required · HUMAN — end of phase 1 |
@@ -170,7 +170,7 @@ Status: `open` · `fixed <hash>` · `partial <hash>` · `blocked` · `wontfix (r
 
 | ID | Task | Status | | ID | Task | Status |
 |---|---|---|---|---|---|---|
-| B-1 | R-7d | open | | B-19 | R-4c | open |
+| B-1 | R-7d | open | | B-19 | R-4c | fixed 1b03ca7 |
 | B-2 | R-1 | fixed ef879f9 | | B-20 | R-4a | fixed c9ca876 |
 | B-3 | R-3 | fixed dda62a5 (defensive guard only; premise wrong, see D2DA) | | B-21 | R-8 | open |
 | B-4 | R-3 | fixed dda62a5 | | B-22 | R-9c | open |
@@ -186,14 +186,14 @@ Status: `open` · `fixed <hash>` · `partial <hash>` · `blocked` · `wontfix (r
 | B-14 | R-4b | fixed 8f44419 | | B-32 | R-5 | open |
 | B-15 | R-4b | fixed 8f44419 | | B-33 | R-5 | open |
 | B-16 | R-4a | fixed c9ca876 | | B-34 | R-4b | fixed 8f44419 |
-| B-17 | R-4c | open | | B-35 | B-35 | open |
-| B-18 | R-4c | open | | T-4 | R-0d | deferred (no release for now) |
+| B-17 | R-4c | fixed 1b03ca7 | | B-35 | B-35 | open |
+| B-18 | R-4c | fixed 1b03ca7 | | T-4 | R-0d | deferred (no release for now) |
 | P-1 | R-10 | open | | P-7 | R-12 | open |
 | P-2 | R-11a | open | | P-8 | (unassigned, BMS) | open |
 | P-3..P-6 | R-12 | open | | P-9, P-10 | R-13 | open |
 | P-11 | R-12 | open | | §6.3 low bugs | batch after phase 1 | open |
 | T-5 | R-0e | open | | T-6 | R-0e | open |
-| B-36 | R-8 | open | | | | |
+| B-36 | R-8 | open | | B-37 | R-9d | open |
 | T-7 | R-0b, R-0d | partial 2a0ae6f (interim rm lines; dev docs still installed; R-0d pack list must exclude `eslint.config.js`) | | | | |
 
 Unassigned rows: when a phase ends, either add a card + board row for them or mark `wontfix (reason)`.
@@ -226,6 +226,9 @@ Items the agents can't see. The human runs `make test-shell` (needs `mutter-devk
 | 1.5 | 8f44419 | Hover magnify settles without jitter; separators stay in place | |
 | 1.5 | 8f44419 | Animation FPS Medium/Low: icons snap to magnified positions (intended) and look right | |
 | 1.5 | 8f44419 | Launch from a left and a right dock: after the bounce the icon returns fully to its column | |
+| 1.6 | 1b03ca7 | Running app: click (raise/minimize), shift-click, middle-click (new window), ctrl-click | |
+| 1.6 | 1b03ca7 | Ctrl+scroll over an icon cycles only current-workspace windows | |
+| 1.6 | 1b03ca7 | Tint/monochrome icon effect on, then disable extension ⇒ effect gone | |
 
 ## 6. Run Log (append-only, newest last)
 
@@ -278,3 +281,6 @@ Format: `YYYY-MM-DD HH:MM · cycle · EVENT · details` where EVENT ∈ `SETUP, 
 - 2026-10-04 · 1.5 · AUDIT-PASS · `8f44419`. check=PASS lint=0/162 settings=1/30 timer_check 15/15 smoke=PASS(x2). Auditor judged all three revived branches within intent (B-14 fps split per commit 5c173eb; B-15 can't oscillate; B-34 x reset doesn't fight the animator). B-14, B-15, B-34 fixed. 3 human-check items queued.
 - 2026-10-04 · 1.6 · PREFLIGHT · tree clean apart from agents/*; HEAD `8f44419`; GNOME Shell 50.5.
 - 2026-10-04 · 1.6 · ASSIGN · R-4c dock.js input (B-17, B-18, B-19).
+- 2026-10-04 · 1.6 · AUDIT-PASS · `1b03ca7`. check=PASS lint=0/158 (−4, all in edited functions) settings=1/30 timer_check 15/15 smoke=PASS(x2) after 2 flaky FAILs (new `Style.unloadAll` /tmp CSS signature, HEAD passed in a worktree, not reproduced). Activate patch now forwards `button` (matches Shell 50.5 `AppIcon.activate(button)`). B-17, B-18, B-19 fixed. New B-37: shared `/tmp/<user>-custom-d2dl.css` between live and nested shells ⇒ R-9d. 3 human-check items queued.
+- 2026-10-04 · 1.7 · PREFLIGHT · tree clean apart from agents/*; HEAD `1b03ca7`; GNOME Shell 50.5.
+- 2026-10-04 · 1.7 · ASSIGN · R-4d mount names (B-9).

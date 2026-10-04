@@ -189,19 +189,13 @@ export const Services = class {
     }
 
     this.last_mounted = mount;
-    let basename = this._getMountName(mount); // mount.get_default_location().get_basename();
-    // let appname = `mount-${this._toSafeFileName(basename)}-dash2dock-lite.desktop`;
     this.setupMountIcon(mount);
     this.extension.animate();
     return true;
   }
 
   _onMountRemoved(monitor, mount) {
-    let basename = this._getMountName(mount); //mount.get_default_location().get_basename();
-    let appname = `mount-${this._toSafeFileName(
-      basename
-    )}-dash2dock-lite.desktop`;
-    let mount_id = tempPath(appname);
+    let mount_id = tempPath(this._getMountAppName(mount));
     delete this._mounts[mount_id];
     this.extension.animate();
   }
@@ -281,16 +275,8 @@ export const Services = class {
   }
 
   setupMountIcon(mount) {
-    let basename = this._getMountName(mount); // mount.get_default_location().get_basename();
-    if (basename.startsWith('/')) {
-      // why does this happen?? issue #125
-      // unhandled... is this why CD's aren't mounted
-      // return;
-    }
-    let label = mount.get_name();
-    let appname = `mount-${this._toSafeFileName(
-      basename
-    )}-dash2dock-lite.desktop`;
+    let label = this._escapeDesktopValue(this._getMountName(mount));
+    let appname = this._getMountAppName(mount);
     let fullpath = mount.get_default_location().get_path();
     let icon = 'drive-harddisk-solidstate';
     if (mount.get_icon() && mount.get_icon().names) {
@@ -302,18 +288,18 @@ export const Services = class {
     let mount_id = tempPath(appname);
     let fn = Gio.File.new_for_path(mount_id);
 
-    if (!fn.query_exists(null)) {
-      let content = `[Desktop Entry]\nVersion=1.0\nTerminal=false\nType=Application\nName=${label}\nExec=xdg-open ${fullpath}\nIcon=${icon}\nStartupWMClass=mount-${this._toSafeFileName(
-        basename
-      )}-dash2dock-lite\nActions=unmount;\n\n[Desktop Action mount]\nName=Mount\nExec=${mount_exec}\n\n[Desktop Action unmount]\nName=Unmount\nExec=${unmount_exec}\n`;
-      const [, etag] = fn.replace_contents(
-        content,
-        null,
-        false,
-        Gio.FileCreateFlags.REPLACE_DESTINATION,
-        null
-      );
-    }
+    // always rewrite: same root URI may come back with a new label/path
+    let content = `[Desktop Entry]\nVersion=1.0\nTerminal=false\nType=Application\nName=${label}\nExec=xdg-open ${fullpath}\nIcon=${icon}\nStartupWMClass=${appname.replace(
+      /\.desktop$/,
+      ''
+    )}\nActions=unmount;\n\n[Desktop Action mount]\nName=Mount\nExec=${mount_exec}\n\n[Desktop Action unmount]\nName=Unmount\nExec=${unmount_exec}\n`;
+    const [, etag] = fn.replace_contents(
+      content,
+      null,
+      false,
+      Gio.FileCreateFlags.REPLACE_DESTINATION,
+      null
+    );
 
     this._mounts[mount_id] = mount;
   }
@@ -636,9 +622,29 @@ export const Services = class {
     }
   }
 
+  // keyed by root URI so two volumes with the same name get separate items;
+  // checksum keeps the file name / desktop id stable and filesystem-safe
+  _getMountAppName(mount) {
+    let uri = mount.get_root()?.get_uri() ?? this._getMountName(mount);
+    let key = GLib.compute_checksum_for_string(
+      GLib.ChecksumType.SHA1,
+      uri,
+      -1
+    );
+    return `mount-${key}-dash2dock-lite.desktop`;
+  }
+
+  _escapeDesktopValue(value) {
+    return value
+      .replace(/\\/g, '\\\\')
+      .replace(/\n/g, '\\n')
+      .replace(/\r/g, '\\r')
+      .replace(/\t/g, '\\t');
+  }
+
   _getMountName(mount) {
-    let name = null;
-    if (mount.get_drive()) {
+    let name = mount.get_name();
+    if (!name && mount.get_drive()) {
       name = mount.get_drive().get_name();
     }
 
@@ -654,7 +660,7 @@ export const Services = class {
       }
     }
 
-    return 'Volume';
+    return name || 'Volume';
   }
 
   checkMounts() {
@@ -664,20 +670,8 @@ export const Services = class {
     }
 
     let mounts = this._volumeMonitor.get_mounts() || [];
-    let mount_ids = mounts.map((mount) => {
-      let basename = this._getMountName(mount);
-      let appname = `mount-${this._toSafeFileName(
-        basename
-      )}-dash2dock-lite.desktop`;
-      return appname;
-    });
-
     this.mounts = mounts;
     mounts.forEach((mount) => {
-      let basename = this._getMountName(mount);
-      let appname = `mount-${this._toSafeFileName(
-        basename
-      )}-dash2dock-lite.desktop`;
       this._deferredMounts.push(mount);
     });
 

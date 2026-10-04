@@ -84,41 +84,41 @@ Minor nits (naming, a stray blank line) that don't violate a rule: list them as 
 > Overwritten each cycle. On FAIL the Worker reads this for its rework.
 
 ```
-Cycle / Task / Attempt:  1.6 / R-4c / 1
+Cycle / Task / Attempt:  1.7 / R-4d / 1
 Verdict:          PASS
-Commit:           see Audit Log (fix(dock): ...)
-Gates:            check=PASS ; lint=PASS (0 err / 158 warn, baseline 162; dock.js 21 vs HEAD 25,
-                  removed = button1/button2/pressed/err, all in edited code, no new warnings) ;
-                  settings=exit 1, 1 err (B-12) / 30 warn = baseline ; timer_check all passed ;
-                  smoke: runs 1-2 FAIL (NEW sig Style.unloadAll fn.delete of
-                  /tmp/iceman-custom-d2dl.css "No such file", via extension.js disable), HEAD in a
-                  temp worktree PASS, runs 3-4 PASS (1 known sig, 0 new, after-enable 0, after-disable
-                  0/0/0/0/0/+1/0) ; `d2da: ` 0 ; leaks=n/a ; real=not run ; card=PASS.
-Scope:            dock.js (+33/-15). Matches Report. agents/RUN.md, WORKER.md = bookkeeping.
+Commit:           see Audit Log (fix(services): ...)
+Gates:            check=PASS ; lint=PASS (0 err / 154 warn, baseline 158; services.js 8 vs HEAD 12:
+                  removed basename/mount_ids/appname + GLib now used; no new warnings) ;
+                  settings=exit 1, 1 err / 30 warn = baseline ; timer_check all passed ;
+                  smoke x2 PASS (1 known sig, 0 new, after-enable 0, after-disable 0/0/0/0/0/+1/0),
+                  no B-37 flake ; leaks=n/a ; real=not run ; card=PASS (check+smoke; mounts by reading).
+Scope:            services.js (+38/-44), mount code only. Matches Report. agents/*.md = bookkeeping.
 Rule violations:  none. A1-A13 clean.
 Specific checks:
-  - B-17: get_state() is a ClutterEvent method on 45-50; CONTROL_MASK = current-workspace filter.
-  - B-18 (a) Shell 50.5 appDisplay.js AppIcon.activate(button) (isMiddleButton = button ===
-    BUTTON_MIDDLE); same signature since before 45. Forwarding button = within intent: middle-click
-    now opens a new window as in stock Shell; right no longer counts as middle. (b) Original
-    activate now runs outside our try: same as unpatched Shell (St.Button clicked handler, gjs logs
-    errors), and the old catch skipped activation entirely. Acceptable, lower risk than before.
-    Smoke shows 0 errors from it. (c) the 4 lint removals are all in _maybeMinimizeOrMaximize and
-    the patched activate (eslint HEAD vs tree diff).
-  - B-19: _updateIconEffect adds 'icon-effect' only to _effectTargets() (renderArea, _list?._box);
-    _removeIconEffect removes that name from the same list, null-safe, nulls iconEffect. Not in a
-    per-frame path (undock/removeFromChrome only). A8 ok; the new per-activate work is O(1).
+  - Unused removals (checkMounts mount_ids/appname loop, _onMountAdded basename): pure locals
+    with no side effects (_getMountName/_toSafeFileName are getters). No behaviour change.
+  - Always-rewrite in setupMountIcon: called only from _onMountAdded <- volume-monitor
+    'mount-added' and _commitMounts. _commitMounts runs from the 5 s 'ping' counter, but it only
+    drains _deferredMounts, which is filled by checkMounts. checkMounts runs only in enable()
+    and on 'mounted-icon' changes. So writes happen once per mount per event, never periodically.
+    A7/A8 ok; I/O per event is 1 replace_contents (was query_exists + optional write).
+  - Key: setupMountIcon and _onMountRemoved both use tempPath(_getMountAppName(mount)) =
+    /tmp/<user>-mount-<sha1(root uri)>-dash2dock-lite.desktop. dock.js _updateExtraIcons
+    compares _mounts keys with extra._mountPath, so it agrees and removal is per-key.
+  - _escapeDesktopValue escapes backslash first, then \n \r \t: matches the Desktop Entry spec
+    escapes (\s for leading space not done, harmless). Applied to Name= only.
+  - A7: launchers stay in the existing B-10 /tmp/<user>-* scheme (utils.tempPath); only the
+    file-name pattern changes, no new dir. Old /tmp/<user>-mount-volume-... is orphaned until
+    reboot (unused).
 Rework list:      none.
 Nits:
-  - Style.unloadAll catch uses console.log(err) (pre-existing).
-  - In undock _list is already destroyed so only renderArea is cleared there (harmless).
-Findings confirmed:  B-17, B-18, B-19 fixed.
-Human check needed:  click / shift-click / middle-click / ctrl-click on a running app; Ctrl+scroll
-                     cycles current-workspace windows; tint/monochrome on, disable => effect gone.
-New findings spotted (for Orchestrator): smoke flake: the nested shell and the live session share
-  /tmp/<user>-custom-d2dl.css (style.js tempPath, B-10 class), so disable() in either can delete
-  the file under the other -> intermittent NEW Style.unloadAll signature. Fix with R-B-10 (per-
-  instance/XDG runtime path) or make delete ignore NOT_FOUND.
+  - _toSafeFileName now unused (left in, fine; drop in R-9).
+  - Exec= fullpath unquoted / null for non-local mounts (pre-existing, B-10/R-9).
+  - checkMounts sets this._mounts = [] (array) when disabled (pre-existing, 6.3).
+Findings confirmed:  B-9 fixed.
+Human check needed:  two USB sticks (same label) => two icons with real names; unmount one
+                     removes only it; remount/rename updates the label.
+New findings spotted (for Orchestrator): none.
 ```
 
 ## 7. Audit Log (append-only, newest last)
@@ -138,3 +138,4 @@ New findings spotted (for Orchestrator): smoke flake: the nested shell and the l
 | 1.4 | R-4a | 1 | PASS | this commit | `make check` PASS; `make lint` PASS (0 err / 162 warn, baseline 166; extension.js 13 warn vs HEAD 16 warn + 1 err); check-settings exit 1 (1 err B-12 / 30 warn, was 2/30); `make smoke` PASS; smoke-x2 PASS (1 known sig, 0 new, 6/5 msgs, probe 6/5, after-disable deltas 0/0/0/0/0/+1/0 both); `d2da: ` 0; timer_check all passed | B-5 dc_monitor rename (all refs). B-16 merged icon-size case = superset of both old bodies (shrink -> layout -> animate refresh). B-20 `_iconTheme` gone, unified on icon_theme. B-13 hidden actor remembered only if we hid it, restored+cleared in _showMainOverviewDash(true) from disable(); no-op if enabled after startup; no new private access. eslint: no-duplicate-case override removed, no-undef comment narrowed to 6.3 Clutter. Human visual check required. Nit: `Main.overview.dash.opacity` lacks `?.` (pre-existing). |
 | 1.5 | R-4b | 1 | PASS | this commit | `make check` PASS; `make lint` PASS (0 err / 162 warn = baseline; animator.js 23 = HEAD); check-settings exit 1 (1 err B-12 / 30 warn = baseline); `make smoke` PASS; smoke-x2 PASS (1 known sig, 0 new, 6/5 msgs, probe 6/5, after-disable deltas 0/0/0/0/0/+1/0 both); timer_check all passed | B-14, B-15, B-34 fixed; revived branches judged within intent (B-14 per 5c173eb; B-15 lock monotonic; B-34 X reset no conflict). Nits: bounce catch console.log; animate clears only appwell Y. Findings: none. |
 | 1.6 | R-4c | 1 | PASS | this commit | `make check` PASS; `make lint` PASS (0 err / 158 warn, baseline 162; dock.js 21 vs HEAD 25, -4 unused vars in edited code); check-settings exit 1 (1 err B-12 / 30 warn = baseline); smoke FAIL x2 (NEW Style.unloadAll /tmp css delete, environmental), HEAD worktree PASS, then `make smoke` PASS + smoke-x2 PASS (1 known sig, 0 new, 6/5, after-disable deltas 0/0/0/0/0/+1/0); `d2da: ` 0; timer_check all passed | B-17 get_state; B-18 activate(button) forwarded (Shell 50.5 AppIcon.activate(button) verified), original activate runs uncaught like stock Shell, judged within intent; B-19 symmetric removal on _effectTargets. Finding: smoke flake from /tmp css shared with the live session (style.js, B-10 class). |
+| 1.7 | R-4d | 1 | PASS | this commit | `make check` PASS; `make lint` PASS (0 err / 154 warn, was 158; services.js 12 -> 8); check-settings exit 1 (1 err / 30 warn = baseline); timer_check all passed; smoke-x2 PASS (1 known sig, 0 new, deltas 0/0/0/0/0/+1/0 both), no B-37 flake | B-9 fixed. Mount key = sha1(root URI) in the existing tempPath scheme; add/remove/dock.js agree. Always-rewrite only on mount events / enable / mounted-icon change (ping only drains the deferred queue), no periodic I/O. Name escaped per Desktop Entry spec. Nits: _toSafeFileName unused; Exec path unquoted (pre-existing); old shared Volume launcher orphaned in /tmp. |

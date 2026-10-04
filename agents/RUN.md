@@ -112,8 +112,8 @@ Status: `[ ]` todo · `[~]` in progress · `[x]` done (hash) · `[!]` blocked ·
 | | Cycle | Task | Depends | Notes |
 |---|---|---|---|---|
 | [x] ef879f9 | 1.1 | R-1 harden Timer | 0.1 | B-2, B-23, B-6(timer), B-24(typo) |
-| [~] | 1.2 | R-2 reset `*Seq` + listeners | 1.1 | B-6, B-7 |
-| [ ] | 1.3 | R-3 autohide | 1.1 | B-3, B-4, B-26, B-27 · human visual |
+| [x] c84f252 | 1.2 | R-2 reset `*Seq` + listeners | 1.1 | B-6, B-7 |
+| [~] | 1.3 | R-3 autohide | 1.1 | B-3, B-4, B-26, B-27 · human visual |
 | [ ] | 1.4 | R-4a extension.js one-liners | 0.3 | B-5, B-13, B-16, B-20 |
 | [ ] | 1.5 | R-4b animator one-liners | 0.1 | B-14, B-15, B-34 · human visual |
 | [ ] | 1.6 | R-4c dock.js input | 0.1 | B-17, B-18, B-19 · human visual |
@@ -175,8 +175,8 @@ Status: `open` · `fixed <hash>` · `partial <hash>` · `blocked` · `wontfix (r
 | B-3 | R-3 | open | | B-21 | R-8 | open |
 | B-4 | R-3 | open | | B-22 | R-9c | open |
 | B-5 | R-4a | open | | B-23 | R-1 | fixed ef879f9 |
-| B-6 | R-1, R-2 | partial ef879f9 (timer side; extension resets in R-2) | | B-24 | R-1, R-11b | partial ef879f9 (`typeof func` typo; resolution collapse in R-11b) |
-| B-7 | R-2 | open | | B-25 | R-8 | open |
+| B-6 | R-1, R-2 | fixed ef879f9 + c84f252 | | B-24 | R-1, R-11b | partial ef879f9 (`typeof func` typo; resolution collapse in R-11b) |
+| B-7 | R-2 | fixed c84f252 | | B-25 | R-8 | open |
 | B-8 | R-9a | open | | B-26 | R-3 | open |
 | B-9 | R-4d | open | | B-27 | R-3 | open |
 | B-10 | R-9b | open | | B-28 | (unassigned, needs St case check) | open |
@@ -193,6 +193,7 @@ Status: `open` · `fixed <hash>` · `partial <hash>` · `blocked` · `wontfix (r
 | P-3..P-6 | R-12 | open | | P-9, P-10 | R-13 | open |
 | P-11 | R-12 | open | | §6.3 low bugs | batch after phase 1 | open |
 | T-5 | R-0e | open | | T-6 | R-0e | open |
+| B-36 | R-8 | open | | | | |
 | T-7 | R-0b, R-0d | partial 2a0ae6f (interim rm lines; dev docs still installed; R-0d pack list must exclude `eslint.config.js`) | | | | |
 
 Unassigned rows: when a phase ends, either add a card + board row for them or mark `wontfix (reason)`.
@@ -250,3 +251,11 @@ Format: `YYYY-MM-DD HH:MM · cycle · EVENT · details` where EVENT ∈ `SETUP, 
 - 2026-10-04 · 1.1 · AUDIT-PASS · `ef879f9`. check=PASS lint=0/166 (−2) settings=2/30 smoke=PASS(x2) timer_check 15/15 (fails on HEAD~ timer.js). Worker departures accepted: direct iteration of `_subscribers` (unsubscribe swaps the array; verified with 12 edge cases), run* helpers unsubscribe via the owning timer. Ledger: B-2, B-23 fixed; B-6, B-24 partial. Nit: test's thrower case relies on B-6 too. Latent: a handle active on timer A and passed to timer B is taken over by B ⇒ R-2 notes.
 - 2026-10-04 · 1.2 · PREFLIGHT · tree clean apart from agents/*; HEAD `ef879f9`; GNOME Shell 50.5.
 - 2026-10-04 · 1.2 · ASSIGN · R-2 reset `*Seq` handles + listeners on disable.
+- 2026-10-04 · 1.2 · AUDIT-PASS · `c84f252`. check=PASS lint=0/166 settings=2/30 smoke=PASS(x2) timer_check 15/15; `hi` = 0 after every disable; 0 `d2da:` errors. Ledger: B-6, B-7 fixed. New B-36 (services recents/downloads share one debounce handle) ⇒ R-8. Noted: until R-7d, undocked docks keep pointer connections (part of B-1).
+- 2026-10-04 · 1.3 · PREFLIGHT · tree clean apart from agents/*; HEAD `c84f252`; GNOME Shell 50.5.
+- 2026-10-04 · 1.3 · ASSIGN · R-3 autohide (B-3, B-4, B-26, B-27); human visual check after PASS.
+- 2026-10-04 · 1.3 · WORK · Report DONE: autohide.js only. B-3 (`is_on_all_workspaces() || get_workspace()?.index()`), B-4 (`.includes`, types NORMAL/DIALOG/MODAL_DIALOG/UTILITY), B-26 (`isInRect(…, 0)`), B-27 (TOP pressure sense; also stops a top dock reacting to bottom-edge pushes). No gjs test (autohide.js imports Shell modules).
+- 2026-10-04 · 1.3 · ESCALATE · Auditor: all gates match baselines, but B-26's revived `isInRect` reveals a *hidden* dock whenever the pointer sits in the dock band on focus/restack changes, with or without pressure sense. That contradicts `_isWithinDash`'s deliberate "hidden ⇒ false" and changes shipped behaviour. Also: B-3's premise is wrong (mutter returns the active workspace for sticky windows, so no TypeError) ⇒ keep `?.` as a guard and fix the comment. B-4 side effect (DESKTOP/DOCK no longer dodge) accepted as intended. Similar dead check in animator.js (~891).
+- 2026-10-04 · 1.3 · STOP · HUMAN decision needed on B-26: (a) drop the check (keep shipped behaviour, B-26 → wontfix) or (b) keep it (dock reveals when the pointer rests over a hidden dock's area).
+- 2026-10-04 · 1.3 · HUMAN · B-26 rule: hidden dock reveals ONLY via the 2px edge strip; a shown dock stays revealed (no autohide) while the pointer is over its area. Pointer position over a hidden dock's area must never reveal it.
+- 2026-10-04 · 1.3 · REWORK · Attempt 2 sent to the Worker session: implement the rule (drop the `isInRect` term if `_isWithinDash` already covers the shown case, else guard it to shown-only), fix the B-3 comment.

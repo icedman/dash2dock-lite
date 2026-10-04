@@ -58,25 +58,38 @@ Isolated smoke can't change settings from outside (memory backend is in-process)
 > Written by the ORCHESTRATOR only. Worker: do not edit this section.
 
 ```
-Cycle:      1.2
-Task:       R-2 — Reset handles & listeners on disable
-Attempt:    1
-Card:       §6 "R-2"
-Notes:      HEAD ef879f9. R-1 made timer handles owner-tagged (`obj._timer`) with global
-            ids; a stale handle passed to a *different* timer is stripped and re-adopted.
-            So B-6 no longer causes runaway ticks, but R-2 still must null every handle
-            in disable/teardown. Auditor 1.1 latent finding: a handle still active on
-            timer A that gets passed to timer B is taken over by B while A keeps its
-            copy. Keep "one handle, one timer": never share a `*Seq` object between
-            timers, and null it on teardown. List every `*Seq` you found
-            (`grep -n 'Seq' *.js`, plus `apps/` and `effects/`) with where it's reset.
-            Report any handle that isn't reset and say why.
-            B-7: `destroyDocks()` must clear `this.listeners` so events don't reach
-            undocked docks. Check that nothing iterates listeners expecting them
-            between destroyDocks and the next createDock.
-            Gate baselines: lint 0 err / 166 warn; check-settings 2 err / 30 warn;
-            smoke 1 known sig, probe after-disable deltas 0/0/0/0/0/+1/0 (lo +1 = T-5,
-            but say if it changes). `gjs -m tests/timer_check.js` must still pass.
+Cycle:      1.3
+Task:       R-3 — Autohide correctness
+Attempt:    2
+Card:       §6 "R-3"
+Notes:      HEAD c84f252. R-1 hardened the timer: a TypeError in a subscriber is now logged
+            as `d2da: timer … subscriber …` instead of killing the timer, so B-3 is no
+            longer fatal but still has to be fixed at the root. R-2 reset
+            `_debounceCheckSeq` in autohide `disable()` before the `_enabled` early return;
+            keep that. `autohider._animationSeq` is never assigned (dead field). Leave it,
+            R-18/R-21 prune. Isolated smoke has no windows, so it can't exercise
+            `_checkOverlap`. If cheap, extend `tests/` with a gjs check of the pure parts
+            (e.g. the window filter as a small exported helper, but only if that needs
+            no structural change). Otherwise rely on code reading and say so.
+            Use `Meta.WindowType.*` constants, not numbers. Note which types you include
+            and why (comment at `handledWindowTypes`). `DockPosition.TOP` per §3.4.
+            Gate baselines: lint 0/166; check-settings 2/30; smoke 1 known sig,
+            deltas 0/0/0/0/0/+1/0; timer_check 15/15.
+Rework 2:   HUMAN DECISION (B-26), the product rule:
+              - Dock HIDDEN ⇒ reveal ONLY when the pointer enters the 2px edge strip
+                (pressure sense / edge trigger). Pointer position over the hidden dock's
+                area must NOT reveal it, whatever the focus/restack changes.
+              - Dock SHOWN ⇒ pointer over the dock's area keeps it revealed. Never
+                autohide while the pointer is in its area.
+            Implement exactly that. If the shown case is already fully covered by
+            `_isWithinDash` (20px pad while shown), remove the revived `isInRect` term
+            (B-26 resolved by removal); otherwise guard it so it applies only while
+            shown. Say which, and why, in the Report.
+            Also fix the B-3 comment: mutter returns the active workspace for sticky
+            windows, so `?.` is a defensive guard (window being set up/removed), not
+            a TypeError fix. Correct the B-3/B-26 text in your Report. Leave the other
+            hunks (B-4, B-27) as they are; they passed review. Don't touch the similar dead
+            check in animator.js (separate card).
 ```
 
 ## 5. Report
@@ -84,81 +97,76 @@ Notes:      HEAD ef879f9. R-1 made timer handles owner-tagged (`obj._timer`) wit
 > Overwritten by the WORKER each cycle; read by the AUDITOR.
 
 ```
-Cycle / Task / Attempt: 1.2 / R-2 / 1
+Cycle / Task / Attempt: 1.3 / R-3 / 2
 Status:            DONE
-Files changed:     extension.js, dock.js, autohide.js, services.js (reset lines only; +24/-1)
+Files changed:     autohide.js (+24/-18 vs HEAD c84f252)
+Rework items (AUDITOR Last verdict 1.3/1, human decision on B-26):
+  1. B-26 resolved by REMOVAL. `|| isInRect(arect, pointer, 0)` dropped from _checkOverlap.
+     The things that became unused went with it: `pos`, `rect`, `arect`, the
+     `//! change to struts rect` and `// console.log(arect)` lines, and the `isInRect` import.
+     Nothing else was removed (get_distance_sqr/get_distance were unused before; lint for
+     autohide.js is still 3 warnings).
+     Why removal and not a `!_hidden` guard: the shown case is already fully covered.
+     dock.js:_isWithinDash(p) is `if (this._hidden) return false;` followed by
+     `isInRect(<struts transformed pos, struts.width, struts.height>, p, 20)`. That is the same
+     struts rect the removed term built (`this.dock.struts.get_transformed_position()` +
+     width/height), with a 20 px pad, so a strict superset of pad 0. A guarded term would
+     never be true when _isWithinDash is false, so it would be dead code.
+     How the human rule maps to the code now:
+       - SHOWN (dock._hidden false): pointer in the struts rect +20 px ⇒ _checkOverlap returns
+         false ⇒ _checkHide -> show(); the dock never autohides while the pointer is in its area.
+       - HIDDEN: _isWithinDash is false, so pointer position over the dock area plays no part
+         in any _checkHide (focus/restack/window move). Reveal through the dwell edge strip
+         only: _onEnterEvent -> show() when pressure sense is OFF, _onMotionEvent dwell count
+         when it is ON (B-27 TOP clause included). _checkHide can still show() a hidden dock
+         when no window overlaps it in dodge mode. That is dodge semantics, not pointer
+         driven, and unchanged.
+     Comment added above the check stating this rule. The similar dead check in animator.js
+     (`_hidden && isWithin` -> slideIn) is untouched, as instructed.
+  2. B-3 code comment corrected: "get_workspace() returns the active workspace for sticky
+     windows, but may be null for a window that is still being managed or is being unmanaged".
+  3. Report text corrected (below).
 Findings addressed:
-  B-7  destroyDocks(): `this.dock = null` moved out of the loop (once, after it);
-       `this.listeners = []` added. Checked who iterates listeners: only the 4 fan-outs
-       _onFocusWindow/_onFullScreen/_onRestacked/_onAppsChanged (extension.js). They copy
-       the array and call optional hooks. Services defines none of these hooks (grep), so
-       dropping it from the list between destroyDocks and the next createDock loses nothing.
-       createDock() still rebuilds [services, ...docks]. In the gap
-       (_updateMultiMonitorPreference: destroyDocks, then startUp 500 ms later)
-       animate()/checkHide() iterate this.docks, which is [] already. If createTheDocks
-       creates no dock (config `docks` with no matching monitor), listeners stays [],
-       which is correct since there's no dock.
-  B-6 (extension side): every *Seq handle is cancelled on its owning timer and nulled on
-       teardown. Each handle is created and re-armed on exactly one timer, so no handle is
-       shared between timers (see table).
-Seq inventory (grep -n 'Seq' *.js apps/ effects/ preferences/; apps/effects/preferences: none):
-  handle                              timer  owner          reset where
-  extension._debounceStyleSeq         hi     extension      disable(): cancel+null, before timers are nulled
-  extension._iconSpacingDebounceSeq   lo     extension      disable(): cancel+null (same place)
-  dock._animationSeq                  hi     Dock           undock() end: cancel+null (cancelAnimations still nulls it too)
-  dock.debounceEndSeq                 lo     Dock           undock() end: cancel+null
-  dock._debounceBeginAnimateSeq       lo     Dock           undock() end: cancel+null
-  autohider._debounceCheckSeq         lo     AutoHide       disable(): cancel+null, BEFORE the `if (!_enabled) return`
-  autohider._animationSeq             hi     AutoHide       disable(): nulled after cancel. Never assigned anywhere (dead
-                                                            field; cancelAnimations also nulls it). Kept for safety.
-  services._debounceCheckSeq          lo     Services       disable(): cancel+null (also covers _onIconThemeChanged's
-                                                            disable/enable on the same object)
-  diagnostics._seqs                   -      local array    not a stored handle (passed to _diagnosticTimer.runSequence)
-  Not stored (fire-and-forget, die with the Timer): extension startUp/_updateMultiMonitorPreference
-  runOnce, services runLoop in _addEvents, dock.js runOnce x4, animator bounceIcon runAnimation.
-  Unreset handles: none.
-Ordering notes (why the resets are where they are):
-  - Dock.undock(): _endAnimation() calls autohider._debounceCheckHide() (re-arms the lo
-    debounce), then autohider.disable() -> show() -> dock.slideIn() -> _beginAnimation()
-    re-arms _animationSeq and debounceEndSeq. So the dock reset sits at the END of undock(),
-    and AutoHide.disable() drops _debounceCheckSeq unconditionally (_debounceCheckHide runs
-    even when autohide is off; _checkHide is a no-op when !_enabled, so cancelling it in
-    the setting-toggle path changes nothing).
-  - cancelAnimations() is unchanged: it is also used by _updateAnimationFPS, and cancelling
-    the debounces there would change behaviour.
-  - Cancel calls use `?.` on the timers. During disable() they are still alive (nulled
-    later); during multi-monitor recreate they are alive.
-Findings not reproduced / already fixed: none. Both still existed at ef879f9.
+  B-3  Not reproducible as described. Mutter's meta_window_get_workspace() returns the
+       active workspace for on-all-workspaces windows (Auditor checked mutter 45.0/49.7
+       source + GIR), so sticky windows never threw and were always dodged. The change
+       `(w.is_on_all_workspaces() || w.get_workspace()?.index() === workspace)` is only a
+       defensive null guard for windows without a workspace (being managed/unmanaged).
+       I withdraw my Attempt 1 claims ("no longer throw", "now dodged on every workspace").
+       R-2's unconditional _debounceCheckSeq reset in disable() is untouched.
+  B-4  unchanged from Attempt 1 (passed review): `.includes()`; effective types NORMAL,
+       DIALOG, MODAL_DIALOG, UTILITY; comment at handledWindowTypes. DESKTOP/DOCK no longer
+       count as overlapping (intended).
+  B-26 Closed as "dead check removed". Correction to Attempt 1: reviving it would have
+       revealed a hidden dock with pressure sense OFF too, not only ON. With it OFF, clicking
+       or typing in the bottom ~icon-height band of a window over the dock would have
+       revealed it. Nit acknowledged: the `_hidden` guard in _isWithinDash predates 02ab4b5
+       (that commit only reformatted it).
+  B-27 unchanged from Attempt 1 (passed review).
+Tests: no gjs unit test, same reason as Attempt 1 (autohide.js -> dock.js -> resource:///
+  org/gnome/shell imports; not loadable in plain gjs without restructuring). Code reading only.
 Self-verification:
   make check = OK
-  make lint = 0 errors / 166 warnings (unchanged)
-  python3 tools/check-settings.py = exit 1, 2 errors / 30 warnings (unchanged)
-  gjs -m tests/timer_check.js = 15/15 ok, all passed
+  make lint = 0 errors / 166 warnings (unchanged; autohide.js 3 = HEAD)
+  python3 tools/check-settings.py = 2 errors / 30 warnings (unchanged)
+  gjs -m tests/timer_check.js = 15/15 ok
   make smoke = PASS, 1 known sig, 0 new, 0 gone; msgs 6/5; probe 6/5.
-    after-enable deltas all 0 (hi 1, lo 2, loop 1 every cycle).
-    after-disable absolute: uiGroup 36, stage 2854, dashes 1, docks 0, hi 0, lo 0->1, loop 1.
-    after-disable deltas 0/0/0/0/0/+1/0. lo +1 unchanged (T-5: the first cycle settles,
-    later ones disable while startUp's runOnce is still pending; nobody holds that one).
-    hi after-disable = 0 every cycle.
+    after-enable deltas all 0 (uiGroup 40, stage 2877, dashes 2, docks 1, hi 1, lo 2, loop 1).
+    after-disable: uiGroup 36, stage 2854, dashes 1, docks 0, hi 0, lo 0->1, loop 1;
+    deltas 0/0/0/0/0/+1/0 (= baseline, lo +1 = known T-5).
     grep -c 'd2da: ' /tmp/d2da-smoke.log = 0; 'unable to layout' = 0.
-  No artifacts left (the report helper script was deleted; no __pycache__).
-Needs human visual check: no (teardown only). An optional sanity check: toggle multi-monitor
-  preference / autohide on and off with 2 monitors.
+  No artifacts left (temp report/helper deleted, python run with -B; no __pycache__).
+Needs human visual check: yes:
+  - autohide+dodge, bottom and top dock: overlap hides, moving the window away shows.
+  - Dock hidden, pointer parked over the dock area inside an overlapping window, click/
+    focus another window: the dock must stay hidden. It reveals only at the edge strip
+    (pressure sense ON: push; OFF: touch).
+  - Dock shown, pointer resting on the dock while a window overlaps it: stays shown.
+  - pressure sense ON with a top dock: a push at the top reveals; the bottom edge does nothing.
+  - dialog/utility window over the dock dodges; X11 + desktop icons: dock not stuck hidden.
 New findings (proposed B-xx, with file:symbol and evidence):
-  - services.js:_debounceCheckRecents / _debounceCheckDownloads share ONE handle
-    (this._debounceCheckSeq) on _loTimer. Whichever is created first keeps its callback.
-    setupDownloads() runs first in enable(), so recents re-arms run checkDownloads (and
-    checkRecents is a no-op anyway). Same timer, so no cross-timer takeover, but it is the
-    "one handle, one job" smell. Fix: split it into two handles (out of scope: "reset lines
-    only").
-  - dock.js:_beginAnimation gates the debounceEndSeq re-arm on `this.extension._hiTimer`
-    but calls `_loTimer.runDebounced`. It's harmless (both timers live and die together),
-    just inconsistent.
-  - (B-1 related) undocked docks keep their dwell motion/enter/leave connections and the
-    actors aren't destroyed. In the multi-monitor recreate path (timers alive), a late
-    leave-event on a leaked dwell could re-arm a debounce on the leaked dock/autohider.
-    R-7d (Dock.destroy) closes this.
-  - autohider._animationSeq is never assigned (dead). R-18 can remove it.
+  - (from Attempt 1, Auditor agreed, Low) autohide.js:_checkOverlap dereferences
+    `monitor.index` while other code treats dock._monitor as nullable.
 Scope request / blockers: none
 ```
 
@@ -293,7 +301,7 @@ Phase 2-5 cards are *stubs*: the Orchestrator expands a stub into a full card (s
 - **R-7b** Menus & lists: `DockItemContainer` destroy handler → `menu.destroy()` + `menuManager.removeMenu`; `_destroyList` → `list.destroy()`; clock/calendar destroyed with their item. Fixes B-29. Scope `dockItems.js`, `dockItemMenu.js`, `dock.js`, `services.js`.
 - **R-7c** Autohide window tracking via a per-extension `WindowTracker` (Map), no `_tracked`/`_parent` expandos. Fixes B-31. Scope `autohide.js`, `extension.js`.
 - **R-7d** `Dock.destroy()` (dash, struts, dwell, renderArea) and `extension.destroyDocks()` calls it. Fixes B-1. Accept: probe deltas = 0 **including R-0e live-instance counters** (stage-walk deltas are already 0 and can't see B-1, T-6) → Orchestrator turns on `D2DA_SMOKE_STRICT_LEAKS=1`.
-- **R-8** Services: `Gio.Cancellable`s, `monitor.cancel()`, enumerator `close()`, per-service try/catch, measured `dt` (B-25).
+- **R-8** Services: one debounce handle per job (B-36), `Gio.Cancellable`s, `monitor.cancel()`, enumerator `close()`, per-service try/catch, measured `dt` (B-25).
 - **R-9a** Trash: empty via Gio with confirmation, no `rm -rf` (B-8). **R-9b** Launchers: `DesktopAppInfo` from in-memory `GLib.KeyFile`, `GLib.shell_quote` (B-10). **R-9c** XDG paths (B-22). **R-9d** CSS from runtime dir / in-memory.
 
 ### Phase 3 — Speed (stubs)

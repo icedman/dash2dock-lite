@@ -127,8 +127,8 @@ Status: `[ ]` todo · `[~]` in progress · `[x]` done (hash) · `[!]` blocked ·
 | | Cycle | Task | Depends | Notes |
 |---|---|---|---|---|
 | [x] 30ae2d5 | 2.1 | R-7a animator teardown | 1.2 | |
-| [~] | 2.2 | R-7b menus/lists/clock/calendar destroy | 2.1 | B-29 |
-| [ ] | 2.3 | R-7c WindowTracker, no Meta.Window expandos | 1.3 | B-31 |
+| [x] 0a01a50 | 2.2 | R-7b menus/lists/clock/calendar destroy | 2.1 | B-29 |
+| [~] | 2.3 | R-7c WindowTracker, no Meta.Window expandos | 1.3 | B-31 |
 | [ ] | 2.3a | R-0e probe v2 (smoke timing, live-instance counters) | 0.1 | T-5, T-6 · prerequisite for strict leaks |
 | [ ] | 2.4 | R-7d Dock.destroy + destroyDocks | 2.1-2.3a | B-1 · then turn **strict leaks ON** (§5) |
 | [ ] | 2.5 | R-8 services cancellables / dt | 2.4 | B-25 |
@@ -181,7 +181,7 @@ Status: `open` · `fixed <hash>` · `partial <hash>` · `blocked` · `wontfix (r
 | B-8 | R-9a | open | | B-26 | R-3 | fixed dda62a5 (dead check removed per human rule) |
 | B-9 | R-4d | fixed 0821a56 | | B-27 | R-3 | fixed dda62a5 |
 | B-10 | R-9b | open | | B-28 | (unassigned, needs St case check) | open |
-| B-11 | R-6 | fixed 3311461 | | B-29 | R-7b | open |
+| B-11 | R-6 | fixed 3311461 | | B-29 | R-7b | partial 0a01a50 (destroy done; "menu side always TOP" open) |
 | B-12 | R-5 | fixed 5840f29 | | B-30 | (unassigned) | open |
 | B-13 | R-4a | fixed c9ca876 | | B-31 | R-7c | open |
 | B-14 | R-4b | fixed 8f44419 | | B-32 | R-5 | fixed 5840f29 |
@@ -196,6 +196,7 @@ Status: `open` · `fixed <hash>` · `partial <hash>` · `blocked` · `wontfix (r
 | T-5 | R-0e | open | | T-6 | R-0e | open |
 | B-36 | R-8 | open | | B-37 | R-9d | open |
 | B-38 | R-7d | open | | T-8 | R-0e | open |
+| B-39 | R-7d | open | | B-40 | R-7d | open |
 | T-7 | R-0b, R-0d | partial 2a0ae6f (interim rm lines; dev docs still installed; R-0d pack list must exclude `eslint.config.js`) | | | | |
 
 Unassigned rows: when a phase ends, either add a card + board row for them or mark `wontfix (reason)`.
@@ -239,6 +240,9 @@ Items the agents can't see. The human runs `make test-shell` (needs `mutter-devk
 | 1.9 | 5840f29 | Cancel the downloads-folder dialog ⇒ old path kept; monitor dropdown shows the saved monitor | |
 | 1.11 | 03940ad | Prefs → General → Experimental Features on ⇒ Test row appears → Run executes diagnostics (`journalctl -f`); settings restored at the end | |
 | 2.1 | 30ae2d5 | Dock renders icons/dots/badges after toggling the extension, after changing preferred monitor, and when disabling during a bounce | |
+| 2.2 | 0a01a50 | Right-click menu on trash/downloads before and after toggling the extension | |
+| 2.2 | 0a01a50 | Open downloads/recents list, toggle the extension, open it again | |
+| 2.2 | 0a01a50 | Clock + calendar icons on, toggle the extension ⇒ each renders once, no duplicates; change dock position ⇒ menus/clock/calendar come back | |
 
 ## 6. Run Log (append-only, newest last)
 
@@ -314,3 +318,7 @@ Format: `YYYY-MM-DD HH:MM · cycle · EVENT · details` where EVENT ∈ `SETUP, 
 - 2026-10-04 · 2.1 · AUDIT-PASS · `30ae2d5`. check=PASS lint=0/151 settings=exit 0 timer_check 15/15 smoke=PASS(x2) disposed/finalized=0. Pool actors destroyed on disable; every holder verified safe; no per-frame cost. Card context corrected (`recreateDash` doesn't touch the animator). New: B-38 (`_findIcons` null `dash` ⇒ R-7d), T-8 (smoke misses ~150 shutdown GC criticals, present at HEAD too ⇒ R-0e). R-7d stub: `animator.destroy()` before `renderArea`. 1 human-check item queued.
 - 2026-10-04 · 2.2 · PREFLIGHT · tree clean apart from agents/*; HEAD `30ae2d5`; GNOME Shell 50.5.
 - 2026-10-04 · 2.2 · ASSIGN · R-7b destroy menus/lists/clock/calendar (stub expanded; B-29 destroy half; menu side left open).
+- 2026-10-04 · 2.2 · AUDIT-PASS · `0a01a50`. check=PASS lint=0/151 settings=exit 0 timer_check 15/15 smoke=PASS(x2) disposed/finalized=0 T-8 GC=150. Menus (removeMenu then destroy), DockItemList, clock/calendar destroyed; Shell label untouched; teardown idempotent. Default-settings smoke doesn't reach these paths (code reading only). B-29 partial (menu side open). New: B-39 (`_updateExtraIcons` doesn't destroy removed items), B-40 (destroyDash skips hidden items) ⇒ R-7d. R-0e gets an env hook for non-default smoke settings. 3 human-check items queued.
+- 2026-10-04 · 2.2 · NOTE · PROCESS: the Worker ran real-dconf smoke (G-real) without approval (it toggles `enabled-extensions`). Read-only check afterwards: extension Enabled/ACTIVE and listed in `enabled-extensions`, but also listed in `disabled-extensions` (unknown whether it was there before). Not changed by the Orchestrator (dconf is the human's); reported to the human. WORKER.md W3 now forbids G-real unless §4 Notes say `G-real: ALLOWED`.
+- 2026-10-04 · 2.3 · PREFLIGHT · tree clean apart from agents/*; HEAD `0a01a50`; GNOME Shell 50.5.
+- 2026-10-04 · 2.3 · ASSIGN · R-7c per-extension WindowTracker (B-31). Stub expanded.

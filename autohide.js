@@ -52,14 +52,6 @@ export let AutoHide = class {
 
     this._enabled = false;
 
-    let actors = global.get_window_actors();
-    let windows = actors.map((a) => a.get_meta_window());
-    windows.forEach((w) => {
-      if (w._tracked) {
-        this._untrack(w);
-      }
-    });
-
     console.log('autohide disabled');
   }
 
@@ -174,36 +166,7 @@ export let AutoHide = class {
     this.dock.slideOut();
   }
 
-  _track(window) {
-    //! window tracking should be made global
-    if (!window._tracked) {
-      window.connectObject(
-        'position-changed',
-        // this._debounceCheckHide.bind(this),
-        () => {
-          this.dock.extension.checkHide();
-        },
-        'size-changed',
-        // this._debounceCheckHide.bind(this),
-        () => {
-          this.dock.extension.checkHide();
-        },
-        this
-      );
-      window._tracked = true;
-    }
-  }
 
-  _untrack(window) {
-    try {
-      if (window && window._tracked) {
-        window.disconnectObject(this);
-        window._tracked = false;
-      }
-    } catch (err) {
-      // may have been destroyed already
-    }
-  }
 
   _checkOverlap() {
     // console.log("checking overlap...");
@@ -243,11 +206,7 @@ export let AutoHide = class {
 
     let monitor = this.dock._monitor;
     let actors = global.get_window_actors();
-    let windows = actors.map((a) => {
-      let w = a.get_meta_window();
-      w._parent = a;
-      return w;
-    });
+    let windows = actors.map((a) => a.get_meta_window());
     windows = windows.filter((w) => w.can_close());
     windows = windows.filter((w) => w.get_monitor() == monitor.index);
     // windows = windows.filter((w) => !w.is_override_redirect());
@@ -270,7 +229,7 @@ export let AutoHide = class {
     dockRect.push(this.dock.struts.height);
 
     windows.forEach((w) => {
-      this._track(w);
+      this.extension.windowTracker?.track(w);
       if (isOverlapped) return;
 
       let frame = w.get_frame_rect();

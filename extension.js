@@ -35,6 +35,7 @@ import { Style } from './style.js';
 import { Dock } from './dock.js';
 import { Services } from './services.js';
 import { Integrations } from './integrations.js';
+import { WindowTracker } from './windowTracker.js';
 import { runTests } from './diagnostics.js';
 import { probe } from './probe.js';
 
@@ -194,6 +195,7 @@ export default class Dash2DockLiteExt extends Extension {
     this._loTimer.initialize(750);
 
     this.listeners = [];
+    this.windowTracker = new WindowTracker(() => this.checkHide());
     this.scale = 1.0;
     this.icon_size = 0;
     this.icon_quality = ANIM_ICON_QUALITY;
@@ -274,6 +276,9 @@ export default class Dash2DockLiteExt extends Extension {
 
     this.destroyDocks();
     this.docks = [];
+
+    this.windowTracker?.destroy();
+    this.windowTracker = null;
 
     this.integrations.disable();
     this.integrations = null;
@@ -1217,6 +1222,7 @@ export default class Dash2DockLiteExt extends Extension {
       this._autohiders().forEach((autohider) => {
         autohider.disable();
       });
+      this.windowTracker?.clear();
     }
 
     if (!disable) {

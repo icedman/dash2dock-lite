@@ -15,7 +15,7 @@ Required reading before touching code: `agents/D2DA.md` §2 (architecture, esp. 
 |---|---|
 | W1 | **One card, one scope.** Edit only files in the card's *Scope*. Need another file? Stop and say so in the Report (`Scope request:`). No drive-by fixes, renames or reformatting. Never run `make pretty`/prettier on whole files. |
 | W2 | **Line numbers in D2DA are pinned to `f876684`** and drift after every commit. Locate code by symbol with `grep -n`, never by line number alone. |
-| W3 | Never edit `build/`, `node_modules/`, `.antigravitycli/`, `schemas/gschemas.compiled`. Never touch the user's dconf (`gsettings set`, `dconf write`). |
+| W3 | Never edit `build/`, `node_modules/`, `.antigravitycli/`, `schemas/gschemas.compiled`. Never touch the user's dconf (`gsettings set`, `dconf write`). **Never run real-dconf smoke (`D2DA_SMOKE_REAL_DCONF=1`, G-real)** unless §4 Notes explicitly say `G-real: ALLOWED`. It toggles the user's `enabled-extensions` and runs on their live settings. |
 | W4 | **GNOME 45-50** must keep working. No API newer than 45 without feature detection (`typeof obj.fn === 'function'`, `'prop' in obj`). **No version sniffing** (G3). |
 | W5 | **No new Shell-private coupling** (`_foo` members of Shell objects, new monkeypatches, new expandos on Shell/Meta objects) unless the card says so. Once `compat.js` exists (R-14) private access goes only there. |
 | W6 | **Lifecycle (G1):** everything you create/connect in `enable()`/dock creation must be destroyed/disconnected in `disable()`/dock teardown. Prefer `connectObject(..., this)` + `disconnectObject(this)`. Reset `*Seq` timer handles you add. |
@@ -58,18 +58,19 @@ Isolated smoke can't change settings from outside (memory backend is in-process)
 > Written by the ORCHESTRATOR only. Worker: do not edit this section.
 
 ```
-Cycle:      2.2
-Task:       R-7b — Destroy menus, file lists, clock & calendar
+Cycle:      2.3
+Task:       R-7c — Per-extension WindowTracker, no Meta.Window expandos
 Attempt:    1
-Card:       §6 "R-7b"
-Notes:      HEAD 30ae2d5. Expanded card; read its Context. Main risks: (1) destroying
-            something the Shell owns (only destroy actors d2da created); (2) double
-            destroy (`_cleanupIcon` is reached from two paths), so make teardown
-            idempotent; (3) PopupMenuManager: removeMenu before destroy, and don't leave
-            a grab. List every actor you destroy with its owner/creator in the Report.
+Card:       §6 "R-7c"
+Notes:      HEAD 0a01a50. Expanded card; read its Context.
+            G-real: NOT allowed (W3). Last cycle a Worker ran it without approval; don't.
+            `unmanaged` is the Meta.Window signal for a window going away (GNOME 45-50).
+            Verify it exists in the installed Meta GIR or mutter, and say how you checked.
+            Lifecycle: tracker created once per enable, destroyed after docks in
+            disable, cleared when autohide-dash goes off. Report each place.
             Gates: check; lint 0/151; check-settings exit 0 (0/30); smoke 1 known sig,
-            deltas 0/0/0/0/0/+1/0; timer_check 15/15; disposed/finalized grep = 0.
-            Known flake B-37. T-8 baseline ~150 shutdown GC criticals (report count).
+            deltas 0/0/0/0/0/+1/0; timer_check 15/15 (+ the new test if added);
+            disposed/finalized grep 0. Report T-8 shutdown GC count (baseline 150).
 ```
 
 ## 5. Report
@@ -77,93 +78,70 @@ Notes:      HEAD 30ae2d5. Expanded card; read its Context. Main risks: (1) destr
 > Overwritten by the WORKER each cycle; read by the AUDITOR.
 
 ```
-Cycle / Task / Attempt: 2.2 / R-7b / 1
+Cycle / Task / Attempt: 2.3 / R-7c / 1
 Status:            DONE
-Files changed:     dock.js (+19/-11), dockItems.js (+12), services.js (+12; scope use explained below).
-                   HEAD 30ae2d5. agents/*.md untouched except this Report.
+Files changed:     autohide.js (+2/-43), extension.js (+6), windowTracker.js (new, 49 lines),
+                   tests/window_tracker_check.js (new test). HEAD 0a01a50. agents/*.md untouched except this
+                   Report.
+Why windowTracker.js: autohide.js imports gi://Meta and ./dock.js (Shell modules), so a plain
+  `gjs -m` test can't import it. The card allows a separate windowTracker.js in that case. It has no
+  imports. `make install` (cp -R ./*) and `publish` (*.js) both ship it.
 What changed:
-  dock.js _cleanupIcon(c):
-    - c._image (clock/calendar) is destroyed regardless of parent. c._image/_clock/_calendar are nulled
-      first, plus dock._clock/_calendar when they point at it, then image.destroy().
-    - Menu: c._destroyMenu?.() (only DockItemContainer has it; Shell containers have no c._menu).
-    - c._label: unchanged (unparent only). It's the Shell DashItemContainer's St.Label (addChrome'd in
-      its _init), and Shell destroys it in the container's own destroy handler (dash.js:77-79 on 50.5).
-      Not ours to destroy.
-    - Idempotent: a second call sees _image null, _menu null (early return), label already unparented.
-  dock.js _destroyList(): grab _list, null this._list, then list?.destroy() (destroy unparents from uiGroup).
-  dockItems.js DockItemContainer:
-    - New _destroyMenu(): early return if no _menu; null _menu; _menuManager.removeMenu(menu); null
-      _menuManager; clear dashIcon._menu (this.child) if it's the same menu; menu.destroy().
-    - _init connects its own 'destroy' -> _destroyMenu() (only when a menu was created). So the menu goes
-      away even when _cleanupIcon never sees the item.
-  services.js updateIcon (creation branch only, no per-frame work): Clock/Calendar connect their own
-    'destroy' to null item._image/_clock|_calendar and dock._clock|_calendar.
-    Why: on shell shutdown with the extension enabled, layout.js destroys renderArea (and the clock/calendar
-    with it) BEFORE the Shell DashItemContainer destroy handler reaches _cleanupIcon, which then touched a
-    disposed Clock/Calendar ("Gjs_apps_clock_Clock ... already disposed", dock.js _cleanupIcon <-
-    dock.js icon destroy handler <- dash.js:77). The old code's c._image.get_parent() hit the same thing,
-    so it was pre-existing, but my destroy() call was a new access. The refs live where the actor is
-    created, so nulling has to happen there.
-Actors destroyed (owner/creator):
-  - Clock / Calendar (apps/clock.js, apps/calendar.js): created by d2da services.updateIcon, parented to
-    dock.renderArea (unparented by animator.disable() since R-7a). Destroyed in _cleanupIcon.
-  - DockItemMenu (PopupMenu subclass) + its actor (BoxPointer in Main.uiGroup): created by d2da
-    DockItemContainer._init. menu.destroy() -> PopupMenuBase.destroy: close(), removeAll(), actor.destroy(),
-    emit 'destroy'. The PopupMenuManager (plain JS, d2da-created) is dropped after removeMenu.
-  - DockItemList (St.Widget in Main.uiGroup, children _box/_labels + item actors): created by d2da
-    DockItemList.createItem. Destroyed in _destroyList.
-  Not destroyed: c._label (Shell-owned, see above), Shell DashItemContainers/Dash (R-7d).
-Grab / PopupMenuManager (read from GNOME 50.5 popupMenu.js): removeMenu(menu) pops the modal grab and
-  drops the key-focus handler if the menu is the active one, then disconnects the manager's handlers.
-  menu.destroy() then calls close(), which emits open-state-changed with nobody listening, so no double
-  popModal and no leftover grab. PopupMenu.destroy also does sourceActor.disconnectObject(menu). In the
-  container-destroy path that runs inside the container's 'destroy' emission, i.e. before GObject weak-ref
-  notify, so the wrapper is still valid.
-Double-destroy paths checked:
-  - destroyDash -> _cleanupIcon(c) per icon; later icon 'destroy' -> _cleanupIcon(c) again: no-op.
-  - Container destroy: Shell handler child.destroy() -> St.Icon destroy -> _cleanupIcon -> _destroyMenu;
-    then our container handler -> _destroyMenu: early return.
-  - Clock destroyed via renderArea first: own handler nulls refs -> _cleanupIcon skips it.
-DockItemList after destroy: DockItemList._animate calls dock._destroyList() mid-frame. _list is nulled
-  before destroy, so the remaining _animate passes in the same animate() return on `if (!list)` (they read
-  only this.dock, a plain JS prop). animator.js (~166, ~1042), dock.slideOut, extension.js ~860 and
-  _effectTargets (`this._list?._box`) all guard on dock._list. The list holds no external connections
-  (only self button-press and child icon handlers).
+  windowTracker.js `export class WindowTracker`:
+    constructor(onChange), Set of tracked Meta.Windows, `size` getter (for the test).
+    track(w): no-op if null, already tracked, or destroyed (onChange null). Otherwise
+      w.connectObject('position-changed', cb, 'size-changed', cb, 'unmanaged', () => this.untrack(w), this).
+    untrack(w): removes w from the Set first (so a throwing disconnect can't leave it stuck), then
+      w.disconnectObject(this) in try/catch -> console.error('d2da: window tracker untrack', e).
+      Every error is logged: tracked windows are always still managed when untracked (unmanaged ones are
+      already gone), so any throw is unexpected.
+    clear(): untrack all. destroy(): clear() + drop onChange.
+  autohide.js: removed _track/_untrack (the _tracked expando), the `w._parent = a` expando, and the
+    per-window untrack scan in disable(). _checkOverlap now calls this.extension.windowTracker?.track(w).
+    The overlap/dodge logic and filters are unchanged.
+  extension.js:
+    - Created: enable(), `this.windowTracker = new WindowTracker(() => this.checkHide())`, next to
+      listeners init. It is created once per enable, not in startUp() (startUp re-runs after destroyDocks
+      on monitor changes).
+    - Destroyed: disable(), right after destroyDocks()/docks = [] : windowTracker?.destroy(); = null.
+    - Cleared: _updateAutohide() else-branch (autohide-dash off, or disable=true), after the
+      autohiders are disabled: windowTracker?.clear(). (disable() also hits this via _updateAutohide(true),
+      before destroyDocks; destroy() afterwards is then a no-op clear plus dropping the callback.)
+  Multi-dock: one Set across all docks, so exactly one connection set per window. Any change calls
+    extension.checkHide(), which re-checks every dock (same as before). One dock's AutoHide.disable() (e.g.
+    undock) no longer disconnects windows other docks rely on.
+'unmanaged' verification: grep of the installed GIRs. /usr/lib64/mutter-18/Meta-18.gir (GNOME 50.5)
+  has <glib:signal name="unmanaged"> at L14940 inside <class name="Window"> (L12343, next to
+  position-changed L14901 and size-changed L14927). The same signal is in Meta-15/16/17.gir
+  (/usr/local/lib64/mutter-15,16, ~/Developer/gnome/mutter build), plus g_signal_new ("unmanaged",...)
+  in mutter src/core/window.c:741. That covers GNOME 47-50 directly. Meta-13/14 (GNOME 45/46) aren't
+  installed, so 45/46 is an inference: the signal predates them (mutter 3.x).
 Self-verification:
   make check = OK
-  make lint = 0 errors / 151 warnings (unchanged)
+  make lint = 0 errors / 150 warnings (was 151; the dropped one is the unused `err` in the old _untrack
+    catch). eslint ignores tests/ (the new test included).
   python3 -B tools/check-settings.py = 0 errors / 30 warnings, exit 0
   gjs -m tests/timer_check.js = all passed (15/15)
-  make smoke x4 (2 before the services.js change, 2 after) = PASS each: 1 known sig, 0 new, 0 gone;
-    msgs 6/5; probe 6/5; after-enable deltas all 0; after-disable deltas 0/0/0/0/0/+1/0.
-  grep -c 'disposed\|finalized\|already been destroyed' /tmp/d2da-smoke.log = 0 (all isolated runs).
-  T-8 shutdown "sweeping phase of GC" count = 150 in every run (unchanged vs ~150 baseline).
-  CAVEAT: isolated smoke uses schema defaults (trash/downloads/mounted/clock/calendar all false), so it
-    doesn't exercise the menu/clock/list paths. I ran ONE advisory real-dconf smoke
-    (D2DA_SMOKE_REAL_DCONF=1 ... tools/smoke-shell.sh 3) BEFORE the services.js change: PASS, 4 known sigs,
-    0 new. It surfaced the shutdown Clock/Calendar disposed access fixed above (other 2 disposed lines:
-    blur-my-shell's dash_to_dock.js on Meta.BackgroundGroup, not ours). Only after the run did I see that
-    RUN.md (1.10 STOP) treats G-real as touching the user's dconf (gnome-extensions enable/disable writes
-    enabled-extensions). Final state was ACTIVE as before. enabled-extensions afterwards lists
-    dash2dock-lite last (same set; I can't tell whether the order changed). No gsettings/dconf writes
-    by me. I did NOT re-run G-real after the fix, so the fix for the shutdown disposed access is
-    unverified by a run. Please re-run G-real if the human approves.
-Needs human visual check: yes (per card). Right-click trash/downloads menu, toggle extension, right-click
-  again. Open downloads list, toggle, open again. Clock + calendar on: toggle, icons render, no duplicates.
-  Also: change dock position (recreateDash -> destroyDash): menus/clock must come back.
-New findings (proposed B-xx):
-  - dock.js _updateExtraIcons: unmounted volumes, unpinned trash and unpinned downloads are
-    `_extraIcons.remove_child(item)`'d, never destroyed. Their DockItemMenu (+BoxPointer in uiGroup) leaks
-    until shell exit. Fix: `item.destroy()` instead of remove_child (the new destroy handler then tears down
-    the menu). Out of R-7b's symbol scope; suggest R-7d or a follow-up.
-  - Pre-existing: the dock.js icon 'destroy' handler (in _findIcons) runs _cleanupIcon(c) when only the
-    St.Icon is destroyed. BaseIcon._createIconTexture destroys and recreates its icon on setIconSize/update.
-    For a live DockItemContainer that kills its menu (before: menu unparented + c._menu nulled, same
-    user-visible loss). Clock/calendar are recreated next frame (an improvement vs before). Rare: Dash
-    _adjustIconSize is patched out. Fix idea: only tear down the menu in the container-destroy and
-    destroyDash paths.
-Scope request / blockers: services.js used, as allowed by the card ("only if a reference must be nulled
-  there"): the destroy handlers above. No other files.
+  gjs -m tests/window_tracker_check.js = all passed (20/20): connect once per window, signal set,
+    no expandos, callback on position/size, shared across 2 "docks", unmanaged releases (+ re-track),
+    idempotent untrack, clear/destroy release all, d2da:-prefixed error on disconnect throw.
+  make smoke + tools/smoke-shell.sh 5 = PASS both: 1 known sig, 0 new, 0 gone; msgs 6/5; probe 6/5;
+    after-enable deltas all 0; after-disable deltas 0/0/0/0/0/+1/0.
+  grep -c 'disposed\|finalized\|already been destroyed' /tmp/d2da-smoke.log = 0 (both runs).
+  T-8 shutdown "sweeping phase of GC" = 150 (both runs; unchanged vs baseline 150). Note: one grep right
+    after run 2 read 0 because the nested shell was still flushing its shutdown log; re-grep = 150.
+  G-real NOT run (W3).
+  CAVEAT: smoke has no windows and autohide off, so the tracker is only exercised by the unit test.
+  An earlier `make smoke` attempt was stopped by the user mid-run; both runs above are complete reruns.
+Needs human visual check: yes (per card). Autohide + dodge on: move/resize a window over the dock ->
+  dock hides/shows; close it -> dock shows; two monitors with docks (if available); autohide off/on.
+New findings / notes:
+  - autohide-dodge off with autohide on doesn't clear the tracker (card only asks for autohide-dash).
+    Remaining connections just call checkHide(), and _checkOverlap returns before dodging. Harmless.
+    Could add a clear() on dodge off later.
+  - Windows that stop matching the filter (other monitor/workspace) stay tracked until unmanaged or
+    autohide off. That's bounded by the open windows and still one connection set each.
+Scope request / blockers: none. windowTracker.js and tests/window_tracker_check.js as allowed by the card.
 ```
 
 ---
@@ -307,7 +285,7 @@ Phase 2-5 cards are *stubs*: the Orchestrator expands a stub into a full card (s
 - **Verify:** `make check`; `make lint`; `tools/check-settings.py` (exit 0); `gjs -m tests/timer_check.js`; `make smoke` + one more run; `grep -c 'disposed\|finalized\|already been destroyed' /tmp/d2da-smoke.log` = 0.
 - **Human:** yes. The dock renders icons, dots and badges after toggling the extension, after changing preferred monitor (redock), and during a bounce right before disabling.
 
-- **R-0e** Probe v2 (T-5, T-6, T-8: build the error signatures after shell exit so shutdown criticals count): same settle wait before every disable in `tools/smoke-shell.sh`; strict mode FAILs if probe line counts ≠ N+1/N; live-instance counters for the extension's `Dock` / `Dash` / `Animator` (counter bump in ctor + destroy is the only change allowed in those files) reported as new probe fields. Scope `probe.js`, `tools/smoke-shell.sh`, `dock.js`, `animator.js` (counter lines only). Accept: `lo` delta 0; live-instance deltas recorded (expected > 0 until R-7d).
+- **R-0e** Probe v2 (T-5, T-6, T-8: build the error signatures after shell exit so shutdown criticals count; plus an opt-in env hook to start isolated smoke with non-default settings, e.g. `D2DA_SMOKE_SETTINGS='trash-icon=true clock-icon=true …'` applied to the memory backend inside the nested shell, so trash/downloads/clock/calendar/autohide paths get exercised): same settle wait before every disable in `tools/smoke-shell.sh`; strict mode FAILs if probe line counts ≠ N+1/N; live-instance counters for the extension's `Dock` / `Dash` / `Animator` (counter bump in ctor + destroy is the only change allowed in those files) reported as new probe fields. Scope `probe.js`, `tools/smoke-shell.sh`, `dock.js`, `animator.js` (counter lines only). Accept: `lo` delta 0; live-instance deltas recorded (expected > 0 until R-7d).
 #### R-7b — Destroy menus, file lists, clock & calendar
 - **Fixes:** B-29 (destroy half). The "menu side always TOP" half stays open (visual/product call, separate item).
 - **Scope:** `dock.js` (`_cleanupIcon`, `_destroyList`), `dockItems.js` (`DockItemContainer` menu creation/teardown). `services.js` / `dockItemMenu.js` only if a reference must be nulled there; say why.
@@ -327,8 +305,21 @@ Phase 2-5 cards are *stubs*: the Orchestrator expands a stub into a full card (s
 - **Verify:** `make check`; `make lint`; `tools/check-settings.py` (exit 0); `gjs -m tests/timer_check.js`; `make smoke` ×2; `grep -c 'disposed\|finalized\|already been destroyed' /tmp/d2da-smoke.log` = 0. Report the shutdown "sweeping phase of GC" count (T-8, baseline ~150); a drop is a bonus, not required.
 - **Human:** yes. Right-click menu on a custom item (trash/downloads), then toggle the extension and right-click again. Open the downloads/recents list, toggle the extension, open it again. Clock and calendar icons enabled: toggle the extension; the icons render, with no duplicates.
 
-- **R-7c** Autohide window tracking via a per-extension `WindowTracker` (Map), no `_tracked`/`_parent` expandos. Fixes B-31. Scope `autohide.js`, `extension.js`.
-- **R-7d** `Dock.destroy()` (dash, struts, dwell, renderArea) and `extension.destroyDocks()` calls it. Fixes B-1, B-38 (`_findIcons` null `dash`). Order: `animator.destroy()` **before** `renderArea` is destroyed. Accept also: the shutdown GC-critical count (T-8, ~150 at 30ae2d5) drops. Accept: probe deltas = 0 **including R-0e live-instance counters** (stage-walk deltas are already 0 and can't see B-1, T-6) → Orchestrator turns on `D2DA_SMOKE_STRICT_LEAKS=1`.
+#### R-7c — Per-extension WindowTracker, no `Meta.Window` expandos
+- **Fixes:** B-31.
+- **Scope:** `autohide.js`, `extension.js`.
+- **Context (HEAD 0a01a50):** `AutoHide._checkOverlap` maps `global.get_window_actors()` to windows, writes `w._parent = a` (never read anywhere) and calls `this._track(w)` on every filtered window. `_track` uses a `window._tracked` expando on the shared `Meta.Window` and `window.connectObject('position-changed', …, 'size-changed', …, this)`; both callbacks just call `this.dock.extension.checkHide()`. With several docks, the first autohider to see a window sets `_tracked`, so the others never connect; when that autohider disables, it clears `_tracked` for everyone. `AutoHide.disable()` untracks by scanning current window actors (only if `_enabled`). Windows that stop matching the filter stay connected; closed windows are never explicitly released. `extension.js` toggles autohiders on the `autohide-dash` setting (~1213-1218) and creates/destroys docks in `createDock` / `destroyDocks`.
+- **Do:**
+  - Add `export class WindowTracker` in `autohide.js`: `constructor(onChange)`, `Map`/`Set` of tracked `Meta.Window`s, `track(w)` (idempotent; `w.connectObject('position-changed', cb, 'size-changed', cb, 'unmanaged', () => this.untrack(w), this)`), `untrack(w)` (`w.disconnectObject(this)` in try/catch → `console.error('d2da: …')` only for unexpected errors), `clear()`, `destroy()` = `clear()` + drop the callback.
+  - `extension.js`: own one tracker. Create it in enable/startUp with `() => this.checkHide()`, `destroy()` it in `disable()` after `destroyDocks()`, null it. When `autohide-dash` turns off, `clear()` it.
+  - `AutoHide._checkOverlap`: call `this.extension.windowTracker?.track(w)`; remove `_parent`. `AutoHide.disable()`: remove the per-window untrack scan (the tracker owns connections now).
+  - No new expandos on Shell/Meta objects (A5). No per-frame work (A8); `_checkOverlap` is debounced.
+- **Don't:** change the overlap/dodge logic or window filters (R-3 fixed them; the 1.3 human rule stands); add a global (non-extension) singleton.
+- **Accept:** `grep -n '_tracked\|_parent\b' autohide.js` is empty (except `get_parent` calls); exactly one connection per window across all docks; all connections gone after `disable()` and when autohide is turned off; closed windows are released.
+- **Verify:** `make check`; `make lint`; `tools/check-settings.py` (exit 0); `gjs -m tests/timer_check.js`; `make smoke` ×2; disposed/finalized grep = 0. Smoke has no windows and default autohide off, so add a gjs unit test `tests/window_tracker_check.js` for `WindowTracker` with fake window objects (connectObject/disconnectObject stubs) **if `autohide.js` can be imported without Shell modules**. Otherwise put `WindowTracker` in a new `windowTracker.js` (allowed by this card) so it can be tested, and import it from `autohide.js`.
+- **Human:** yes. Autohide + dodge on: move/resize a window over the dock ⇒ dock hides/shows; close it ⇒ dock shows; two monitors with docks on both (if available); turn autohide off/on.
+
+- **R-7d** Also B-39 (`_updateExtraIcons` must `destroy()` removed items) and B-40 (`destroyDash` cleans up all box children). `Dock.destroy()` (dash, struts, dwell, renderArea) and `extension.destroyDocks()` calls it. Fixes B-1, B-38 (`_findIcons` null `dash`). Order: `animator.destroy()` **before** `renderArea` is destroyed. Accept also: the shutdown GC-critical count (T-8, ~150 at 30ae2d5) drops. Accept: probe deltas = 0 **including R-0e live-instance counters** (stage-walk deltas are already 0 and can't see B-1, T-6) → Orchestrator turns on `D2DA_SMOKE_STRICT_LEAKS=1`.
 - **R-8** Services: one debounce handle per job (B-36), `Gio.Cancellable`s, `monitor.cancel()`, enumerator `close()`, per-service try/catch, measured `dt` (B-25).
 - **R-9a** Trash: empty via Gio with confirmation, no `rm -rf` (B-8). **R-9b** Launchers: `DesktopAppInfo` from in-memory `GLib.KeyFile`, `GLib.shell_quote` (B-10). **R-9c** XDG paths (B-22). **R-9d** CSS from runtime dir / in-memory, per shell instance (B-37).
 

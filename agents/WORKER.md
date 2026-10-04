@@ -58,18 +58,18 @@ Isolated smoke can't change settings from outside (memory backend is in-process)
 > Written by the ORCHESTRATOR only. Worker: do not edit this section.
 
 ```
-Cycle:      2.1
-Task:       R-7a — Animator teardown
+Cycle:      2.2
+Task:       R-7b — Destroy menus, file lists, clock & calendar
 Attempt:    1
-Card:       §6 "R-7a"
-Notes:      HEAD 03940ad. First Phase 2 card, expanded by the Orchestrator. Read its
-            Context. The main risk is use-after-destroy: GJS logs criticals when a
-            destroyed actor is touched, so look for every holder of a pool actor (grep
-            `_renderer`, `_dots`, `_badges`, `_renderers` in all .js) and say how each one
-            is safe after disable.
-            Gates: check; lint 0/151; check-settings exit 0 (0/30, hard gate); smoke 1
-            known sig, deltas 0/0/0/0/0/+1/0 (stage-walk can't see off-stage leaks, T-6,
-            so deltas staying the same is expected); timer_check 15/15. Known flake B-37.
+Card:       §6 "R-7b"
+Notes:      HEAD 30ae2d5. Expanded card; read its Context. Main risks: (1) destroying
+            something the Shell owns (only destroy actors d2da created); (2) double
+            destroy (`_cleanupIcon` is reached from two paths), so make teardown
+            idempotent; (3) PopupMenuManager: removeMenu before destroy, and don't leave
+            a grab. List every actor you destroy with its owner/creator in the Report.
+            Gates: check; lint 0/151; check-settings exit 0 (0/30); smoke 1 known sig,
+            deltas 0/0/0/0/0/+1/0; timer_check 15/15; disposed/finalized grep = 0.
+            Known flake B-37. T-8 baseline ~150 shutdown GC criticals (report count).
 ```
 
 ## 5. Report
@@ -77,72 +77,93 @@ Notes:      HEAD 03940ad. First Phase 2 card, expanded by the Orchestrator. Read
 > Overwritten by the WORKER each cycle; read by the AUDITOR.
 
 ```
-Cycle / Task / Attempt: 2.1 / R-7a / 1
+Cycle / Task / Attempt: 2.2 / R-7b / 1
 Status:            DONE
-Files changed:     animator.js only (+24/-11 vs HEAD 03940ad). No dock.js change needed.
-What changed (animator.js):
-  - _destroyPool(): destroy() every actor in _renderers/_dots/_badges (null-safe, `actor?.destroy()`),
-    then reset the three arrays to []. Overlays are St.Widgets, so destroy() also takes their Dot child.
-  - disable(): _destroyPool() first, then `this._target?.remove_all_children()` for the remaining
-    non-pool children (services' clock/calendar, unparented only until R-7b; commented), then
-    _target = null, _computed = null. The old "if (!this._renderers) init arrays" block is gone
-    (_destroyPool always leaves [] arrays).
-  - _precreateResources(): the bare `this._renderers = []` etc. (renderArea has 0 children) is now
-    _destroyPool(). After disable the arrays are already empty, so this is a no-op there; it only
-    matters if renderArea is emptied some other way.
-  - destroy(): disable(), then dock = null, extension = null. Not called anywhere yet (R-7d).
-  - bounceIcon getTarget(): `if (!this._target) return [null, null];` first. Every bounce frame goes
-    through getTarget, so after disable() no frame touches container._renderer (destroyed) or the
-    appwell. Bounce-only path, nothing added to animate() (W8).
-  enable() and animate() math untouched; _bms untouched.
-Pool-actor holders after disable (grepped _renderer/_renderers/_dots/_badges in all .js):
-  - animator._renderers/_dots/_badges: destroyed and emptied in disable().
-  - icon._renderer on Dash containers (animator.js:593, reassigned every frame from the pool before use):
-      * dock._updateFocusedIcon (dock.js) reads dock._icons[*]._renderer. undock() calls _endAnimation()
-        (which runs _updateFocusedIcon and then sets _icons = null) BEFORE animator.disable(), so it
-        sees live actors. Its only other caller is debounceEndSeq, which undock() cancels.
-      * destroyDash() re-runs _findIcons() + _cleanupIcon(); _cleanupIcon doesn't touch _renderer, and
-        _icons is nulled again after. The dash is then dropped along with the old Dock (destroyDocks
-        empties docks/listeners), so the stale refs can't be reached.
-      * bounceIcon frames (container._renderer): guarded by the new _target check. extension.disable()
-        shuts the timers down anyway; _updateMultiMonitorPreference keeps _hiTimer running, so this
-        guard is what covers it there.
-      * integrations.compiz_getIcon (dashElement._renderer): iterates extension.docks, i.e. only live
-        docks whose animator owns live pool actors.
-      * services.updateIcon (item._renderer): called only from Animator.animate after the per-frame
-        reassignment at animator.js:593.
-  - Dock.animate() between undock and redock: undock cancels _animationSeq and the Dock is dropped.
-    If animate() did run, renderArea has 0 children -> _destroyPool() (no-op) -> pool rebuilt, and
-    icon._renderer is reassigned before any use. Self-healing, no stale access.
-Card context note: recreateDash() doesn't call animator.enable() and doesn't undock. Only Dock.dock()
-  calls enable(). Every path that runs undock() (disable, monitors/preferred-monitor change via
-  destroyDocks) builds a NEW Dock + Animator through createDock(). recreateDash (dock-location, scale,
-  separator, icon theme) keeps the live pool, which is correct.
+Files changed:     dock.js (+19/-11), dockItems.js (+12), services.js (+12; scope use explained below).
+                   HEAD 30ae2d5. agents/*.md untouched except this Report.
+What changed:
+  dock.js _cleanupIcon(c):
+    - c._image (clock/calendar) is destroyed regardless of parent. c._image/_clock/_calendar are nulled
+      first, plus dock._clock/_calendar when they point at it, then image.destroy().
+    - Menu: c._destroyMenu?.() (only DockItemContainer has it; Shell containers have no c._menu).
+    - c._label: unchanged (unparent only). It's the Shell DashItemContainer's St.Label (addChrome'd in
+      its _init), and Shell destroys it in the container's own destroy handler (dash.js:77-79 on 50.5).
+      Not ours to destroy.
+    - Idempotent: a second call sees _image null, _menu null (early return), label already unparented.
+  dock.js _destroyList(): grab _list, null this._list, then list?.destroy() (destroy unparents from uiGroup).
+  dockItems.js DockItemContainer:
+    - New _destroyMenu(): early return if no _menu; null _menu; _menuManager.removeMenu(menu); null
+      _menuManager; clear dashIcon._menu (this.child) if it's the same menu; menu.destroy().
+    - _init connects its own 'destroy' -> _destroyMenu() (only when a menu was created). So the menu goes
+      away even when _cleanupIcon never sees the item.
+  services.js updateIcon (creation branch only, no per-frame work): Clock/Calendar connect their own
+    'destroy' to null item._image/_clock|_calendar and dock._clock|_calendar.
+    Why: on shell shutdown with the extension enabled, layout.js destroys renderArea (and the clock/calendar
+    with it) BEFORE the Shell DashItemContainer destroy handler reaches _cleanupIcon, which then touched a
+    disposed Clock/Calendar ("Gjs_apps_clock_Clock ... already disposed", dock.js _cleanupIcon <-
+    dock.js icon destroy handler <- dash.js:77). The old code's c._image.get_parent() hit the same thing,
+    so it was pre-existing, but my destroy() call was a new access. The refs live where the actor is
+    created, so nulling has to happen there.
+Actors destroyed (owner/creator):
+  - Clock / Calendar (apps/clock.js, apps/calendar.js): created by d2da services.updateIcon, parented to
+    dock.renderArea (unparented by animator.disable() since R-7a). Destroyed in _cleanupIcon.
+  - DockItemMenu (PopupMenu subclass) + its actor (BoxPointer in Main.uiGroup): created by d2da
+    DockItemContainer._init. menu.destroy() -> PopupMenuBase.destroy: close(), removeAll(), actor.destroy(),
+    emit 'destroy'. The PopupMenuManager (plain JS, d2da-created) is dropped after removeMenu.
+  - DockItemList (St.Widget in Main.uiGroup, children _box/_labels + item actors): created by d2da
+    DockItemList.createItem. Destroyed in _destroyList.
+  Not destroyed: c._label (Shell-owned, see above), Shell DashItemContainers/Dash (R-7d).
+Grab / PopupMenuManager (read from GNOME 50.5 popupMenu.js): removeMenu(menu) pops the modal grab and
+  drops the key-focus handler if the menu is the active one, then disconnects the manager's handlers.
+  menu.destroy() then calls close(), which emits open-state-changed with nobody listening, so no double
+  popModal and no leftover grab. PopupMenu.destroy also does sourceActor.disconnectObject(menu). In the
+  container-destroy path that runs inside the container's 'destroy' emission, i.e. before GObject weak-ref
+  notify, so the wrapper is still valid.
+Double-destroy paths checked:
+  - destroyDash -> _cleanupIcon(c) per icon; later icon 'destroy' -> _cleanupIcon(c) again: no-op.
+  - Container destroy: Shell handler child.destroy() -> St.Icon destroy -> _cleanupIcon -> _destroyMenu;
+    then our container handler -> _destroyMenu: early return.
+  - Clock destroyed via renderArea first: own handler nulls refs -> _cleanupIcon skips it.
+DockItemList after destroy: DockItemList._animate calls dock._destroyList() mid-frame. _list is nulled
+  before destroy, so the remaining _animate passes in the same animate() return on `if (!list)` (they read
+  only this.dock, a plain JS prop). animator.js (~166, ~1042), dock.slideOut, extension.js ~860 and
+  _effectTargets (`this._list?._box`) all guard on dock._list. The list holds no external connections
+  (only self button-press and child icon handlers).
 Self-verification:
   make check = OK
   make lint = 0 errors / 151 warnings (unchanged)
   python3 -B tools/check-settings.py = 0 errors / 30 warnings, exit 0
   gjs -m tests/timer_check.js = all passed (15/15)
-  make smoke x3 = PASS each time: 1 known sig, 0 new, 0 gone; msgs 6/5; probe 6/5; after-enable deltas
-    all 0; after-disable 0/0/0/0/0/+1/0 (= expected; T-6, stage walk can't see off-stage leaks).
-  grep -c 'disposed\|finalized\|already been destroyed' /tmp/d2da-smoke.log = 0 (all runs).
-  Note: every smoke log ends with 150 "Gjs-CRITICAL ... call back into JSAPI during the sweeping phase
-    of GC" lines, timestamped AFTER the last probe (shell teardown). They aren't in .sig because they
-    land after the signature step. They're pre-existing: I copied `git show HEAD:animator.js` over the
-    installed copy, ran tools/smoke-shell.sh 5 and also got 150. Then `make smoke` reinstalled my
-    version (installed animator.js == working tree, verified with diff). Likely B-1 (undestroyed
-    Dash/Dock with ::destroy handlers finalized by GC at exit). Suggest R-0e/R-7d count them.
-Needs human visual check: yes (per card) - icons, dots and badges render after toggling the
-  extension, after changing the preferred monitor, and when disabling during a bounce.
+  make smoke x4 (2 before the services.js change, 2 after) = PASS each: 1 known sig, 0 new, 0 gone;
+    msgs 6/5; probe 6/5; after-enable deltas all 0; after-disable deltas 0/0/0/0/0/+1/0.
+  grep -c 'disposed\|finalized\|already been destroyed' /tmp/d2da-smoke.log = 0 (all isolated runs).
+  T-8 shutdown "sweeping phase of GC" count = 150 in every run (unchanged vs ~150 baseline).
+  CAVEAT: isolated smoke uses schema defaults (trash/downloads/mounted/clock/calendar all false), so it
+    doesn't exercise the menu/clock/list paths. I ran ONE advisory real-dconf smoke
+    (D2DA_SMOKE_REAL_DCONF=1 ... tools/smoke-shell.sh 3) BEFORE the services.js change: PASS, 4 known sigs,
+    0 new. It surfaced the shutdown Clock/Calendar disposed access fixed above (other 2 disposed lines:
+    blur-my-shell's dash_to_dock.js on Meta.BackgroundGroup, not ours). Only after the run did I see that
+    RUN.md (1.10 STOP) treats G-real as touching the user's dconf (gnome-extensions enable/disable writes
+    enabled-extensions). Final state was ACTIVE as before. enabled-extensions afterwards lists
+    dash2dock-lite last (same set; I can't tell whether the order changed). No gsettings/dconf writes
+    by me. I did NOT re-run G-real after the fix, so the fix for the shutdown disposed access is
+    unverified by a run. Please re-run G-real if the human approves.
+Needs human visual check: yes (per card). Right-click trash/downloads menu, toggle extension, right-click
+  again. Open downloads list, toggle, open again. Clock + calendar on: toggle, icons render, no duplicates.
+  Also: change dock position (recreateDash -> destroyDash): menus/clock must come back.
 New findings (proposed B-xx):
-  - dock.js _findIcons: after destroyDash() (dash = null), the first call sets _icons = [] and returns
-    []. The next call sees _icons truthy and dereferences this.dash._box -> TypeError. Bounce frames
-    used to reach this after a monitors change (timers still alive); the new getTarget guard avoids it
-    from animator, but _findIcons itself needs `if (!this.dash)` before the cache check (dock.js, out
-    of scope).
-  - For R-7d: Dock.destroy() must call animator.destroy() BEFORE destroying renderArea. Otherwise
-    _destroyPool calls destroy() on already-disposed wrappers (GJS criticals).
-Scope request / blockers: none
+  - dock.js _updateExtraIcons: unmounted volumes, unpinned trash and unpinned downloads are
+    `_extraIcons.remove_child(item)`'d, never destroyed. Their DockItemMenu (+BoxPointer in uiGroup) leaks
+    until shell exit. Fix: `item.destroy()` instead of remove_child (the new destroy handler then tears down
+    the menu). Out of R-7b's symbol scope; suggest R-7d or a follow-up.
+  - Pre-existing: the dock.js icon 'destroy' handler (in _findIcons) runs _cleanupIcon(c) when only the
+    St.Icon is destroyed. BaseIcon._createIconTexture destroys and recreates its icon on setIconSize/update.
+    For a live DockItemContainer that kills its menu (before: menu unparented + c._menu nulled, same
+    user-visible loss). Clock/calendar are recreated next frame (an improvement vs before). Rare: Dash
+    _adjustIconSize is patched out. Fix idea: only tear down the menu in the container-destroy and
+    destroyDash paths.
+Scope request / blockers: services.js used, as allowed by the card ("only if a reference must be nulled
+  there"): the destroy handlers above. No other files.
 ```
 
 ---
@@ -274,7 +295,7 @@ Phase 2-5 cards are *stubs*: the Orchestrator expands a stub into a full card (s
 #### R-7a — Animator teardown
 - **Fixes:** G1, animator-owned actors (part of the B-1 class). Pooled actors are currently removed from `renderArea` but never destroyed.
 - **Scope:** `animator.js`. (`dock.js` only if a call site must change; say why.)
-- **Context (HEAD 03940ad):** `Animator.enable/disable/_precreateResources` (top of `animator.js`). The pools are `_renderers` (`St.Icon`), `_dots` (`DockItemDotsOverlay`), `_badges` (`DockItemBadgeOverlay`), all children of `dock.renderArea`. `disable()` does `this._target.remove_all_children()`, which unparents the pool *and* the services-owned clock/calendar actors (`services.js` adds them to `renderArea`; their destroy is R-7b), and then keeps the pool arrays. `_precreateResources` resets the arrays to `[]` when `renderArea` has 0 children, so the old actors are dropped undestroyed. Icons cache `icon._renderer = this._renderers[icon._idx]`; `bounceIcon` frames touch `container._renderer`. `undock()` calls `animator.disable()`; `recreateDash()` calls `animator.enable()`. `_bms` is owned by `integrations.js`: don't touch it.
+- **Context (HEAD 03940ad):** `Animator.enable/disable/_precreateResources` (top of `animator.js`). The pools are `_renderers` (`St.Icon`), `_dots` (`DockItemDotsOverlay`), `_badges` (`DockItemBadgeOverlay`), all children of `dock.renderArea`. `disable()` does `this._target.remove_all_children()`, which unparents the pool *and* the services-owned clock/calendar actors (`services.js` adds them to `renderArea`; their destroy is R-7b), and then keeps the pool arrays. `_precreateResources` resets the arrays to `[]` when `renderArea` has 0 children, so the old actors are dropped undestroyed. Icons cache `icon._renderer = this._renderers[icon._idx]`; `bounceIcon` frames touch `container._renderer`. `undock()` calls `animator.disable()`; `Dock.dock()` (only via `createDock()`, always a new Dock + Animator) calls `animator.enable()`. `recreateDash()` doesn't touch the animator (corrected after the 2.1 audit). `_bms` is owned by `integrations.js`: don't touch it.
 - **Do:**
   - Add `_destroyPool()`: `destroy()` every actor in the three pools (null-safe), then reset the arrays to `[]`.
   - `disable()`: `_destroyPool()` first, then keep `this._target?.remove_all_children()` for the remaining non-pool children (current clock/calendar behaviour until R-7b). Comment that. Then `_target = null`, `_computed = null`.
@@ -286,10 +307,28 @@ Phase 2-5 cards are *stubs*: the Orchestrator expands a stub into a full card (s
 - **Verify:** `make check`; `make lint`; `tools/check-settings.py` (exit 0); `gjs -m tests/timer_check.js`; `make smoke` + one more run; `grep -c 'disposed\|finalized\|already been destroyed' /tmp/d2da-smoke.log` = 0.
 - **Human:** yes. The dock renders icons, dots and badges after toggling the extension, after changing preferred monitor (redock), and during a bounce right before disabling.
 
-- **R-0e** Probe v2 (T-5, T-6): same settle wait before every disable in `tools/smoke-shell.sh`; strict mode FAILs if probe line counts ≠ N+1/N; live-instance counters for the extension's `Dock` / `Dash` / `Animator` (counter bump in ctor + destroy is the only change allowed in those files) reported as new probe fields. Scope `probe.js`, `tools/smoke-shell.sh`, `dock.js`, `animator.js` (counter lines only). Accept: `lo` delta 0; live-instance deltas recorded (expected > 0 until R-7d).
-- **R-7b** Menus & lists: `DockItemContainer` destroy handler → `menu.destroy()` + `menuManager.removeMenu`; `_destroyList` → `list.destroy()`; clock/calendar destroyed with their item. Fixes B-29. Scope `dockItems.js`, `dockItemMenu.js`, `dock.js`, `services.js`.
+- **R-0e** Probe v2 (T-5, T-6, T-8: build the error signatures after shell exit so shutdown criticals count): same settle wait before every disable in `tools/smoke-shell.sh`; strict mode FAILs if probe line counts ≠ N+1/N; live-instance counters for the extension's `Dock` / `Dash` / `Animator` (counter bump in ctor + destroy is the only change allowed in those files) reported as new probe fields. Scope `probe.js`, `tools/smoke-shell.sh`, `dock.js`, `animator.js` (counter lines only). Accept: `lo` delta 0; live-instance deltas recorded (expected > 0 until R-7d).
+#### R-7b — Destroy menus, file lists, clock & calendar
+- **Fixes:** B-29 (destroy half). The "menu side always TOP" half stays open (visual/product call, separate item).
+- **Scope:** `dock.js` (`_cleanupIcon`, `_destroyList`), `dockItems.js` (`DockItemContainer` menu creation/teardown). `services.js` / `dockItemMenu.js` only if a reference must be nulled there; say why.
+- **Context (HEAD 30ae2d5):**
+  - Custom items (`DockItemContainer`, `dockItems.js` ~302) create `this._menu = new DockItemMenu(...)` + `this._menuManager = new PopupMenu.PopupMenuManager(this)`, add `_menu.actor` to `Main.uiGroup`, `addMenu`, and set `dashIcon._menu`. Nothing ever destroys them.
+  - `dock.js _cleanupIcon(c)` (called from `destroyDash()` per icon and from each icon's `destroy` handler) only *unparents* `c._image`, `c._menu.actor` and `c._label`.
+  - `c._image` is the clock/calendar actor created in `services.js updateIcon` (`item._clock` / `item._calendar` / `item._image`, also cached as `dock._clock` / `dock._calendar`) and parented to `dock.renderArea`.
+  - Since R-7a, `animator.disable()` (in `undock()`, which runs **before** `destroyDash()` in `extension.destroyDocks`) unparents clock/calendar via `remove_all_children()`. The `get_parent()` check in `_cleanupIcon` then skips them, so they leak.
+  - `_destroyList()` only `remove_child`s `dock._list` (`DockItemList`) from `uiGroup`.
+- **Do:**
+  - `_cleanupIcon(c)`: destroy (not just unparent) d2da-owned actors: `c._image` regardless of parent; null `c._image`, `c._clock`, `c._calendar`, and `dock._clock` / `dock._calendar` when they point at it. Menus: `c._menuManager?.removeMenu(c._menu)` / owner manager if present, then `c._menu.destroy()`, then null. Must be idempotent (called from both destroyDash and the destroy handler).
+  - Don't destroy Shell-owned actors. `c._label` is the Shell DashItemContainer's label: keep the current unparent-only behaviour, or leave it alone if the Shell destroys it with its container. Note your choice.
+  - `DockItemContainer`: connect its own `destroy` (connectObject or a stored id) to tear down `_menu` + `_menuManager`, so the menu goes away even when `_cleanupIcon` never sees it.
+  - `_destroyList()`: `this._list.destroy()` (destroy unparents), then null. Check that `DockItemList` animation (`dockItemMenu.js` ~332-454, driven from the dock's animation loop) can't touch the list after destroy.
+- **Don't:** change menu side/position; touch `Dock.destroy` / B-1 (R-7d); change `animate()` per-frame work (A8).
+- **Accept:** after `destroyDocks()` no d2da menu, list or clock/calendar actor stays alive or parented to `uiGroup`; reopening a menu or list after re-enable works; no disposed/finalized warnings.
+- **Verify:** `make check`; `make lint`; `tools/check-settings.py` (exit 0); `gjs -m tests/timer_check.js`; `make smoke` ×2; `grep -c 'disposed\|finalized\|already been destroyed' /tmp/d2da-smoke.log` = 0. Report the shutdown "sweeping phase of GC" count (T-8, baseline ~150); a drop is a bonus, not required.
+- **Human:** yes. Right-click menu on a custom item (trash/downloads), then toggle the extension and right-click again. Open the downloads/recents list, toggle the extension, open it again. Clock and calendar icons enabled: toggle the extension; the icons render, with no duplicates.
+
 - **R-7c** Autohide window tracking via a per-extension `WindowTracker` (Map), no `_tracked`/`_parent` expandos. Fixes B-31. Scope `autohide.js`, `extension.js`.
-- **R-7d** `Dock.destroy()` (dash, struts, dwell, renderArea) and `extension.destroyDocks()` calls it. Fixes B-1. Accept: probe deltas = 0 **including R-0e live-instance counters** (stage-walk deltas are already 0 and can't see B-1, T-6) → Orchestrator turns on `D2DA_SMOKE_STRICT_LEAKS=1`.
+- **R-7d** `Dock.destroy()` (dash, struts, dwell, renderArea) and `extension.destroyDocks()` calls it. Fixes B-1, B-38 (`_findIcons` null `dash`). Order: `animator.destroy()` **before** `renderArea` is destroyed. Accept also: the shutdown GC-critical count (T-8, ~150 at 30ae2d5) drops. Accept: probe deltas = 0 **including R-0e live-instance counters** (stage-walk deltas are already 0 and can't see B-1, T-6) → Orchestrator turns on `D2DA_SMOKE_STRICT_LEAKS=1`.
 - **R-8** Services: one debounce handle per job (B-36), `Gio.Cancellable`s, `monitor.cancel()`, enumerator `close()`, per-service try/catch, measured `dt` (B-25).
 - **R-9a** Trash: empty via Gio with confirmation, no `rm -rf` (B-8). **R-9b** Launchers: `DesktopAppInfo` from in-memory `GLib.KeyFile`, `GLib.shell_quote` (B-10). **R-9c** XDG paths (B-22). **R-9d** CSS from runtime dir / in-memory, per shell instance (B-37).
 

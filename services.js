@@ -709,6 +709,13 @@ export const Services = class {
           dock._clock = clock;
           item._clock = clock;
           item._image = clock;
+          // renderArea may be destroyed first (shell shutdown); drop the refs
+          // so dock._cleanupIcon never touches a disposed clock
+          clock.connect('destroy', () => {
+            if (item._image === clock) item._image = null;
+            if (item._clock === clock) item._clock = null;
+            if (dock._clock === clock) dock._clock = null;
+          });
           // item._appwell.first_child.add_child(clock);
           dock.renderArea.add_child(clock);
         }
@@ -742,6 +749,11 @@ export const Services = class {
           dock._calendar = calendar;
           item._calendar = calendar;
           item._image = calendar;
+          calendar.connect('destroy', () => {
+            if (item._image === calendar) item._image = null;
+            if (item._calendar === calendar) item._calendar = null;
+            if (dock._calendar === calendar) dock._calendar = null;
+          });
           dock.renderArea.add_child(calendar);
         }
         if (calendar) {

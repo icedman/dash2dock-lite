@@ -126,8 +126,8 @@ Status: `[ ]` todo · `[~]` in progress · `[x]` done (hash) · `[!]` blocked ·
 ### Phase 2 — Lifecycle (G1) — expand stubs before assigning
 | | Cycle | Task | Depends | Notes |
 |---|---|---|---|---|
-| [~] | 2.1 | R-7a animator teardown | 1.2 | |
-| [ ] | 2.2 | R-7b menus/lists/clock/calendar destroy | 2.1 | B-29 |
+| [x] 30ae2d5 | 2.1 | R-7a animator teardown | 1.2 | |
+| [~] | 2.2 | R-7b menus/lists/clock/calendar destroy | 2.1 | B-29 |
 | [ ] | 2.3 | R-7c WindowTracker, no Meta.Window expandos | 1.3 | B-31 |
 | [ ] | 2.3a | R-0e probe v2 (smoke timing, live-instance counters) | 0.1 | T-5, T-6 · prerequisite for strict leaks |
 | [ ] | 2.4 | R-7d Dock.destroy + destroyDocks | 2.1-2.3a | B-1 · then turn **strict leaks ON** (§5) |
@@ -195,6 +195,7 @@ Status: `open` · `fixed <hash>` · `partial <hash>` · `blocked` · `wontfix (r
 | P-11 | R-12 | open | | §6.3 low bugs | batch after phase 1 | open |
 | T-5 | R-0e | open | | T-6 | R-0e | open |
 | B-36 | R-8 | open | | B-37 | R-9d | open |
+| B-38 | R-7d | open | | T-8 | R-0e | open |
 | T-7 | R-0b, R-0d | partial 2a0ae6f (interim rm lines; dev docs still installed; R-0d pack list must exclude `eslint.config.js`) | | | | |
 
 Unassigned rows: when a phase ends, either add a card + board row for them or mark `wontfix (reason)`.
@@ -237,6 +238,7 @@ Items the agents can't see. The human runs `make test-shell` (needs `mutter-devk
 | 1.9 | 5840f29 | Reset and a theme preset update the widgets, incl. colors | |
 | 1.9 | 5840f29 | Cancel the downloads-folder dialog ⇒ old path kept; monitor dropdown shows the saved monitor | |
 | 1.11 | 03940ad | Prefs → General → Experimental Features on ⇒ Test row appears → Run executes diagnostics (`journalctl -f`); settings restored at the end | |
+| 2.1 | 30ae2d5 | Dock renders icons/dots/badges after toggling the extension, after changing preferred monitor, and when disabling during a bounce | |
 
 ## 6. Run Log (append-only, newest last)
 
@@ -309,3 +311,6 @@ Format: `YYYY-MM-DD HH:MM · cycle · EVENT · details` where EVENT ∈ `SETUP, 
 - 2026-10-04 · 1.11 · AUDIT-PASS · `03940ad` (Auditor-only). check=PASS lint=0/151 settings=exit 0 (0/30) xmllint OK timer_check pass smoke=PASS(x2). Diagnostics chain verified end to end. D2DA §6.5 updated (`experimental-features` now gates the Test row); low item: diagnostics has no abort/restore when disabled mid-run. 1 human-check item queued.
 - 2026-10-04 · 2.1 · PREFLIGHT · tree clean apart from agents/*; HEAD `03940ad`; GNOME Shell 50.5.
 - 2026-10-04 · 2.1 · ASSIGN · R-7a animator teardown. Stub expanded into a full card (pool destroy, clock/calendar left to R-7b, `destroy()` for R-7d).
+- 2026-10-04 · 2.1 · AUDIT-PASS · `30ae2d5`. check=PASS lint=0/151 settings=exit 0 timer_check 15/15 smoke=PASS(x2) disposed/finalized=0. Pool actors destroyed on disable; every holder verified safe; no per-frame cost. Card context corrected (`recreateDash` doesn't touch the animator). New: B-38 (`_findIcons` null `dash` ⇒ R-7d), T-8 (smoke misses ~150 shutdown GC criticals, present at HEAD too ⇒ R-0e). R-7d stub: `animator.destroy()` before `renderArea`. 1 human-check item queued.
+- 2026-10-04 · 2.2 · PREFLIGHT · tree clean apart from agents/*; HEAD `30ae2d5`; GNOME Shell 50.5.
+- 2026-10-04 · 2.2 · ASSIGN · R-7b destroy menus/lists/clock/calendar (stub expanded; B-29 destroy half; menu side left open).

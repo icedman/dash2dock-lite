@@ -674,13 +674,20 @@ export let Dock = GObject.registerClass(
     }
 
     _cleanupIcon(c) {
-      if (c._image && c._image.get_parent()) {
-        c._image.get_parent().remove_child(c._image);
+      // clock/calendar from services.updateIcon; animator.disable() may
+      // already have unparented it, so destroy regardless of parent
+      let image = c._image;
+      if (image) {
+        c._image = null;
+        c._clock = null;
+        c._calendar = null;
+        if (this._clock === image) this._clock = null;
+        if (this._calendar === image) this._calendar = null;
+        image.destroy();
       }
-      if (c._menu && c._menu.actor) {
-        Main.uiGroup.remove_child(c._menu.actor);
-        c._menu = null;
-      }
+      // DockItemContainer menu; idempotent, also run on the item's own destroy
+      c._destroyMenu?.();
+      // c._label is owned by the Shell DashItemContainer (destroyed with it)
       if (c._label) {
         let p = c._label.get_parent();
         if (p) {
@@ -1328,10 +1335,11 @@ export let Dock = GObject.registerClass(
     }
 
     _destroyList() {
-      if (this._list) {
-        Main.uiGroup.remove_child(this._list);
-        this._list = null;
-      }
+      // null first: DockItemList._animate calls this mid-frame and its
+      // remaining passes bail out on a null dock._list
+      let list = this._list;
+      this._list = null;
+      list?.destroy();
     }
 
     _debounceEndAnimation() {

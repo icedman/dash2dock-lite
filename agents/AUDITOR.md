@@ -84,57 +84,80 @@ Minor nits (naming, a stray blank line) that don't violate a rule: list them as 
 > Overwritten each cycle. On FAIL the Worker reads this for its rework.
 
 ```
-Cycle / Task / Attempt:  2.1 / R-7a animator teardown / 1
+Cycle / Task / Attempt:  2.2 / R-7b destroy menus, file lists, clock & calendar / 1
 Verdict:          PASS
-Commit:           see Audit Log (fix(animator): destroy pooled actors on disable)
-Gates:            check=PASS ; lint=PASS (0 err / 151 warn = baseline; animator.js 23 = HEAD) ;
-                  settings=exit 0, 0 err / 30 warn (= baseline) ; timer_check 15/15 ;
-                  smoke x2 PASS (1 known sig, 0 new, 6/5 msgs, probe 6/5, after-enable deltas 0,
-                  after-disable 0/0/0/0/0/+1/0 both), disposed/finalized/already-destroyed = 0 both,
-                  no B-37 flake. Installed animator.js == working tree.
-Scope:            animator.js (+24/-11) + agents/*.md bookkeeping. Nothing else dirty.
-Rule violations:  none. A1, A3-A10, A12, A13 clean.
-Specific checks:
-  - Holders (grep _renderer/_renderers/_dots/_badges, all .js): pool arrays only in animator.js;
-    icon._renderer read by dock._updateFocusedIcon (runs from _endAnimation, which undock() calls
-    BEFORE animator.disable(); debounceEndSeq cancelled after), bounceIcon frames (new getTarget guard),
-    integrations.compiz_getIcon (live docks only, via extension.docks), services.updateIcon (only from
-    animate() after the per-frame reassignment). DockItemOverlay adds its Dot as a child, so
-    destroy() takes it. No signals on pool actors. Worker's per-holder claims all hold.
-  - disable() order: _destroyPool() (destroy unparents) then remove_all_children() => only services'
-    clock/calendar are unparented, not destroyed (R-7b). _target/_computed nulled.
-  - Card context is wrong (for Orchestrator, not a FAIL): dock.js:192 `this.animator.enable()` is
-    in Dock.dock(), called only from extension.createDock() (new Dock + new Animator). recreateDash()
-    never calls enable() and never undocks; undock() is only reached via destroyDocks() (disable,
-    createTheDocks count change, _updateMultiMonitorPreference), and every one drops the Dock and
-    creates a new one. So "redock = recreateDash -> enable" does not exist; recreateDash keeps the
-    live pool (correct).
-  - A8: guard is in bounceIcon's getTarget (per bounce frame, one field read), nothing new in
-    animate(); _precreateResources calls _destroyPool only on the old renderArea-empty condition.
-  - destroy() uncalled (R-7d), fine.
-  - "sweeping phase of GC" criticals: 150 in each working-tree smoke; an independent HEAD 03940ad
-    smoke (temporary worktree, removed) also gives 150 => pre-existing. They are logged after
-    "Shutting down GNOME Shell", i.e. in the EXIT-trap cleanup, AFTER the .sig step => smoke can't
-    see them (tooling gap).
+Commit:           see Audit Log (fix(dock): destroy menus, file list, clock and calendar on teardown)
+Gates:            check=PASS ; lint=PASS (0 err / 151 warn = baseline; dock.js 21, dockItems.js 7,
+                  services.js 8 = HEAD) ; settings=exit 0, 0 err / 30 warn (= baseline) ;
+                  timer_check 15/15 ; smoke x2 PASS (1 known sig, 0 new, 0 gone, 6/5 msgs, probe 6/5,
+                  after-enable deltas 0, after-disable 0/0/0/0/0/+1/0 both), disposed/finalized/
+                  already-destroyed = 0 both, `d2da: ` = 0, no B-37 flake. T-8 shutdown "sweeping phase
+                  of GC" = 150 both runs (= baseline). Installed dock/dockItems/services.js == tree.
+                  G-real NOT run by the Auditor (no human approval).
+Scope:            dock.js (+19/-11: _cleanupIcon, _destroyList), dockItems.js (+12: DockItemContainer
+                  menu), services.js (+12: updateIcon creation branch, allowed by the card and explained
+                  in the Report) + agents/*.md bookkeeping. Report diffstat matches.
+Rule violations:  none. A1-A10, A12, A13 clean (A11 n/a).
+Specific checks (GNOME Shell 50.5 sources read from libshell-18.so gresource):
+  1. Only d2da actors destroyed: Clock/Calendar (services.updateIcon), DockItemMenu + BoxPointer and
+     its PopupMenuManager (DockItemContainer._init), DockItemList (dockItemMenu.createItem). c._label
+     is the Shell DashItemContainer's St.Label (addChrome'd in _init; the Shell's own 'destroy'
+     handler does child.destroy() then label?.destroy()): still unparent-only. Shell containers have
+     no _destroyMenu, so `c._destroyMenu?.()` is a no-op for them.
+  2. Idempotence: destroyDash -> _cleanupIcon nulls c._image/_clock/_calendar (+ dock._clock/
+     _calendar if same) BEFORE image.destroy(); the clock's own destroy handler then finds no match.
+     Second _cleanupIcon (icon destroy handler): image null, _destroyMenu early-returns (this._menu
+     null), label already unparented or nulled by _destroyLabelConnectId. Container destroy order:
+     Shell handler (connected first) child.destroy() -> St.Icon destroy -> _cleanupIcon ->
+     _destroyMenu (container still mid-'destroy', so PopupMenu.destroy's
+     sourceActor.disconnectObject(menu) runs on a live wrapper); then our handler -> early return.
+     Shutdown order (renderArea destroyed first): services handlers null the refs, _cleanupIcon skips.
+     All readers of dock._clock/_calendar (_onClock/_onCalendar `?.`, _updateWidgetStyle `if (w)`)
+     and of c._menu (popup, activateNewWindow, activate patch) are null-safe.
+  3. PopupMenuManager 50.5: removeMenu(menu) pops the grab + key-focus handler if active, then
+     menu.disconnectObject(manager) (incl. the manager's own 'destroy' -> removeMenu hook), splices.
+     menu.destroy() -> close() emits open-state-changed to nobody, so no second popModal. removeMenu
+     has had this shape since before 45. addMenu already wires destroy -> removeMenu, so the explicit
+     call is belt and braces, consistent.
+  4. _destroyList mid-frame: _list nulled before destroy(); the remaining DockItemList.animate passes
+     read only `this.dock` (JS expando, no GObject access) and return on `!list`. After the destroy
+     call _animate only touches `target._label` (container). animator.js (~166, ~1042),
+     dock.slideOut, extension _onKeyPressed, _effectTargets all guard on dock._list. List has only
+     self/child connections. undock(): _destroyList runs before _removeIconEffect; the list's effect
+     goes with its _box (same as before, _list was nulled then too).
+  5. A8: services connects only inside `if (!clock)` / `if (!calendar)` (once per creation). No
+     per-frame work added to animate/layout/updateIcon's hot path.
+  6. A6: DockItemContainer `this.connect('destroy', ...)` and Clock/Calendar self 'destroy'
+     connections are self-owned (die with the emitter), same pattern as Shell's DashItemContainer.
+     Clock/Calendar closures capture item+dock only for the actor's lifetime.
+  Limitation: no supported env var turns on trash/downloads/clock/calendar in isolated smoke, so
+  the gates don't exercise these paths; judged by code reading + Shell source only.
 Rework list:      none.
 Nits:
-  - getTarget guard also skips a bounce requested before the first animate() frame (_target
-    still undefined); at most one frame after dock(), negligible.
-  - A bounce cut off by disable leaves appwell._bounce=true / translation on the old dash's appwell;
-    that dash is dropped with the Dock, so it's harmless.
-Findings confirmed:  G1 animator part (pool actors now destroyed). Worker's _findIcons finding confirmed
-                     by reading code.
-Human check needed:  dock renders icons/dots/badges after toggling the extension, after changing
-                     preferred monitor, and when disabling during a bounce.
+  - removeMenu doesn't clear manager.activeMenu; harmless because the manager is dropped right after.
+  - Process (not code): the Worker ran G-real (D2DA_SMOKE_REAL_DCONF=1) once without human
+    approval; cleanup re-enables via gnome-extensions => writes enabled-extensions in real dconf.
+    Reported in the Worker Report; Orchestrator to raise with the human.
+Findings confirmed:  B-29 destroy half (menus, DockItemList) + clock/calendar destroy. Worker's two
+                     findings confirmed by reading code (see below).
+Human check needed:  right-click menu on trash/downloads before and after toggling the extension;
+                     open downloads list, toggle, open again; clock+calendar on, toggle => each
+                     renders once, no duplicates; change dock position (recreateDash) => menus,
+                     clock, calendar come back.
 New findings spotted (for Orchestrator):
-  - dock.js _findIcons: after destroyDash() (dash=null) the 1st call sets _icons=[] and returns [];
-    the 2nd call dereferences this.dash._box => TypeError. Needs `if (!this.dash)` before the cache
-    check (Low/Med; no longer reachable from bounce frames).
-  - Tooling (T-class, for R-0e): smoke-shell.sh computes .sig before cleanup kills the shell, so
-    shutdown-time Gjs criticals (150 "sweeping phase of GC" at HEAD and now) aren't checked. Kill the
-    shell and wait before the signature step, or count them as a probe field (expected to drop with R-7d/B-1).
-  - R-7d: Dock.destroy() must call animator.destroy() before renderArea is destroyed (else destroy()
-    on disposed wrappers). Card context for R-7a should be corrected (see above).
+  - (Worker, confirmed) dock.js _updateExtraIcons: unmounted volumes and unpinned trash/downloads
+    are remove_child'd, never destroyed => DockItemMenu/BoxPointer stays in uiGroup. Use
+    item.destroy() (the new handler then removes the menu). R-7d or a follow-up.
+  - (Worker, confirmed) the icon 'destroy' handler in _findIcons runs _cleanupIcon when only the
+    St.Icon is recreated (BaseIcon._createIconTexture: setIconSize / size change in
+    style_changed / update()). DockIcon returns an St.Icon, so icon-theme changes don't trigger it.
+    Rare; same user-visible loss as before.
+  - destroyDash cleans up only what _findIcons returns: containers with visible=false and, in
+    favorites_only mode, non-favorite app icons are skipped, so a clock/calendar made before
+    favorites_only was turned on stays undestroyed (Low).
+  - Tooling (R-0e): isolated smoke can't turn on non-default settings. An opt-in env var (e.g. a
+    probe-side `D2DA_SMOKE_SETTINGS=trash-icon,downloads-icon,clock-icon,calendar-icon` applied
+    to the in-memory backend) would let the gates cover the R-7b paths.
 ```
 
 ## 7. Audit Log (append-only, newest last)
@@ -159,3 +182,4 @@ New findings spotted (for Orchestrator):
 | 1.9 | R-5 | 1 | PASS | this commit | `make check` PASS; lint 0/151 (baseline 154; prefKeys.js 6 -> 3, prefs.js 3 = HEAD); check-settings exit 0, 0 err / 30 warn (B-12 gone); timer_check pass; xmllint tweaks.ui OK; smoke x2 PASS (1 known sig, 0 new, deltas 0/0/0/0/0/+1/0), no B-37 flake | B-12, B-32, B-33 fixed. Guard = counter + try/finally; memory-backend harness (deleted): 0 writes on open and on monitor-model rebuild, saved monitor re-selected, sliders independent, 0 handlers after close. Finding: open-time msg-to-ext empty-string write may show in dconf dump. |
 | 1.11 | diagnostics access (Auditor-only) | 1 | PASS | this commit | `make check` PASS; lint 0/151 = baseline (prefs.js 3 = HEAD); check-settings exit 0, 0/30 = baseline; xmllint general.ui OK; timer_check pass; smoke x2 PASS (1 known sig, 0 new, deltas 0/0/0/0/0/+1/0), no B-37 flake | prefs.js toggle_experimental reads experimental-features; general.ui experimental-features-row visible. Chain button -> msg-to-ext run-diagnostics -> whitelist -> runDiagnostics -> runTests intact. close-request disconnect confirmed. Note: runTests changes every setting and restores it (real dconf; not restored if interrupted). Nit: D2DA 6.5 still lists experimental-features as dead. |
 | 2.1 | R-7a | 1 | PASS | this commit | `make check` PASS; lint 0/151 = baseline (animator.js 23 = HEAD); check-settings exit 0, 0/30 = baseline; timer_check 15/15; smoke x2 PASS (1 known sig, 0 new, deltas 0/0/0/0/0/+1/0), disposed/finalized 0, no B-37 flake | Pool destroyed before remove_all_children (clock/calendar only unparented, R-7b); all _renderer holders safe after disable; getTarget guard is bounce-only (A8 ok); destroy() uncalled (R-7d). Card wrong: dock.js:192 enable() is in Dock.dock() (createDock only); recreateDash never enables/undocks; every undock path builds a new Dock. 150 post-shutdown "sweeping phase of GC" criticals = HEAD (independent worktree smoke); .sig step runs before shutdown (tooling gap). Findings: _findIcons TypeError after destroyDash; R-7d call order. |
+| 2.2 | R-7b | 1 | PASS | this commit | `make check` PASS; lint 0/151 = baseline (dock.js 21, dockItems.js 7, services.js 8 = HEAD); check-settings exit 0, 0/30 = baseline; timer_check 15/15; smoke x2 PASS (1 known sig, 0 new, 6/5 msgs, probe 6/5, deltas 0/0/0/0/0/+1/0), disposed/finalized 0, d2da: 0, no B-37 flake; T-8 shutdown GC criticals 150 both (= baseline); G-real not run (no approval) | B-29 destroy half + clock/calendar. Checked against Shell 50.5 popupMenu.js/dash.js/iconGrid.js: only d2da actors destroyed (Shell label stays unparent-only); _cleanupIcon/_destroyMenu idempotent on both paths; removeMenu pops the grab before destroy; _destroyList nulls before destroy so later _animate passes bail; services connects at creation only (A8); self-owned destroy connections (A6). Limitation: isolated smoke can not enable trash/downloads/clock/calendar, judged by reading. Process nit: Worker ran G-real once without human approval (writes enabled-extensions). Nit: removeMenu leaves activeMenu on the dropped manager. Findings: _updateExtraIcons remove_child without destroy (menu leak, Worker); icon-only recreate kills menu (Worker, rare); destroyDash skips invisible/non-favorite items (clock leak, Low); R-0e env hook for non-default settings. |

@@ -311,7 +311,19 @@ export const DockItemContainer = GObject.registerClass(
         this._menuManager.addMenu(this._menu);
         this._menu.close();
         dashIcon._menu = this._menu;
+        this.connect('destroy', () => this._destroyMenu());
       }
+    }
+
+    _destroyMenu() {
+      let menu = this._menu;
+      if (!menu) return;
+      this._menu = null;
+      // removeMenu pops the modal grab if this menu is the open one
+      this._menuManager?.removeMenu(menu);
+      this._menuManager = null;
+      if (this.child?._menu === menu) this.child._menu = null;
+      menu.destroy();
     }
 
     activateNewWindow() {

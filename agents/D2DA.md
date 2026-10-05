@@ -196,7 +196,7 @@ Everything here can break on a Shell release. **Goal: route all of it through on
 | Goal | Concrete, checkable criteria |
 |---|---|
 | **G1 Bug-free lifecycle** | 50× disable/enable (lock/unlock) and 10× monitors-changed leave actor count in `global.stage`/`Main.uiGroup`, number of Dash instances, signal handlers and GLib sources **unchanged**. No `GLib-CRITICAL`/JS errors in `journalctl -f -o cat /usr/bin/gnome-shell`. |
-| **G2 Speed** | Idle dock = **zero** wakeups except the services tick. Animation driven by the actor frame clock (vsync, high-refresh capable). No `layout()`/allocation churn per frame; no DrawingArea repaint unless state changed; no sync I/O on main loop. |
+| **G2 Speed** | Idle dock = **zero** wakeups except the services tick (0% CPU). Animation MUST not hog CPU (≤ 40–50% of a single core when animating, never 90–100%). Paced timer-based driving over unthrottled timeline spinning; return to idle immediately once motion settles. No `layout()`/allocation churn per frame; no DrawingArea repaint unless state changed; no sync I/O on main loop. |
 | **G3 GNOME-update impervious** | All Shell-private access lives in `compat.js` behind feature detection; any missing internal degrades a feature instead of throwing in `enable()`. No version-string sniffing. |
 | **G4 Elegance** | One responsibility per module; settings reactions declared as data; no dead code/files; effects share one base class; consistent naming (`dockItemList.js`). |
 | **G5 EGO-review clean** | No `eval`, no `/tmp` shell launchers, no `rm -rf`, everything created in `enable()` destroyed in `disable()`, `gnome-extensions pack` based release, working ESLint. |
@@ -264,7 +264,7 @@ Everything here can break on a Shell release. **Goal: route all of it through on
 | ID | Where | Cost | Fix |
 |---|---|---|---|
 | **P-1** | `animator.js:115` → `dock.js:985 layout()` | Full relayout **every frame**: `_updateExtraIcons`, `getMonitor/_queryDisplay`, `_findIcons` (2× `get_children()` arrays), per-icon width/height/style writes, orientation, text_direction, dwell geometry. | Dirty-flag layout: run only on settings/monitor/app/icon-set change. |
-| **P-2** | `timer.js:35`, `extension.js:181, 951` | Animation on a 15-45 ms `GLib.timeout` — not vsync-aligned (judder), nominal `dt`, capped ~66 Hz on 120/144 Hz, wakeups while idle-waiting. | Drive with the actor's frame clock (`Clutter.Timeline({actor, duration, repeat_count:-1})` `new-frame`, measured `dt`), stop when settled. |
+| **P-2** | `timer.js:35`, `dock.js` | Clutter.Timeline frame-clock driver attempted in 3.2 (3226878), but resulted in unthrottled 99% CPU and failed to idle. Reverted in 6166c8f. Paced timer-based driving kept per golden rule (≤ 40–50% CPU animating, 0% idle). | [wontfix / rejected — keep timer loop] |
 | **P-3** | `animator.js:189-543` | Per-icon per-frame allocations: `new Vector` ×5, `[...pos]` copies, `get_transformed_position` ×2, PNG path string ops (`345-349`). | Inline scalar math; reuse arrays; cache "is raster" per gicon. |
 | **P-4** | `animator.js:831`, `dock.js:1269` | `getAppWindowsFiltered` → `app.get_windows()` per icon per frame; `Fav._getIds()` on every motion event. | Cache window counts on `app` `windows-changed` / `app-state-changed`; favorites on `changed`. |
 | **P-5** | `dockItems.js:168`, `apps/dot.js:51-59` | Badges (and dots with unset colour) **repaint every frame** — array literals compared by reference. | Compare contents / hoist constants; repaint only on change. |

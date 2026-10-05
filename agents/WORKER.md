@@ -25,6 +25,7 @@ Required reading before touching code: `agents/D2DA.md` §2 (architecture, esp. 
 | W10 | Style: match the surrounding code (2 spaces, single quotes, `let`/`const` as the file does). No comments that restate code; do comment non-obvious GNOME quirks. |
 | W11 | You may **not** commit, stash, reset, checkout, branch, or push. Leave changes in the working tree. |
 | W12 | Can't do it safely (needs sudo, needs a human decision, card is wrong)? Make **no** partial edits; write `Status: BLOCKED` + reason in the Report. |
+| W13 | **CPU budget & Idle (G2 golden rule):** Never hog the CPU. Idle dock MUST consume 0% CPU (no spinning timers, no active timelines, zero wakeups while idle). When animating, CPU usage must stay low (≤ 40–50% of a single core; paced timer loop). Any change that prevents the dock from idling or pushes animation CPU above ~50% (such as unthrottled Clutter.Timeline spinning) is a regression and will be rejected. |
 
 ## 2. Procedure
 

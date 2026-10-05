@@ -37,6 +37,7 @@ Inputs: `git diff`, the task card + "Current Assignment" + "Report" in `agents/W
 | A11 | **Schema changes** (if any): `make build` (`glib-compile-schemas --strict`) passes; `preferences/keys.js` and `ui/*.ui` agree; key removals carry a migration note and an Orchestrator human-gate. | §6.5, R-20 |
 | A12 | **Style:** matches surrounding code; no comments restating code; no debug `console.log` left behind (`console.log` only for lifecycle messages already present). | W10 |
 | A13 | **Report honesty:** Worker's Files changed / verification claims match reality. Mismatch = FAIL. | — |
+| A14 | **CPU budget & Idle (G2 golden rule):** Dock must return to 0% CPU when idle (no unthrottled timelines, spinning loops, or active animation callbacks). Animation CPU must stay low (≤ 40–50% of a single core). Any change that pegs CPU at 90-100% or prevents the dock from idling is an instant FAIL. | WORKER W13 |
 
 ## 3. Gates (all required unless marked advisory)
 

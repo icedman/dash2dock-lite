@@ -84,22 +84,22 @@ Minor nits (naming, a stray blank line) that don't violate a rule: list them as 
 > Overwritten each cycle. On FAIL the Worker reads this for its rework.
 
 ```
-Cycle / Task / Attempt: 2.8 / R-9c / 1
+Cycle / Task / Attempt: 2.9 / R-9d / 1
 Verdict:          PASS
-Commit:           this commit (fix(paths): use standard XDG user paths and harden config loading)
-Gates:            check=PASS ; lint=PASS 0 err / 145 warn (baseline 145; dock.js 21, extension.js 13, prefs.js 3, services.js 4, utils.js 0 <= HEAD) ;
+Commit:           this commit (fix(style): CSS in runtime dir without /tmp per shell instance)
+Gates:            check=PASS ; lint=PASS 0 err / 140 warn (baseline 145; extension.js 11 <= HEAD, prefs.js 2 <= HEAD, style.js 0 <= HEAD, utils.js 0 <= HEAD) ;
                   settings=exit 0, 0/30 ; timer_check all passed (15/15) ;
                   window_tracker_check all passed (20/20) ; smoke x2 PASS (1 known sig, 0 new,
                   6/5 msgs, 6/5 probe lines, ALL deltas 0) ; strict x1 PASS (counts 6/5, ALL deltas 0,
                   shutdown criticals 0) ; settings variant strict PASS (deltas 0, crit 0) ;
                   disposed/finalized/already been destroyed = 0 and `d2da: ` = 0 in all runs.
                   No orphaned headless shell. G-real NOT run (W3).
-Scope:            services.js, dock.js, extension.js, prefs.js, utils.js (+152/-60 across tree).
+Scope:            style.js, utils.js, prefs.js, extension.js (+87/-33 across code files).
 Rule violations:  none. A1-A10, A12, A13 clean (A11 n/a).
-Specific checks:  utils.js getDownloadsDir/getDocumentsDir resolve standard XDG paths; loadFile wraps load_contents_finish in try/catch and rejects on failure; extension.js _loadConfig/_unloadConfig use GLib.get_user_config_dir() and log errors with d2da prefix; prefs.js loads themes from user config dir; services.js and dock.js resolve absolute downloads path and avoid relative cwd paths.
+Specific checks:  style.js uses per-instance ID in XDG_RUNTIME_DIR (d2da-${name}-${INSTANCE_ID}.css); unloadAll safely catches and ignores Gio.IOErrorEnum.NOT_FOUND on file deletion and unloads stylesheet; build cleans up previous stylesheet on path change; utils.js tempPath resolves to runtime dir; prefs.js saves theme export to user config dir (~/.config/d2da/theme.json); extension.js removes unused tempPath import.
 Rework list:      none.
-Findings confirmed: B-21, B-22.
-Human check needed: no (covered by automated smoke suites and unit tests).
+Findings confirmed: B-37.
+Human check needed: yes (end of Phase 2 wrap-up).
 ```
 
 ## 7. Audit Log (append-only, newest last)
@@ -134,6 +134,8 @@ Human check needed: no (covered by automated smoke suites and unit tests).
 | 2.7 | R-9b | 1 | PASS | this commit | check=PASS; lint 0/145 (baseline 150; services.js 4, dock.js 21, dockItems.js 6 <= HEAD); check-settings exit 0, 0/30; timer_check 15/15; window_tracker_check 20/20; smoke x2 PASS (1 known sig, 0 new, ALL deltas 0); strict PASS (6/5 lines, ALL deltas 0, 0 crit); settings variant strict PASS (deltas 0, crit 0); 0 tmp desktop files; disposed/finalized 0, `d2da: ` 0 | B-10 fixed. In-memory Gio.DesktopAppInfo created from GLib.KeyFile without writing .desktop files to /tmp; paths shell_quoted in Exec; services.trashApp, folderApps, mountApps managed; dock.createItem and DockItemContainer accept DesktopAppInfo and construct menu. |
 | — | human request | 1 | PASS | d3ba248 | check=PASS; lint 0/145 = baseline (animator.js 23 = HEAD); check-settings exit 0, 0/30; timer_check 15/15; window_tracker_check 20/20; smoke x2 PASS (1 known sig, 0 new, ALL deltas 0); strict PASS (6/5 lines, ALL deltas 0, 0 crit); disposed/finalized 0, `d2da: ` 0 | Animator pool precreation guard: `_precreateResources` returns false when `did_create` is true, deferring frame execution until newly added pool actors settle. |
 | 2.8 | R-9c | 1 | PASS | this commit | check=PASS; lint 0/145 = baseline; check-settings exit 0, 0/30; timer_check 15/15; window_tracker_check 20/20; smoke x2 PASS (1 known sig, 0 new, ALL deltas 0); strict PASS (6/5 lines, ALL deltas 0, 0 crit); settings variant strict PASS (deltas 0, crit 0); disposed/finalized 0, d2da: 0 | B-21, B-22 fixed. Standard XDG paths used via GLib.get_user_special_dir and GLib.get_user_config_dir; loadFile try/catch and error rejection; _loadConfig error logging with d2da prefix; no relative cwd paths in active runtime code. |
+| 2.9 | R-9d | 1 | PASS | this commit | check=PASS; lint 0/140 (baseline 145; extension.js 11, prefs.js 2 <= HEAD); check-settings exit 0, 0/30; timer_check 15/15; window_tracker_check 20/20; smoke x2 PASS (1 known sig, 0 new, ALL deltas 0); strict PASS (6/5 lines, ALL deltas 0, 0 crit); settings variant strict PASS (deltas 0, crit 0); 0 tmp css files; disposed/finalized 0, `d2da: ` 0 | B-37 fixed. Per-instance CSS stylesheet in $XDG_RUNTIME_DIR; unloadAll ignores Gio.IOErrorEnum.NOT_FOUND on delete; tempPath uses user runtime dir; prefs exports theme to ~/.config/d2da/theme.json; unused imports removed. Phase 2 complete. |
+
 
 
 

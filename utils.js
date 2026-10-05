@@ -14,13 +14,13 @@ const pointer_wrapper = {
 };
 
 /**
- * Return a path in /tmp folder with a unique name
+ * Return a path in user runtime directory with a unique name
  * @param {*} path
  * @returns {string}
  */
 export const tempPath = (path) => {
-  let uuid = GLib.get_user_name(); // Main.overview.d2dl.uuid;
-  return `/tmp/${uuid}-${path}`;
+  const runtimeDir = GLib.get_user_runtime_dir() || GLib.get_tmp_dir();
+  return GLib.build_filenamev([runtimeDir, `d2da-${path}`]);
 };
 
 export const getPointer = () => {

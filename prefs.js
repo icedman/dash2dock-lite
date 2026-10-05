@@ -16,7 +16,6 @@ import {
   ExtensionPreferences,
   gettext as _,
 } from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
-import { tempPath } from './utils.js';
 
 export default class Preferences extends ExtensionPreferences {
   constructor(metadata) {
@@ -332,9 +331,16 @@ export default class Preferences extends ExtensionPreferences {
         title: 'My Theme',
       };
 
-      let fn = Gio.File.new_for_path(tempPath('theme.json'));
+      const exportDir = GLib.build_filenamev([
+        GLib.get_user_config_dir(),
+        'd2da',
+      ]);
+      GLib.mkdir_with_parents(exportDir, 0o700);
+      const exportPath = GLib.build_filenamev([exportDir, 'theme.json']);
+
+      let fn = Gio.File.new_for_path(exportPath);
       let content = JSON.stringify(json, null, 4);
-      const [, etag] = fn.replace_contents(
+      fn.replace_contents(
         content,
         null,
         false,
@@ -343,7 +349,7 @@ export default class Preferences extends ExtensionPreferences {
       );
 
       this.window.add_toast(
-        new Adw.Toast({ title: `Saved to ${tempPath('theme.json')}` })
+        new Adw.Toast({ title: `Saved to ${exportPath}` })
       );
 
       this._builder.get_object('theme-export-notice').visible = true;

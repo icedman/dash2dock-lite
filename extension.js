@@ -27,7 +27,6 @@ import Shell from 'gi://Shell';
 import Graphene from 'gi://Graphene';
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
-import { tempPath, trySpawnCommandLine } from './utils.js';
 import { loadFile } from './utils.js';
 
 import { Timer } from './timer.js';

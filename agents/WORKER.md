@@ -59,15 +59,16 @@ Isolated smoke can't change settings from outside (memory backend is in-process)
 > Written by the ORCHESTRATOR only. Worker: do not edit this section.
 
 ```
-Cycle:      2.8
-Task:       R-9c — Use standard XDG user paths and harden config loading (B-21, B-22)
+Cycle:      2.9
+Task:       R-9d — CSS in runtime dir without /tmp per shell instance (B-37)
 Attempt:    1
-Card:       §6 "R-9c"
-Notes:      HEAD d3ba248. Strict leaks are ON.
-            (B-22) Replace relative 'Downloads', 'Documents', and '.config/d2da' paths with
-            GLib.get_user_special_dir / GLib.get_user_config_dir.
-            (B-21) Fix loadFile in utils.js: wrap load_contents_finish in try/catch, return after reject,
-            catch loadConfig errors in extension.js.
+Card:       §6 "R-9d"
+Notes:      HEAD 4b343d1. Final task of Phase 2 (Lifecycle). Strict leaks are ON.
+            (B-37) Stop writing custom-d2dl.css to /tmp/<user>-*.css.
+            Use GLib.get_user_runtime_dir() with per-instance isolation (e.g. PID or instance id).
+            Catch and ignore Gio.IOErrorEnum.NOT_FOUND in Style.unloadAll().
+            Remove unused tempPath import in extension.js.
+            Update prefs.js theme export to user config / runtime dir.
             G-real: NOT allowed (W3).
             Gates: check; lint 0/145; check-settings exit 0 (0/30); timer_check 15/15;
             window_tracker_check 20/20; smoke 1 known sig; strict PASS.
@@ -78,37 +79,32 @@ Notes:      HEAD d3ba248. Strict leaks are ON.
 > Overwritten by the WORKER each cycle; read by the AUDITOR.
 
 ```
-Cycle / Task / Attempt: 2.8 / R-9c / 1
+Cycle / Task / Attempt: 2.9 / R-9d / 1
 Status:            DONE (all items in one cycle, nothing deferred)
-Files changed:     utils.js, extension.js, prefs.js, services.js, dock.js. HEAD d3ba248.
+Files changed:     style.js, utils.js, prefs.js, extension.js. HEAD 4b343d1.
                    agents/*.md untouched except this Report.
 What changed:
+  - style.js:
+    - (B-37) Defined `INSTANCE_ID` using `Gio.Credentials().get_unix_pid()` with fallback to `GLib.uuid_string_random()`.
+    - (B-37) Generated CSS path in `$XDG_RUNTIME_DIR` (`GLib.get_user_runtime_dir()` with fallback to `GLib.get_tmp_dir()`)
+      as `d2da-${name}-${INSTANCE_ID}.css`, ensuring directory exists via `GLib.mkdir_with_parents(..., 0o700)`.
+    - (B-37) In `build()`: cleaned up previous stylesheet files if the target path changes, or safely overwrote destination.
+    - (B-37) In `unloadAll()`: safely caught and ignored `Gio.IOErrorEnum.NOT_FOUND` on deleting stylesheet files;
+      logged unexpected errors with `console.error('d2da: style unloadAll', err)`.
+    - Removed unused `tempPath` import and unused `etag` binding.
   - utils.js:
-    - (B-22) Added `getDownloadsDir()` and `getDocumentsDir()` resolving standard XDG directories via
-      `GLib.get_user_special_dir` with fallbacks to `GLib.build_filenamev([GLib.get_home_dir(), ...])`.
-    - (B-21) In `loadFile`: wrapped `load_contents_finish` in a `try ... catch` block, added immediate
-      `return` after `reject(new Error('unable to load file'))`, and rejected with caught error on exception.
-  - extension.js:
-    - (B-22) In `_loadConfig()` and `_unloadConfig()`: resolved config directory via
-      `GLib.build_filenamev([GLib.get_user_config_dir(), 'd2da'])` instead of relative `'.config/d2da'`.
-      Constructed paths for `config.json`, `icons.json`, `style.css`, and SVG files via `GLib.build_filenamev`.
-    - (B-21) In `_loadConfig()`: logged errors with `console.error('d2da: loadConfig', err)`.
-      Added `.catch(...)` handler to the `_loadConfig()` invocation in `enable()`.
+    - (B-37) Updated `tempPath` to construct paths under user runtime directory (`GLib.get_user_runtime_dir()` or fallback
+      `GLib.get_tmp_dir()`) using `GLib.build_filenamev` instead of hardcoded `/tmp/${uuid}-${path}`.
   - prefs.js:
-    - (B-22) Resolved custom themes directory via `GLib.build_filenamev([GLib.get_user_config_dir(), 'd2da', 'themes'])`
-      instead of relative `'.config/d2da/themes'`.
-  - services.js:
-    - (B-22) In `setupDownloads()`: initialized `_downloadsDir` with `getDownloadsDir()` fallback instead of `'Downloads'`.
-    - (B-22) In `setupFolderIcons()`: passed resolved `getDownloadsDir()` and `getDocumentsDir()` to `setupFolderIcon()`.
-    - (B-22) In `checkRecentFilesInFolder(path)`: constructed child file paths with `GLib.build_filenamev([path, fileName])`
-      instead of path concatenation or relative `Downloads/${fileName}`.
-  - dock.js:
-    - (B-22) In `_updateExtraIcons()`: resolved `downloadsPath` from `this.extension.services?._downloadsDir?.get_path()`
-      with `getDownloadsDir()` fallback, used for `folder` and `setupFolderIcon(...)`.
-    - Removed unused `Gio` import.
+    - (B-37) In theme export: saved `theme.json` to user config directory `GLib.build_filenamev([GLib.get_user_config_dir(), 'd2da', 'theme.json'])`,
+      ensuring directory exists via `GLib.mkdir_with_parents(..., 0o700)`.
+    - (B-37) Updated toast notification to display the new export path.
+    - Removed unused `tempPath` import and unused `etag` binding.
+  - extension.js:
+    - Removed unused `tempPath` (and `trySpawnCommandLine`) import line from `./utils.js`.
 Self-verification:
   - `make check`: OK.
-  - `make lint`: 0 errors / 145 warnings.
+  - `make lint`: 0 errors / 140 warnings (down from 145 warnings at HEAD).
   - `python3 -B tools/check-settings.py`: 0 errors, 30 warnings, exit 0.
   - `gjs -m tests/timer_check.js`: all passed (15/15).
   - `gjs -m tests/window_tracker_check.js`: all passed (20/20).
@@ -427,9 +423,29 @@ Phase 2-5 cards are *stubs*: the Orchestrator expands a stub into a full card (s
 - **Don't:** Don't touch CSS stylesheet loading logic or theme generation (that's R-9d). Don't break desktop file generation in memory (R-9b). Don't add synchronous I/O or new polling timers.
 - **Accept:** All file paths resolve to absolute paths rooted at standard XDG directories; no relative paths to process cwd; `make check`, `make lint` (0 errors, ≤ 145 warnings), `tools/check-settings.py` (exit 0), unit tests pass, `make smoke` and strict smoke pass with 0 new signatures and all deltas 0.
 - **Verify:** `make check`; `make lint`; `python3 -B tools/check-settings.py`; `gjs -m tests/timer_check.js`; `gjs -m tests/window_tracker_check.js`; `D2DA_SMOKE_STRICT_LEAKS=1 tools/smoke-shell.sh 5`; `make smoke`.
-- **Human:** no.
-
-- **R-9d** CSS from runtime dir / in-memory, per shell instance (B-37).
+#### R-9d — CSS in runtime dir without /tmp per shell instance (B-37)
+- **Fixes:** B-37.
+- **Scope:** `style.js`; `utils.js`; `prefs.js`; `extension.js`.
+- **Context (HEAD 4b343d1):**
+  - In `style.js`, `Style.build` constructs `fn = Gio.File.new_for_path(tempPath(`${name}.css`))`, which delegates to `utils.js:tempPath`: `/tmp/${GLib.get_user_name()}-${path}`.
+  - When the user runs a real GNOME session and the automated smoke test starts a nested GNOME Shell as the same user, both write and delete `/tmp/<user>-custom-d2dl.css`.
+  - In `Style.unloadAll()`, `fn.delete(null)` throws and logs when another instance already deleted the file or when racing, causing intermittent smoke test failures and leaving one instance without stylesheet (B-37).
+  - In `prefs.js`, `tempPath('theme.json')` is used when exporting a theme.
+  - In `extension.js`, `tempPath` is imported on line 30 but never used (causing an eslint warning).
+- **Do:**
+  - (B-37 per-instance runtime dir):
+    - Replace writing to `/tmp` with `GLib.get_user_runtime_dir()` (or fallback to `GLib.get_tmp_dir()`).
+    - Make the generated CSS path per-instance by including a unique identifier: e.g. process ID or an instance UUID:
+      `GLib.build_filenamev([GLib.get_user_runtime_dir(), `d2da-${name}-${GLib.getpid()}.css`])`. Ensure parent directory is created if needed.
+    - In `style.js:unloadAll()`, when deleting the stylesheet file, catch and ignore `Gio.IOErrorEnum.NOT_FOUND` (e.g. `GLib.Error.matches(err, Gio.IOErrorEnum, Gio.IOErrorEnum.NOT_FOUND)`). Log other unexpected errors with `console.error('d2da: style unloadAll', err)`.
+    - In `style.js:build()`, clean up previous stylesheet files if the filename changes, or overwrite safely.
+    - In `utils.js`, update or replace `tempPath` so that any temporary/runtime path uses `GLib.get_user_runtime_dir()` rather than hardcoded `/tmp`.
+    - In `prefs.js`, save exported theme to user config or runtime dir (e.g. `GLib.build_filenamev([GLib.get_user_config_dir(), 'd2da', 'theme.json'])` or runtime dir) and update toast notice.
+    - In `extension.js`, remove unused `tempPath` import.
+- **Don't:** Don't break dynamic stylesheet reloading when settings change. Don't leave orphaned temporary files behind when `unloadAll()` runs. Don't add synchronous I/O or new polling timers.
+- **Accept:** Zero files written to `/tmp` by `style.js`; concurrent shell instances do not collide or delete each other's stylesheets; `make check`, `make lint` (0 errors, ≤ 145 warnings; unused import warning in extension.js resolved), `tools/check-settings.py` (exit 0), unit tests pass, `make smoke` and strict smoke pass with 0 new signatures and all deltas 0.
+- **Verify:** `make check`; `make lint`; `python3 -B tools/check-settings.py`; `gjs -m tests/timer_check.js`; `gjs -m tests/window_tracker_check.js`; `D2DA_SMOKE_STRICT_LEAKS=1 tools/smoke-shell.sh 5`; `make smoke`.
+- **Human:** yes (end of Phase 2 wrap-up).
 
 ### Phase 3 — Speed (stubs)
 - **R-10** split `layout()` → `relayout()` on dirty flag; `animate` must not call `layout()` (P-1).

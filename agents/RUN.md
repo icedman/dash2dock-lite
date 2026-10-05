@@ -135,8 +135,8 @@ Status: `[ ]` todo · `[~]` in progress · `[x]` done (hash) · `[!]` blocked ·
 | [x] c0391da | 2.5 | R-8 services cancellables / dt | 2.4 | B-25, B-36 |
 | [x] 8fab2a5 | 2.6 | R-9a trash via Gio | 2.5 | B-8 · human visual |
 | [x] 1553b9d | 2.7 | R-9b launchers in memory | 2.5 | B-10 |
-| [~] | 2.8 | R-9c XDG paths | 2.5 | B-21, B-22 |
-| [ ] | 2.9 | R-9d CSS without /tmp | 2.5 | HUMAN — end of phase 2 |
+| [x] 4b343d1 | 2.8 | R-9c XDG paths | 2.5 | B-21, B-22 |
+| [~] | 2.9 | R-9d CSS without /tmp | 2.5 | B-37 · HUMAN — end of phase 2 |
 
 ### Phase 3 — Speed (G2)
 | | Cycle | Task | Depends | Notes |
@@ -174,8 +174,8 @@ Status: `open` · `fixed <hash>` · `partial <hash>` · `blocked` · `wontfix (r
 |---|---|---|---|---|---|---|
 | B-1 | R-7d | fixed d95bb11 (dock side; lock-screen session-modes separate) | | B-19 | R-4c | fixed 1b03ca7 |
 | B-2 | R-1 | fixed ef879f9 | | B-20 | R-4a | fixed c9ca876 |
-| B-3 | R-3 | fixed dda62a5 (defensive guard only; premise wrong, see D2DA) | | B-21 | R-9c | open |
-| B-4 | R-3 | fixed dda62a5 | | B-22 | R-9c | open |
+| B-3 | R-3 | fixed dda62a5 (defensive guard only; premise wrong, see D2DA) | | B-21 | R-9c | fixed 4b343d1 |
+| B-4 | R-3 | fixed dda62a5 | | B-22 | R-9c | fixed 4b343d1 |
 | B-5 | R-4a | fixed c9ca876 | | B-23 | R-1 | fixed ef879f9 |
 | B-6 | R-1, R-2 | fixed ef879f9 + c84f252 | | B-24 | R-1, R-11b | partial ef879f9 (`typeof func` typo; resolution collapse in R-11b) |
 | B-7 | R-2 | fixed c84f252 | | B-25 | R-8 | fixed c0391da |
@@ -353,3 +353,6 @@ Format: `YYYY-MM-DD HH:MM · cycle · EVENT · details` where EVENT ∈ `SETUP, 
 - 2026-10-05 · — · AUDIT-PASS · `d3ba248` (human request: defer frame when precreating animator pool resources). check=PASS lint=0/145 settings=exit 0 timer_check 15/15 window_tracker_check 20/20 smoke=PASS(x2) strict=PASS all deltas 0 shutdown criticals 0.
 - 2026-10-05 · 2.8 · PREFLIGHT · tree clean apart from agents/*; HEAD `d3ba248`; GNOME Shell 50.5.
 - 2026-10-05 · 2.8 · ASSIGN · R-9c XDG paths (B-21, B-22). Stub expanded.
+- 2026-10-05 · 2.8 · AUDIT-PASS · `4b343d1`. check=PASS lint=0/145 settings=exit 0 timer_check 15/15 window_tracker_check 20/20 smoke=PASS(x2) strict=PASS all deltas 0 shutdown criticals 0. B-21, B-22 fixed: standard XDG paths via GLib.get_user_special_dir / GLib.get_user_config_dir; loadFile try/catch with early return on reject; loadConfig error logging.
+- 2026-10-05 · 2.9 · PREFLIGHT · tree clean apart from agents/*; HEAD `4b343d1`; GNOME Shell 50.5.
+- 2026-10-05 · 2.9 · ASSIGN · R-9d CSS in runtime dir without /tmp per shell instance (B-37). Stub expanded.

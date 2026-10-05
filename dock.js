@@ -143,6 +143,25 @@ export let Dock = GObject.registerClass(
         this.autohider._onLeaveEvent.bind(this.autohider),
         this
       );
+
+      this._timeline = new Clutter.Timeline({
+        actor: this,
+        duration: 1000,
+        repeat_count: -1,
+      });
+      this._timeline.connectObject(
+        'new-frame',
+        () => {
+          if (this._destroyed || !this._timeline) return;
+          let dt = this._timeline.get_delta();
+          if (!dt || dt <= 0 || isNaN(dt)) {
+            dt = this.animationInterval || 16;
+          }
+          if (dt > 100) dt = 100;
+          this.animate(dt);
+        },
+        this
+      );
     }
 
     destroy() {
@@ -151,6 +170,15 @@ export let Dock = GObject.registerClass(
         this.undock();
         this.cancelAnimations();
         this.destroyDash();
+
+        if (this._timeline) {
+          if (this._timeline.is_playing()) {
+            this._timeline.stop();
+          }
+          this._timeline.disconnectObject(this);
+          this._timeline.set_actor(null);
+          this._timeline = null;
+        }
 
         // before super.destroy() takes renderArea with it
         this.animator.destroy();
@@ -255,6 +283,10 @@ export let Dock = GObject.registerClass(
       this.autohider.disable();
       this.removeFromChrome();
       this.animator.disable();
+
+      if (this._timeline?.is_playing()) {
+        this._timeline.stop();
+      }
 
       // autohider.disable() -> show() -> slideIn() may re-arm these
       this.extension._hiTimer?.cancel(this._animationSeq);
@@ -1339,7 +1371,12 @@ export let Dock = GObject.registerClass(
       this.animator._computed = null;
     }
 
-    animate(dt = 15) {
+    animate(dt = 16) {
+      if (!dt || dt <= 0 || isNaN(dt)) {
+        dt = this.animationInterval || 16;
+      }
+      if (dt > 100) dt = 100;
+
       if (this._preview) {
         let p = null;
 
@@ -1403,24 +1440,15 @@ export let Dock = GObject.registerClass(
       // if (caller) {
       //   console.log(`animation triggered by ${caller}`);
       // }
-      if (this.extension._hiTimer && this.debounceEndSeq) {
+      if (this.extension._loTimer && this.debounceEndSeq) {
         this.extension._loTimer.runDebounced(this.debounceEndSeq);
-        // this.extension._loTimer.cancel(this.debounceEndSeq);
+      } else {
+        this._debounceEndAnimation();
       }
 
       this.animationInterval = this.extension.animationInterval;
-      if (this.extension._hiTimer) {
-        if (!this._animationSeq) {
-          this._animationSeq = this.extension._hiTimer.runLoop(
-            (s) => {
-              this.animate(s._delay);
-            },
-            this.animationInterval,
-            'animationTimer'
-          );
-        } else {
-          this.extension._hiTimer.runLoop(this._animationSeq);
-        }
+      if (this.get_stage() && this._timeline && !this._timeline.is_playing()) {
+        this._timeline.start();
       }
     }
 
@@ -1432,6 +1460,10 @@ export let Dock = GObject.registerClass(
       }
 
       this._updateFocusedIcon();
+
+      if (this._timeline?.is_playing()) {
+        this._timeline.stop();
+      }
 
       if (this.extension._hiTimer) {
         this.extension._hiTimer.cancel(this._animationSeq);
@@ -1468,9 +1500,12 @@ export let Dock = GObject.registerClass(
     }
 
     cancelAnimations() {
-      this.extension._hiTimer.cancel(this._animationSeq);
+      if (this._timeline?.is_playing()) {
+        this._timeline.stop();
+      }
+      this.extension._hiTimer?.cancel(this._animationSeq);
       this._animationSeq = null;
-      this.extension._hiTimer.cancel(this.autohider._animationSeq);
+      this.extension._hiTimer?.cancel(this.autohider._animationSeq);
       this.autohider._animationSeq = null;
     }
 

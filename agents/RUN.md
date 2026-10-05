@@ -141,8 +141,8 @@ Status: `[ ]` todo · `[~]` in progress · `[x]` done (hash) · `[!]` blocked ·
 ### Phase 3 — Speed (G2)
 | | Cycle | Task | Depends | Notes |
 |---|---|---|---|---|
-| [~] | 3.1 | R-10 dirty-flag `relayout()` | 2.4 | P-1 · human visual |
-| [ ] | 3.2 | R-11a frame-clock driver | 3.1 | P-2 · human visual |
+| [x] 37f059d | 3.1 | R-10 dirty-flag `relayout()` | 2.4 | P-1 · human visual |
+| [~] | 3.2 | R-11a frame-clock driver | 3.1 | P-2 · human visual |
 | [ ] | 3.3 | R-11b exact debounces | 3.2 | B-24 |
 | [ ] | 3.4 | R-11c drop `animation-fps` hack | 3.3 | |
 | [ ] | 3.5 | R-12 allocation-free animator (split per P-id) | 3.1 | P-3..P-7, P-11 |
@@ -190,7 +190,7 @@ Status: `open` · `fixed <hash>` · `partial <hash>` · `blocked` · `wontfix (r
 | B-16 | R-4a | fixed c9ca876 | | B-34 | R-4b | fixed 8f44419 |
 | B-17 | R-4c | fixed 1b03ca7 | | B-35 | B-35 | deferred (needs real-dconf / BMS test) |
 | B-18 | R-4c | fixed 1b03ca7 | | T-4 | R-0d | deferred (no release for now) |
-| P-1 | R-10 | open | | P-7 | R-12 | open |
+| P-1 | R-10 | fixed 37f059d | | P-7 | R-12 | open |
 | P-2 | R-11a | open | | P-8 | (unassigned, BMS) | open |
 | P-3..P-6 | R-12 | open | | P-9, P-10 | R-13 | open |
 | P-11 | R-12 | open | | §6.3 low bugs | batch after phase 1 | open |
@@ -213,7 +213,7 @@ Unassigned rows: when a phase ends, either add a card + board row for them or ma
 | Probe after-disable deltas, 5 toggles (uiGroup / stage / dashes / docks / hi / lo / loop / liveDock / liveDash / liveAnimator) | **d95bb11: all 0.** 523cec2: 0 / 0 / 0 / 0 / 0 / 0 / 0 / **+4 / +4 / +4** (B-1). At 2bbf52d `lo` was +1 (T-5 artifact, fixed). Absolute `stage` varies per run ⇒ deltas only | 523cec2 |
 | Shutdown criticals (T-8, "sweeping phase of GC") | **d95bb11: 0** (default and settings variant). 523cec2: 150 at 5 toggles = 30 per toggle (90 @3, 60 @2); 200 with the settings variant. R-7d target ≈ 0 | 523cec2 |
 | Strict leaks (`D2DA_SMOKE_STRICT_LEAKS=1` in G-leaks) | **ON** since d95bb11. Flake policy: a strict FAIL only on probe line counts (missed `gnome-extensions disable`, T-9) ⇒ rerun once; fail if it repeats | d95bb11 |
-| ESLint warnings (errors) | 140 (0) at d96998c; 145 (0) at 1553b9d; 150 (0) at deb31fb; 151 at 5840f29; 154 at 0821a56; 158 at 1b03ca7; 162 at c9ca876; 166 at ef879f9; 168 at 2a0ae6f. no-unused-vars 162, no-undef 5, no-duplicate-case 1; only remaining demotion: `no-undef: warn` in extension.js for the dead `_onKeyPressed` Clutter use (delete in R-18/R-21) | 2a0ae6f |
+| ESLint warnings (errors) | 139 (0) at 37f059d; 140 (0) at d96998c; 145 (0) at 1553b9d; 150 (0) at deb31fb; 151 at 5840f29; 154 at 0821a56; 158 at 1b03ca7; 162 at c9ca876; 166 at ef879f9; 168 at 2a0ae6f. no-unused-vars 162, no-undef 5, no-duplicate-case 1; only remaining demotion: `no-undef: warn` in extension.js for the dead `_onKeyPressed` Clutter use (delete in R-18/R-21) | 2a0ae6f |
 | check-settings issues | **5840f29: exit 0, 0 errors / 30 warnings ⇒ G-settings is now a hard gate (must exit 0).** c9ca876: 1 error (B-12) / 30 warnings. At cff438d: exit 1 by design. Errors 2: shared-adjustment 1 (B-12), duplicate-case 1 (B-16); missing-in-schema 0, widget-type 0. Warnings 30: missing-in-keys 5, key-no-widget 8, dead-setting 17 (§6.5 list + `msg-to-ext` false positive). Should exit 0 after R-4a + R-5 ⇒ then make G-settings a hard exit-code gate | cff438d |
 
 ### 5.1 Human-check queue
@@ -249,6 +249,7 @@ Items the agents can't see. The human runs `make test-shell` (needs `mutter-devk
 | 2.3 | deb31fb | Autohide + dodge on: move/resize a window over the dock ⇒ hides/shows; close it ⇒ shows; two monitors if available; autohide off/on | |
 | 2.4 | d95bb11 | Toggle extension several times; change preferred monitor + multi-monitor setting; lock/unlock; plug/unplug monitor ⇒ dock always renders, no duplicates, overview dash fine, clock/calendar/trash/downloads back after rebuild | |
 | 2.6 | 8fab2a5 | Right-click trash icon -> click "Empty Trash". Confirmation dialog appears (Cancel / Empty Trash). Cancel keeps trash, Empty Trash empties and updates icon | |
+| 3.1 | 37f059d | Hover magnify settles smoothly, icons scale and dock resizes properly on settings changes and monitor changes | |
 
 ## 6. Run Log (append-only, newest last)
 
@@ -361,3 +362,6 @@ Format: `YYYY-MM-DD HH:MM · cycle · EVENT · details` where EVENT ∈ `SETUP, 
 - 2026-10-05 · — · HUMAN · Crash fix: named Clutter/St actors (no "unnamed [ClutterActor]"), animator allocation & NaN guards, try/catch error boundary in animate() (CRASH.md).
 - 2026-10-05 · 3.1 · PREFLIGHT · tree clean; HEAD 748290b; GNOME Shell 50.5.
 - 2026-10-05 · 3.1 · ASSIGN · R-10 dirty-flag relayout() and remove per-frame layout() in animator (P-1). Stub expanded.
+- 2026-10-05 · 3.1 · AUDIT-PASS · `37f059d`. check=PASS lint=0/139 (−1) settings=exit 0 (0/30) timer_check 15/15 window_tracker_check 20/20 smoke=PASS(x2) strict=PASS all deltas 0 shutdown criticals 0. P-1 fixed: dirty-flag relayout() implemented in dock.js, per-frame dock.layout() eliminated from animator.js, monitors-changed/settings layout reactions wired. 1 human-check item queued.
+- 2026-10-05 · 3.2 · PREFLIGHT · tree clean apart from agents/*; HEAD 37f059d; GNOME Shell 50.5.
+- 2026-10-05 · 3.2 · ASSIGN · R-11a frame-clock animation driver via Clutter.Timeline (P-2). Stub expanded.

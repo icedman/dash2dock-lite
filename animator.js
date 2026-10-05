@@ -147,6 +147,11 @@ export let Animator = class {
     let dock = this.dock;
     if (!dock) return;
 
+    if (!dt || dt <= 0 || isNaN(dt)) {
+      dt = dock.animationInterval || 16;
+    }
+    if (dt > 100) dt = 100;
+
     if (dock._hoveredIcon) {
       dock._lastHoveredIcon = dock._hoveredIcon;
     }
@@ -179,10 +184,14 @@ export let Animator = class {
       let dst = 255 - dock.opacity;
       let mag = Math.abs(dst);
       let dir = Math.sign(dst);
-      if (opacityPerSecond > mag / dt) {
+      if (dt > 0 && opacityPerSecond > mag / dt) {
         opacityPerSecond = mag / dt;
       }
-      dock.opacity += Math.floor(opacityPerSecond * dt * dir);
+      let step = Math.floor(opacityPerSecond * dt * dir);
+      if (step === 0 && mag > 0) {
+        step = dir;
+      }
+      dock.opacity = Math.min(255, Math.max(0, dock.opacity + step));
       if (dock.renderArea.opacity < 255 && dock.opacity > 50) {
         dock.renderArea.opacity = dock.opacity;
       }

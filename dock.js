@@ -73,6 +73,7 @@ export let Dock = GObject.registerClass(
 
       this._alignment = DockAlignment.CENTER;
       this._monitorIndex = Main.layoutManager.primaryIndex;
+      this._needsLayout = true;
 
       this._background = new DockBackground({ name: 'd2daBackground' });
       this.add_child(this._background);
@@ -214,6 +215,8 @@ export let Dock = GObject.registerClass(
       this._trashIcon = null;
       this._recentFilesIcon = null;
       this._downloadsIcon = null;
+      this._needsLayout = true;
+      this.relayout(true);
       this._beginAnimation();
     }
 
@@ -241,7 +244,7 @@ export let Dock = GObject.registerClass(
       }
       this.animator.enable();
       this.addToChrome();
-      this.layout();
+      this.relayout(true);
       this._beginAnimation();
     }
 
@@ -324,11 +327,16 @@ export let Dock = GObject.registerClass(
     _onAppsChanged(evt) {
       this._favorite_ids = Fav.getAppFavorites()._getIds();
       this._icons = null;
+      this._needsLayout = true;
       this._fast_forward = 20;
       // this._debouncedBeginAnimation();
       this._beginAnimation();
       this.autohider._debounceCheckHide();
       return Clutter.EVENT_PROPAGATE;
+    }
+    _onMonitorsChanged() {
+      this._needsLayout = true;
+      this.relayout();
     }
     _onClock() {
       this._clock?.redraw();
@@ -620,6 +628,7 @@ export let Dock = GObject.registerClass(
       if (!c._destroyConnectId) {
         c._destroyConnectId = c.connect('destroy', () => {
           this._icons = null;
+          this._needsLayout = true;
           c._label = null;
           c._icon = null;
           c._appwell = null;
@@ -751,6 +760,7 @@ export let Dock = GObject.registerClass(
           p.remove_child(c._label);
         }
       }
+      this._needsLayout = true;
     }
 
     _findIcons() {
@@ -918,6 +928,7 @@ export let Dock = GObject.registerClass(
           _draggable._dragEndId = _draggable.connect('drag-end', () => {
             this._dragging = false;
             this._icons = null;
+            this._needsLayout = true;
           });
         }
       });
@@ -959,6 +970,7 @@ export let Dock = GObject.registerClass(
           if (!mountedIds.includes(id)) {
             extra.destroy();
             this._icons = null;
+            this._needsLayout = true;
           }
         });
 
@@ -970,6 +982,7 @@ export let Dock = GObject.registerClass(
             mountedIcon._mountId = mountId;
             mountedIcon._mountPath = mountId;
             this._icons = null;
+            this._needsLayout = true;
           }
         });
       }
@@ -1025,12 +1038,14 @@ export let Dock = GObject.registerClass(
         if (!this[f.icon] && f.show) {
           this[f.icon] = DockItemList.createItem(this, f);
           this._icons = null;
+          this._needsLayout = true;
         } else if (this[f.icon] && !f.show) {
           // unpin downloads icon; the list may be showing its files
           this._destroyList();
           this[f.icon].destroy();
           this[f.icon] = null;
           this._icons = null;
+          this._needsLayout = true;
         }
         f.cleanup();
       });
@@ -1045,16 +1060,19 @@ export let Dock = GObject.registerClass(
           this.extension.services?.setupTrashIcon?.();
         this._trashIcon = this.createItem(trashApp);
         this._icons = null;
+        this._needsLayout = true;
       } else if (this._trashIcon && !this.extension.trash_icon) {
         // unpin trash icon
         this._trashIcon.destroy();
         this._trashIcon = null;
         this._icons = null;
+        this._needsLayout = true;
       } else if (this._trashIcon && this.extension.trash_icon) {
         // move trash icon to the end
         if (this._extraIcons.last_child != this._trashIcon) {
           this._extraIcons.remove_child(this._trashIcon);
           this._extraIcons.add_child(this._trashIcon);
+          this._needsLayout = true;
         }
       }
     }
@@ -1079,8 +1097,15 @@ export let Dock = GObject.registerClass(
       }
     }
 
-    layout() {
-      if (!this.dash || !this.dash.last_child) return;
+    relayout(force = false) {
+      if (!force && !this._needsLayout) {
+        return true;
+      }
+
+      if (!this.dash || !this.dash.last_child) {
+        this._needsLayout = true;
+        return false;
+      }
       if (this.extension.apps_icon_front) {
         this.dash.last_child.text_direction = 2; // RTL
         this.dash._box.text_direction = 1; // LTR
@@ -1108,6 +1133,7 @@ export let Dock = GObject.registerClass(
 
       let m = this.getMonitor();
       if (!m) {
+        this._needsLayout = true;
         return false;
       }
 
@@ -1268,7 +1294,16 @@ export let Dock = GObject.registerClass(
         }
       }
 
+      this._needsLayout = false;
       return true;
+    }
+
+    layout() {
+      return this.relayout(true);
+    }
+
+    queueRelayout() {
+      this._needsLayout = true;
     }
 
     _updateTransparenies() {

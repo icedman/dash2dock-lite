@@ -153,8 +153,13 @@ export let Animator = class {
 
     let simulation = false;
 
-    if (!dock.layout()) {
-      console.log('unable to layout()');
+    if (dock._needsLayout) {
+      if (!dock.relayout()) {
+        return;
+      }
+    }
+
+    if (!dock._icons || !dock._icons.length) {
       return;
     }
 

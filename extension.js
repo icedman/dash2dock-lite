@@ -321,7 +321,8 @@ export default class Dash2DockLiteExt extends Extension {
       }
       if (settings.refresh) {
         dock._icons = null;
-        dock.layout();
+        dock._needsLayout = true;
+        dock.relayout(true);
       }
       dock._beginAnimation();
     });
@@ -566,6 +567,11 @@ export default class Dash2DockLiteExt extends Extension {
         }
         case 'animation-magnify':
         case 'animation-spread':
+          this._updateLayout();
+          if (this.animate_icons) {
+            this.animate({ preview: true });
+          }
+          break;
         case 'animation-rise':
         case 'animation-rise-curve':
         case 'animation-bounce-height': {
@@ -596,6 +602,7 @@ export default class Dash2DockLiteExt extends Extension {
         case 'calendar-icon':
         case 'clock-icon':
         case 'favorites-only': {
+          this._updateLayout();
           this.animate({ refresh: true });
           break;
         }
@@ -604,6 +611,7 @@ export default class Dash2DockLiteExt extends Extension {
           break;
         // problematic settings needing animator restart
         case 'dock-location':
+          this._updateLayout();
           this.recreateAllDocks();
           this.animate({ preview: true });
           break;
@@ -630,6 +638,7 @@ export default class Dash2DockLiteExt extends Extension {
         }
         case 'icon-spacing': {
           this._updateIconSpacing();
+          this._updateLayout();
           break;
         }
         case 'multi-monitor-preference':
@@ -653,11 +662,13 @@ export default class Dash2DockLiteExt extends Extension {
         }
         case 'dock-padding':
         case 'edge-distance': {
+          this._updateLayout();
           this.animate();
           break;
         }
         case 'shrink-icons': {
           this._updateShrink();
+          this._updateLayout();
           this.animate();
           break;
         }
@@ -810,6 +821,7 @@ export default class Dash2DockLiteExt extends Extension {
       // this.startUp.bind(this),
       'monitors-changed',
       () => {
+        this._onMonitorsChanged();
         this._updateMultiMonitorPreference();
       },
       this
@@ -932,6 +944,13 @@ export default class Dash2DockLiteExt extends Extension {
     let listeners = [...this.listeners];
     listeners.forEach((l) => {
       if (l._onAppsChanged) l._onAppsChanged();
+    });
+  }
+
+  _onMonitorsChanged() {
+    let listeners = [...this.listeners];
+    listeners.forEach((l) => {
+      if (l._onMonitorsChanged) l._onMonitorsChanged();
     });
   }
 
@@ -1233,8 +1252,10 @@ export default class Dash2DockLiteExt extends Extension {
   }
 
   _updateLayout(disable) {
+    if (disable) return;
     this.docks.forEach((dock) => {
-      dock.layout();
+      dock._needsLayout = true;
+      dock.relayout(true);
     });
   }
 

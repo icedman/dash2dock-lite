@@ -84,22 +84,22 @@ Minor nits (naming, a stray blank line) that don't violate a rule: list them as 
 > Overwritten each cycle. On FAIL the Worker reads this for its rework.
 
 ```
-Cycle / Task / Attempt: 2.9 / R-9d / 1
+Cycle / Task / Attempt: 3.1 / R-10 / 1
 Verdict:          PASS
-Commit:           this commit (fix(style): CSS in runtime dir without /tmp per shell instance)
-Gates:            check=PASS ; lint=PASS 0 err / 140 warn (baseline 145; extension.js 11 <= HEAD, prefs.js 2 <= HEAD, style.js 0 <= HEAD, utils.js 0 <= HEAD) ;
+Commit:           this commit (perf(dock): dirty-flag relayout() and eliminate per-frame layout)
+Gates:            check=PASS ; lint=PASS 0 err / 139 warn (baseline 140; dock.js, animator.js, extension.js clean) ;
                   settings=exit 0, 0/30 ; timer_check all passed (15/15) ;
                   window_tracker_check all passed (20/20) ; smoke x2 PASS (1 known sig, 0 new,
                   6/5 msgs, 6/5 probe lines, ALL deltas 0) ; strict x1 PASS (counts 6/5, ALL deltas 0,
                   shutdown criticals 0) ; settings variant strict PASS (deltas 0, crit 0) ;
                   disposed/finalized/already been destroyed = 0 and `d2da: ` = 0 in all runs.
                   No orphaned headless shell. G-real NOT run (W3).
-Scope:            style.js, utils.js, prefs.js, extension.js (+87/-33 across code files).
+Scope:            dock.js, animator.js, extension.js (+75/-7 across code files).
 Rule violations:  none. A1-A10, A12, A13 clean (A11 n/a).
-Specific checks:  style.js uses per-instance ID in XDG_RUNTIME_DIR (d2da-${name}-${INSTANCE_ID}.css); unloadAll safely catches and ignores Gio.IOErrorEnum.NOT_FOUND on file deletion and unloads stylesheet; build cleans up previous stylesheet on path change; utils.js tempPath resolves to runtime dir; prefs.js saves theme export to user config dir (~/.config/d2da/theme.json); extension.js removes unused tempPath import.
+Specific checks:  dock.js implements dirty-flagged relayout(force = false) with queueRelayout() helper and backwards-compatible layout() alias; sets _needsLayout on apps-changed, monitors-changed, inspect/cleanup icon, drag-end, extra icons (mount/folder/trash); animator._animate removes unconditional dock.layout() and only calls dock.relayout() when _needsLayout is true; extension.js calls relayout on settings changes and fans out monitors-changed to docks.
 Rework list:      none.
-Findings confirmed: B-37.
-Human check needed: yes (end of Phase 2 wrap-up).
+Findings confirmed: P-1.
+Human check needed: yes (hover magnify settles smoothly, icons scale and dock resizes on settings and monitor changes).
 ```
 
 ## 7. Audit Log (append-only, newest last)
@@ -135,6 +135,8 @@ Human check needed: yes (end of Phase 2 wrap-up).
 | — | human request | 1 | PASS | d3ba248 | check=PASS; lint 0/145 = baseline (animator.js 23 = HEAD); check-settings exit 0, 0/30; timer_check 15/15; window_tracker_check 20/20; smoke x2 PASS (1 known sig, 0 new, ALL deltas 0); strict PASS (6/5 lines, ALL deltas 0, 0 crit); disposed/finalized 0, `d2da: ` 0 | Animator pool precreation guard: `_precreateResources` returns false when `did_create` is true, deferring frame execution until newly added pool actors settle. |
 | 2.8 | R-9c | 1 | PASS | this commit | check=PASS; lint 0/145 = baseline; check-settings exit 0, 0/30; timer_check 15/15; window_tracker_check 20/20; smoke x2 PASS (1 known sig, 0 new, ALL deltas 0); strict PASS (6/5 lines, ALL deltas 0, 0 crit); settings variant strict PASS (deltas 0, crit 0); disposed/finalized 0, d2da: 0 | B-21, B-22 fixed. Standard XDG paths used via GLib.get_user_special_dir and GLib.get_user_config_dir; loadFile try/catch and error rejection; _loadConfig error logging with d2da prefix; no relative cwd paths in active runtime code. |
 | 2.9 | R-9d | 1 | PASS | this commit | check=PASS; lint 0/140 (baseline 145; extension.js 11, prefs.js 2 <= HEAD); check-settings exit 0, 0/30; timer_check 15/15; window_tracker_check 20/20; smoke x2 PASS (1 known sig, 0 new, ALL deltas 0); strict PASS (6/5 lines, ALL deltas 0, 0 crit); settings variant strict PASS (deltas 0, crit 0); 0 tmp css files; disposed/finalized 0, `d2da: ` 0 | B-37 fixed. Per-instance CSS stylesheet in $XDG_RUNTIME_DIR; unloadAll ignores Gio.IOErrorEnum.NOT_FOUND on delete; tempPath uses user runtime dir; prefs exports theme to ~/.config/d2da/theme.json; unused imports removed. Phase 2 complete. |
+| 3.1 | R-10 | 1 | PASS | this commit | check=PASS; lint 0/139 (baseline 140); check-settings exit 0, 0/30; timer_check 15/15; window_tracker_check 20/20; smoke x2 PASS (1 known sig, 0 new, ALL deltas 0); strict PASS (6/5 lines, ALL deltas 0, 0 crit); settings variant strict PASS (deltas 0, crit 0); disposed/finalized 0, `d2da: ` 0 | P-1 fixed. Dock dirty-flags relayout(); per-frame dock.layout() removed from animator._animate(dt); layout() preserved as alias to relayout(true); queueRelayout() added; apps-changed, monitors-changed, extra-icons (trash/mounts/folders), and layout-affecting settings flag dirty relayout. Phase 3 underway. |
+
 
 
 

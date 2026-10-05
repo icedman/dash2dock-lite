@@ -78,32 +78,34 @@ Notes:      HEAD 748290b. First task of Phase 3 (Speed). Strict leaks are ON.
 > Overwritten by the WORKER each cycle; read by the AUDITOR.
 
 ```
-Cycle / Task / Attempt: 2.9 / R-9d / 1
+Cycle / Task / Attempt: 3.1 / R-10 / 1
 Status:            DONE (all items in one cycle, nothing deferred)
-Files changed:     style.js, utils.js, prefs.js, extension.js. HEAD 4b343d1.
+Files changed:     dock.js, animator.js, extension.js. HEAD c8e6b44.
                    agents/*.md untouched except this Report.
 What changed:
-  - style.js:
-    - (B-37) Defined `INSTANCE_ID` using `Gio.Credentials().get_unix_pid()` with fallback to `GLib.uuid_string_random()`.
-    - (B-37) Generated CSS path in `$XDG_RUNTIME_DIR` (`GLib.get_user_runtime_dir()` with fallback to `GLib.get_tmp_dir()`)
-      as `d2da-${name}-${INSTANCE_ID}.css`, ensuring directory exists via `GLib.mkdir_with_parents(..., 0o700)`.
-    - (B-37) In `build()`: cleaned up previous stylesheet files if the target path changes, or safely overwrote destination.
-    - (B-37) In `unloadAll()`: safely caught and ignored `Gio.IOErrorEnum.NOT_FOUND` on deleting stylesheet files;
-      logged unexpected errors with `console.error('d2da: style unloadAll', err)`.
-    - Removed unused `tempPath` import and unused `etag` binding.
-  - utils.js:
-    - (B-37) Updated `tempPath` to construct paths under user runtime directory (`GLib.get_user_runtime_dir()` or fallback
-      `GLib.get_tmp_dir()`) using `GLib.build_filenamev` instead of hardcoded `/tmp/${uuid}-${path}`.
-  - prefs.js:
-    - (B-37) In theme export: saved `theme.json` to user config directory `GLib.build_filenamev([GLib.get_user_config_dir(), 'd2da', 'theme.json'])`,
-      ensuring directory exists via `GLib.mkdir_with_parents(..., 0o700)`.
-    - (B-37) Updated toast notification to display the new export path.
-    - Removed unused `tempPath` import and unused `etag` binding.
+  - dock.js:
+    - (P-1) Added `this._needsLayout = true` dirty flag in `Dock._init`.
+    - (P-1) Implemented `relayout(force = false)`: returns early if `!force && !this._needsLayout`.
+      Performs full layout when dirty or forced, clears `this._needsLayout = false`, and returns `true` (or `false` if monitor/dash not ready).
+    - (P-1) Added `layout()` as backwards-compatible alias delegating to `this.relayout(true)`.
+    - (P-1) Added `queueRelayout()` helper setting `this._needsLayout = true`.
+    - (P-1) In `dock()`: called `this.relayout(true)`.
+    - (P-1) In `recreateDash()`: set `this._needsLayout = true` and called `this.relayout(true)`.
+    - (P-1) In `_onAppsChanged()`: set `this._needsLayout = true`.
+    - (P-1) Added `_onMonitorsChanged()`: sets `this._needsLayout = true` and calls `this.relayout()`.
+    - (P-1) In `_inspectIcon` on destroy, in `_cleanupIcon`, on `drag-end`, and in `_updateExtraIcons` (mount, folder, trash changes): set `this._needsLayout = true`.
+  - animator.js:
+    - (P-1) In `_animate(dt)`: removed unconditional per-frame `dock.layout()` call.
+    - (P-1) Added check: if `dock._needsLayout`, calls `dock.relayout()` and returns if falsy.
+    - (P-1) Cleanly returns without logging spam or errors if `!dock._icons || !dock._icons.length`.
   - extension.js:
-    - Removed unused `tempPath` (and `trySpawnCommandLine`) import line from `./utils.js`.
+    - (P-1) In `animate(settings)`: when `settings.refresh` is requested, marks `dock._needsLayout = true` and calls `dock.relayout(true)`.
+    - (P-1) In `_updateLayout(disable)`: returns early if `disable`, otherwise sets `dock._needsLayout = true` and calls `dock.relayout(true)`.
+    - (P-1) Added `_onMonitorsChanged()` to fan out monitor changes to listeners/docks, connected on `Main.layoutManager`'s `monitors-changed`.
+    - (P-1) In settings switch: ensured layout-affecting settings (`animation-magnify`, `animation-spread`, `apps-icon`, `apps-icon-front`, `calendar-icon`, `clock-icon`, `favorites-only`, `dock-location`, `icon-spacing`, `dock-padding`, `edge-distance`, `shrink-icons`) trigger `this._updateLayout()`.
 Self-verification:
   - `make check`: OK.
-  - `make lint`: 0 errors / 140 warnings (down from 145 warnings at HEAD).
+  - `make lint`: 0 errors / 139 warnings (down from 140 warnings at HEAD).
   - `python3 -B tools/check-settings.py`: 0 errors, 30 warnings, exit 0.
   - `gjs -m tests/timer_check.js`: all passed (15/15).
   - `gjs -m tests/window_tracker_check.js`: all passed (20/20).

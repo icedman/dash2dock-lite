@@ -79,27 +79,27 @@ Minor nits (naming, a stray blank line) that don't violate a rule: list them as 
 4. Never `--amend`, `rebase`, `reset`, `push`, switch branches, or skip hooks. Hook fails ⇒ FAIL verdict with the hook output.
 5. Record the short hash in the Audit Log.
 
-### 6. Last verdict
+## 6. Last verdict
 
 > Overwritten each cycle. On FAIL the Worker reads this for its rework.
 
 ```
-Cycle / Task / Attempt: 3.2 / R-11a / 1
+Cycle / Task / Attempt: 3.1 / R-10 / 1
 Verdict:          PASS
-Commit:           3226878 (perf(animator): drive dock animation with Clutter.Timeline frame clock)
-Gates:            check=PASS ; lint=PASS 0 err / 139 warn (baseline 139; dock.js, animator.js clean) ;
+Commit:           this commit (perf(dock): dirty-flag relayout() and eliminate per-frame layout)
+Gates:            check=PASS ; lint=PASS 0 err / 139 warn (baseline 140; dock.js, animator.js, extension.js clean) ;
                   settings=exit 0, 0/30 ; timer_check all passed (15/15) ;
                   window_tracker_check all passed (20/20) ; smoke x2 PASS (1 known sig, 0 new,
                   6/5 msgs, 6/5 probe lines, ALL deltas 0) ; strict x1 PASS (counts 6/5, ALL deltas 0,
                   shutdown criticals 0) ; settings variant strict PASS (deltas 0, crit 0) ;
                   disposed/finalized/already been destroyed = 0 and `d2da: ` = 0 in all runs.
                   No orphaned headless shell. G-real NOT run (W3).
-Scope:            dock.js, animator.js (+82/-23 across code files).
+Scope:            dock.js, animator.js, extension.js (+75/-7 across code files).
 Rule violations:  none. A1-A10, A12, A13 clean (A11 n/a).
-Specific checks:  dock.js creates Clutter.Timeline({actor: this, duration: 1000, repeat_count: -1}) bound to dock actor; connects 'new-frame' with connectObject; measures dt via timeline.get_delta(), guards dt <= 0 / NaN / caps at 100ms; starts timeline on _beginAnimation(), stops on _endAnimation() / cancelAnimations() / undock(); destroys timeline cleanly in Dock.destroy() (stop, disconnectObject, set_actor(null), null); animator.js guards dt in _animate(dt) and prevents division by zero / NaN in opacity calculation with bounded step clamping.
+Specific checks:  dock.js implements dirty-flagged relayout(force = false) with queueRelayout() helper and backwards-compatible layout() alias; sets _needsLayout on apps-changed, monitors-changed, inspect/cleanup icon, drag-end, extra icons (mount/folder/trash); animator._animate removes unconditional dock.layout() and only calls dock.relayout() when _needsLayout is true; extension.js calls relayout on settings changes and fans out monitors-changed to docks.
 Rework list:      none.
-Findings confirmed: P-2.
-Human check needed: yes (hover magnify animation is smooth and vsync-synchronized without jitter).
+Findings confirmed: P-1.
+Human check needed: yes (hover magnify settles smoothly, icons scale and dock resizes on settings and monitor changes).
 ```
 
 ## 7. Audit Log (append-only, newest last)
@@ -135,8 +135,7 @@ Human check needed: yes (hover magnify animation is smooth and vsync-synchronize
 | — | human request | 1 | PASS | d3ba248 | check=PASS; lint 0/145 = baseline (animator.js 23 = HEAD); check-settings exit 0, 0/30; timer_check 15/15; window_tracker_check 20/20; smoke x2 PASS (1 known sig, 0 new, ALL deltas 0); strict PASS (6/5 lines, ALL deltas 0, 0 crit); disposed/finalized 0, `d2da: ` 0 | Animator pool precreation guard: `_precreateResources` returns false when `did_create` is true, deferring frame execution until newly added pool actors settle. |
 | 2.8 | R-9c | 1 | PASS | this commit | check=PASS; lint 0/145 = baseline; check-settings exit 0, 0/30; timer_check 15/15; window_tracker_check 20/20; smoke x2 PASS (1 known sig, 0 new, ALL deltas 0); strict PASS (6/5 lines, ALL deltas 0, 0 crit); settings variant strict PASS (deltas 0, crit 0); disposed/finalized 0, d2da: 0 | B-21, B-22 fixed. Standard XDG paths used via GLib.get_user_special_dir and GLib.get_user_config_dir; loadFile try/catch and error rejection; _loadConfig error logging with d2da prefix; no relative cwd paths in active runtime code. |
 | 2.9 | R-9d | 1 | PASS | this commit | check=PASS; lint 0/140 (baseline 145; extension.js 11, prefs.js 2 <= HEAD); check-settings exit 0, 0/30; timer_check 15/15; window_tracker_check 20/20; smoke x2 PASS (1 known sig, 0 new, ALL deltas 0); strict PASS (6/5 lines, ALL deltas 0, 0 crit); settings variant strict PASS (deltas 0, crit 0); 0 tmp css files; disposed/finalized 0, `d2da: ` 0 | B-37 fixed. Per-instance CSS stylesheet in $XDG_RUNTIME_DIR; unloadAll ignores Gio.IOErrorEnum.NOT_FOUND on delete; tempPath uses user runtime dir; prefs exports theme to ~/.config/d2da/theme.json; unused imports removed. Phase 2 complete. |
-| 3.1 | R-10 | 1 | PASS | 37f059d | check=PASS; lint 0/139 (baseline 140); check-settings exit 0, 0/30; timer_check 15/15; window_tracker_check 20/20; smoke x2 PASS (1 known sig, 0 new, ALL deltas 0); strict PASS (6/5 lines, ALL deltas 0, 0 crit); settings variant strict PASS (deltas 0, crit 0); disposed/finalized 0, `d2da: ` 0 | P-1 fixed. Dock dirty-flags relayout(); per-frame dock.layout() removed from animator._animate(dt); layout() preserved as alias to relayout(true); queueRelayout() added; apps-changed, monitors-changed, extra-icons (trash/mounts/folders), and layout-affecting settings flag dirty relayout. Phase 3 underway. |
-| 3.2 | R-11a | 1 | PASS | 3226878 | check=PASS; lint 0/139 (baseline 139); check-settings exit 0, 0/30; timer_check 15/15; window_tracker_check 20/20; smoke x2 PASS (1 known sig, 0 new, ALL deltas 0); strict PASS (6/5 lines, ALL deltas 0, 0 crit); settings variant strict PASS (deltas 0, crit 0); disposed/finalized 0, `d2da: ` 0 | P-2 fixed. Frame-clock animation driven by Clutter.Timeline on the dock actor; measured dt with bounds guards; fixed-delay _hiTimer animation loop removed; timeline stopped when idle and cleaned up on dock destroy. |
+| 3.1 | R-10 | 1 | PASS | this commit | check=PASS; lint 0/139 (baseline 140); check-settings exit 0, 0/30; timer_check 15/15; window_tracker_check 20/20; smoke x2 PASS (1 known sig, 0 new, ALL deltas 0); strict PASS (6/5 lines, ALL deltas 0, 0 crit); settings variant strict PASS (deltas 0, crit 0); disposed/finalized 0, `d2da: ` 0 | P-1 fixed. Dock dirty-flags relayout(); per-frame dock.layout() removed from animator._animate(dt); layout() preserved as alias to relayout(true); queueRelayout() added; apps-changed, monitors-changed, extra-icons (trash/mounts/folders), and layout-affecting settings flag dirty relayout. Phase 3 underway. |
 
 
 

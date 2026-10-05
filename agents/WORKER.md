@@ -59,19 +59,17 @@ Isolated smoke can't change settings from outside (memory backend is in-process)
 > Written by the ORCHESTRATOR only. Worker: do not edit this section.
 
 ```
-Cycle:      3.2
-Task:       R-11a — Frame-clock animation driver via Clutter.Timeline (P-2)
+Cycle:      3.1
+Task:       R-10 — Dirty-flag relayout() and remove per-frame layout() in animator (P-1)
 Attempt:    1
-Card:       §6 "R-11a"
-Notes:      HEAD 37f059d. Prerequisite 3.1 passed. Strict leaks are ON.
-            (P-2) Replace fixed-delay _hiTimer animation loop in dock.js with Clutter.Timeline.
-            Connect to 'new-frame' with connectObject, measured dt from timeline.get_delta().
-            Guard dt <= 0 and cap at 100ms.
-            Start timeline on _beginAnimation(), stop on _endAnimation() / cancelAnimations() / undock().
-            Disconnect and clean up timeline on Dock.destroy().
-            Do not remove _hiTimer yet (used by bounceIcon and _debounceStyleSeq).
+Card:       §6 "R-10"
+Notes:      HEAD 748290b. First task of Phase 3 (Speed). Strict leaks are ON.
+            (P-1) Stop calling dock.layout() on every frame in Animator._animate(dt).
+            Implement dirty-flagged relayout() in dock.js.
+            Ensure apps-changed, monitor-changed, extra-icons, and layout settings mark dirty.
+            Keep layout() as backward-compatible entry point.
             G-real: NOT allowed (W3).
-            Gates: check; lint 0/139; check-settings exit 0 (0/30); timer_check 15/15;
+            Gates: check; lint 0/140; check-settings exit 0 (0/30); timer_check 15/15;
             window_tracker_check 20/20; smoke 1 known sig; strict PASS.
 ```
 
@@ -80,31 +78,39 @@ Notes:      HEAD 37f059d. Prerequisite 3.1 passed. Strict leaks are ON.
 > Overwritten by the WORKER each cycle; read by the AUDITOR.
 
 ```
-Cycle / Task / Attempt: 3.2 / R-11a / 1
+Cycle / Task / Attempt: 3.1 / R-10 / 1
 Status:            DONE (all items in one cycle, nothing deferred)
-Files changed:     dock.js, animator.js. HEAD 37f059d.
+Files changed:     dock.js, animator.js, extension.js. HEAD c8e6b44.
                    agents/*.md untouched except this Report.
 What changed:
   - dock.js:
-    - (P-2) In `_init`, created `this._timeline = new Clutter.Timeline({ actor: this, duration: 1000, repeat_count: -1 })`.
-    - (P-2) Connected to `this._timeline`'s `new-frame` signal using `connectObject(..., this)`. Measured `dt` from `this._timeline.get_delta()`, guarded `!dt || dt <= 0 || isNaN(dt)` (falling back to `this.animationInterval || 16`), capped at 100 ms (`if (dt > 100) dt = 100`), and dispatched to `this.animate(dt)`.
-    - (P-2) In `animate(dt = 16)`: added safety guards ensuring `dt` is valid, > 0, and <= 100 ms.
-    - (P-2) In `_beginAnimation()`: removed the fixed-delay `this.extension._hiTimer.runLoop` subscription for `this._animationSeq`. When `this.get_stage()` is available, started `this._timeline` if not already playing (`this._timeline.start()`). Ensured debounce end animation is scheduled/reset.
-    - (P-2) In `_endAnimation()`: stopped `this._timeline` if playing (`this._timeline.stop()`).
-    - (P-2) In `cancelAnimations()`: stopped `this._timeline` if playing (`this._timeline.stop()`).
-    - (P-2) In `undock()`: ensured `this._timeline?.stop()` is called.
-    - (P-2) In `Dock.destroy()`: stopped `this._timeline` if playing, disconnected signal handlers via `this._timeline.disconnectObject(this)`, cleared actor binding via `this._timeline.set_actor(null)`, and nulled `this._timeline`.
+    - (P-1) Added `this._needsLayout = true` dirty flag in `Dock._init`.
+    - (P-1) Implemented `relayout(force = false)`: returns early if `!force && !this._needsLayout`.
+      Performs full layout when dirty or forced, clears `this._needsLayout = false`, and returns `true` (or `false` if monitor/dash not ready).
+    - (P-1) Added `layout()` as backwards-compatible alias delegating to `this.relayout(true)`.
+    - (P-1) Added `queueRelayout()` helper setting `this._needsLayout = true`.
+    - (P-1) In `dock()`: called `this.relayout(true)`.
+    - (P-1) In `recreateDash()`: set `this._needsLayout = true` and called `this.relayout(true)`.
+    - (P-1) In `_onAppsChanged()`: set `this._needsLayout = true`.
+    - (P-1) Added `_onMonitorsChanged()`: sets `this._needsLayout = true` and calls `this.relayout()`.
+    - (P-1) In `_inspectIcon` on destroy, in `_cleanupIcon`, on `drag-end`, and in `_updateExtraIcons` (mount, folder, trash changes): set `this._needsLayout = true`.
   - animator.js:
-    - (P-2) In `_animate(dt)`: added input guard for `dt` (`!dt || dt <= 0 || isNaN(dt)` defaulting to `dock.animationInterval || 16`, capped at 100 ms).
-    - (P-2) Guarded opacity animation calculation (`dt > 0`) to prevent division by zero or NaN, with `step` progression and clamping to [0, 255].
+    - (P-1) In `_animate(dt)`: removed unconditional per-frame `dock.layout()` call.
+    - (P-1) Added check: if `dock._needsLayout`, calls `dock.relayout()` and returns if falsy.
+    - (P-1) Cleanly returns without logging spam or errors if `!dock._icons || !dock._icons.length`.
+  - extension.js:
+    - (P-1) In `animate(settings)`: when `settings.refresh` is requested, marks `dock._needsLayout = true` and calls `dock.relayout(true)`.
+    - (P-1) In `_updateLayout(disable)`: returns early if `disable`, otherwise sets `dock._needsLayout = true` and calls `dock.relayout(true)`.
+    - (P-1) Added `_onMonitorsChanged()` to fan out monitor changes to listeners/docks, connected on `Main.layoutManager`'s `monitors-changed`.
+    - (P-1) In settings switch: ensured layout-affecting settings (`animation-magnify`, `animation-spread`, `apps-icon`, `apps-icon-front`, `calendar-icon`, `clock-icon`, `favorites-only`, `dock-location`, `icon-spacing`, `dock-padding`, `edge-distance`, `shrink-icons`) trigger `this._updateLayout()`.
 Self-verification:
   - `make check`: OK.
-  - `make lint`: 0 errors / 139 warnings.
+  - `make lint`: 0 errors / 139 warnings (down from 140 warnings at HEAD).
   - `python3 -B tools/check-settings.py`: 0 errors, 30 warnings, exit 0.
   - `gjs -m tests/timer_check.js`: all passed (15/15).
   - `gjs -m tests/window_tracker_check.js`: all passed (20/20).
   - `make smoke`: PASS, 0 new sigs (1 known), shutdown criticals 0, msgs 6/5, probe lines 6/5,
-    probe after-disable deltas all 0, probe hi subscriber count down to 0.
+    probe after-disable deltas all 0.
   - `D2DA_SMOKE_STRICT_LEAKS=1 tools/smoke-shell.sh 5`: PASS, shutdown criticals 0, probe line counts 6/5,
     probe after-disable deltas all 0.
   - `D2DA_SMOKE_SETTINGS='trash-icon=true downloads-icon=true clock-icon=true calendar-icon=true autohide-dash=true' D2DA_SMOKE_STRICT_LEAKS=1 tools/smoke-shell.sh 5`: PASS,
@@ -480,68 +486,7 @@ Phase 2-5 cards are *stubs*: the Orchestrator expands a stub into a full card (s
   - `make smoke`
 - **Human:** yes — hover magnify settles smoothly, icons scale and dock resizes properly on settings changes and monitor changes.
 
-#### R-11a — Frame-clock animation driver via Clutter.Timeline (P-2)
-- **Fixes:** P-2.
-- **Scope:** `dock.js`, `animator.js`.
-- **Context (HEAD 37f059d):**
-  - In `dock.js:1414`, `_beginAnimation()` subscribes `this.animate(s._delay)` to `this.extension._hiTimer.runLoop(..., this.animationInterval)`.
-  - `_hiTimer` ticks on a fixed GLib timeout (15 ms), which is disconnected from Clutter's master frame clock and display refresh rates (causing judder, frame tearing, and capping refresh at ~66 Hz on high-refresh displays).
-  - In `animator.js`, several calculations consume `dt` directly (`mag / dt`, `speed * dt`, `pixelOverTime * dt`, `_dwellTick += dt`), where `dt` was previously hardcoded or nominal.
-- **Do:**
-  - In `dock.js`:
-    - Create a per-dock timeline in `_init`:
-      `this._timeline = new Clutter.Timeline({ duration: 1000, repeat_count: -1 });`
-    - Connect to its `new-frame` signal using `connectObject(..., this)`:
-      ```javascript
-      this._timeline.connectObject(
-        'new-frame',
-        () => {
-          let dt = this._timeline.get_delta();
-          if (!dt || dt <= 0 || isNaN(dt)) {
-            dt = this.animationInterval || 16;
-          }
-          if (dt > 100) dt = 100;
-          this.animate(dt);
-        },
-        this
-      );
-      ```
-    - In `_beginAnimation()`:
-      If `!this._timeline.is_playing()`, call `this._timeline.start()`.
-      Remove the `_hiTimer.runLoop` subscription for `this._animationSeq`.
-    - In `_endAnimation()`:
-      If `this._timeline.is_playing()`, call `this._timeline.stop()`.
-    - In `cancelAnimations()`:
-      If `this._timeline?.is_playing()`, call `this._timeline.stop()`.
-    - In `undock()`:
-      Ensure `this._timeline?.stop()` is called.
-    - In `Dock.destroy()`:
-      Stop `this._timeline`, disconnect via `this._timeline.disconnectObject(this)`, and null `this._timeline`.
-  - In `animator.js`:
-    - Ensure all operations receiving `dt` in `_animate(dt)` handle variable/measured `dt` smoothly and do not produce NaN or division-by-zero (e.g. guard `dt <= 0`).
-- **Don't:**
-  - Do not remove `_hiTimer` from `extension.js` yet (used by `bounceIcon` and `_debounceStyleSeq`; pruned in later sub-tasks).
-  - Do not change debouncing logic in `_loTimer` (that is R-11b).
-  - Do not change animation easing math (that is R-12).
-  - Do not leak `Clutter.Timeline` instances on dock destroy or extension disable.
-- **Accept:**
-  - When the dock animates (hover, mouse enter/leave, app launch, autohide), frames are driven by `this._timeline` and synchronized with Clutter display frames.
-  - Idle dock does zero timeline wakeups when stopped.
-  - No errors or NaN warnings in logs.
-  - `make check`, `make lint` (0 errors, ≤ 139 warnings), `python3 tools/check-settings.py` (exit 0), unit tests pass (`timer_check`, `window_tracker_check`), `make smoke` and strict smoke pass with 0 new signatures and all deltas 0.
-- **Verify:**
-  - `make check`
-  - `make lint`
-  - `python3 -B tools/check-settings.py`
-  - `gjs -m tests/timer_check.js`
-  - `gjs -m tests/window_tracker_check.js`
-  - `D2DA_SMOKE_STRICT_LEAKS=1 tools/smoke-shell.sh 5`
-  - `make smoke`
-- **Human:** yes — hover magnify animation is smooth and vsync-synchronized without jitter.
-
-- **R-11b** exact one-shot debounces (replace `_loTimer` with exact `GLib.timeout_add` / tiny `Debouncer`, B-24).
-- **R-11c** drop `animation-fps` hack and dead timer resolution adjustments.
-
+- **R-11** frame-clock animation (`Clutter.Timeline` on the dock actor), exact one-shot debounces (P-2, B-24). Large: split into R-11a timeline driver, R-11b debounce helper, R-11c remove `animation-fps` hack.
 - **R-12** allocation-free animator (P-3..P-7, P-11) — split per hotspot.
 - **R-13** async services + notification signals + cached shader source (P-9, P-10).
 

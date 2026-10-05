@@ -142,7 +142,7 @@ Status: `[ ]` todo · `[~]` in progress · `[x]` done (hash) · `[!]` blocked ·
 | | Cycle | Task | Depends | Notes |
 |---|---|---|---|---|
 | [x] 37f059d | 3.1 | R-10 dirty-flag `relayout()` | 2.4 | P-1 · human visual |
-| [~] | 3.2 | R-11a frame-clock driver | 3.1 | P-2 · human visual |
+| [x] 3226878 | 3.2 | R-11a frame-clock driver | 3.1 | P-2 · human visual |
 | [ ] | 3.3 | R-11b exact debounces | 3.2 | B-24 |
 | [ ] | 3.4 | R-11c drop `animation-fps` hack | 3.3 | |
 | [ ] | 3.5 | R-12 allocation-free animator (split per P-id) | 3.1 | P-3..P-7, P-11 |
@@ -191,7 +191,7 @@ Status: `open` · `fixed <hash>` · `partial <hash>` · `blocked` · `wontfix (r
 | B-17 | R-4c | fixed 1b03ca7 | | B-35 | B-35 | deferred (needs real-dconf / BMS test) |
 | B-18 | R-4c | fixed 1b03ca7 | | T-4 | R-0d | deferred (no release for now) |
 | P-1 | R-10 | fixed 37f059d | | P-7 | R-12 | open |
-| P-2 | R-11a | open | | P-8 | (unassigned, BMS) | open |
+| P-2 | R-11a | fixed 3226878 | | P-8 | (unassigned, BMS) | open |
 | P-3..P-6 | R-12 | open | | P-9, P-10 | R-13 | open |
 | P-11 | R-12 | open | | §6.3 low bugs | batch after phase 1 | open |
 | T-5 | R-0e | fixed 523cec2 | | T-6 | R-0e | fixed 523cec2 (live counters) |
@@ -250,6 +250,7 @@ Items the agents can't see. The human runs `make test-shell` (needs `mutter-devk
 | 2.4 | d95bb11 | Toggle extension several times; change preferred monitor + multi-monitor setting; lock/unlock; plug/unplug monitor ⇒ dock always renders, no duplicates, overview dash fine, clock/calendar/trash/downloads back after rebuild | |
 | 2.6 | 8fab2a5 | Right-click trash icon -> click "Empty Trash". Confirmation dialog appears (Cancel / Empty Trash). Cancel keeps trash, Empty Trash empties and updates icon | |
 | 3.1 | 37f059d | Hover magnify settles smoothly, icons scale and dock resizes properly on settings changes and monitor changes | |
+| 3.2 | 3226878 | Hover magnify animation is smooth and vsync-synchronized without jitter | |
 
 ## 6. Run Log (append-only, newest last)
 
@@ -365,3 +366,4 @@ Format: `YYYY-MM-DD HH:MM · cycle · EVENT · details` where EVENT ∈ `SETUP, 
 - 2026-10-05 · 3.1 · AUDIT-PASS · `37f059d`. check=PASS lint=0/139 (−1) settings=exit 0 (0/30) timer_check 15/15 window_tracker_check 20/20 smoke=PASS(x2) strict=PASS all deltas 0 shutdown criticals 0. P-1 fixed: dirty-flag relayout() implemented in dock.js, per-frame dock.layout() eliminated from animator.js, monitors-changed/settings layout reactions wired. 1 human-check item queued.
 - 2026-10-05 · 3.2 · PREFLIGHT · tree clean apart from agents/*; HEAD 37f059d; GNOME Shell 50.5.
 - 2026-10-05 · 3.2 · ASSIGN · R-11a frame-clock animation driver via Clutter.Timeline (P-2). Stub expanded.
+- 2026-10-05 · 3.2 · AUDIT-PASS · `3226878`. check=PASS lint=0/139 settings=exit 0 (0/30) timer_check 15/15 window_tracker_check 20/20 smoke=PASS(x2) strict=PASS all deltas 0 shutdown criticals 0. P-2 fixed: dock animations driven by Clutter.Timeline frame clock on dock actor; measured dt with bounds guards; fixed-delay _hiTimer animation loop removed; timeline stopped when idle and cleaned up on dock destroy. 1 human-check item queued.

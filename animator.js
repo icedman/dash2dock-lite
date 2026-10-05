@@ -308,18 +308,17 @@ export let Animator = class {
         dx = original_pos[1] - py;
       }
 
-      //! _p replace with a more descriptive variable name
-      icon._p = 0;
+      icon._hoverProgress = 0;
       if (dx * dx < threshold * threshold && nearestIcon) {
         let adx = Math.abs(dx);
-        let p = 1.0 - adx / threshold;
-        // let fp = p * 0.6 * (1 + magnify);
-        icon._p = p;
+        let hoverProgress = 1.0 - adx / threshold;
+        // let fp = hoverProgress * 0.6 * (1 + magnify);
+        icon._hoverProgress = hoverProgress;
 
         // affect scale;
         if (magnify != 0) {
           // scale += fp;
-          scale = scaleAtMax * Ease(p);
+          scale = scaleAtMax * Ease(hoverProgress);
           if (scale < 1) scale = 1;
         }
 
@@ -429,7 +428,7 @@ export let Animator = class {
     }
 
     let lockPosition =
-      didScale && first && last && first._p == 0 && last._p == 0;
+      didScale && first && last && first._hoverProgress == 0 && last._hoverProgress == 0;
 
     if (dock._preview) {
       lockPosition = false;
@@ -442,18 +441,19 @@ export let Animator = class {
 
       icon._scale = icon._targetScale;
 
-      //! make these computation more readable even if more verbose
-      let rdir =
-        dock._position == DockPosition.TOP ||
-        dock._position == DockPosition.LEFT
-          ? 1
-          : -1;
+      const isTopOrLeft =
+        dock._position === DockPosition.TOP ||
+        dock._position === DockPosition.LEFT;
+      const riseDirection = isTopOrLeft ? 1 : -1;
 
-      let translationX = icon._translate;
-      let translationY = icon._translateRise * rdir;
+      let translationX;
+      let translationY;
       if (vertical) {
-        translationX = icon._translateRise * rdir;
+        translationX = icon._translateRise * riseDirection;
         translationY = icon._translate;
+      } else {
+        translationX = icon._translate;
+        translationY = icon._translateRise * riseDirection;
       }
 
       //-------------------
@@ -484,7 +484,7 @@ export let Animator = class {
       }
 
       // fix jitterness
-      if (lockPosition && icon._p == 0) {
+      if (lockPosition && icon._hoverProgress == 0) {
         icon._positionCache = icon._positionCache || [];
         var lockThreshold = 48;
         if (
@@ -611,23 +611,8 @@ export let Animator = class {
           if (icon_name) {
             renderer.icon_name = icon_name;
           } else {
-            //! clone
             if (icon._icon.gicon) {
-              let clone = icon._icon.gicon.file;
-              if (
-                renderer.gicon &&
-                renderer.gicon.file &&
-                renderer.gicon.file.get_path() ==
-                  icon._icon.gicon.file.get_path()
-              ) {
-                clone = false;
-              }
-              if (clone) {
-                renderer.gicon = new Gio.FileIcon({
-                  file: icon._icon.gicon.file,
-                });
-              }
-              // #issue 188
+              // Directly assign the icon's gicon to the renderer (fixed in #issue 188)
               renderer.gicon = icon._icon.gicon;
             }
           }
@@ -760,27 +745,57 @@ export let Animator = class {
           // icon._label.style = 'font-size: 32pt';
           // icon._label.set_scale(0.5, 0.5);
           let lsz = icon._label.get_transformed_size();
-          if (!isNaN(lsz[0]) && !isNaN(lsz[1])) {
-            icon._label.x = tPos[0] + sw / 2 - lsz[0] / 2;
-            icon._label.y = tPos[1] + sh / 2 - lsz[1] / 2;
-            if (vertical) {
-              if (dock._position == DockPosition.LEFT) {
-                icon._label.x += sh / 1.5 + icon._label.width / 2;
-              } else {
-                icon._label.x -= sh / 1.5 + icon._label.width / 2;
-              }
-              icon._label.y += 2 * (m.geometry_scale || 1);
-            } else {
-              if (magnify == 0 || dock._iconSize <= 4) {
-                sh *= 1.5;
-              }
-              if (dock._position == DockPosition.BOTTOM) {
-                icon._label.y -= sh / 1.25;
-              } else {
-                icon._label.y += sh / 1.25;
-              }
-              icon._label.x += 2 * (m.geometry_scale || 1);
+          if (
+            !isNaN(lsz[0]) &&
+            !isNaN(lsz[1]) &&
+            !isNaN(p[0]) &&
+            !isNaN(p[1])
+          ) {
+            // The label follows the icon along the dock, but its distance from
+            // the dock is fixed: it is computed from the icon's resting
+            // position and its size at full magnification, not from the
+            // per-frame size of the renderer. Otherwise the label jitters
+            // while the icon scales.
+            let peakScale = Math.max(1, scaleAtMax) + 0.1;
+            if (peakScale > 1.9) peakScale = 2;
+            let peakSize = unscaledIconSize * peakScale;
+            let peakRise =
+              unscaledIconSize * (Math.max(1, scaleAtMax) - 1) * rise;
+            if (peakSize > icon.height) {
+              peakRise += (peakSize - icon.height) * 0.5;
             }
+            // direction away from the screen edge
+            let away =
+              dock._position == DockPosition.BOTTOM ||
+              dock._position == DockPosition.RIGHT
+                ? -1
+                : 1;
+            let gap = 2 * (m.geometry_scale || 1);
+
+            let lx;
+            let ly;
+            if (vertical) {
+              lx =
+                p[0] +
+                icon.width / 2 -
+                lsz[0] / 2 +
+                away * (peakRise + peakSize / 1.5 + icon._label.width / 2);
+              ly = tPos[1] + sh / 2 - lsz[1] / 2 + gap;
+            } else {
+              let peakHeight = peakSize;
+              if (magnify == 0 || dock._iconSize <= 4) {
+                peakHeight *= 1.5;
+              }
+              lx = tPos[0] + sw / 2 - lsz[0] / 2 + gap;
+              ly =
+                p[1] +
+                icon.height / 2 -
+                lsz[1] / 2 +
+                away * (peakRise + peakHeight / 1.25);
+            }
+            // whole pixels only, sub-pixel positions make the text shimmer
+            icon._label.x = Math.round(lx);
+            icon._label.y = Math.round(ly);
           }
         }
 
@@ -793,35 +808,7 @@ export let Animator = class {
           icon._icon == dock._dragged && dock._dragging ? 75 : 255;
       }
 
-      //! make more readable
-      let flags = {
-        bottom: {
-          x: 0.5,
-          y: 1,
-          lx: 0,
-          ly: 0.5 * icon._targetScale * scaleFactor,
-        },
-        top: {
-          x: 0.5,
-          y: 0,
-          lx: 0,
-          ly: -1.5 * icon._targetScale * scaleFactor,
-        },
-        left: {
-          x: 0,
-          y: 0.5,
-          lx: -1.25 * icon._targetScale * scaleFactor,
-          ly: -1.25,
-        },
-        right: {
-          x: 1,
-          y: 0.5,
-          lx: 1.5 * icon._targetScale * scaleFactor,
-          ly: -1.25,
-        },
-      };
 
-      let posFlags = flags[dock._position];
 
       // badges
       //! ***badge location at scaling is messed up***
@@ -911,13 +898,13 @@ export let Animator = class {
         actor.translationY =
           (prev._icon.translationY + next._icon.translationY) / 2;
         let thickness = dock.extension.separator_thickness || 0;
-        //! use ifs for more readability
-        actor.width = !vertical
-          ? thickness + 0.5
-          : iconSize * 0.5 * scaleFactor;
-        actor.height = vertical
-          ? thickness + 0.5
-          : iconSize * 0.75 * scaleFactor;
+        if (vertical) {
+          actor.width = iconSize * 0.5 * scaleFactor;
+          actor.height = thickness + 0.5;
+        } else {
+          actor.width = thickness + 0.5;
+          actor.height = iconSize * 0.75 * scaleFactor;
+        }
         actor.visible = thickness > 0;
       }
 
@@ -937,8 +924,7 @@ export let Animator = class {
       }
     }
 
-    //! use a more descriptive variable name
-    let ed =
+    const edgeDirectionMultiplier =
       dock._position == DockPosition.BOTTOM ||
       dock._position == DockPosition.RIGHT
         ? 1
@@ -955,26 +941,28 @@ export let Animator = class {
       if (vertical) {
         if (dock._position == DockPosition.LEFT) {
           targetX =
-            -(dock._background.width + edge_distance * -ed * 2) * scaleFactor;
+            -(dock._background.width + edge_distance * -edgeDirectionMultiplier * 2) * scaleFactor;
         } else {
           targetX =
-            (dock._background.width - edge_distance * -ed * 2) * scaleFactor;
+            (dock._background.width - edge_distance * -edgeDirectionMultiplier * 2) * scaleFactor;
         }
       } else {
         if (dock._position == DockPosition.BOTTOM) {
           targetY =
-            (dock._background.height - edge_distance * -ed * 2) * scaleFactor;
+            (dock._background.height - edge_distance * -edgeDirectionMultiplier * 2) * scaleFactor;
         } else {
           targetY =
-            -(dock._background.height + edge_distance * -ed * 2) * scaleFactor;
+            -(dock._background.height + edge_distance * -edgeDirectionMultiplier * 2) * scaleFactor;
         }
       }
     }
 
     // edge
-    //! use ifs for more readability
-    targetX += vertical ? edge_distance * -ed : 0;
-    targetY += !vertical ? edge_distance * -ed : 0;
+    if (vertical) {
+      targetX += edge_distance * -edgeDirectionMultiplier;
+    } else {
+      targetY += edge_distance * -edgeDirectionMultiplier;
+    }
 
     // dock translation
     {

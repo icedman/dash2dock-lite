@@ -141,7 +141,7 @@ Status: `[ ]` todo · `[~]` in progress · `[x]` done (hash) · `[!]` blocked ·
 ### Phase 3 — Speed (G2)
 | | Cycle | Task | Depends | Notes |
 |---|---|---|---|---|
-| [ ] | 3.1 | R-10 dirty-flag `relayout()` | 2.4 | P-1 · human visual |
+| [~] | 3.1 | R-10 dirty-flag `relayout()` | 2.4 | P-1 · human visual |
 | [ ] | 3.2 | R-11a frame-clock driver | 3.1 | P-2 · human visual |
 | [ ] | 3.3 | R-11b exact debounces | 3.2 | B-24 |
 | [ ] | 3.4 | R-11c drop `animation-fps` hack | 3.3 | |
@@ -359,3 +359,5 @@ Format: `YYYY-MM-DD HH:MM · cycle · EVENT · details` where EVENT ∈ `SETUP, 
 - 2026-10-05 · 2.9 · AUDIT-PASS · `d96998c`. check=PASS lint=0/140 (−5) settings=exit 0 timer_check 15/15 window_tracker_check 20/20 smoke=PASS(x2) strict=PASS all deltas 0 shutdown criticals 0. B-37 fixed: CSS written to $XDG_RUNTIME_DIR/d2da-${name}-${INSTANCE_ID}.css per shell instance; unloadAll ignores Gio.IOErrorEnum.NOT_FOUND on delete; tempPath uses runtime dir; prefs theme export to config dir; unused imports removed.
 - 2026-10-05 · 2.9 · STOP · End of Phase 2 (Lifecycle). All 11 phase 2 tasks completed. Strict leaks zero-tolerance clean. Waiting for human sign-off before Phase 3 (Speed).
 - 2026-10-05 · — · HUMAN · Crash fix: named Clutter/St actors (no "unnamed [ClutterActor]"), animator allocation & NaN guards, try/catch error boundary in animate() (CRASH.md).
+- 2026-10-05 · 3.1 · PREFLIGHT · tree clean; HEAD 748290b; GNOME Shell 50.5.
+- 2026-10-05 · 3.1 · ASSIGN · R-10 dirty-flag relayout() and remove per-frame layout() in animator (P-1). Stub expanded.

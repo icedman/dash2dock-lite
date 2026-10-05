@@ -59,18 +59,17 @@ Isolated smoke can't change settings from outside (memory backend is in-process)
 > Written by the ORCHESTRATOR only. Worker: do not edit this section.
 
 ```
-Cycle:      2.9
-Task:       R-9d — CSS in runtime dir without /tmp per shell instance (B-37)
+Cycle:      3.1
+Task:       R-10 — Dirty-flag relayout() and remove per-frame layout() in animator (P-1)
 Attempt:    1
-Card:       §6 "R-9d"
-Notes:      HEAD 4b343d1. Final task of Phase 2 (Lifecycle). Strict leaks are ON.
-            (B-37) Stop writing custom-d2dl.css to /tmp/<user>-*.css.
-            Use GLib.get_user_runtime_dir() with per-instance isolation (e.g. PID or instance id).
-            Catch and ignore Gio.IOErrorEnum.NOT_FOUND in Style.unloadAll().
-            Remove unused tempPath import in extension.js.
-            Update prefs.js theme export to user config / runtime dir.
+Card:       §6 "R-10"
+Notes:      HEAD 748290b. First task of Phase 3 (Speed). Strict leaks are ON.
+            (P-1) Stop calling dock.layout() on every frame in Animator._animate(dt).
+            Implement dirty-flagged relayout() in dock.js.
+            Ensure apps-changed, monitor-changed, extra-icons, and layout settings mark dirty.
+            Keep layout() as backward-compatible entry point.
             G-real: NOT allowed (W3).
-            Gates: check; lint 0/145; check-settings exit 0 (0/30); timer_check 15/15;
+            Gates: check; lint 0/140; check-settings exit 0 (0/30); timer_check 15/15;
             window_tracker_check 20/20; smoke 1 known sig; strict PASS.
 ```
 
@@ -447,8 +446,44 @@ Phase 2-5 cards are *stubs*: the Orchestrator expands a stub into a full card (s
 - **Verify:** `make check`; `make lint`; `python3 -B tools/check-settings.py`; `gjs -m tests/timer_check.js`; `gjs -m tests/window_tracker_check.js`; `D2DA_SMOKE_STRICT_LEAKS=1 tools/smoke-shell.sh 5`; `make smoke`.
 - **Human:** yes (end of Phase 2 wrap-up).
 
-### Phase 3 — Speed (stubs)
-- **R-10** split `layout()` → `relayout()` on dirty flag; `animate` must not call `layout()` (P-1).
+#### R-10 — Dirty-flag relayout() and remove per-frame layout() in animator (P-1)
+- **Fixes:** P-1.
+- **Scope:** `dock.js`, `animator.js`, `extension.js`.
+- **Context (HEAD 748290b):**
+  - In `animator.js` `_animate(dt)` (~line 156), `dock.layout()` is called on every single frame tick (60+ times/sec).
+  - `dock.layout()` in `dock.js` (~line 1082) executes heavy DOM and layout operations on each call: calls `_updateExtraIcons()` (reconciling trash, mounts, downloads, clock, calendar), queries display monitor, calls `_findIcons()` (allocating children arrays), writes `icon.width`, `icon.height`, and `icon.style` on every icon actor, snaps dock and dash container edges, and recalculates dwell geometry.
+  - Calling this every frame wastes CPU, causes unnecessary Clutter layout passes, and churns stage views.
+- **Do:**
+  - In `dock.js`:
+    - Add a dirty flag `this._needsLayout = true` on `Dock`.
+    - Provide `relayout(force = false)` (or `queueRelayout()`): if `force || this._needsLayout`, run the full layout logic and reset `this._needsLayout = false`.
+    - Keep `layout()` as an alias or delegator to `relayout(true)` so external callers remain compatible.
+    - Set `this._needsLayout = true` wherever dock structure/geometry changes: `_onAppsChanged()`, `_onMonitorsChanged()`, extra icons changes, `recreateDash()`, and settings changes.
+    - Call `this.relayout(true)` in `dock()` on initial setup.
+  - In `animator.js`:
+    - In `_animate(dt)`: remove the unconditional per-frame `dock.layout()` call.
+    - If `dock._needsLayout`: call `dock.relayout()`.
+    - Ensure `animate()` returns cleanly if `!dock._icons` or `!dock._icons.length` without throwing or logging spam.
+  - In `extension.js`:
+    - Ensure settings that affect dock layout (e.g. `icon-size`, `icon-spacing`, `dock-location`, `apps-icon-front`, `panel-mode`, `edge-distance`, `animation-spread`, monitor changes) trigger `dock.relayout(true)` or set `dock._needsLayout = true`.
+- **Don't:**
+  - Do not change icon magnification math, spread easing, or bounce calculations (those are R-11/R-12).
+  - Do not add new timers or polling.
+  - Do not break multi-monitor dock sizing or positioning.
+- **Accept:**
+  - `dock.layout()` / `relayout()` is NOT called every frame while idle or animating unless `_needsLayout` was explicitly flagged.
+  - Dock properly repositions/resizes when icons change (launch app, favorite change, mount added/removed), when monitor resolution/count changes, and when dock settings (position, size, spacing) change.
+  - `make check`, `make lint` (0 errors, ≤ 140 warnings), `python3 tools/check-settings.py` (exit 0), unit tests pass (`timer_check`, `window_tracker_check`), `make smoke` and strict smoke pass with 0 new signatures and all deltas 0.
+- **Verify:**
+  - `make check`
+  - `make lint`
+  - `python3 -B tools/check-settings.py`
+  - `gjs -m tests/timer_check.js`
+  - `gjs -m tests/window_tracker_check.js`
+  - `D2DA_SMOKE_STRICT_LEAKS=1 tools/smoke-shell.sh 5`
+  - `make smoke`
+- **Human:** yes — hover magnify settles smoothly, icons scale and dock resizes properly on settings changes and monitor changes.
+
 - **R-11** frame-clock animation (`Clutter.Timeline` on the dock actor), exact one-shot debounces (P-2, B-24). Large: split into R-11a timeline driver, R-11b debounce helper, R-11c remove `animation-fps` hack.
 - **R-12** allocation-free animator (P-3..P-7, P-11) — split per hotspot.
 - **R-13** async services + notification signals + cached shader source (P-9, P-10).

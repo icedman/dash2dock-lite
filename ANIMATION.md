@@ -58,28 +58,40 @@ Instead of using frame-rate-dependent iterative collision loops (which cause "ji
 * $x_m$: The mouse cursor coordinate along the horizontal dock axis ($x_m \in [0, L]$).
 * $R$: The **Radius of Influence** (how far horizontally the zoom effect propagates).
 * $M$: The **Maximum Scale Factor** (e.g., $2.0$ for $200\%$ magnification).
+* $p$: The **Shape Exponent** ($p \ge 1.0$) which controls the "sharpness" or "pointiness" of the magnification peak.
 * $s_i$: The computed scale factor of icon $i$.
 * $x'_i$: The final warped center coordinate of icon $i$.
 
 ---
 
 ### Step 1: The Local Scale Profile $s(u)$
-The scale factor for any original coordinate $u$ is determined using a **cubic smoothstep function**. This shape function has a zero derivative ($C^1$ continuous) at both boundaries ($y = \pm 1$), which ensures perfectly smooth transitions:
+The scale factor for any original coordinate $u$ is determined using a **generalized power shape function**. This function allows us to control the "sharpness" of the zoom peak. 
+
+By varying the exponent $p$, we can morph the transition from a highly-rounded flat-topped profile ($p = 3.0$) to a standard parabola ($p = 2.0$), down to a razor-sharp triangular cusp ($p = 1.0$):
 
 $$s(u) = \begin{cases} 
 1 + (M - 1) \cdot h\left(\frac{|u - x_m|}{R}\right) & \text{if } |u - x_m| < R \\
 1.0 & \text{otherwise}
 \end{cases}$$
 
-Where the smoothstep shape function $h(y)$ is:
-$$h(y) = 1 - 3y^2 + 2y^3$$
+Where the generalized shape function $h(y)$ is defined on $[0, 1]$ as:
+$$h(y) = 1 - y^p$$
 
 ```
-   Scale s(u)
+   Scale s(u) (Smooth Parabolic Top, p = 2.0)
      M  +         .---.
         |        /     \
         |       /       \
    1.0  +------'         '------
+        |
+        +------+---------+------>  u
+             xm - R     xm     xm + R
+
+   Scale s(u) (Sharp Pointed Cusp, p = 1.0)
+     M  +           /\
+        |          /  \
+        |         /    \
+   1.0  +------  '      '  -----
         |
         +------+---------+------>  u
              xm - R     xm     xm + R
@@ -88,15 +100,17 @@ $$h(y) = 1 - 3y^2 + 2y^3$$
 ---
 
 ### Step 2: The Continuous Antiderivative $G(u)$
-To determine how coordinates should warp (slide apart) to accommodate the magnified space, we integrate the scaling function $s(u)$ to obtain the antiderivative $G(u) = \int s(u) \, du$.
+To determine how coordinates should warp (slide apart) to accommodate the magnified space, we integrate our generalized scaling function $s(u)$ to obtain the antiderivative $G(u) = \int s(u) \, du$.
 
-Let $z = \frac{u - x_m}{R}$. The analytical closed-form solution of $G(u)$ is:
+Let $z = \frac{u - x_m}{R}$. The analytical closed-form solution of $G(u)$ for any exponent $p \ge 1.0$ is:
 
 $$G(u) = \begin{cases}
 u & \text{if } u < x_m - R \\
-u + (M - 1) \cdot R \cdot \left[ z - z^3 + \text{sign}(z) \cdot \frac{1}{2} z^4 + 0.5 \right] & \text{if } x_m - R \le u \le x_m + R \\
-u + (M - 1) \cdot R & \text{if } u > x_m + R
+u + (M - 1) \cdot R \cdot \left[ z - \text{sign}(z) \cdot \frac{|z|^{p+1}}{p+1} + \frac{p}{p+1} \right] & \text{if } x_m - R \le u \le x_m + R \\
+u + 2(M - 1) \cdot R \cdot \frac{p}{p+1} & \text{if } u > x_m + R
 \end{cases}$$
+
+*(Notice how setting $p = 1.0$ simplifies the boundary shift to $(M-1)R$, matching a linear triangle, and $p = 2.0$ yields $\frac{4}{3}(M-1)R$, matching a quadratic parabola).*
 
 ---
 
@@ -122,39 +136,57 @@ $$A_i = \begin{cases}
 
 ---
 
-### Step 5: Spread Influence & Dynamic progressive Scaling
-To give icons extra breathing room and control their separation when they expand, we introduce a **Spread Factor**. 
+### Step 5: Spacing Padding (The "Spread")
+In this design, the spacing padding between the fixed icon containers **is** the spread. Instead of using an arbitrary horizontal coordinate multiplier, we define a **Base Spacing Padding** $\text{Padding}_{\text{static}}$ (e.g., adjustable via `W/S` keys) that sets the unmagnified resting distance between icons.
 
-We define a **Base Spread Influence** $S_{\text{base}}$ (e.g., $1.0$) and a **Dynamic Spread Factor** $S_{\text{dynamic}}$ which automatically increases the spread as magnification $M$ and radius $R$ grow larger, keeping the icons from crowding at high scales:
+To prevent icons from overlapping when they swell up, we compute an **Active Padding** $\text{Padding}_{\text{active}}$ for the frame. This includes a minor progressive padding boost based on magnification $M$ and radius of influence $R$:
 
-$$S_{\text{dynamic}} = S_{\text{base}} \cdot \left[ 1.0 + \beta \cdot (M - 1.0) \cdot \left(\frac{R}{150.0}\right) \right]$$
+$$\text{Padding}_{\text{active}} = \text{Padding}_{\text{static}} \cdot \left[ 1.0 + \beta \cdot (M - 1.0) \cdot \left(\frac{R}{150.0}\right) \right]$$
 
 Where:
-* $S_{\text{base}}$: User-configurable base spread (typically $0.8 - 1.2$).
+* $\text{Padding}_{\text{static}}$: Base resting spacing padding (typically $8\text{px} - 16\text{px}$).
 * $\beta$: Progressive multiplier coefficient (recommended value of $0.12$).
 * $\frac{R}{150.0}$: Normalized radius scaling.
+
+The **Active Container Width** and **Active Dock Length** ($L$) are dynamically computed as:
+$$\text{ContainerWidth}_{\text{active}} = \text{IconSize} + \text{Padding}_{\text{active}}$$
+$$L = N \cdot \text{ContainerWidth}_{\text{active}}$$
+
+The unwarped resting centers $x_i$ of each icon are then pre-calculated on this active coordinate space:
+$$x_i = i \cdot \text{ContainerWidth}_{\text{active}} + \frac{\text{ContainerWidth}_{\text{active}}}{2}$$
 
 ---
 
 ### Step 6: The Final Warped Coordinate $x'_i$
-By scaling the anchored displacement by our dynamic spread influence, we obtain the final horizontal position $x'_i$ for each icon center:
+Since the spread spacing is now built directly into the unwarped coordinates $x_i$ and active dock length $L$ (which are used inside $A_i$ and $e_i$), the final warped center $x'_i$ for each icon is mapped with elegant simplicity:
 
-$$x'_i = x_i + A_i \cdot e_i \cdot S_{\text{dynamic}}$$
+$$x'_i = x_i + A_i \cdot e_i$$
 
-*Note: Since $e_i = 0$ when $x_m = x_i$ and $A_i = 0$ at the boundaries, adding the spread factor completely preserves both Perfect Alignment and Boundary Anchoring.*
+*Note: Since the spacing is baked directly into the baseline coordinate system on each frame, the warping engine naturally distributes the icons with perfect horizontal breathing room while preserving Perfect Alignment ($x'_i = x_i$ when $x_m = x_i$) and Stationary Boundaries ($x'_0 = 0$ and $x'_{N-1} = L$) with absolute mathematical rigor.*
 
 ---
 
-## 4. Vertical Rise and Background Panel Stretching
+## 4. Vertical Rise, Background Stretching, and Peak Sharpness
 
-### 1. Vertical Axis Elevation (Y-Offset)
-As icons scale up, they rise above the baseline of the dock background to prevent overlapping. The rise elevation $\Delta y_i$ is a direct linear function of the scale factor $s_i$:
+### 1. Vertical Axis Elevation and Dynamic Pointiness (Rise Influence)
+To create an immersive 3D-like zoom effect, as icons approach the mouse cursor, they rise above the dock baseline. We introduce a user-configurable **Rise Influence Factor** $E_{\text{rise}}$ (e.g., via `A/D` keys) that simultaneously links vertical rise and peak pointedness:
 
-$$\Delta y_i = \text{RiseDirection} \cdot \text{RiseHeight} \cdot (s_i - 1.0)$$
+#### A. Scaled Elevation Height
+$$\Delta y_i = \text{RiseDirection} \cdot \text{RiseHeight} \cdot E_{\text{rise}} \cdot (s_i - 1.0)$$
 
 Where:
-* $\text{RiseDirection} = -1$ (to rise upwards in standard screen-coordinate systems).
-* $\text{RiseHeight}$: The maximum upward translation offset (typically $24\text{px} - 32\text{px}$).
+* $\text{RiseDirection} = -1$ (upwards in screen coordinates).
+* $\text{RiseHeight}$: Base height (typically $55\text{px}$).
+
+#### B. Dynamic Exponent Pointiness
+As the icon is pushed higher ($E_{\text{rise}}$ increases), we smoothly morph the shape of the warping parabola to a more **pointed cone peak** by decreasing the shape exponent $p$ towards $1.0$:
+
+$$p = \text{clamp}(2.7 - 1.5 \cdot (E_{\text{rise}} - 0.3), 1.0, 3.0)$$
+
+This elegant coupling ensures that:
+* At **Low Rise ($E_{\text{rise}} \approx 0.3$)**, the magnification profile is a flat, highly-rounded dome ($p = 2.7$).
+* At **Standard Rise ($E_{\text{rise}} = 1.0$)**, the profile matches a pointed parabola ($p = 1.65$).
+* At **High Rise ($E_{\text{rise}} \ge 1.43$)**, the profile collapses completely into a geometric, cusp-like triangular peak ($p = 1.0$), concentrating the zoom visual right under the cursor point.
 
 ### 2. Background Panel Boundaries
 The background dock panel must stretch smoothly to wrap around the active magnified icons. Since the warped leftmost ($x'_0$) and rightmost ($x'_{N-1}$) icon centers are computed deterministically, we find the exact bounding box of the active dock background panel in $O(1)$ time:
@@ -180,7 +212,8 @@ gjs -m tests/dock_animation.js
 * **Mouse Movement**: Glide horizontally across the drawing area to inspect coordinate alignment and edge anchoring.
 * **Up / Down Arrow Keys**: Adjust the maximum scale factor $M$ in real time.
 * **Left / Right Arrow Keys**: Adjust the radius of influence $R$ in real time.
-* **W / S Keys**: Adjust the base spread influence $S_{\text{base}}$ in real time.
+* **W / S Keys**: Adjust the static spacing padding (the baseline spread) in real time.
+* **A / D Keys**: Adjust the rise influence $E_{\text{rise}}$ in real time, smoothly morphing the peak pointiness.
 * **Faint Outlines**: The script displays the static, unmagnified layout behind the active canvas, allowing you to visually verify that:
   * When the mouse is hovering directly over a faint outline center, the active colored box is centered **precisely** on it.
   * The outer edges remain perfectly fixed to the static dock bounds when the cursor is at the far edges of the screen.

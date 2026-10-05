@@ -103,13 +103,17 @@ export let Animator = class {
       this._renderers.push(renderer);
 
       // dot
-      let dots = new DockItemDotsOverlay(new Dot(DOT_CANVAS_SIZE));
+      let dots = new DockItemDotsOverlay(new Dot(DOT_CANVAS_SIZE), {
+        name: 'd2daDotsOverlay',
+      });
       dots.visible = false;
       target.add_child(dots);
       this._dots.push(dots);
 
       // badges
-      let badge = new DockItemBadgeOverlay(new Dot(DOT_CANVAS_SIZE));
+      let badge = new DockItemBadgeOverlay(new Dot(DOT_CANVAS_SIZE), {
+        name: 'd2daBadgeOverlay',
+      });
       badge.visible = false;
       target.add_child(badge);
       this._badges.push(badge);
@@ -132,7 +136,17 @@ export let Animator = class {
 
   //! begin optimization
   animate(dt) {
+    try {
+      this._animate(dt);
+    } catch (err) {
+      console.error('d2da: animator animate', err);
+    }
+  }
+
+  _animate(dt) {
     let dock = this.dock;
+    if (!dock) return;
+
     if (dock._hoveredIcon) {
       dock._lastHoveredIcon = dock._hoveredIcon;
     }
@@ -141,6 +155,10 @@ export let Animator = class {
 
     if (!dock.layout()) {
       console.log('unable to layout()');
+      return;
+    }
+
+    if (!dock.renderArea?.has_allocation()) {
       return;
     }
 
@@ -216,6 +234,7 @@ export let Animator = class {
     animateIcons.forEach((icon) => {
       if (!icon._icon) return;
       let pos = icon.get_transformed_position();
+      if (!pos || isNaN(pos[0]) || isNaN(pos[1])) return;
 
       if (icon._found && !icon._handled) {
         icon._handled = true;
@@ -445,6 +464,9 @@ export let Animator = class {
     // interpolation / animation
     //-------------------
     let renderOffset = dock.renderArea.get_transformed_position();
+    if (!renderOffset || isNaN(renderOffset[0]) || isNaN(renderOffset[1])) {
+      return;
+    }
 
     let first = animateIcons[0];
     let last = animateIcons[animateIcons.length - 1];

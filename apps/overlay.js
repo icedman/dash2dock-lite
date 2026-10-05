@@ -11,7 +11,9 @@ export const DebugOverlay = GObject.registerClass(
   {},
   class D2DLDebugOverlay extends Clutter.Actor {
     _init(x, y) {
-      super._init();
+      super._init({
+        name: 'd2daDebugOverlay',
+      });
 
       this._width = x ? x : 400;
       this._height = y ? y : 400;

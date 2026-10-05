@@ -92,6 +92,7 @@ export let Dock = GObject.registerClass(
       this.fake_dash = new St.Widget({ name: 'dash' });
       this.add_child(this.fake_dash);
       this.fake_dash_background = new St.Widget({
+        name: 'd2daFakeDashBackground',
         style_class: 'dash-background',
       });
       this.fake_dash.add_child(this.fake_dash_background);
@@ -448,20 +449,25 @@ export let Dock = GObject.registerClass(
 
       this.dash = dash;
       this.dash._background.visible = false;
+      if (this.dash._background?.first_child && !this.dash._background.first_child.name) {
+        this.dash._background.first_child.name = 'd2daDashSizerBox';
+      }
       this.dash._box.clip_to_allocation = false;
 
-      this._extraIcons = new St.BoxLayout();
+      this._extraIcons = new St.BoxLayout({
+        name: 'd2daExtraIcons',
+      });
       this.dash._box.add_child(this._extraIcons);
 
       // null these - needed when calling recreateDash
       this._trashIcon = null;
 
       this._separator = new St.Widget({
+        name: 'd2daSeparator',
         style_class: 'dash-separator',
         y_align: Clutter.ActorAlign.CENTER,
         height: 48,
       });
-      this._separator.name = 'separator';
       this._extraIcons.add_child(this._separator);
 
       this.dash.reactive = true;

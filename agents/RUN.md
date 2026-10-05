@@ -136,7 +136,7 @@ Status: `[ ]` todo · `[~]` in progress · `[x]` done (hash) · `[!]` blocked ·
 | [x] 8fab2a5 | 2.6 | R-9a trash via Gio | 2.5 | B-8 · human visual |
 | [x] 1553b9d | 2.7 | R-9b launchers in memory | 2.5 | B-10 |
 | [x] 4b343d1 | 2.8 | R-9c XDG paths | 2.5 | B-21, B-22 |
-| [~] | 2.9 | R-9d CSS without /tmp | 2.5 | B-37 · HUMAN — end of phase 2 |
+| [x] d96998c | 2.9 | R-9d CSS without /tmp | 2.5 | B-37 · HUMAN — end of phase 2 |
 
 ### Phase 3 — Speed (G2)
 | | Cycle | Task | Depends | Notes |
@@ -195,7 +195,7 @@ Status: `open` · `fixed <hash>` · `partial <hash>` · `blocked` · `wontfix (r
 | P-3..P-6 | R-12 | open | | P-9, P-10 | R-13 | open |
 | P-11 | R-12 | open | | §6.3 low bugs | batch after phase 1 | open |
 | T-5 | R-0e | fixed 523cec2 | | T-6 | R-0e | fixed 523cec2 (live counters) |
-| B-36 | R-8 | fixed c0391da | | B-37 | R-9d | open |
+| B-36 | R-8 | fixed c0391da | | B-37 | R-9d | fixed d96998c |
 | B-38 | R-7d | fixed d95bb11 | | T-8 | R-0e | fixed 523cec2 (counted; strict-only gate) |
 | B-39 | R-7d | fixed d95bb11 | | B-40 | R-7d | fixed d95bb11 |
 | B-41 | R-7e | fixed e5ba736 | | T-9 | R-7e | fixed e5ba736 |
@@ -213,7 +213,7 @@ Unassigned rows: when a phase ends, either add a card + board row for them or ma
 | Probe after-disable deltas, 5 toggles (uiGroup / stage / dashes / docks / hi / lo / loop / liveDock / liveDash / liveAnimator) | **d95bb11: all 0.** 523cec2: 0 / 0 / 0 / 0 / 0 / 0 / 0 / **+4 / +4 / +4** (B-1). At 2bbf52d `lo` was +1 (T-5 artifact, fixed). Absolute `stage` varies per run ⇒ deltas only | 523cec2 |
 | Shutdown criticals (T-8, "sweeping phase of GC") | **d95bb11: 0** (default and settings variant). 523cec2: 150 at 5 toggles = 30 per toggle (90 @3, 60 @2); 200 with the settings variant. R-7d target ≈ 0 | 523cec2 |
 | Strict leaks (`D2DA_SMOKE_STRICT_LEAKS=1` in G-leaks) | **ON** since d95bb11. Flake policy: a strict FAIL only on probe line counts (missed `gnome-extensions disable`, T-9) ⇒ rerun once; fail if it repeats | d95bb11 |
-| ESLint warnings (errors) | 145 (0) at 1553b9d; 150 (0) at deb31fb; 151 at 5840f29; 154 at 0821a56; 158 at 1b03ca7; 162 at c9ca876; 166 at ef879f9; 168 at 2a0ae6f. no-unused-vars 162, no-undef 5, no-duplicate-case 1; only remaining demotion: `no-undef: warn` in extension.js for the dead `_onKeyPressed` Clutter use (delete in R-18/R-21) | 2a0ae6f |
+| ESLint warnings (errors) | 140 (0) at d96998c; 145 (0) at 1553b9d; 150 (0) at deb31fb; 151 at 5840f29; 154 at 0821a56; 158 at 1b03ca7; 162 at c9ca876; 166 at ef879f9; 168 at 2a0ae6f. no-unused-vars 162, no-undef 5, no-duplicate-case 1; only remaining demotion: `no-undef: warn` in extension.js for the dead `_onKeyPressed` Clutter use (delete in R-18/R-21) | 2a0ae6f |
 | check-settings issues | **5840f29: exit 0, 0 errors / 30 warnings ⇒ G-settings is now a hard gate (must exit 0).** c9ca876: 1 error (B-12) / 30 warnings. At cff438d: exit 1 by design. Errors 2: shared-adjustment 1 (B-12), duplicate-case 1 (B-16); missing-in-schema 0, widget-type 0. Warnings 30: missing-in-keys 5, key-no-widget 8, dead-setting 17 (§6.5 list + `msg-to-ext` false positive). Should exit 0 after R-4a + R-5 ⇒ then make G-settings a hard exit-code gate | cff438d |
 
 ### 5.1 Human-check queue
@@ -356,3 +356,6 @@ Format: `YYYY-MM-DD HH:MM · cycle · EVENT · details` where EVENT ∈ `SETUP, 
 - 2026-10-05 · 2.8 · AUDIT-PASS · `4b343d1`. check=PASS lint=0/145 settings=exit 0 timer_check 15/15 window_tracker_check 20/20 smoke=PASS(x2) strict=PASS all deltas 0 shutdown criticals 0. B-21, B-22 fixed: standard XDG paths via GLib.get_user_special_dir / GLib.get_user_config_dir; loadFile try/catch with early return on reject; loadConfig error logging.
 - 2026-10-05 · 2.9 · PREFLIGHT · tree clean apart from agents/*; HEAD `4b343d1`; GNOME Shell 50.5.
 - 2026-10-05 · 2.9 · ASSIGN · R-9d CSS in runtime dir without /tmp per shell instance (B-37). Stub expanded.
+- 2026-10-05 · 2.9 · AUDIT-PASS · `d96998c`. check=PASS lint=0/140 (−5) settings=exit 0 timer_check 15/15 window_tracker_check 20/20 smoke=PASS(x2) strict=PASS all deltas 0 shutdown criticals 0. B-37 fixed: CSS written to $XDG_RUNTIME_DIR/d2da-${name}-${INSTANCE_ID}.css per shell instance; unloadAll ignores Gio.IOErrorEnum.NOT_FOUND on delete; tempPath uses runtime dir; prefs theme export to config dir; unused imports removed.
+- 2026-10-05 · 2.9 · STOP · End of Phase 2 (Lifecycle). All 11 phase 2 tasks completed. Strict leaks zero-tolerance clean. Waiting for human sign-off before Phase 3 (Speed).
+- 2026-10-05 · — · HUMAN · Crash fix: named Clutter/St actors (no "unnamed [ClutterActor]"), animator allocation & NaN guards, try/catch error boundary in animate() (CRASH.md).

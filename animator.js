@@ -350,6 +350,7 @@ export let Animator = class {
     for (let i = 0; i < NUM_ICONS; i++) {
         restingCenters.push(i * containerWidth + containerWidth / 2);
     }
+    const restingL = NUM_ICONS * containerWidth;
 
     // Compute decoupled mouse coordinates in the 18-icon coordinate system
     let staticDockStart = 0;
@@ -436,6 +437,8 @@ export let Animator = class {
 
     // Extract the bounds of the 10 real icons from the 18 calculated nodes
     const realLeftEdge = adjustedPackedCenters[NUM_IMAGINARY] - adjustedIconWidths[NUM_IMAGINARY] / 2;
+    const realRightEdge = adjustedPackedCenters[NUM_IMAGINARY + NUM_ICONS - 1] + adjustedIconWidths[NUM_IMAGINARY + NUM_ICONS - 1] / 2;
+    const realActiveL = realRightEdge - realLeftEdge;
 
     // --- Step 5: Decoupled Clutter Translation & Icon Texture Scaling ---
     let firstIcon = null;
@@ -443,6 +446,9 @@ export let Animator = class {
     let iconTable = [];
     let didScale = (nearestIcon !== null);
     let hoveredIcon = nearestIcon;
+
+    // Centering shift to align the dynamic packed dock center with the resting dock center
+    const centeringShift = (restingL - realActiveL) / 2;
 
     animateIcons.forEach((icon, idx) => {
         if (!icon._icon) return;
@@ -452,7 +458,7 @@ export let Animator = class {
         const activeCenter = pc - realLeftEdge;
 
         // Position the Clutter actor perfectly using 1D packing relative to its resting center
-        icon._translate = activeCenter - restingCenters[idx];
+        icon._translate = activeCenter + centeringShift - restingCenters[idx];
 
         // Assign unadjusted original scale to the actor properties
         const originalScale = iconScales[calcIndex];

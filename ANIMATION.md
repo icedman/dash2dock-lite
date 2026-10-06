@@ -234,7 +234,23 @@ This makes porting the dock magnification to any screen edge extremely trivialâ€
 
 ---
 
-## 5. Reference Implementation
+## 5. Rendering Pipeline Stages
+To aid in debugging, visualization, and layout profiling, the animation rendering pipeline is divided into two distinct logical stages:
+
+### Stage 1: Static Spacing, Scaling & Rise (Unwarped)
+In this stage, the dock background and icons expand dynamically based on the active, influenced spacing padding ($\text{Padding}_{\text{active}}$). 
+* Icons are scaled ($s_i$) and vertically elevated ($\Delta y_i$) directly on their unwarped resting centers $x_i$:
+  $$x'_{i,\text{stage1}} = x_i$$
+* **Visual Profile**: Because the icons swell in size but their centers do not slide apart, high scale factors ($M > 1.2$) will cause adjacent icons to visually overlap. This stage illustrates the necessity of coordinate warping to maintain separation.
+
+### Stage 2: Full Facade Coordinate Warping (Warped)
+This is the default production stage. It executes the full deterministic horizontal coordinate warping transformation:
+  $$x'_{i,\text{stage2}} = x_i + A_i \cdot e_i$$
+* **Visual Profile**: The coordinate space itself is stretched symmetrically under the cursor and anchored at the boundaries. Icons are dynamically spread apart to accommodate their magnified sizes, completely eliminating overlap while aligning the active icon perfectly under the pointer.
+
+---
+
+## 6. Reference Implementation
 
 An interactive demonstration script implementing this complete mathematical model is available in the repository at [tests/dock_animation.js](tests/dock_animation.js).
 
@@ -252,6 +268,7 @@ gjs -m tests/dock_animation.js
 * **A / D Keys**: Adjust the static spacing padding (the baseline spread) in real time.
 * **W / S Keys**: Adjust the rise influence $E_{\text{rise}}$ in real time, smoothly morphing the peak pointiness.
 * **R Key**: Cycle the dock position smoothly among **BOTTOM, LEFT, TOP, and RIGHT** screen edges.
+* **1 / 2 Keys**: Toggle between Rendering Stages (Press `1` for Stage 1 Unwarped, Press `2` for Stage 2 Space-Warped Facade).
 * **Faint Outlines**: The script displays the static, unmagnified layout behind the active canvas, allowing you to visually verify that:
   * When the mouse is hovering directly over a faint outline center, the active colored box is centered **precisely** on it.
   * The outer edges remain perfectly fixed to the static dock bounds when the cursor is at the far edges of the screen.

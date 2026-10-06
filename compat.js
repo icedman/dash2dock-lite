@@ -275,13 +275,17 @@ export function setupDashProxy(dash) {
 export function setDashOrientation(dash, orientation) {
   if (!dash) return;
   try {
+    let orient = orientation;
+    if (typeof orientation === 'boolean') {
+      orient = orientation ? 1 : 0;
+    }
     const container = getDashContainer(dash);
     if (container?.layout_manager) {
-      container.layout_manager.orientation = orientation;
+      container.layout_manager.orientation = orient;
     }
     const box = getDashBox(dash);
     if (box?.layout_manager) {
-      box.layout_manager.orientation = orientation;
+      box.layout_manager.orientation = orient;
     }
   } catch (e) {
     console.error('d2da: compat setDashOrientation', e);

@@ -96,8 +96,6 @@ export let Animator = class {
     }
     this._target = dock.renderArea;
 
-    let did_create = false;
-
     while (this._renderers.length < count) {
       // renderer
       let target = dock.renderArea;
@@ -110,9 +108,6 @@ export let Animator = class {
       renderer.visible = false;
       target.add_child(renderer);
       this._renderers.push(renderer);
-
-      // force relayout
-      dock._needsLayout = true;
 
       // dot
       let dots = new DockItemDotsOverlay(new Dot(DOT_CANVAS_SIZE), {
@@ -129,18 +124,12 @@ export let Animator = class {
       badge.visible = false;
       target.add_child(badge);
       this._badges.push(badge);
-
-      did_create = true;
     }
 
     for (let i = dock._icons.length; i < this._renderers.length; i++) {
       this._renderers[i].visible = false;
       this._dots[i].visible = false;
       this._badges[i].visible = false;
-    }
-
-    if (did_create) {
-      return false;
     }
 
     return true;
@@ -338,7 +327,6 @@ export let Animator = class {
 
     const firstIconPos = vertical ? firstIconObj._fixedPosition[1] : firstIconObj._fixedPosition[0];
     const firstIconSize = vertical ? firstIconObj.height : firstIconObj.width;
-    const firstIconCenter = firstIconPos + firstIconSize / 2;
 
     const staticDockStart = firstIconPos;
 
@@ -362,14 +350,13 @@ export let Animator = class {
 
     const targetPadding = staticPadding * (1.0 + 0.12 * (scaleAtMax - 1.0) * (threshold / 150.0));
     const activePadding = basePadding + (targetPadding - basePadding) * (nearestIcon ? 1.0 : 0.0);
-    const containerWidth = ICON_SIZE + basePadding;
     const activeContainerWidth = ICON_SIZE + activePadding;
 
     // Re-evaluate isWithin using our custom expanded hit-test (including imaginary icons on both ends)
     const primaryMouseVal = vertical ? py : px;
     const secondaryMouseVal = vertical ? px : py;
     const firstIconSecondary = vertical ? firstIconObj._fixedPosition[0] : firstIconObj._fixedPosition[1];
-    
+
     const secondaryDist = Math.abs(secondaryMouseVal - (firstIconSecondary + ICON_SIZE / 2));
     const isWithinSecondary = (secondaryDist < ICON_SIZE * 2.0);
 

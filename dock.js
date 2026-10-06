@@ -1258,6 +1258,7 @@ export let Dock = GObject.registerClass(
       }
 
       this._needsLayout = false;
+      this._fast_forward = 20;
       return true;
     }
 

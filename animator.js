@@ -365,6 +365,25 @@ export let Animator = class {
     const containerWidth = ICON_SIZE + basePadding;
     const activeContainerWidth = ICON_SIZE + activePadding;
 
+    // Re-evaluate isWithin using our custom expanded hit-test (including imaginary icons on both ends)
+    const primaryMouseVal = vertical ? py : px;
+    const secondaryMouseVal = vertical ? px : py;
+    const firstIconSecondary = vertical ? firstIconObj._fixedPosition[0] : firstIconObj._fixedPosition[1];
+    
+    const secondaryDist = Math.abs(secondaryMouseVal - (firstIconSecondary + ICON_SIZE / 2));
+    const isWithinSecondary = (secondaryDist < ICON_SIZE * 2.0);
+
+    const expandedStart = staticDockStart - NUM_IMAGINARY * activeContainerWidth;
+    const expandedEnd = staticDockStart + restingL + NUM_IMAGINARY * activeContainerWidth;
+    const isWithinPrimary = (primaryMouseVal >= expandedStart && primaryMouseVal <= expandedEnd);
+
+    isWithin = isWithinPrimary && isWithinSecondary;
+    if (m.inFullscreen) {
+        isWithin = false;
+    }
+    animated = isWithin;
+    dock.animated = animated;
+
     // Compute unwarped static centers for all 18 calculated icons
     const staticCenters = [];
     for (let i = 0; i < TOTAL_CALC_ICONS; i++) {
@@ -388,7 +407,7 @@ export let Animator = class {
     const p = 2.0; // Perfect quadratic parabola shape exponent
     const iconScales = [];
     const iconWidths = [];
-    const hoverActive = (nearestIcon !== null);
+    const hoverActive = isWithin;
 
     for (let i = 0; i < TOTAL_CALC_ICONS; i++) {
         if (!hoverActive) {

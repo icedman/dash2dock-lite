@@ -368,14 +368,21 @@ export let Animator = class {
     const p = 2.0; // Perfect quadratic parabola shape exponent
     const iconScales = [];
     const iconWidths = [];
+    const hoverActive = (nearestIcon !== null);
+
     for (let i = 0; i < TOTAL_CALC_ICONS; i++) {
-        const xi = staticCenters[i];
-        const dist = Math.abs(xi - xmClamped);
-        const normDist = Math.min(1.0, dist / threshold);
-        const parabolicFactor = 1.0 - Math.pow(normDist, 2.0); // Parabola: 1.0 at cursor, tapers to 0.0 at radius
-        const scale = 1.0 + (scaleAtMax - 1.0) * parabolicFactor;
-        iconScales.push(scale);
-        iconWidths.push(ICON_SIZE * scale);
+        if (!hoverActive) {
+            iconScales.push(1.0);
+            iconWidths.push(ICON_SIZE);
+        } else {
+            const xi = staticCenters[i];
+            const dist = Math.abs(xi - xmClamped);
+            const normDist = Math.min(1.0, dist / threshold);
+            const parabolicFactor = 1.0 - Math.pow(normDist, 2.0); // Parabola: 1.0 at cursor, tapers to 0.0 at radius
+            const scale = 1.0 + (scaleAtMax - 1.0) * parabolicFactor;
+            iconScales.push(scale);
+            iconWidths.push(ICON_SIZE * scale);
+        }
     }
 
     const packedCenters = [];

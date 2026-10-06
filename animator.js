@@ -358,9 +358,14 @@ export let Animator = class {
         staticDockStart = vertical ? animateIcons[0]._fixedPosition[1] : animateIcons[0]._fixedPosition[0];
     }
     const primaryMouse = vertical ? py : px;
-    const xmLocal = primaryMouse - staticDockStart;
+
+    // Calibrate pointer tracking by measuring relative to the unwarped active dock start
+    const activeUnpackedL = NUM_ICONS * activeContainerWidth;
+    const unwarpedActiveStartX = staticDockStart - (activeUnpackedL - restingL) / 2;
+    const xmLocalActive = primaryMouse - unwarpedActiveStartX;
+
     const firstRealStaticLeft = staticCenters[NUM_IMAGINARY] - ICON_SIZE / 2;
-    const xmLocalCalculated = xmLocal + firstRealStaticLeft;
+    const xmLocalCalculated = xmLocalActive + firstRealStaticLeft;
     const totalCalcStaticL = TOTAL_CALC_ICONS * activeContainerWidth;
     const xmClamped = Math.max(0, Math.min(totalCalcStaticL, xmLocalCalculated));
 

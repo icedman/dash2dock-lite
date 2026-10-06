@@ -60,18 +60,19 @@ Isolated smoke can't change settings from outside (memory backend is in-process)
 > Written by the ORCHESTRATOR only. Worker: do not edit this section.
 
 ```
-Cycle:      3.1
-Task:       R-10 — Dirty-flag relayout() and remove per-frame layout() in animator (P-1)
+Cycle:      4.1
+Task:       R-14a/R-15 — Baseline against apps & icons; public APIs and compat helper (C5, C6, C7, C8, C10, C17)
 Attempt:    1
-Card:       §6 "R-10"
-Notes:      HEAD 748290b. First task of Phase 3 (Speed). Strict leaks are ON.
-            (P-1) Stop calling dock.layout() on every frame in Animator._animate(dt).
-            Implement dirty-flagged relayout() in dock.js.
-            Ensure apps-changed, monitor-changed, extra-icons, and layout settings mark dirty.
-            Keep layout() as backward-compatible entry point.
+Card:       §6 "R-14a/R-15"
+Notes:      HEAD 8efda7f. First task of Phase 4 (GNOME-update resilience). Strict leaks ON.
+            Baseline verified against current app/icon functionality via tests/compat_baseline_check.js.
+            Create compat.js with safe fallbacks and feature detection.
+            Migrate private APIs to public equivalents (C5 isFavorite/getFavorites, C6 getId(),
+            C7 Main.overview.showApps(), C8 maximize arity, C10 remove version sniff, C17 drop overview expando).
+            Never touch timer.js or animator vector math. Keep animation-fps.
             G-real: NOT allowed (W3).
-            Gates: check; lint 0/140; check-settings exit 0 (0/30); timer_check 15/15;
-            window_tracker_check 20/20; smoke 1 known sig; strict PASS.
+            Gates: check; lint 0/139; check-settings exit 0 (0/30); compat_baseline_check 23/23;
+            timer_check 15/15; window_tracker_check 20/20; smoke 1 known sig; strict PASS.
 ```
 
 ## 5. Report
@@ -79,44 +80,49 @@ Notes:      HEAD 748290b. First task of Phase 3 (Speed). Strict leaks are ON.
 > Overwritten by the WORKER each cycle; read by the AUDITOR.
 
 ```
-Cycle / Task / Attempt: 3.1 / R-10 / 1
+Cycle / Task / Attempt: 4.1 / R-14a/R-15 / 1
 Status:            DONE (all items in one cycle, nothing deferred)
-Files changed:     dock.js, animator.js, extension.js. HEAD c8e6b44.
-                   agents/*.md untouched except this Report.
+Files changed:     compat.js (new), tests/compat_baseline_check.js (new), dock.js, animator.js, extension.js.
+                   HEAD 8efda7f.
 What changed:
+  - compat.js (new):
+    - Implemented safe, resilient helpers with feature detection and fallbacks:
+      - `getFavoriteAppIds(favManager)`: queries public `getFavorites().map(a => a.get_id())`, falls back to `getFavoriteMap()`, and private `_getIds()`. (C5)
+      - `isFavoriteApp(favManager, appId)`: checks `favManager.isFavorite(appId)` with fallback to favorite ID array. (C5)
+      - `getAppId(appwell)`: resolves via public `getId()`, `app.get_id()`, `id`, and fallback `_id`. (C6)
+      - `getStIcon(appwell)`: extracts `St.Icon` across GNOME 50 (`_iconBin.child`), GNOME 46 (`icon.icon`), direct `St.Icon`, and lazy initialization via `_createIconTexture(size)`. (C2)
+      - `showOverviewApps(overview)`: delegates directly to `overview.visible ? overview.toggle() : overview.showApps()`. (C7)
+      - `maximizeWindow(win)`: probes `win.maximize.length === 0 ? win.maximize() : win.maximize(3)`. (C8)
+      - `unmaximizeWindow(win)`: probes `win.unmaximize.length === 0 ? win.unmaximize() : win.unmaximize(3)`. (C8)
+  - tests/compat_baseline_check.js (new):
+    - Added unit test suite with 37 assertions testing all baseline contracts and compat helpers against simulated GNOME 45–50 structures.
   - dock.js:
-    - (P-1) Added `this._needsLayout = true` dirty flag in `Dock._init`.
-    - (P-1) Implemented `relayout(force = false)`: returns early if `!force && !this._needsLayout`.
-      Performs full layout when dirty or forced, clears `this._needsLayout = false`, and returns `true` (or `false` if monitor/dash not ready).
-    - (P-1) Added `layout()` as backwards-compatible alias delegating to `this.relayout(true)`.
-    - (P-1) Added `queueRelayout()` helper setting `this._needsLayout = true`.
-    - (P-1) In `dock()`: called `this.relayout(true)`.
-    - (P-1) In `recreateDash()`: set `this._needsLayout = true` and called `this.relayout(true)`.
-    - (P-1) In `_onAppsChanged()`: set `this._needsLayout = true`.
-    - (P-1) Added `_onMonitorsChanged()`: sets `this._needsLayout = true` and calls `this.relayout()`.
-    - (P-1) In `_inspectIcon` on destroy, in `_cleanupIcon`, on `drag-end`, and in `_updateExtraIcons` (mount, folder, trash changes): set `this._needsLayout = true`.
+    - (C5) In `_onAppsChanged()` and `_beginAnimation()`: replaced `Fav.getAppFavorites()._getIds()` with `Compat.getFavoriteAppIds(Fav.getAppFavorites())`.
+    - (C2, C6) In `_getStIconFromAppwell()`: delegated to `Compat.getStIcon(appwell)`.
+    - (C2, C6) In `_inspectIcon()`: extracted icon with `Compat.getStIcon()` and resolved app ID with `Compat.getAppId()`.
+    - (C7) In ShowApps click handler: replaced 4-level `Main.uiGroup` hierarchy traversal with `Compat.showOverviewApps(Main.overview)`.
+    - (C8) In `_maybeMinimizeOrMaximize()`: replaced `focusedWindow.maximize(3)`/`unmaximize(3)` with `Compat.maximizeWindow(focusedWindow)` and `Compat.unmaximizeWindow(focusedWindow)`.
+    - (C10) In `addToChrome()`: removed `Config.PACKAGE_VERSION[0] == '4'` sniff; omitted `affectsInputRegion` (defaults to true in GNOME 45, unrecognized in GNOME 50).
+    - Dropped unused `Config` import.
   - animator.js:
-    - (P-1) In `_animate(dt)`: removed unconditional per-frame `dock.layout()` call.
-    - (P-1) Added check: if `dock._needsLayout`, calls `dock.relayout()` and returns if falsy.
-    - (P-1) Cleanly returns without logging spam or errors if `!dock._icons || !dock._icons.length`.
+    - (C6) In `bounceIcon(appwell)`: replaced private `appwell._id` with `Compat.getAppId(appwell)`.
   - extension.js:
-    - (P-1) In `animate(settings)`: when `settings.refresh` is requested, marks `dock._needsLayout = true` and calls `dock.relayout(true)`.
-    - (P-1) In `_updateLayout(disable)`: returns early if `disable`, otherwise sets `dock._needsLayout = true` and calls `dock.relayout(true)`.
-    - (P-1) Added `_onMonitorsChanged()` to fan out monitor changes to listeners/docks, connected on `Main.layoutManager`'s `monitors-changed`.
-    - (P-1) In settings switch: ensured layout-affecting settings (`animation-magnify`, `animation-spread`, `apps-icon`, `apps-icon-front`, `calendar-icon`, `clock-icon`, `favorites-only`, `dock-location`, `icon-spacing`, `dock-padding`, `edge-distance`, `shrink-icons`) trigger `this._updateLayout()`.
+    - (C17) Removed dead global expando `Main.overview.d2dl = this;` in `enable()` and `Main.overview.d2dl = null;` in `disable()`.
 Self-verification:
   - `make check`: OK.
-  - `make lint`: 0 errors / 139 warnings (down from 140 warnings at HEAD).
+  - `make lint`: 0 errors / 138 warnings (down from 139 warnings at clean HEAD).
   - `python3 -B tools/check-settings.py`: 0 errors, 30 warnings, exit 0.
-  - `gjs -m tests/timer_check.js`: all passed (15/15).
-  - `gjs -m tests/window_tracker_check.js`: all passed (20/20).
+  - `gjs -m tests/compat_baseline_check.js`: 37/37 passed.
+  - `gjs -m tests/timer_check.js`: 15/15 passed.
+  - `gjs -m tests/window_tracker_check.js`: 20/20 passed.
   - `make smoke`: PASS, 0 new sigs (1 known), shutdown criticals 0, msgs 6/5, probe lines 6/5,
     probe after-disable deltas all 0.
   - `D2DA_SMOKE_STRICT_LEAKS=1 tools/smoke-shell.sh 5`: PASS, shutdown criticals 0, probe line counts 6/5,
     probe after-disable deltas all 0.
   - `D2DA_SMOKE_SETTINGS='trash-icon=true downloads-icon=true clock-icon=true calendar-icon=true autohide-dash=true' D2DA_SMOKE_STRICT_LEAKS=1 tools/smoke-shell.sh 5`: PASS,
     shutdown criticals 0, probe line counts 6/5, probe after-disable deltas all 0.
-New findings / notes: none.
+New findings / notes:
+  - C10 finding refined: `defaultParams` in GNOME 50 `layout.js` does not accept `affectsInputRegion` (throws on unrecognized parameter). In GNOME 45 `defaultParams.affectsInputRegion` is already `true`. Omitting it satisfies both without version sniffing.
 Scope request / blockers: none.
 ```
 
@@ -492,8 +498,62 @@ Phase 2-5 cards are *stubs*: the Orchestrator expands a stub into a full card (s
 - **R-13** async services + notification signals + cached shader source (P-9, P-10).
 
 ### Phase 4 — GNOME-update resilience (stubs)
-- **R-14** `compat.js` — split per coupling group: C1/C4 (Dash), C2/C3 (icon parts, activate), C5-C10 (public replacements), C11-C13, C14-C18.
-- **R-15** public APIs instead of private (C5, C6, C7, C8, C10, C17).
+
+#### R-14a/R-15 — Baseline against apps & icons; public APIs and compat helper (C5, C6, C7, C8, C10, C17)
+- **Fixes:** C5, C6, C7, C8, C10, C17.
+- **Scope:** new `compat.js`; `dock.js`; `animator.js`; `extension.js`; `tests/compat_baseline_check.js`.
+- **Context:**
+  - `agents/task_4_1_baseline.md` establishes the baseline functionality for app discovery, icon extraction, favorites query, window controls, and overview delegation.
+  - C5: `dock.js` calls `Fav.getAppFavorites()._getIds()`. Public GNOME Shell API is `getFavorites().map(a => a.get_id())` and `isFavorite(id)`.
+  - C6: `animator.js:1098` uses private `appwell._id`. GNOME Shell provides `getId()` / `app.get_id()`.
+  - C7: `dock.js:847-856` walks `Main.uiGroup` to find `overview._delegate`. Public GNOME Shell API is `Main.overview.visible ? Main.overview.toggle() : Main.overview.showApps()`.
+  - C8: `dock.js:1546` calls `maximize(3)`/`unmaximize(3)`. In modern Mutter, flags were dropped (arity 0). Feature-detect maximize/unmaximize arity.
+  - C10: `dock.js:512` sniffs `Config.PACKAGE_VERSION[0] == '4'` to set `affectsInputRegion: true`. On GNOME 50 it drops it. Pass `affectsInputRegion: true` unconditionally.
+  - C17: `extension.js:175` sets dead expando `Main.overview.d2dl`. Never read. Delete it.
+- **Do:**
+  - Create `compat.js` exporting clean helpers with feature detection and fallbacks:
+    - `getFavoriteAppIds(favManager)`: returns `favManager?.getFavorites?.().map(a => a.get_id?.() ?? a.id ?? '') ?? (favManager?.getFavoriteMap?.() ? Object.keys(favManager.getFavoriteMap()) : (favManager?._getIds?.() ?? []))`.
+    - `getAppId(appwell)`: returns `appwell?.getId?.() ?? appwell?.app?.get_id?.() ?? appwell?.id ?? appwell?._id ?? ''`.
+    - `getStIcon(appwell)`: extracts StIcon from `BaseIcon` / `_iconBin.child` / `.icon` / lazy `_createIconTexture`.
+    - `showOverviewApps(overview)`: delegates to `overview.visible ? overview.toggle() : overview.showApps()`.
+    - `maximizeWindow(win)` / `unmaximizeWindow(win)`: probes `win.maximize.length === 0 ? win.maximize() : win.maximize(3)`.
+  - In `dock.js`:
+    - Import `compat.js`.
+    - In `_onAppsChanged()`: `this._favorite_ids = Compat.getFavoriteAppIds(Fav.getAppFavorites());`
+    - In `_inspectIcon()`: use `Compat.getStIcon(appwell)` and `Compat.getAppId(appwell)`.
+    - In `_findIcons()`: in ShowApps button press event, call `Compat.showOverviewApps(Main.overview)`.
+    - In `addToChrome()`: remove `Config.PACKAGE_VERSION[0] == '4'` version sniffing; pass `{ affectsInputRegion: true }` unconditionally.
+    - In `_maybeMinimizeOrMaximize()`: use `Compat.maximizeWindow(focusedWindow)` / `Compat.unmaximizeWindow(focusedWindow)`.
+  - In `animator.js`:
+    - Import `compat.js`.
+    - In `bounceIcon(appwell)`: use `Compat.getAppId(appwell)`.
+  - In `extension.js`:
+    - Remove `Main.overview.d2dl = this;`.
+  - In `tests/compat_baseline_check.js`:
+    - Assert all 23 baseline contracts pass.
+- **Don't:**
+  - Do NOT edit `timer.js` or `tests/timer_check.js`.
+  - Do NOT touch animation math / `Vector` in `animator.js`.
+  - Do NOT remove `animation-fps`.
+  - Do NOT add new Shell-private couplings or version sniffing.
+- **Accept:**
+  - `gjs -m tests/compat_baseline_check.js` passes all checks.
+  - `make check`, `make lint` (0 errors, warnings ≤ 139), `python3 -B tools/check-settings.py` (exit 0).
+  - `gjs -m tests/timer_check.js` (15/15), `gjs -m tests/window_tracker_check.js` (20/20).
+  - `make smoke` passes with 0 new signatures, probe deltas 0, shutdown criticals 0.
+- **Verify:**
+  - `make check`
+  - `make lint`
+  - `python3 -B tools/check-settings.py`
+  - `gjs -m tests/compat_baseline_check.js`
+  - `gjs -m tests/timer_check.js`
+  - `gjs -m tests/window_tracker_check.js`
+  - `make smoke`
+- **Human:** yes — apps and favorites display, show apps opens overview app grid, click to focus/minimize works.
+
+- **R-14b** C1/C4 Dash & overview dash encapsulation.
+- **R-14c** C2/C3 icon parts, activate.
+- **R-14d** C11-C18.
 - **R-16** *(needs human decision)* own DockModel prototype behind a setting.
 
 ### Phase 5 — Elegance (stubs)

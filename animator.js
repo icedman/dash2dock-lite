@@ -1,6 +1,7 @@
 'use strict';
 
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
+import * as Compat from './compat.js';
 import St from 'gi://St';
 import Graphene from 'gi://Graphene';
 import Clutter from 'gi://Clutter';
@@ -1097,7 +1098,7 @@ export let Animator = class {
 
   bounceIcon(appwell) {
     let dock = this.dock;
-    let app_id = appwell._id;
+    let app_id = Compat.getAppId(appwell);
 
     // let scaleFactor = dock.getMonitor().geometry_scale;
     //! why not scaleFactor?
@@ -1113,7 +1114,7 @@ export let Animator = class {
       if (dock._dragging) return [null, null];
       let icons = dock._findIcons();
       let icon = icons.find((icon) => {
-        return icon._appwell && icon._appwell._id == app_id;
+        return icon._appwell && Compat.getAppId(icon._appwell) === app_id;
       });
       if (!icon || !icon._appwell) {
         return [null, null];

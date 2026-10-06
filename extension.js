@@ -172,8 +172,6 @@ export default class Dash2DockLiteExt extends Extension {
   }
 
   enable() {
-    Main.overview.d2dl = this;
-
     // Use UUID to avoid conflicting with other instances of this extensions (multi user setup)
     if (!this.uuid) {
       this.uuid = GLib.get_user_name();
@@ -308,7 +306,6 @@ export default class Dash2DockLiteExt extends Extension {
     delete this.icon_theme;
     this.icon_theme = null;
 
-    Main.overview.d2dl = null;
     console.log('dash2dock-lite disabled');
 
     probe(this, 'after-disable', probeTimers);

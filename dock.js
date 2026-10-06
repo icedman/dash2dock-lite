@@ -2,7 +2,7 @@
 
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as Fav from 'resource:///org/gnome/shell/ui/appFavorites.js';
-import * as Config from 'resource:///org/gnome/shell/misc/config.js';
+import * as Compat from './compat.js';
 
 import Shell from 'gi://Shell';
 import GObject from 'gi://GObject';
@@ -325,7 +325,7 @@ export let Dock = GObject.registerClass(
       return Clutter.EVENT_PROPAGATE;
     }
     _onAppsChanged(evt) {
-      this._favorite_ids = Fav.getAppFavorites()._getIds();
+      this._favorite_ids = Compat.getFavoriteAppIds(Fav.getAppFavorites());
       this._icons = null;
       this._needsLayout = true;
       this._fast_forward = 20;
@@ -509,9 +509,6 @@ export let Dock = GObject.registerClass(
 
       Main.layoutManager.addChrome(this.struts, {
         affectsStruts: !this.extension.autohide_dash,
-        ...(Config.PACKAGE_VERSION[0] == '4'
-          ? { affectsInputRegion: true }
-          : {}),
         trackFullscreen: false,
       });
 
@@ -598,27 +595,7 @@ export let Dock = GObject.registerClass(
     // Helper: robustly get the StIcon from a DashIcon/AppIcon instance
     // Supports both GNOME 46 (old) and GNOME 50 (new) structures
     _getStIconFromAppwell(appwell) {
-      if (!appwell || !appwell.icon) return null;
-      let baseIcon = appwell.icon; // BaseIcon or old IconGrid
-
-      if (baseIcon instanceof St.Icon) return baseIcon;
-
-      // Try direct .icon property (works after setIconSize is called)
-      if (baseIcon.icon) return baseIcon.icon;
-      // GNOME 50: try _iconBin.child
-      if (baseIcon._iconBin && baseIcon._iconBin.child) return baseIcon._iconBin.child;
-      // Force icon creation if not yet initialized
-      try {
-        if (baseIcon.setIconSize) {
-          let size = (typeof baseIcon.iconSize === 'number' && baseIcon.iconSize > 0) ? baseIcon.iconSize : 48;
-          baseIcon._createIconTexture(size);
-          if (baseIcon.icon) return baseIcon.icon;
-          if (baseIcon._iconBin && baseIcon._iconBin.child) return baseIcon._iconBin.child;
-        }
-      } catch (err) {
-        // ignore initialization errors
-      }
-      return null;
+      return Compat.getStIcon(appwell);
     }
     
     _inspectIcon(c) {
@@ -645,15 +622,9 @@ export let Dock = GObject.registerClass(
         return false;
       }
 
-      /* ShowAppsIcon - GNOME 50: has .icon (BaseIcon) directly and .child (toggleButton) */
-      /* ShowAppsIcon - GNOME 46: has .icon.icon (StIcon) */
+      /* ShowAppsIcon */
       if (c.icon /* BaseIcon or old IconGrid */) {
-        let stIcon = null;
-        // GNOME 50: icon is BaseIcon, icon.icon might be null initially
-        stIcon = this._getStIconFromAppwell(c);
-        if (!stIcon && c.icon.icon) {
-          stIcon = c.icon.icon;
-        }
+        let stIcon = Compat.getStIcon(c) ?? c.icon.icon;
         if (stIcon) {
           c._icon = stIcon;
           // GNOME 50: child is toggleButton; GNOME 46: child is the button directly
@@ -666,16 +637,12 @@ export let Dock = GObject.registerClass(
         }
       }
 
-      /* DashItemContainer - GNOME 50: child (DashIcon/AppIcon) has .icon (BaseIcon) */
-      /* DashItemContainer - GNOME 46: child.icon.icon is StIcon */
+      /* DashItemContainer */
       if (c.child /* DashIcon/AppIcon */) {
         let appwell = c.child;
         let stIcon = null;
         if (appwell.icon /* BaseIcon or old IconGrid */) {
-          stIcon = this._getStIconFromAppwell(appwell);
-          if (!stIcon && appwell.icon.icon) {
-            stIcon = appwell.icon.icon;
-          }
+          stIcon = Compat.getStIcon(appwell) ?? appwell.icon.icon;
         }
         if (stIcon) {
           c._grid = appwell.icon; // BaseIcon or old IconGrid
@@ -685,8 +652,7 @@ export let Dock = GObject.registerClass(
             c._appwell.visible = true;
             c._dot = c._appwell._dot;
 
-            let app = c._appwell.app;
-            let appId = app ? app.get_id() : '';
+            let appId = Compat.getAppId(c._appwell);
 
             // hide icons if favorites only
             if (
@@ -844,16 +810,7 @@ export let Dock = GObject.registerClass(
             icon.connectObject(
               'button-press-event',
               () => {
-                let overview = Main.uiGroup
-                  .get_children()
-                  .find((c) => c.name == 'overviewGroup')
-                  .get_children()
-                  .find((c) => c.name == 'overview');
-                if (overview._delegate.visible) {
-                  overview._delegate.toggle();
-                } else {
-                  overview._delegate.showApps();
-                }
+                Compat.showOverviewApps(Main.overview);
                 return Clutter.EVENT_PROPAGATE;
               },
               'enter-event',
@@ -1398,7 +1355,7 @@ export let Dock = GObject.registerClass(
         this.dwell.add_style_class_name('hi');
       }
 
-      this._favorite_ids = Fav.getAppFavorites()._getIds();
+      this._favorite_ids = Compat.getFavoriteAppIds(Fav.getAppFavorites());
 
       // if (caller) {
       //   console.log(`animation triggered by ${caller}`);
@@ -1547,9 +1504,9 @@ export let Dock = GObject.registerClass(
               (focusedWindow.get_maximized &&
                 focusedWindow.get_maximized() == 3)
             ) {
-              focusedWindow.unmaximize(3);
+              Compat.unmaximizeWindow(focusedWindow);
             } else {
-              focusedWindow.maximize(3);
+              Compat.maximizeWindow(focusedWindow);
             }
           } else {
             windows.forEach((w) => {

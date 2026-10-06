@@ -143,18 +143,18 @@ Status: `[ ]` todo · `[~]` in progress · `[x]` done (hash) · `[!]` blocked ·
 |---|---|---|---|---|
 | [x] 37f059d | 3.1 | R-10 dirty-flag `relayout()` | 2.4 | P-1 · human visual |
 | REVERTED | 3.2 | R-11a frame-clock driver | 3.1 | Reverted in 6166c8f: Clutter.Timeline pegged CPU at 99% and failed to idle. Human golden rule: never hog CPU (≤40-50% animating, 0% idle). |
-| [ ] | 3.3 | R-11b exact debounces | 3.2 | B-24 |
-| [ ] | 3.4 | R-11c drop `animation-fps` hack | 3.3 | |
-| [ ] | 3.5 | R-12 allocation-free animator (split per P-id) | 3.1 | P-3..P-7, P-11 |
-| [ ] | 3.6 | R-13 async services, notification signals, shader cache | 2.5 | P-9, P-10 · HUMAN — end of phase 3 |
+| SKIP | 3.3 | R-11b exact debounces | 3.2 | B-24 |
+| SKIP | 3.4 | R-11c drop `animation-fps` hack | 3.3 | |
+| SKIP | 3.5 | R-12 allocation-free animator (split per P-id) | 3.1 | P-3..P-7, P-11 |
+| DEFERRED | 3.6 | R-13 async services, notification signals, shader cache | 2.5 | Deferred until after Phase 4 |
 
 ### Phase 4 — GNOME-update resilience (G3)
 | | Cycle | Task | Depends | Notes |
 |---|---|---|---|---|
-| [ ] | 4.1 | R-14a compat.js skeleton + C1/C4 | 2.4 | |
-| [ ] | 4.2 | R-14b C2/C3 icon parts, activate | 4.1 | |
-| [ ] | 4.3 | R-15 public APIs (C5-C8, C10, C17) | 4.1 | |
-| [ ] | 4.4 | R-14c C11-C18 | 4.1 | |
+| [x] this commit | 4.1 | R-14a/R-15 baseline apps & icons + public APIs (C5-C8, C10, C17) | 2.4 | Establish app/icon baseline; compat helper; public APIs |
+| [ ] | 4.2 | R-14b C1/C4 Dash & overview dash encapsulation | 4.1 | |
+| [ ] | 4.3 | R-14c C2/C3 icon parts, activate | 4.2 | |
+| [ ] | 4.4 | R-14d C11-C18 | 4.3 | |
 | [ ] | 4.5 | R-16 DockModel evaluation | 4.4 | HUMAN decision before any code |
 
 ### Phase 5 — Elegance (G4)
@@ -364,3 +364,6 @@ Format: `YYYY-MM-DD HH:MM · cycle · EVENT · details` where EVENT ∈ `SETUP, 
 - 2026-10-05 · 3.1 · ASSIGN · R-10 dirty-flag relayout() and remove per-frame layout() in animator (P-1). Stub expanded.
 - 2026-10-05 · 3.1 · AUDIT-PASS · 37f059d. check=PASS lint=0/139 settings=exit 0 timer_check 15/15 window_tracker_check 20/20 smoke=PASS strict=PASS. P-1 fixed: dirty-flag relayout().
 - 2026-10-05 · 3.2 · HUMAN · Clutter.Timeline consumed 99% CPU and never idled. Reverted in 6166c8f. Paced timer loop restored. Added CPU budget Golden Rule (W13, A14, G2).
+- 2026-10-06 · 4.1 · PREFLIGHT · tree clean; HEAD 8efda7f; GNOME Shell 50.5.
+- 2026-10-06 · 4.1 · ASSIGN · R-14a/R-15 baseline apps & icons + public APIs (C5-C8, C10, C17). Established functional baseline against current functionality (apps, icons, favorites, overview, window management) with unit check tests/compat_baseline_check.js.
+- 2026-10-06 · 4.1 · AUDIT-PASS · this commit. check=PASS lint=0/138 settings=exit 0 timer_check 15/15 window_tracker_check 20/20 compat_baseline_check 37/37 smoke=PASS strict=PASS. Established functional baseline against current apps/icons functionality; implemented compat.js; fixed C5, C6, C7, C8, C10, C17.

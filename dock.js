@@ -1198,7 +1198,17 @@ export let Dock = GObject.registerClass(
       // reorient and reposition the dash
       Compat.setDashOrientation(this.dash, vertical);
       if (this._extraIcons) {
-        this._extraIcons.layout_manager.orientation = vertical;
+        if ('orientation' in this._extraIcons) {
+          this._extraIcons.orientation = vertical
+            ? Clutter.Orientation.VERTICAL
+            : Clutter.Orientation.HORIZONTAL;
+        } else if ('vertical' in this._extraIcons) {
+          this._extraIcons.vertical = Boolean(vertical);
+        } else if (this._extraIcons.layout_manager) {
+          this._extraIcons.layout_manager.orientation = vertical
+            ? Clutter.Orientation.VERTICAL
+            : Clutter.Orientation.HORIZONTAL;
+        }
       }
 
       // hug the edge
@@ -1352,6 +1362,9 @@ export let Dock = GObject.registerClass(
       }
 
       this._favorite_ids = Compat.getFavoriteAppIds(Fav.getAppFavorites());
+      if (!this._icons) {
+        this._icons = this._findIcons();
+      }
 
       // if (caller) {
       //   console.log(`animation triggered by ${caller}`);

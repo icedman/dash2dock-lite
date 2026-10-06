@@ -210,9 +210,27 @@ This elegant coupling ensures that:
 ### 2. Background Panel Boundaries
 The background dock panel must stretch smoothly to wrap around the active magnified icons. Since the warped leftmost ($x'_0$) and rightmost ($x'_{N-1}$) icon centers are computed deterministically, we find the exact bounding box of the active dock background panel in $O(1)$ time:
 
-$$\text{DockLeft} = x'_0 - \frac{s_0 \cdot \text{IconSize}}{2} - \text{Padding}$$
+* **Horizontal Dock (BOTTOM / TOP)**:
+  $$\text{DockLeft} = x'_0 - \frac{s_0 \cdot \text{IconSize}}{2} - \text{Padding}$$
+  $$\text{DockRight} = x'_{N-1} + \frac{s_{N-1} \cdot \text{IconSize}}{2} + \text{Padding}$$
 
-$$\text{DockRight} = x'_{N-1} + \frac{s_{N-1} \cdot \text{IconSize}}{2} + \text{Padding}$$
+* **Vertical Dock (LEFT / RIGHT)**:
+  $$\text{DockTop} = y'_0 - \frac{s_0 \cdot \text{IconSize}}{2} - \text{Padding}$$
+  $$\text{DockBottom} = y'_{N-1} + \frac{s_{N-1} \cdot \text{IconSize}}{2} + \text{Padding}$$
+
+### 3. Multi-Orientation Rotation (BOTTOM, LEFT, TOP, RIGHT)
+A major strength of our deterministic math engine is that the coordinate warping functions $G(u)$ and $s(u)$ operate on a **one-dimensional line segment of length $L$** representing the dock's primary axis. This makes the math completely orientation-independent.
+
+When the dock position is cycled (e.g., via the `R` key), we simply assign the screen axes and rise offsets dynamically:
+
+| Position | Primary Axis (Warping) | Secondary Axis (Baseline) | Vertical/Horizontal Rise Direction |
+| :--- | :--- | :--- | :--- |
+| **BOTTOM** | Horizontal ($X$-axis) | Vertical ($Y$-axis near bottom) | Upwards ($-\Delta y$) |
+| **TOP** | Horizontal ($X$-axis) | Vertical ($Y$-axis near top) | Downwards ($+\Delta y$) |
+| **LEFT** | Vertical ($Y$-axis) | Horizontal ($X$-axis near left) | Rightwards ($+\Delta x$) |
+| **RIGHT** | Vertical ($Y$-axis) | Horizontal ($X$-axis near right) | Leftwards ($-\Delta x$) |
+
+This makes porting the dock magnification to any screen edge extremely trivial—requiring zero modifications to the core math engine.
 
 ---
 
@@ -233,6 +251,7 @@ gjs -m tests/dock_animation.js
 * **Left / Right Arrow Keys**: Adjust the radius of influence $R$ in real time.
 * **A / D Keys**: Adjust the static spacing padding (the baseline spread) in real time.
 * **W / S Keys**: Adjust the rise influence $E_{\text{rise}}$ in real time, smoothly morphing the peak pointiness.
+* **R Key**: Cycle the dock position smoothly among **BOTTOM, LEFT, TOP, and RIGHT** screen edges.
 * **Faint Outlines**: The script displays the static, unmagnified layout behind the active canvas, allowing you to visually verify that:
   * When the mouse is hovering directly over a faint outline center, the active colored box is centered **precisely** on it.
   * The outer edges remain perfectly fixed to the static dock bounds when the cursor is at the far edges of the screen.

@@ -65,6 +65,8 @@ let riseInfluence = 1.0; // Rise influence (amplitude and pointiness), adjustabl
 let mouseX = 300.0;      // Mouse position X relative to dock start
 let mouseY = 0.0;        // Mouse position Y
 let mouseOver = false;   // Is mouse over the dock drawing area?
+let hoverProgress = 0.0; // Dynamic transition factor between 0.0 and 1.0
+let lastGlobalX = 300.0; // Track last global pointer X
 
 const NUM_ICONS = 10;
 const ICON_SIZE = 48;
@@ -114,24 +116,39 @@ app.connect('activate', (app) => {
     // Event Controllers for Mouse Movement
     const motionCtrl = new Gtk.EventControllerMotion();
     motionCtrl.connect('motion', (controller, x, y) => {
-        // Compute active padding and dimensions to locate dock start
-        const activePadding = mouseOver ? staticPadding * (1.0 + 0.12 * (maxScale - 1.0) * (radius / 150.0)) : staticPadding;
-        const activeContainerWidth = ICON_SIZE + activePadding;
-        const activeL = NUM_ICONS * activeContainerWidth;
-        const width = drawingArea.get_width();
-        const dockStartX = (width - activeL) / 2;
-        
-        mouseX = x - dockStartX; // Local coordinate
+        lastGlobalX = x;
         mouseY = y;
         mouseOver = true;
-        
-        drawingArea.queue_draw();
     });
     motionCtrl.connect('leave', () => {
         mouseOver = false;
-        drawingArea.queue_draw();
     });
     drawingArea.add_controller(motionCtrl);
+
+    // High-performance GTK Tick Callback for smooth entry/exit animations
+    drawingArea.add_tick_callback((widget, frameClock) => {
+        if (mouseOver || hoverProgress > 0.0) {
+            const target = mouseOver ? 1.0 : 0.0;
+            const diff = target - hoverProgress;
+            
+            if (Math.abs(diff) < 0.005) {
+                hoverProgress = target;
+            } else {
+                hoverProgress += diff * 0.12; // Easing speed
+            }
+
+            // Recalculate local mouseX coordinates on the currently active, animated dock width
+            const targetPadding = staticPadding * (1.0 + 0.12 * (maxScale - 1.0) * (radius / 150.0));
+            const activePadding = staticPadding + (targetPadding - staticPadding) * hoverProgress;
+            const activeL = NUM_ICONS * (ICON_SIZE + activePadding);
+            const width = drawingArea.get_width();
+            const dockStartX = (width - activeL) / 2;
+            mouseX = lastGlobalX - dockStartX;
+
+            drawingArea.queue_draw();
+        }
+        return true; // Keep running
+    });
 
     // Event Controller for Keypresses
     const keyCtrl = new Gtk.EventControllerKey();
@@ -229,11 +246,8 @@ app.connect('activate', (app) => {
 
         // Calculate positions and scales for all active icons
         const activeIcons = activeCenters.map(xi => {
-            if (!mouseOver) {
-                return { warpedX: activeDockStartX + xi, scale: 1.0 };
-            }
-
-            const scale = getScale(xi, xmClamped, radius, maxScale, p);
+            const targetScale = getScale(xi, xmClamped, radius, maxScale, p);
+            const scale = 1.0 + (targetScale - 1.0) * hoverProgress;
 
             // 1. Raw expansion displacement: how much the coordinate wants to expand away from the mouse
             const rawExpansion = G(xi, xmClamped, radius, maxScale, p) - G(xmClamped, xmClamped, radius, maxScale, p) - (xi - xmClamped);
@@ -250,8 +264,8 @@ app.connect('activate', (app) => {
                 anchoringFactor = 1.0;
             }
 
-            // 3. Apply anchored displacement to resting center
-            const warpedLocalX = xi + anchoringFactor * rawExpansion;
+            // 3. Apply anchored displacement to resting center, scaled by our hover progress transition
+            const warpedLocalX = xi + anchoringFactor * rawExpansion * hoverProgress;
 
             return {
                 warpedX: activeDockStartX + warpedLocalX,
@@ -261,15 +275,10 @@ app.connect('activate', (app) => {
 
         // Compute dynamically stretched background bounds
         let activeLeftX, activeRightX;
-        if (mouseOver) {
-            const firstIcon = activeIcons[0];
-            const lastIcon = activeIcons[activeIcons.length - 1];
-            activeLeftX = firstIcon.warpedX - (firstIcon.scale * ICON_SIZE) / 2 - 12;
-            activeRightX = lastIcon.warpedX + (lastIcon.scale * ICON_SIZE) / 2 + 12;
-        } else {
-            activeLeftX = activeDockStartX - 10;
-            activeRightX = activeDockStartX + activeL + 10;
-        }
+        const firstIcon = activeIcons[0];
+        const lastIcon = activeIcons[activeIcons.length - 1];
+        activeLeftX = firstIcon.warpedX - (firstIcon.scale * ICON_SIZE) / 2 - 12;
+        activeRightX = lastIcon.warpedX + (lastIcon.scale * ICON_SIZE) / 2 + 12;
 
         // Draw Active Dock Background (Slightly rounded rectangle)
         cr.setSourceRGBA(0.22, 0.22, 0.26, 0.85);
@@ -353,8 +362,10 @@ app.connect('activate', (app) => {
         cr.moveTo(25, 215);
         cr.showText(`Active Frame Padding (Boosted): ${activePadding.toFixed(1)}px`);
         cr.moveTo(25, 240);
-        cr.showText(`Rise Influence (A/D): ${riseInfluence.toFixed(2)}x`);
+        cr.showText(`Transition Progress: ${(hoverProgress * 100).toFixed(0)}%`);
         cr.moveTo(25, 265);
+        cr.showText(`Rise Influence (A/D): ${riseInfluence.toFixed(2)}x`);
+        cr.moveTo(25, 290);
         
         let shapeLabel = "Rounded Parabola";
         if (p <= 1.05) shapeLabel = "Sharp Cusp / Triangle";
@@ -364,7 +375,7 @@ app.connect('activate', (app) => {
         cr.selectFontFace('Sans', Cairo.FontSlant.NORMAL, Cairo.FontWeight.NORMAL);
         cr.setFontSize(11);
         cr.setSourceRGBA(0.7, 0.7, 0.7, 0.95);
-        cr.moveTo(25, 295);
+        cr.moveTo(25, 320);
         cr.showText(`Active Dock Width: ${(activeRightX - activeLeftX).toFixed(1)}px (Original Resting: ${restingL + 20}px)`);
     });
 

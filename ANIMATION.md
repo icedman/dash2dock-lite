@@ -35,6 +35,19 @@ Repositioning complex GTK/Clutter widget subtrees on every frame is computationa
 * The opacity of the actual interactive GTK widgets is set to `0` (hidden), but they are **kept reactive** to pointer events and hover triggers.
 * The `renderArea` canvas intercepts the mouse coordinates and handles the visual rendering of the stretched background and scaled icons.
 
+### 3. Smooth Entry/Exit Easing (Transition Curve)
+To prevent sudden popping of scales or positions, the transition of spacing padding and magnification is smoothly eased over time. We introduce a frame-rate-independent transition variable $T_{\text{progress}} \in [0.0, 1.0]$ (implemented via a GTK frame tick callback):
+* **Mouse Enters**: $T_{\text{progress}}$ smoothly rises from $0.0$ to $1.0$ (firing up).
+* **Mouse Leaves**: $T_{\text{progress}}$ smoothly falls from $1.0$ back to $0.0$ (cooling down).
+
+This transition variable is used to scale and interpolate all active layout properties smoothly during the entrance and exit phases:
+* **Animated Spacing Padding**:
+  $$\text{Padding}_{\text{animated}} = \text{Padding}_{\text{static}} + (\text{Padding}_{\text{active}} - \text{Padding}_{\text{static}}) \cdot T_{\text{progress}}$$
+* **Animated Icon Scale**:
+  $$s_{\text{animated}, i} = 1.0 + (s_i - 1.0) \cdot T_{\text{progress}}$$
+* **Animated Warped Coordinate**:
+  $$x'_{i,\text{animated}} = x_i + A_i \cdot e_i \cdot T_{\text{progress}}$$
+
 ---
 
 ## 2. Core Mathematical Challenges

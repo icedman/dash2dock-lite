@@ -530,28 +530,17 @@ export let Animator = class {
       //-------------------
       // animate position
       //-------------------
+      // High-performance Exponential Easing (LERP) for buttery-smooth and snappy transitions
       {
-        let speed = ANIM_POSITION_PER_SEC * slowDown;
-        let targetPosition = new Vector([translationX, translationY, 0]);
-        let currentPosition = new Vector([
-          icon._icon.translationX,
-          icon._icon.translationY,
-          0,
-        ]);
-        let dst = targetPosition.subtract(currentPosition);
-        let mag = dst.magnitude();
-        if (mag > 0) {
-          dst = dst.normalize();
-        }
-        let deltaVector = dst.multiplyScalar(speed * dt);
-        let deltaMag = deltaVector.magnitude();
-        let appliedVector = new Vector([targetPosition.x, targetPosition.y, 0]);
-        if (deltaMag < mag) {
-          appliedVector = currentPosition.add(deltaVector);
-        }
-        translationX = appliedVector.x;
-        translationY = appliedVector.y;
-        icon._deltaVector = appliedVector;
+        let baseLerpFactor = 0.28; // 28% distance closed per 16.6ms frame (very snappy!)
+        let factor = 1.0 - Math.pow(1.0 - baseLerpFactor, dt / 16.6);
+        
+        // Handle edge boundary cases where dt is massive or invalid
+        if (isNaN(factor) || factor > 1.0) factor = 1.0;
+        if (factor < 0.0) factor = 0.0;
+
+        translationX = icon._icon.translationX + (translationX - icon._icon.translationX) * factor;
+        translationY = icon._icon.translationY + (translationY - icon._icon.translationY) * factor;
       }
 
       if (dock.extension.animation_fps > 0) {

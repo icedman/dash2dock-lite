@@ -13,7 +13,7 @@ Gtk.init();
 
 /**
  * Analytical antiderivative G(u) using a generalized shape exponent p.
- * 
+ *
  * @param {number} u - original coordinate
  * @param {number} xm - mouse position
  * @param {number} R - radius of influence
@@ -38,7 +38,7 @@ function G(u, xm, R, M, p) {
 
 /**
  * Get scale factor at original coordinate u using a generalized shape exponent p.
- * 
+ *
  * @param {number} u - original coordinate
  * @param {number} xm - mouse position
  * @param {number} R - radius of influence
@@ -58,8 +58,8 @@ function getScale(u, xm, R, M, p) {
 }
 
 // --- App State ---
-let maxScale = 2.0;      // Max scale M, adjustable via Up/Down arrow keys
-let radius = 150.0;      // Radius R, adjustable via Left/Right arrow keys
+let maxScale = 1.5;      // Max scale M, adjustable via Up/Down arrow keys
+let radius = 100.0;      // Radius R, adjustable via Left/Right arrow keys
 let staticPadding = 12.0;// Padding (the spread between icons), adjustable via W/S keys
 let riseInfluence = 1.0; // Rise influence (amplitude and pointiness), adjustable via A/D keys
 let mouseX = 300.0;      // Mouse position X relative to dock start
@@ -70,6 +70,7 @@ let lastGlobalX = 300.0; // Track last global pointer X
 
 const NUM_ICONS = 10;
 const ICON_SIZE = 48;
+const UNANIMATED_PADDING = 2.0; // Closely-packed resting padding when unanimated / not hovering
 
 // --- Application Setup ---
 
@@ -130,7 +131,7 @@ app.connect('activate', (app) => {
         if (mouseOver || hoverProgress > 0.0) {
             const target = mouseOver ? 1.0 : 0.0;
             const diff = target - hoverProgress;
-            
+
             if (Math.abs(diff) < 0.005) {
                 hoverProgress = target;
             } else {
@@ -139,7 +140,7 @@ app.connect('activate', (app) => {
 
             // Recalculate local mouseX coordinates on the currently active, animated dock width
             const targetPadding = staticPadding * (1.0 + 0.12 * (maxScale - 1.0) * (radius / 150.0));
-            const activePadding = staticPadding + (targetPadding - staticPadding) * hoverProgress;
+            const activePadding = UNANIMATED_PADDING + (targetPadding - UNANIMATED_PADDING) * hoverProgress;
             const activeL = NUM_ICONS * (ICON_SIZE + activePadding);
             const width = drawingArea.get_width();
             const dockStartX = (width - activeL) / 2;
@@ -193,14 +194,16 @@ app.connect('activate', (app) => {
     // Draw Function
     drawingArea.set_draw_func((widget, cr, width, height) => {
         // --- 1. Compute Spacing & Dynamic Dimensions ---
-        // Spacing/padding is the "spread". We add a minor dynamic boost based on scale and radius.
-        const activePadding = mouseOver ? staticPadding * (1.0 + 0.12 * (maxScale - 1.0) * (radius / 150.0)) : staticPadding;
-        const containerWidth = ICON_SIZE + staticPadding;
+        // Spacing/padding is closely-packed (UNANIMATED_PADDING) when not animating.
+        // Upon mouse entering, the padding smoothly expands ("fires up") from UNANIMATED_PADDING to staticPadding + dynamic boost.
+        const targetPadding = staticPadding * (1.0 + 0.12 * (maxScale - 1.0) * (radius / 150.0));
+        const activePadding = UNANIMATED_PADDING + (targetPadding - UNANIMATED_PADDING) * hoverProgress;
+        const containerWidth = ICON_SIZE + UNANIMATED_PADDING;
         const activeContainerWidth = ICON_SIZE + activePadding;
-        
+
         const restingL = NUM_ICONS * containerWidth;
         const activeL = NUM_ICONS * activeContainerWidth;
-        
+
         const staticDockStartX = (width - restingL) / 2;
         const activeDockStartX = (width - activeL) / 2;
         const baselineY = height - 120; // baseline of icon bottom
@@ -285,7 +288,7 @@ app.connect('activate', (app) => {
         const bgHeight = ICON_SIZE + 20;
         const bgY = baselineY - ICON_SIZE - 10;
         const radiusBg = 16;
-        
+
         cr.newSubPath();
         cr.arc(activeLeftX + radiusBg, bgY + radiusBg, radiusBg, Math.PI, 1.5 * Math.PI);
         cr.arc(activeRightX - radiusBg, bgY + radiusBg, radiusBg, 1.5 * Math.PI, 2.0 * Math.PI);
@@ -307,11 +310,11 @@ app.connect('activate', (app) => {
             const b = 0.8 - 0.4 * (idx / NUM_ICONS);
 
             cr.setSourceRGBA(r, g, b, 1.0);
-            
+
             // Draw rounded-corner icon rectangles
             const iconX = icon.warpedX - size / 2;
             const iconRadius = 8 * icon.scale;
-            
+
             cr.newSubPath();
             cr.arc(iconX + iconRadius, iconY + iconRadius, iconRadius, Math.PI, 1.5 * Math.PI);
             cr.arc(iconX + size - iconRadius, iconY + iconRadius, iconRadius, 1.5 * Math.PI, 2.0 * Math.PI);
@@ -366,12 +369,12 @@ app.connect('activate', (app) => {
         cr.moveTo(25, 265);
         cr.showText(`Rise Influence (A/D): ${riseInfluence.toFixed(2)}x`);
         cr.moveTo(25, 290);
-        
+
         let shapeLabel = "Rounded Parabola";
         if (p <= 1.05) shapeLabel = "Sharp Cusp / Triangle";
         else if (p < 1.7) shapeLabel = "Pointed Peak";
         cr.showText(`Peak Shape Exponent (p): ${p.toFixed(2)} (${shapeLabel})`);
-        
+
         cr.selectFontFace('Sans', Cairo.FontSlant.NORMAL, Cairo.FontWeight.NORMAL);
         cr.setFontSize(11);
         cr.setSourceRGBA(0.7, 0.7, 0.7, 0.95);

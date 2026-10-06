@@ -150,15 +150,21 @@ $$A_i = \begin{cases}
 ---
 
 ### Step 5: Spacing Padding (The "Spread")
-In this design, the spacing padding between the fixed icon containers **is** the spread. Instead of using an arbitrary horizontal coordinate multiplier, we define a **Base Spacing Padding** $\text{Padding}_{\text{static}}$ (e.g., adjustable via `W/S` keys) that sets the unmagnified resting distance between icons.
+In this design, the spacing padding between the fixed icon containers **is** the spread. Instead of using an arbitrary horizontal coordinate multiplier, we define a **Base Spacing Padding** $\text{Padding}_{\text{static}}$ (e.g., adjustable via `W/S` keys) that sets the unmagnified expanded distance between icons.
 
-To prevent icons from overlapping when they swell up, we compute an **Active Padding** $\text{Padding}_{\text{active}}$ for the frame. This includes a minor progressive padding boost based on magnification $M$ and radius of influence $R$:
+To keep the dock compact when resting, the expanded padding **does not take effect** if the dock is not actively animating. Instead, the resting dock remains closely-packed using a tight default baseline:
+$$\text{Padding}_{\text{unanimated}} = 2\text{px}$$
 
-$$\text{Padding}_{\text{active}} = \text{Padding}_{\text{static}} \cdot \left[ 1.0 + \beta \cdot (M - 1.0) \cdot \left(\frac{R}{150.0}\right) \right]$$
+When the mouse enters and the dock is actively animating, the padding smoothly expands ("fires up") from this tight baseline towards the fully-expanded target padding $\text{Padding}_{\text{target}}$ as a function of the transition factor $T_{\text{progress}}$:
+
+$$\text{Padding}_{\text{target}} = \text{Padding}_{\text{static}} \cdot \left[ 1.0 + \beta \cdot (M - 1.0) \cdot \left(\frac{R}{150.0}\right) \right]$$
+
+$$\text{Padding}_{\text{active}} = \text{Padding}_{\text{unanimated}} + (\text{Padding}_{\text{target}} - \text{Padding}_{\text{unanimated}}) \cdot T_{\text{progress}}$$
 
 Where:
-* $\text{Padding}_{\text{static}}$: Base resting spacing padding (typically $8\text{px} - 16\text{px}$).
-* $\beta$: Progressive multiplier coefficient (recommended value of $0.12$).
+* $\text{Padding}_{\text{static}}$: Configured expanded spacing padding (typically $8\text{px} - 24\text{px}$).
+* $\text{Padding}_{\text{unanimated}} = 2\text{px}$: Rigid compact default spacing when not animating.
+* $\beta$: Progressive multiplier coefficient ($0.12$).
 * $\frac{R}{150.0}$: Normalized radius scaling.
 
 The **Active Container Width** and **Active Dock Length** ($L$) are dynamically computed as:

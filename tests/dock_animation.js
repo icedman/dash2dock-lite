@@ -99,8 +99,8 @@ app.connect('activate', (app) => {
                '• Move your mouse horizontally over the bottom canvas to see the animation.\n' +
                '• Use <b>Up/Down Arrow Keys</b> to change Max Scale (M)\n' +
                '• Use <b>Left/Right Arrow Keys</b> to change Radius of Influence (R)\n' +
-               '• Use <b>W / S Keys</b> to change Static Spacing Padding (Spread)\n' +
-               '• Use <b>A / D Keys</b> to change Rise Influence &amp; Peak Pointiness',
+               '• Use <b>A / D Keys</b> to change Static Spacing Padding (Spread)\n' +
+               '• Use <b>W / S Keys</b> to change Rise Influence &amp; Peak Pointiness',
         use_markup: true,
         margin_top: 15,
         margin_bottom: 5,
@@ -169,16 +169,16 @@ app.connect('activate', (app) => {
         } else if (keyName === 'Left') {
             radius = Math.max(50.0, radius - 10.0);
             changed = true;
-        } else if (keyName === 'w' || keyName === 'W') {
+        } else if (keyName === 'd' || keyName === 'D') {
             staticPadding = Math.min(45.0, staticPadding + 1.0);
             changed = true;
-        } else if (keyName === 's' || keyName === 'S') {
+        } else if (keyName === 'a' || keyName === 'A') {
             staticPadding = Math.max(0.0, staticPadding - 1.0);
             changed = true;
-        } else if (keyName === 'd' || keyName === 'D') {
+        } else if (keyName === 'w' || keyName === 'W') {
             riseInfluence = Math.min(2.0, riseInfluence + 0.05);
             changed = true;
-        } else if (keyName === 'a' || keyName === 'A') {
+        } else if (keyName === 's' || keyName === 'S') {
             riseInfluence = Math.max(0.3, riseInfluence - 0.05);
             changed = true;
         }
@@ -361,13 +361,13 @@ app.connect('activate', (app) => {
         cr.moveTo(25, 165);
         cr.showText(`Radius of Influence (R): ${radius.toFixed(0)}px`);
         cr.moveTo(25, 190);
-        cr.showText(`Base Padding (Spread via W/S): ${staticPadding.toFixed(0)}px`);
+        cr.showText(`Base Padding (Spread via A/D): ${staticPadding.toFixed(0)}px`);
         cr.moveTo(25, 215);
         cr.showText(`Active Frame Padding (Boosted): ${activePadding.toFixed(1)}px`);
         cr.moveTo(25, 240);
         cr.showText(`Transition Progress: ${(hoverProgress * 100).toFixed(0)}%`);
         cr.moveTo(25, 265);
-        cr.showText(`Rise Influence (A/D): ${riseInfluence.toFixed(2)}x`);
+        cr.showText(`Rise Influence (W/S): ${riseInfluence.toFixed(2)}x`);
         cr.moveTo(25, 290);
 
         let shapeLabel = "Rounded Parabola";

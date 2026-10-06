@@ -188,7 +188,7 @@ $$x'_i = x_i + A_i \cdot e_i$$
 ## 4. Vertical Rise, Background Stretching, and Peak Sharpness
 
 ### 1. Vertical Axis Elevation and Dynamic Pointiness (Rise Influence)
-To create an immersive 3D-like zoom effect, as icons approach the mouse cursor, they rise above the dock baseline. We introduce a user-configurable **Rise Influence Factor** $E_{\text{rise}}$ (e.g., via `A/D` keys) that simultaneously links vertical rise and peak pointedness:
+To create an immersive 3D-like zoom effect, as icons approach the mouse cursor, they rise above the dock baseline. We introduce a user-configurable **Rise Influence Factor** $E_{\text{rise}}$ (e.g., via `W/S` keys) that simultaneously links vertical rise and peak pointedness:
 
 #### A. Scaled Elevation Height
 $$\Delta y_i = \text{RiseDirection} \cdot \text{RiseHeight} \cdot E_{\text{rise}} \cdot (s_i - 1.0)$$
@@ -231,8 +231,8 @@ gjs -m tests/dock_animation.js
 * **Mouse Movement**: Glide horizontally across the drawing area to inspect coordinate alignment and edge anchoring.
 * **Up / Down Arrow Keys**: Adjust the maximum scale factor $M$ in real time.
 * **Left / Right Arrow Keys**: Adjust the radius of influence $R$ in real time.
-* **W / S Keys**: Adjust the static spacing padding (the baseline spread) in real time.
-* **A / D Keys**: Adjust the rise influence $E_{\text{rise}}$ in real time, smoothly morphing the peak pointiness.
+* **A / D Keys**: Adjust the static spacing padding (the baseline spread) in real time.
+* **W / S Keys**: Adjust the rise influence $E_{\text{rise}}$ in real time, smoothly morphing the peak pointiness.
 * **Faint Outlines**: The script displays the static, unmagnified layout behind the active canvas, allowing you to visually verify that:
   * When the mouse is hovering directly over a faint outline center, the active colored box is centered **precisely** on it.
   * The outer edges remain perfectly fixed to the static dock bounds when the cursor is at the far edges of the screen.

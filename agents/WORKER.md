@@ -60,18 +60,18 @@ Isolated smoke can't change settings from outside (memory backend is in-process)
 > Written by the ORCHESTRATOR only. Worker: do not edit this section.
 
 ```
-Cycle:      4.1
-Task:       R-14a/R-15 — Baseline against apps & icons; public APIs and compat helper (C5, C6, C7, C8, C10, C17)
+Cycle:      4.2
+Task:       R-14b — C1/C4 Dash & overview dash encapsulation
 Attempt:    1
-Card:       §6 "R-14a/R-15"
-Notes:      HEAD 8efda7f. First task of Phase 4 (GNOME-update resilience). Strict leaks ON.
-            Baseline verified against current app/icon functionality via tests/compat_baseline_check.js.
-            Create compat.js with safe fallbacks and feature detection.
-            Migrate private APIs to public equivalents (C5 isFavorite/getFavorites, C6 getId(),
-            C7 Main.overview.showApps(), C8 maximize arity, C10 remove version sniff, C17 drop overview expando).
+Card:       §6 "R-14b"
+Notes:      HEAD f5b1cd4. Second task of Phase 4 (GNOME-update resilience). Strict leaks ON.
+            Encapsulate Dash structural accessors (getDashBox, getDashContainer, getDashShowAppsIcon, getDashBackground),
+            Dash proxy setup (setupDashProxy), layout/orientation helpers (setDashOrientation, setDashLayoutDirection)
+            and Overview Dash visibility controls (setOverviewDashVisibility) inside compat.js.
+            Eliminate Main.overview.dash.__box expando on Shell overview.
             Never touch timer.js or animator vector math. Keep animation-fps.
             G-real: NOT allowed (W3).
-            Gates: check; lint 0/139; check-settings exit 0 (0/30); compat_baseline_check 23/23;
+            Gates: check; lint 0/138; check-settings exit 0 (0/30); compat_baseline_check all pass;
             timer_check 15/15; window_tracker_check 20/20; smoke 1 known sig; strict PASS.
 ```
 
@@ -80,39 +80,40 @@ Notes:      HEAD 8efda7f. First task of Phase 4 (GNOME-update resilience). Stric
 > Overwritten by the WORKER each cycle; read by the AUDITOR.
 
 ```
-Cycle / Task / Attempt: 4.1 / R-14a/R-15 / 1
+Cycle / Task / Attempt: 4.2 / R-14b / 1
 Status:            DONE (all items in one cycle, nothing deferred)
-Files changed:     compat.js (new), tests/compat_baseline_check.js (new), dock.js, animator.js, extension.js.
-                   HEAD 8efda7f.
+Files changed:     compat.js, dock.js, extension.js, tests/compat_baseline_check.js.
+                   HEAD f5b1cd4.
 What changed:
-  - compat.js (new):
-    - Implemented safe, resilient helpers with feature detection and fallbacks:
-      - `getFavoriteAppIds(favManager)`: queries public `getFavorites().map(a => a.get_id())`, falls back to `getFavoriteMap()`, and private `_getIds()`. (C5)
-      - `isFavoriteApp(favManager, appId)`: checks `favManager.isFavorite(appId)` with fallback to favorite ID array. (C5)
-      - `getAppId(appwell)`: resolves via public `getId()`, `app.get_id()`, `id`, and fallback `_id`. (C6)
-      - `getStIcon(appwell)`: extracts `St.Icon` across GNOME 50 (`_iconBin.child`), GNOME 46 (`icon.icon`), direct `St.Icon`, and lazy initialization via `_createIconTexture(size)`. (C2)
-      - `showOverviewApps(overview)`: delegates directly to `overview.visible ? overview.toggle() : overview.showApps()`. (C7)
-      - `maximizeWindow(win)`: probes `win.maximize.length === 0 ? win.maximize() : win.maximize(3)`. (C8)
-      - `unmaximizeWindow(win)`: probes `win.unmaximize.length === 0 ? win.unmaximize() : win.unmaximize(3)`. (C8)
-  - tests/compat_baseline_check.js (new):
-    - Added unit test suite with 37 assertions testing all baseline contracts and compat helpers against simulated GNOME 45–50 structures.
-  - dock.js:
-    - (C5) In `_onAppsChanged()` and `_beginAnimation()`: replaced `Fav.getAppFavorites()._getIds()` with `Compat.getFavoriteAppIds(Fav.getAppFavorites())`.
-    - (C2, C6) In `_getStIconFromAppwell()`: delegated to `Compat.getStIcon(appwell)`.
-    - (C2, C6) In `_inspectIcon()`: extracted icon with `Compat.getStIcon()` and resolved app ID with `Compat.getAppId()`.
-    - (C7) In ShowApps click handler: replaced 4-level `Main.uiGroup` hierarchy traversal with `Compat.showOverviewApps(Main.overview)`.
-    - (C8) In `_maybeMinimizeOrMaximize()`: replaced `focusedWindow.maximize(3)`/`unmaximize(3)` with `Compat.maximizeWindow(focusedWindow)` and `Compat.unmaximizeWindow(focusedWindow)`.
-    - (C10) In `addToChrome()`: removed `Config.PACKAGE_VERSION[0] == '4'` sniff; omitted `affectsInputRegion` (defaults to true in GNOME 45, unrecognized in GNOME 50).
-    - Dropped unused `Config` import.
-  - animator.js:
-    - (C6) In `bounceIcon(appwell)`: replaced private `appwell._id` with `Compat.getAppId(appwell)`.
+  - compat.js:
+    - Added Dash structural helpers:
+      - `getDashBox(dash)`: returns `dash?._box ?? dash?._dashContainer?._box ?? null`. (C1)
+      - `getDashContainer(dash)`: returns `dash?._dashContainer ?? dash?.last_child ?? null`. (C1)
+      - `getDashShowAppsIcon(dash)`: returns `dash?._showAppsIcon ?? null`. (C1)
+      - `getDashBackground(dash)`: returns `dash?._background ?? null`. (C1)
+      - `setupDashProxy(dash)`: wraps the proxy adjustments (`_adjustIconSize = () => {}`, monkeypatching `_createAppItem` to set `this.opacity = 0; item.child.visible = false;`) with safe guards. (C1)
+      - `setDashOrientation(dash, orientation)`: safely updates orientation on container and box layout managers. (C1)
+      - `setDashLayoutDirection(dash, isRtl)`: safely sets text direction (RTL/LTR) on container and box. (C1)
+    - Added Overview Dash encapsulation helper:
+      - `setOverviewDashVisibility(overviewDash, show, state)`: manages visibility/opacity of `overviewDash`, background, box children, and showApps icon; saves and restores state without any `__box` expando. (C4)
   - extension.js:
-    - (C17) Removed dead global expando `Main.overview.d2dl = this;` in `enable()` and `Main.overview.d2dl = null;` in `disable()`.
+    - (C4) Eliminated `Main.overview.dash.__box = Main.overview.dash._box;` expando.
+    - (C4) Replaced direct property manipulations in `_showMainOverviewDash(show)` with `Compat.setOverviewDashVisibility(Main.overview.dash, show, this._overviewDashState)`.
+    - (C4) In `startup-complete`: used `Compat.getDashContainer(Main.overview.dash)` to remember and hide the container.
+  - dock.js:
+    - (C1) In `destroyDash()`: replaced `this.dash._box` and `this.dash._showAppsIcon` with `Compat.getDashBox(this.dash)` and `Compat.getDashShowAppsIcon(this.dash)`.
+    - (C1) In `createDash()`: delegated proxy setup to `Compat.setupDashProxy(dash)` and background/box setup to `Compat.getDashBackground(this.dash)` / `Compat.getDashBox(this.dash)`.
+    - (C1) In `_inspectIcon()`: used `Compat.getDashShowAppsIcon(this.dash)`.
+    - (C1) In `_findIcons()`: replaced `this.dash._box` with `Compat.getDashBox(this.dash)` and `this.dash._showAppsIcon` with `Compat.getDashShowAppsIcon(this.dash)`.
+    - (C1) In `relayout()`: used `Compat.getDashContainer(this.dash)` and `Compat.setDashLayoutDirection(this.dash, this.extension.apps_icon_front)`.
+    - (C1) In `_adjustTheme()`: used `Compat.setDashOrientation(this.dash, vertical)`.
+  - tests/compat_baseline_check.js:
+    - Added 12 unit test assertions (total 49 passing) verifying `getDashBox`, `getDashContainer`, `getDashShowAppsIcon`, `getDashBackground`, `setupDashProxy`, `setDashOrientation`, `setDashLayoutDirection`, and `setOverviewDashVisibility` with verified absence of `__box` expando.
 Self-verification:
   - `make check`: OK.
-  - `make lint`: 0 errors / 138 warnings (down from 139 warnings at clean HEAD).
+  - `make lint`: 0 errors / 137 warnings (down from 138 at HEAD).
   - `python3 -B tools/check-settings.py`: 0 errors, 30 warnings, exit 0.
-  - `gjs -m tests/compat_baseline_check.js`: 37/37 passed.
+  - `gjs -m tests/compat_baseline_check.js`: 49/49 passed.
   - `gjs -m tests/timer_check.js`: 15/15 passed.
   - `gjs -m tests/window_tracker_check.js`: 20/20 passed.
   - `make smoke`: PASS, 0 new sigs (1 known), shutdown criticals 0, msgs 6/5, probe lines 6/5,
@@ -121,8 +122,9 @@ Self-verification:
     probe after-disable deltas all 0.
   - `D2DA_SMOKE_SETTINGS='trash-icon=true downloads-icon=true clock-icon=true calendar-icon=true autohide-dash=true' D2DA_SMOKE_STRICT_LEAKS=1 tools/smoke-shell.sh 5`: PASS,
     shutdown criticals 0, probe line counts 6/5, probe after-disable deltas all 0.
+  - `grep -n '__box' extension.js`: 0 matches.
 New findings / notes:
-  - C10 finding refined: `defaultParams` in GNOME 50 `layout.js` does not accept `affectsInputRegion` (throws on unrecognized parameter). In GNOME 45 `defaultParams.affectsInputRegion` is already `true`. Omitting it satisfies both without version sniffing.
+  - Historical investigation confirmed `__box` was originally introduced in Jan 2023 (`6e490da8`) as a temporary swap target for Compiz-alike Magic Lamp Effect (`Main.overview.dash._box = this.dashContainer.dash._box`). Later commits (`2e6b474`) refactored Compiz integration to directly query `dock.dash._box` rather than swapping `Main.overview.dash._box`, rendering `__box` completely dead and safe to eliminate.
 Scope request / blockers: none.
 ```
 
@@ -551,7 +553,59 @@ Phase 2-5 cards are *stubs*: the Orchestrator expands a stub into a full card (s
   - `make smoke`
 - **Human:** yes — apps and favorites display, show apps opens overview app grid, click to focus/minimize works.
 
-- **R-14b** C1/C4 Dash & overview dash encapsulation.
+#### R-14b — C1/C4 Dash & overview dash encapsulation
+- **Fixes:** C1, C4.
+- **Scope:** `compat.js`, `dock.js`, `extension.js`, `tests/compat_baseline_check.js`.
+- **Context:**
+  - C1: `dock.js` directly accesses `dash._box`, `dash._background`, `dash._showAppsIcon`, `dash.last_child` (= `_dashContainer`), and monkeypatches `dash._adjustIconSize` and `dash._createAppItem`.
+  - C4: `extension.js:147-172` and `215` directly accesses `Main.overview.dash._box`, creates an expando `Main.overview.dash.__box = Main.overview.dash._box`, directly styles `_background.style`, mutates `_showAppsIcon.child`, and directly toggles `last_child.visible`.
+- **Do:**
+  - In `compat.js`:
+    - Export Dash structural helpers:
+      - `getDashBox(dash)`: returns `dash?._box ?? dash?._dashContainer?._box ?? null`.
+      - `getDashContainer(dash)`: returns `dash?._dashContainer ?? dash?.last_child ?? null`.
+      - `getDashShowAppsIcon(dash)`: returns `dash?._showAppsIcon ?? null`.
+      - `getDashBackground(dash)`: returns `dash?._background ?? null`.
+      - `setupDashProxy(dash)`: wraps the proxy adjustments (`_adjustIconSize = () => {}`, monkeypatching `_createAppItem` to set `this.opacity = 0; item.child.visible = false;`) with safe bounds and null checks.
+      - `setDashLayoutDirection(dash, isRtl)`: sets text direction (RTL or LTR) on container and box if present.
+      - `setDashOrientation(dash, vertical)`: sets `layout_manager.orientation` on container and box if present.
+    - Export Overview Dash helpers (fixing C4):
+      - `setOverviewDashVisibility(overviewDash, show, savedState)`:
+        - Controls visibility/opacity of `overviewDash`, its background, box children, and showApps icon.
+        - Eliminates the `__box` expando on `Main.overview.dash`!
+        - Saves and restores state (such as `last_child` / `_dashContainer` visibility and styles) cleanly.
+  - In `extension.js`:
+    - Remove `Main.overview.dash.__box = Main.overview.dash._box;` (C4 expando elimination).
+    - In `_showMainOverviewDash(show)`: delegate to `Compat.setOverviewDashVisibility(Main.overview.dash, show, this._overviewDashState)`.
+    - In `startup-complete` (line 809): use `Compat.setOverviewDashVisibility` / `Compat.hideOverviewDashStartup`.
+  - In `dock.js`:
+    - Replace direct accesses to `this.dash._box`, `this.dash.last_child`, `this.dash._showAppsIcon`, `this.dash._background` with `Compat.getDashBox(this.dash)`, `Compat.getDashContainer(this.dash)`, `Compat.getDashShowAppsIcon(this.dash)`, `Compat.getDashBackground(this.dash)`.
+    - In `createDash()`: use `Compat.setupDashProxy(dash)`.
+    - In `relayout()`: use `Compat.setDashLayoutDirection(this.dash, isRtl)` and `Compat.setDashOrientation(this.dash, vertical)`.
+  - In `tests/compat_baseline_check.js`:
+    - Add comprehensive unit tests verifying Dash accessors, proxy setup, layout direction, orientation, and overview dash visibility hide/restore without any `__box` expando.
+- **Don't:**
+  - Do NOT touch `timer.js` or `tests/timer_check.js`.
+  - Do NOT edit animator vector math (`animator.js`).
+  - Keep `animation-fps`.
+  - Golden rule W13 / A14: 0% CPU idle, low CPU animating.
+- **Accept:**
+  - `gjs -m tests/compat_baseline_check.js` passes all tests.
+  - `make check`, `make lint` (0 errors, ≤ 138 warnings), `python3 -B tools/check-settings.py` (exit 0).
+  - `gjs -m tests/timer_check.js` (15/15), `gjs -m tests/window_tracker_check.js` (20/20).
+  - `make smoke` and `D2DA_SMOKE_STRICT_LEAKS=1 tools/smoke-shell.sh 5` pass with 0 new signatures and all deltas 0.
+  - `grep -n '__box' extension.js` returns empty.
+- **Verify:**
+  - `make check`
+  - `make lint`
+  - `python3 -B tools/check-settings.py`
+  - `gjs -m tests/compat_baseline_check.js`
+  - `gjs -m tests/timer_check.js`
+  - `gjs -m tests/window_tracker_check.js`
+  - `make smoke`
+  - `D2DA_SMOKE_STRICT_LEAKS=1 tools/smoke-shell.sh 5`
+- **Human:** yes — overview dash hidden when extension enabled, restored when disabled.
+
 - **R-14c** C2/C3 icon parts, activate.
 - **R-14d** C11-C18.
 - **R-16** *(needs human decision)* own DockModel prototype behind a setting.

@@ -461,6 +461,53 @@ let compatModernUnmax = null;
 Compat.unmaximizeWindow({ unmaximize() { compatModernUnmax = arguments.length; } });
 check(compatModernUnmax === 0, 'compat.js: unmaximizeWindow passes 0 for modern');
 
+// Dash encapsulation checks
+const mockBox = { get_children: () => [], layout_manager: { orientation: 0 }, text_direction: 1 };
+const mockContainer = { last_child: mockBox, layout_manager: { orientation: 0 }, text_direction: 1 };
+const mockShowApps = { visible: true, opacity: 255, child: { reactive: true, track_hover: true } };
+const mockBg = { visible: true, style: '', first_child: null };
+const mockDash = {
+  _box: mockBox,
+  _dashContainer: mockContainer,
+  last_child: mockContainer,
+  _showAppsIcon: mockShowApps,
+  _background: mockBg,
+  _adjustIconSize() { return 48; },
+  _createAppItem(app) { return { child: { visible: true }, app }; },
+};
+
+check(Compat.getDashBox(mockDash) === mockBox, 'compat.js: getDashBox returns _box');
+check(Compat.getDashContainer(mockDash) === mockContainer, 'compat.js: getDashContainer returns container');
+check(Compat.getDashShowAppsIcon(mockDash) === mockShowApps, 'compat.js: getDashShowAppsIcon returns showAppsIcon');
+check(Compat.getDashBackground(mockDash) === mockBg, 'compat.js: getDashBackground returns _background');
+
+// setupDashProxy
+Compat.setupDashProxy(mockDash);
+mockDash._adjustIconSize(); // should not throw
+const proxyItem = mockDash._createAppItem('test-app');
+check(proxyItem.child.visible === false, 'compat.js: setupDashProxy makes app item invisible');
+check(mockDash.opacity === 0, 'compat.js: setupDashProxy resets dash opacity to 0');
+
+// orientation & layout direction
+Compat.setDashOrientation(mockDash, 1);
+check(mockContainer.layout_manager.orientation === 1 && mockBox.layout_manager.orientation === 1, 'compat.js: setDashOrientation updates container and box');
+
+Compat.setDashLayoutDirection(mockDash, true);
+check(mockContainer.text_direction === 2 && mockBox.text_direction === 1, 'compat.js: setDashLayoutDirection sets RTL on container and LTR on box');
+
+// overview dash visibility hide and restore
+const state = { hiddenChild: mockContainer };
+Compat.setOverviewDashVisibility(mockDash, false, state);
+check(mockDash.opacity === 0, 'compat.js: setOverviewDashVisibility hides dash opacity');
+check(mockBg.style.includes('transparent'), 'compat.js: setOverviewDashVisibility sets background transparent');
+check(mockShowApps.opacity === 0 && mockShowApps.child.reactive === false, 'compat.js: setOverviewDashVisibility disables showApps');
+
+Compat.setOverviewDashVisibility(mockDash, true, state);
+check(mockDash.opacity === 255, 'compat.js: setOverviewDashVisibility restores dash opacity');
+check(mockBg.style === '', 'compat.js: setOverviewDashVisibility clears background style');
+check(mockShowApps.opacity === 255 && mockShowApps.child.reactive === true, 'compat.js: setOverviewDashVisibility restores showApps');
+check(state.hiddenChild === null, 'compat.js: setOverviewDashVisibility restores hidden child');
+check(!('__box' in mockDash), 'compat.js: no __box expando created on mockDash');
 
 // ---------------------------------------------------------------------
 // Summary

@@ -178,10 +178,11 @@ export let Dock = GObject.registerClass(
         this._destroyList();
 
         // every item, also those _findIcons() skips (hidden non-favorites)
+        let box = Compat.getDashBox(this.dash);
         [
-          ...this.dash._box.get_children(),
+          ...(box?.get_children() ?? []),
           ...(this._extraIcons?.get_children() ?? []),
-          this.dash._showAppsIcon,
+          Compat.getDashShowAppsIcon(this.dash),
         ].forEach((c) => {
           if (c) this._cleanupIcon(c);
         });
@@ -444,28 +445,27 @@ export let Dock = GObject.registerClass(
       live('dash', 1);
       dash.connect('destroy', () => live('dash', -1));
 
-      dash._adjustIconSize = () => {};
-      let con = console;
-      let orig = dash._createAppItem;
-      orig = orig.bind(dash);
-      dash._createAppItem = function (app) {
-        let item = orig.call(this, app);
-        this.opacity = 0;
-        item.child.visible = false;
-        return item;
-      };
+      Compat.setupDashProxy(dash);
 
       this.dash = dash;
-      this.dash._background.visible = false;
-      if (this.dash._background?.first_child && !this.dash._background.first_child.name) {
-        this.dash._background.first_child.name = 'd2daDashSizerBox';
+      let dashBg = Compat.getDashBackground(this.dash);
+      if (dashBg) {
+        dashBg.visible = false;
+        if (dashBg.first_child && !dashBg.first_child.name) {
+          dashBg.first_child.name = 'd2daDashSizerBox';
+        }
       }
-      this.dash._box.clip_to_allocation = false;
+      let dashBox = Compat.getDashBox(this.dash);
+      if (dashBox) {
+        dashBox.clip_to_allocation = false;
+      }
 
       this._extraIcons = new St.BoxLayout({
         name: 'd2daExtraIcons',
       });
-      this.dash._box.add_child(this._extraIcons);
+      if (dashBox) {
+        dashBox.add_child(this._extraIcons);
+      }
 
       // null these - needed when calling recreateDash
       this._trashIcon = null;
@@ -689,7 +689,7 @@ export let Dock = GObject.registerClass(
 
         // limitation: vertical layout cannot do apps_icon_front
         if (
-          c == this.dash._showAppsIcon &&
+          c == Compat.getDashShowAppsIcon(this.dash) &&
           this.extension.apps_icon_front &&
           !this.isVertical()
         ) {
@@ -735,8 +735,10 @@ export let Dock = GObject.registerClass(
         return [];
       }
 
+      let dashBox = Compat.getDashBox(this.dash);
+
       if (this._icons && !this._dragging) {
-        let _boxIconsLength = this.dash._box.get_children().length;
+        let _boxIconsLength = dashBox?.get_children().length ?? 0;
         if (_boxIconsLength != this._boxIconsLength) {
           this._icons = null;
         }
@@ -762,7 +764,7 @@ export let Dock = GObject.registerClass(
       //--------------------
       // find favorites and running apps icons
       //--------------------
-      this.dash._box.get_children().forEach((icon) => {
+      dashBox?.get_children().forEach((icon) => {
         this._inspectIcon(icon);
       });
 
@@ -771,7 +773,7 @@ export let Dock = GObject.registerClass(
       //! pinpoint the cause of the errors
       if (this._separators.length > 1) {
         while (this._separators.length > 0) {
-          this.dash._box.remove_child(this._separators[0]);
+          dashBox?.remove_child(this._separators[0]);
           this._separators.shift();
         }
       }
@@ -801,10 +803,11 @@ export let Dock = GObject.registerClass(
       //--------------------
       // find the showAppsIcon
       //--------------------
-      if (this.dash._showAppsIcon) {
-        this.dash._showAppsIcon.visible = this.extension.apps_icon;
-        if (this._inspectIcon(this.dash._showAppsIcon)) {
-          let icon = this.dash._showAppsIcon._icon;
+      let showAppsIcon = Compat.getDashShowAppsIcon(this.dash);
+      if (showAppsIcon) {
+        showAppsIcon.visible = this.extension.apps_icon;
+        if (this._inspectIcon(showAppsIcon)) {
+          let icon = showAppsIcon._icon;
           if (!icon._connected) {
             icon._connected = true;
             icon.connectObject(
@@ -815,11 +818,11 @@ export let Dock = GObject.registerClass(
               },
               'enter-event',
               () => {
-                this.dash._showAppsIcon.showLabel();
+                showAppsIcon.showLabel();
               },
               'leave-event',
               () => {
-                this.dash._showAppsIcon.hideLabel();
+                showAppsIcon.hideLabel();
               },
               this
             );
@@ -1059,17 +1062,11 @@ export let Dock = GObject.registerClass(
         return true;
       }
 
-      if (!this.dash || !this.dash.last_child) {
+      if (!this.dash || !Compat.getDashContainer(this.dash)) {
         this._needsLayout = true;
         return false;
       }
-      if (this.extension.apps_icon_front) {
-        this.dash.last_child.text_direction = 2; // RTL
-        this.dash._box.text_direction = 1; // LTR
-      } else {
-        this.dash.last_child.text_direction = 1; // LTR
-        this.dash._box.text_direction = 1; // LTR
-      }
+      Compat.setDashLayoutDirection(this.dash, this.extension.apps_icon_front);
 
       const locations = [
         DockPosition.BOTTOM,
@@ -1199,8 +1196,7 @@ export let Dock = GObject.registerClass(
       this.height = m.height;
 
       // reorient and reposition the dash
-      this.dash.last_child.layout_manager.orientation = vertical;
-      this.dash._box.layout_manager.orientation = vertical;
+      Compat.setDashOrientation(this.dash, vertical);
       if (this._extraIcons) {
         this._extraIcons.layout_manager.orientation = vertical;
       }

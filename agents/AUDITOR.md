@@ -85,23 +85,23 @@ Minor nits (naming, a stray blank line) that don't violate a rule: list them as 
 > Overwritten each cycle. On FAIL the Worker reads this for its rework.
 
 ```
-Cycle / Task / Attempt: 4.1 / R-14a/R-15 / 1
+Cycle / Task / Attempt: 4.2 / R-14b / 1
 Verdict:          PASS
-Commit:           d94c310 (feat(compat): establish app/icon baseline and migrate to public APIs)
-Gates:            check=PASS ; lint=PASS 0 err / 138 warn (baseline 139) ;
-                  settings=exit 0, 0/30 ; compat_baseline_check all passed (37/37) ;
+Commit:           this commit (feat(compat): encapsulate Dash and overview dash internals, eliminate __box expando)
+Gates:            check=PASS ; lint=PASS 0 err / 137 warn (baseline 138) ;
+                  settings=exit 0, 0/30 ; compat_baseline_check all passed (49/49) ;
                   timer_check all passed (15/15) ; window_tracker_check all passed (20/20) ;
                   smoke x2 PASS (1 known sig, 0 new, 6/5 msgs, 6/5 probe lines, ALL deltas 0) ;
                   strict x1 PASS (counts 6/5, ALL deltas 0, shutdown criticals 0) ;
                   settings variant strict PASS (deltas 0, crit 0) ;
                   disposed/finalized/already been destroyed = 0 and `d2da: ` = 0 in all runs.
                   No orphaned headless shell. G-real NOT run (W3).
-Scope:            compat.js (new), tests/compat_baseline_check.js (new), dock.js, animator.js, extension.js.
+Scope:            compat.js, dock.js, extension.js, tests/compat_baseline_check.js.
 Rule violations:  none. A1-A10, A12, A13 clean (A11 n/a).
-Specific checks:  compat.js implements getFavoriteAppIds, isFavoriteApp, getAppId, getStIcon, showOverviewApps, maximizeWindow, unmaximizeWindow with safe feature detection and fallbacks; dock.js uses compat helpers for favorites and icons; dock.js delegates showApps to Main.overview via compat; dock.js probes window maximize arity via compat; dock.js removes Config.PACKAGE_VERSION sniff and omits affectsInputRegion (defaults to true in GNOME 45, unrecognized in GNOME 50); animator.js uses compat.getAppId in bounceIcon; extension.js drops dead Main.overview.d2dl expando.
+Specific checks:  compat.js implements getDashBox, getDashContainer, getDashShowAppsIcon, getDashBackground, setupDashProxy, setDashOrientation, setDashLayoutDirection, setOverviewDashVisibility; dock.js uses compat helpers for Dash access, proxying, orientation, and layout direction; extension.js eliminates Main.overview.dash.__box expando and delegates overview dash visibility to compat.js; historical git archaeology verified __box was an old Compiz swap hack superseded by commit 2e6b474.
 Rework list:      none.
-Findings confirmed: C5, C6, C7, C8, C10, C17.
-Human check needed: none.
+Findings confirmed: C1, C4.
+Human check needed: yes — overview dash hidden when extension enabled, restored when disabled.
 ```
 
 ## 7. Audit Log (append-only, newest last)
@@ -139,6 +139,7 @@ Human check needed: none.
 | 2.9 | R-9d | 1 | PASS | this commit | check=PASS; lint 0/140 (baseline 145; extension.js 11, prefs.js 2 <= HEAD); check-settings exit 0, 0/30; timer_check 15/15; window_tracker_check 20/20; smoke x2 PASS (1 known sig, 0 new, ALL deltas 0); strict PASS (6/5 lines, ALL deltas 0, 0 crit); settings variant strict PASS (deltas 0, crit 0); 0 tmp css files; disposed/finalized 0, `d2da: ` 0 | B-37 fixed. Per-instance CSS stylesheet in $XDG_RUNTIME_DIR; unloadAll ignores Gio.IOErrorEnum.NOT_FOUND on delete; tempPath uses user runtime dir; prefs exports theme to ~/.config/d2da/theme.json; unused imports removed. Phase 2 complete. |
 | 3.1 | R-10 | 1 | PASS | 37f059d | check=PASS; lint 0/139 (baseline 140); check-settings exit 0, 0/30; timer_check 15/15; window_tracker_check 20/20; smoke x2 PASS (1 known sig, 0 new, ALL deltas 0); strict PASS (6/5 lines, ALL deltas 0, 0 crit); settings variant strict PASS (deltas 0, crit 0); disposed/finalized 0, `d2da: ` 0 | P-1 fixed. Dock dirty-flags relayout(); per-frame dock.layout() removed from animator._animate(dt); layout() preserved as alias to relayout(true); queueRelayout() added; apps-changed, monitors-changed, extra-icons (trash/mounts/folders), and layout-affecting settings flag dirty relayout. Phase 3 underway. |
 | 4.1 | R-14a/R-15 | 1 | PASS | d94c310 | check=PASS; lint 0/138 (baseline 139); check-settings exit 0, 0/30; compat_baseline_check 37/37; timer_check 15/15; window_tracker_check 20/20; smoke x2 PASS (1 known sig, 0 new, ALL deltas 0); strict PASS (6/5 lines, ALL deltas 0, 0 crit); settings variant strict PASS (deltas 0, crit 0); disposed/finalized 0, `d2da: ` 0 | C5, C6, C7, C8, C10, C17 fixed. Created compat.js and tests/compat_baseline_check.js (37 assertions passing); migrated AppFavorites to public getFavorites/isFavorite; migrated app ID resolution to public getId(); delegated overview showApps to Main.overview directly; probed window maximize arity; omitted affectsInputRegion (clean across GNOME 45-50); removed dead Main.overview.d2dl expando. |
+| 4.2 | R-14b | 1 | PASS | this commit | check=PASS; lint 0/137 (baseline 138); check-settings exit 0, 0/30; compat_baseline_check 49/49; timer_check 15/15; window_tracker_check 20/20; smoke x2 PASS (1 known sig, 0 new, ALL deltas 0); strict PASS (6/5 lines, ALL deltas 0, 0 crit); settings variant strict PASS (deltas 0, crit 0); disposed/finalized 0, `d2da: ` 0 | C1, C4 fixed. Encapsulated Dash structural accessors (getDashBox, getDashContainer, getDashShowAppsIcon, getDashBackground), proxy setup (setupDashProxy), orientation and layout direction in compat.js; eliminated Main.overview.dash.__box expando on Shell overview; encapsulated overview dash visibility in compat.js; unit test suite expanded to 49 assertions. |
 
 
 

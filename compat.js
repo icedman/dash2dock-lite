@@ -195,3 +195,165 @@ export function unmaximizeWindow(win) {
     console.error('d2da: compat unmaximizeWindow', e);
   }
 }
+
+/**
+ * Safely retrieve the inner icons box of a Shell Dash actor.
+ *
+ * @param {object} dash Shell Dash instance
+ * @returns {object|null}
+ */
+export function getDashBox(dash) {
+  if (!dash) return null;
+  return dash._box ?? dash._dashContainer?._box ?? null;
+}
+
+/**
+ * Safely retrieve the container holding the icons box and showApps button.
+ *
+ * @param {object} dash Shell Dash instance
+ * @returns {object|null}
+ */
+export function getDashContainer(dash) {
+  if (!dash) return null;
+  return dash._dashContainer ?? dash.last_child ?? null;
+}
+
+/**
+ * Safely retrieve the showAppsIcon of a Shell Dash actor.
+ *
+ * @param {object} dash Shell Dash instance
+ * @returns {object|null}
+ */
+export function getDashShowAppsIcon(dash) {
+  if (!dash) return null;
+  return dash._showAppsIcon ?? null;
+}
+
+/**
+ * Safely retrieve the background actor of a Shell Dash actor.
+ *
+ * @param {object} dash Shell Dash instance
+ * @returns {object|null}
+ */
+export function getDashBackground(dash) {
+  if (!dash) return null;
+  return dash._background ?? null;
+}
+
+/**
+ * Configure a Shell Dash instance for proxy rendering by d2da.
+ * Neutralizes internal icon resizing and makes real app items invisible.
+ *
+ * @param {object} dash Shell Dash instance
+ */
+export function setupDashProxy(dash) {
+  if (!dash) return;
+  try {
+    dash._adjustIconSize = () => {};
+    const origCreateAppItem = dash._createAppItem;
+    if (typeof origCreateAppItem === 'function') {
+      dash._createAppItem = function (app) {
+        const item = origCreateAppItem.call(this, app);
+        this.opacity = 0;
+        if (item?.child) {
+          item.child.visible = false;
+        }
+        return item;
+      };
+    }
+  } catch (e) {
+    console.error('d2da: compat setupDashProxy', e);
+  }
+}
+
+/**
+ * Safely update orientation on a Shell Dash's container and box.
+ *
+ * @param {object} dash Shell Dash instance
+ * @param {number} orientation Clutter.Orientation or boolean
+ */
+export function setDashOrientation(dash, orientation) {
+  if (!dash) return;
+  try {
+    const container = getDashContainer(dash);
+    if (container?.layout_manager) {
+      container.layout_manager.orientation = orientation;
+    }
+    const box = getDashBox(dash);
+    if (box?.layout_manager) {
+      box.layout_manager.orientation = orientation;
+    }
+  } catch (e) {
+    console.error('d2da: compat setDashOrientation', e);
+  }
+}
+
+/**
+ * Safely update text direction on a Shell Dash's container and box.
+ *
+ * @param {object} dash Shell Dash instance
+ * @param {boolean} isRtl
+ */
+export function setDashLayoutDirection(dash, isRtl) {
+  if (!dash) return;
+  try {
+    const container = getDashContainer(dash);
+    if (container) {
+      container.text_direction = isRtl ? 2 : 1;
+    }
+    const box = getDashBox(dash);
+    if (box) {
+      box.text_direction = 1; // icons layout stays LTR
+    }
+  } catch (e) {
+    console.error('d2da: compat setDashLayoutDirection', e);
+  }
+}
+
+/**
+ * Controls visibility and opacity of the stock overview dash.
+ * Eliminates the legacy __box expando.
+ *
+ * @param {object} overviewDash Main.overview.dash instance
+ * @param {boolean} show whether to show or hide the overview dash
+ * @param {object|null} state reference to persistent state tracker { hiddenChild: null }
+ */
+export function setOverviewDashVisibility(overviewDash, show, state = null) {
+  if (!overviewDash) return;
+  try {
+    overviewDash.opacity = show ? 255 : 0;
+    const bg = getDashBackground(overviewDash);
+    if (bg) {
+      bg.style = show ? '' : 'background: transparent !important;';
+    }
+
+    const box = getDashBox(overviewDash);
+    if (box && typeof box.get_children === 'function') {
+      box.get_children().forEach((c) => {
+        c.opacity = show ? 255 : 0;
+        c.visible = show;
+        if (c.child) {
+          c.child.reactive = show;
+          c.child.track_hover = show;
+        }
+      });
+    }
+
+    const showApps = getDashShowAppsIcon(overviewDash);
+    if (showApps) {
+      showApps.opacity = show ? 255 : 0;
+      if (showApps.child) {
+        showApps.child.reactive = show;
+        showApps.child.track_hover = show;
+      }
+    }
+
+    if (show && state && state.hiddenChild) {
+      state.hiddenChild.visible = true;
+      state.hiddenChild = null;
+    }
+  } catch (e) {
+    console.error('d2da: compat setOverviewDashVisibility', e);
+  }
+}
+

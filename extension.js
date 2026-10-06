@@ -37,6 +37,7 @@ import { Integrations } from './integrations.js';
 import { WindowTracker } from './windowTracker.js';
 import { runTests } from './diagnostics.js';
 import { probe, applySmokeSettings } from './probe.js';
+import * as Compat from './compat.js';
 
 import {
   Extension,
@@ -145,30 +146,14 @@ export default class Dash2DockLiteExt extends Extension {
   }
 
   _showMainOverviewDash(show) {
-    Main.overview.dash.opacity = show ? 255 : 0;
-    // Main.overview.dash._background.opacity = show ? 255 : 0;
-    Main.overview.dash._background.style = show
-      ? ''
-      : 'background: transparent !important;';
-
-    let box = Main.overview.dash.__box || Main.overview.dash._box;
-    box.get_children().forEach((c) => {
-      c.opacity = show ? 255 : 0;
-      c.visible = show;
-      if (c.child) {
-        c.child.reactive = show;
-        c.child.track_hover = show;
-      }
-    });
-
-    Main.overview.dash._showAppsIcon.opacity = show ? 255 : 0;
-    Main.overview.dash._showAppsIcon.child.reactive = show;
-    Main.overview.dash._showAppsIcon.child.track_hover = show;
-
-    if (show && this._hiddenOverviewDashChild) {
-      this._hiddenOverviewDashChild.visible = true;
-      this._hiddenOverviewDashChild = null;
+    if (!this._overviewDashState) {
+      this._overviewDashState = { hiddenChild: null };
     }
+    Compat.setOverviewDashVisibility(
+      Main.overview.dash,
+      show,
+      this._overviewDashState
+    );
   }
 
   enable() {
@@ -212,7 +197,6 @@ export default class Dash2DockLiteExt extends Extension {
       this._settingsKeys.setValue('animate-icons', true);
     }
 
-    Main.overview.dash.__box = Main.overview.dash._box;
     this._showMainOverviewDash(false);
     this.docks = [];
 
@@ -806,12 +790,17 @@ export default class Dash2DockLiteExt extends Extension {
       'startup-complete',
       () => {
         // remember exactly what was hidden so disable() can restore it
-        let child = Main.overview.dash?.last_child;
+        let child = Compat.getDashContainer(Main.overview.dash);
         if (child?.visible) {
           child.visible = false;
-          this._hiddenOverviewDashChild = child;
+          if (!this._overviewDashState) {
+            this._overviewDashState = { hiddenChild: null };
+          }
+          this._overviewDashState.hiddenChild = child;
         }
-        Main.overview.dash.opacity = 0;
+        if (Main.overview.dash) {
+          Main.overview.dash.opacity = 0;
+        }
         // fix for topbar not blurring
         this._updateBlurredBackground();
       },

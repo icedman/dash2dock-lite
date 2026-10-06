@@ -295,11 +295,25 @@ app.connect('activate', (app) => {
         }
         const centerPackedL = currentCenterPos + centerWidths[TOTAL_CALC_ICONS - 1] / 2;
 
-        // --- 3c. Distribute the variance evenly to all 18 icons ---
+        // --- 3c. Distribute the variance to those within the radius of influence (including imaginary icons) ---
         const variance = centerPackedL - activeL;
+        const influences = [];
+        let totalInfluence = 0;
+        for (let i = 0; i < TOTAL_CALC_ICONS; i++) {
+            const influence = iconScales[i] - 1.0;
+            influences.push(influence);
+            totalInfluence += influence;
+        }
+
         const adjustedIconWidths = [];
         for (let i = 0; i < TOTAL_CALC_ICONS; i++) {
-            adjustedIconWidths.push(iconWidths[i] + variance / TOTAL_CALC_ICONS);
+            let adjWidth = iconWidths[i];
+            if (totalInfluence > 0) {
+                adjWidth += variance * (influences[i] / totalInfluence);
+            } else {
+                adjWidth += variance / TOTAL_CALC_ICONS;
+            }
+            adjustedIconWidths.push(adjWidth);
         }
 
         // --- 3d. Re-calculate Packed Centers using Adjusted Widths for All 18 Icons ---

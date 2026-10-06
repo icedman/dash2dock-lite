@@ -456,6 +456,35 @@ export let Animator = class {
         adjustedIconWidths.push(iconWidths[i] + variance / TOTAL_CALC_ICONS);
     }
 
+    // Save the unshifted realLeftEdge before applying the mouse-proximity shift to imaginary icons
+    let realLeftEdgeUnshifted = 0;
+    for (let i = 0; i < NUM_IMAGINARY; i++) {
+        realLeftEdgeUnshifted += adjustedIconWidths[i];
+    }
+    realLeftEdgeUnshifted += NUM_IMAGINARY * activePadding;
+
+    // --- Proportional Widening/Narrowing of Boundary Imaginary Icons ---
+    // Calculate normalized mouse position t on the unexpanded dock
+    const t = xmClamped / totalCalcStaticL;
+
+    // Calculate the unshifted real active length of the real icons
+    let realActiveLUnshifted = 0;
+    for (let i = NUM_IMAGINARY; i < NUM_IMAGINARY + NUM_ICONS; i++) {
+        realActiveLUnshifted += adjustedIconWidths[i];
+    }
+    realActiveLUnshifted += (NUM_ICONS - 1) * activePadding;
+
+    // Proportional shift based on mouse proximity to edge (pushes icons towards the mouse/center)
+    const shift = 1.6 * (0.5 - t) * (realActiveLUnshifted - restingL) * (hoverActive ? 1.0 : 0.0);
+
+    // Apply shift: widen the first imaginary icons and narrow the last imaginary icons (or vice versa)
+    for (let i = 0; i < NUM_IMAGINARY; i++) {
+        adjustedIconWidths[i] += shift / NUM_IMAGINARY;
+    }
+    for (let i = TOTAL_CALC_ICONS - NUM_IMAGINARY; i < TOTAL_CALC_ICONS; i++) {
+        adjustedIconWidths[i] -= shift / NUM_IMAGINARY;
+    }
+
     const adjustedPackedCenters = [];
     let adjCurrentPos = 0;
     for (let i = 0; i < TOTAL_CALC_ICONS; i++) {
@@ -488,7 +517,7 @@ export let Animator = class {
 
         const calcIndex = idx + NUM_IMAGINARY;
         const pc = adjustedPackedCenters[calcIndex];
-        const activeCenter = pc - realLeftEdge;
+        const activeCenter = pc - realLeftEdgeUnshifted;
 
         // Position the Clutter actor perfectly using 1D packing relative to its resting center
         icon._translate = activeCenter + centeringShift - restingCenters[idx];

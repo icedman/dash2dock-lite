@@ -194,30 +194,22 @@ app.connect('activate', (app) => {
     // Draw Function
     drawingArea.set_draw_func((widget, cr, width, height) => {
         // --- 1. Compute Spacing & Dynamic Dimensions ---
+        const restingL = NUM_ICONS * (ICON_SIZE + UNANIMATED_PADDING); // Closely-packed resting width
+        
         // Spacing/padding is closely-packed (UNANIMATED_PADDING) when not animating.
         // Upon mouse entering, the padding smoothly expands ("fires up") from UNANIMATED_PADDING to staticPadding + dynamic boost.
         const targetPadding = staticPadding * (1.0 + 0.12 * (maxScale - 1.0) * (radius / 150.0));
         const activePadding = UNANIMATED_PADDING + (targetPadding - UNANIMATED_PADDING) * hoverProgress;
-        const containerWidth = ICON_SIZE + UNANIMATED_PADDING;
         const activeContainerWidth = ICON_SIZE + activePadding;
-
-        const restingL = NUM_ICONS * containerWidth;
+        
         const activeL = NUM_ICONS * activeContainerWidth;
-
-        const staticDockStartX = (width - restingL) / 2;
         const activeDockStartX = (width - activeL) / 2;
         const baselineY = height - 120; // baseline of icon bottom
 
-        // Compute static centers for drawing the reference dock
+        // Compute active static centers (unwarped resting centers x_i) using the influenced active padding
         const staticCenters = [];
         for (let i = 0; i < NUM_ICONS; i++) {
-            staticCenters.push(i * containerWidth + containerWidth / 2);
-        }
-
-        // Compute active centers (pre-warping) based on active padded spacing
-        const activeCenters = [];
-        for (let i = 0; i < NUM_ICONS; i++) {
-            activeCenters.push(i * activeContainerWidth + activeContainerWidth / 2);
+            staticCenters.push(i * activeContainerWidth + activeContainerWidth / 2);
         }
 
         // --- 2. Background Fill ---
@@ -228,13 +220,13 @@ app.connect('activate', (app) => {
         // --- 3. Render Static / Unanimated Reference Dock (Faint Outline) ---
         cr.setLineWidth(1.5);
         cr.setSourceRGBA(0.4, 0.4, 0.4, 0.3);
-        // Static Dock Background
-        cr.rectangle(staticDockStartX - 10, baselineY - ICON_SIZE - 10, restingL + 20, ICON_SIZE + 20);
+        // Draw Reference Dock Background (matches the active unwarped width activeL)
+        cr.rectangle(activeDockStartX - 10, baselineY - ICON_SIZE - 10, activeL + 20, ICON_SIZE + 20);
         cr.stroke();
 
-        // Static Icons
+        // Draw Reference Icons at staticCenters
         staticCenters.forEach(xi => {
-            const gx = staticDockStartX + xi;
+            const gx = activeDockStartX + xi;
             cr.rectangle(gx - ICON_SIZE/2, baselineY - ICON_SIZE, ICON_SIZE, ICON_SIZE);
             cr.stroke();
         });
@@ -248,7 +240,7 @@ app.connect('activate', (app) => {
         const p = Math.max(1.0, Math.min(3.0, 2.7 - 1.5 * (riseInfluence - 0.3)));
 
         // Calculate positions and scales for all active icons
-        const activeIcons = activeCenters.map(xi => {
+        const activeIcons = staticCenters.map(xi => {
             const targetScale = getScale(xi, xmClamped, radius, maxScale, p);
             const scale = 1.0 + (targetScale - 1.0) * hoverProgress;
 

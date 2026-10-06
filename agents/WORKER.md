@@ -60,18 +60,17 @@ Isolated smoke can't change settings from outside (memory backend is in-process)
 > Written by the ORCHESTRATOR only. Worker: do not edit this section.
 
 ```
-Cycle:      4.2
-Task:       R-14b — C1/C4 Dash & overview dash encapsulation
+Cycle:      4.3
+Task:       R-14c — C2/C3 icon parts and activate encapsulation
 Attempt:    1
-Card:       §6 "R-14b"
-Notes:      HEAD f5b1cd4. Second task of Phase 4 (GNOME-update resilience). Strict leaks ON.
-            Encapsulate Dash structural accessors (getDashBox, getDashContainer, getDashShowAppsIcon, getDashBackground),
-            Dash proxy setup (setupDashProxy), layout/orientation helpers (setDashOrientation, setDashLayoutDirection)
-            and Overview Dash visibility controls (setOverviewDashVisibility) inside compat.js.
-            Eliminate Main.overview.dash.__box expando on Shell overview.
+Card:       §6 "R-14c"
+Notes:      HEAD 7fe412b. Third task of Phase 4 (GNOME-update resilience). Strict leaks ON.
+            Encapsulate Dash item internal tree extraction (getIconParts) and safe
+            activate / showLabel wrapping (wrapAppIconActivate, wrapAppIconShowLabel) in compat.js.
+            Route dock.js _inspectIcon and activate / label patches through compat.js.
             Never touch timer.js or animator vector math. Keep animation-fps.
             G-real: NOT allowed (W3).
-            Gates: check; lint 0/138; check-settings exit 0 (0/30); compat_baseline_check all pass;
+            Gates: check; lint 0/137; check-settings exit 0 (0/30); compat_baseline_check all pass;
             timer_check 15/15; window_tracker_check 20/20; smoke 1 known sig; strict PASS.
 ```
 
@@ -606,7 +605,42 @@ Phase 2-5 cards are *stubs*: the Orchestrator expands a stub into a full card (s
   - `D2DA_SMOKE_STRICT_LEAKS=1 tools/smoke-shell.sh 5`
 - **Human:** yes — overview dash hidden when extension enabled, restored when disabled.
 
-- **R-14c** C2/C3 icon parts, activate.
+#### R-14c — C2/C3 icon parts and activate encapsulation
+- **Fixes:** C2, C3.
+- **Scope:** `compat.js`; `dock.js`; `tests/compat_baseline_check.js`.
+- **Context (HEAD 7fe412b):**
+  - In `dock.js`: `_inspectIcon(c)` navigates deep item internal structure across GNOME 45–50: `c.child` (appwell / DashIcon / AppIcon), `appwell.icon` (BaseIcon or old IconGrid), `c.icon.icon`, `_dot`, `label`, `_draggable`.
+  - In `dock.js:838-895`: per-instance monkeypatch of `c._appwell.activate` (to trigger bounce and call `_maybeMinimizeOrMaximize`), `c.showLabel` (to respect `hide_labels`), and `_draggable` signal connections.
+- **Do:**
+  - In `compat.js`:
+    - Implement `getIconParts(item)`: returns an object `{ appwell, icon, button, grid, dot, label, draggable }` extracting available parts across GNOME 45–50 without hardcoding deep nested paths in `dock.js`.
+    - Implement `wrapAppIconActivate(appwell, onActivate)`: cleanly wraps `activate(button)` with error logging and saves original.
+    - Implement `wrapAppIconShowLabel(item, shouldShow)`: wraps `showLabel()` with guard.
+  - In `dock.js`:
+    - In `_inspectIcon(c)`: replace direct internal tree navigation (`c.icon.icon`, `c.child.icon`, `_dot`, etc.) with `Compat.getIconParts(c)`.
+    - In `_findIcons()` loop / icon setup: use `Compat.wrapAppIconActivate(appwell, handler)` and `Compat.wrapAppIconShowLabel(c, shouldShow)`.
+  - In `tests/compat_baseline_check.js`:
+    - Add tests for `getIconParts(item)`, `wrapAppIconActivate(appwell, handler)`, and `wrapAppIconShowLabel(item, shouldShow)`.
+- **Don't:**
+  - Do NOT touch `timer.js` or `tests/timer_check.js`.
+  - Do NOT edit animator vector math (`animator.js`).
+  - Keep `animation-fps`.
+  - Golden rule W13 / A14: 0% CPU idle, low CPU animating.
+- **Accept:**
+  - All unit test checks pass (`compat_baseline_check.js`, `timer_check.js`, `window_tracker_check.js`).
+  - `make check`, `make lint` (0 errors, ≤ 137 warnings), `python3 -B tools/check-settings.py` (exit 0).
+  - Strict smoke tests pass with 0 new error signatures and all probe deltas 0.
+- **Verify:**
+  - `make check`
+  - `make lint`
+  - `python3 -B tools/check-settings.py`
+  - `gjs -m tests/compat_baseline_check.js`
+  - `gjs -m tests/timer_check.js`
+  - `gjs -m tests/window_tracker_check.js`
+  - `make smoke`
+  - `D2DA_SMOKE_STRICT_LEAKS=1 tools/smoke-shell.sh 5`
+- **Human:** yes — clicking running app icons minimizes/maximizes, labels show on hover (unless disabled in prefs), dragging items functions normally.
+
 - **R-14d** C11-C18.
 - **R-16** *(needs human decision)* own DockModel prototype behind a setting.
 

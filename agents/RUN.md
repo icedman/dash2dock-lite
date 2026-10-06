@@ -152,8 +152,8 @@ Status: `[ ]` todo · `[~]` in progress · `[x]` done (hash) · `[!]` blocked ·
 | | Cycle | Task | Depends | Notes |
 |---|---|---|---|---|
 | [x] d94c310 | 4.1 | R-14a/R-15 baseline apps & icons + public APIs (C5-C8, C10, C17) | 2.4 | Establish app/icon baseline; compat helper; public APIs |
-| [x] this commit | 4.2 | R-14b C1/C4 Dash & overview dash encapsulation | 4.1 | Encapsulate Dash & overview dash internals in compat.js |
-| [ ] | 4.3 | R-14c C2/C3 icon parts, activate | 4.2 | |
+| [x] f56a070 | 4.2 | R-14b C1/C4 Dash & overview dash encapsulation | 4.1 | Encapsulate Dash & overview dash internals in compat.js |
+| [~] | 4.3 | R-14c C2/C3 icon parts, activate | 4.2 | |
 | [ ] | 4.4 | R-14d C11-C18 | 4.3 | |
 | [ ] | 4.5 | R-16 DockModel evaluation | 4.4 | HUMAN decision before any code |
 
@@ -250,7 +250,7 @@ Items the agents can't see. The human runs `make test-shell` (needs `mutter-devk
 | 2.4 | d95bb11 | Toggle extension several times; change preferred monitor + multi-monitor setting; lock/unlock; plug/unplug monitor ⇒ dock always renders, no duplicates, overview dash fine, clock/calendar/trash/downloads back after rebuild | |
 | 2.6 | 8fab2a5 | Right-click trash icon -> click "Empty Trash". Confirmation dialog appears (Cancel / Empty Trash). Cancel keeps trash, Empty Trash empties and updates icon | |
 | 3.1 | 37f059d | Hover magnify settles smoothly, icons scale and dock resizes properly on settings changes and monitor changes | |
-| 4.2 | this commit | Log in, open overview: overview dash hidden; disable extension, open overview: overview dash restored | |
+| 4.2 | f56a070 | Log in, open overview: overview dash hidden; disable extension, open overview: overview dash restored | |
 
 ## 6. Run Log (append-only, newest last)
 
@@ -370,4 +370,7 @@ Format: `YYYY-MM-DD HH:MM · cycle · EVENT · details` where EVENT ∈ `SETUP, 
 - 2026-10-06 · 4.1 · AUDIT-PASS · d94c310. check=PASS lint=0/138 settings=exit 0 timer_check 15/15 window_tracker_check 20/20 compat_baseline_check 37/37 smoke=PASS strict=PASS. Established functional baseline against current apps/icons functionality; implemented compat.js; fixed C5, C6, C7, C8, C10, C17.
 - 2026-10-06 · 4.2 · PREFLIGHT · tree clean; HEAD f5b1cd4; GNOME Shell 50.5.
 - 2026-10-06 · 4.2 · ASSIGN · R-14b C1/C4 Dash & overview dash encapsulation. Encapsulate Dash accessors, proxy setup, and overview dash visibility in compat.js; eliminate __box expando.
-- 2026-10-06 · 4.2 · AUDIT-PASS · this commit. check=PASS lint=0/137 settings=exit 0 timer_check 15/15 window_tracker_check 20/20 compat_baseline_check 49/49 smoke=PASS strict=PASS. Encapsulated Dash structural accessors, proxy setup, and overview dash visibility in compat.js; eliminated __box expando; fixed C1, C4.
+- 2026-10-06 · 4.2 · AUDIT-PASS · f56a070. check=PASS lint=0/137 settings=exit 0 timer_check 15/15 window_tracker_check 20/20 compat_baseline_check 49/49 smoke=PASS strict=PASS. Encapsulated Dash structural accessors, proxy setup, and overview dash visibility in compat.js; eliminated __box expando; fixed C1, C4.
+- 2026-10-06 · — · HUMAN · `7fe412b`. Dock animation re-entry fix: ensure _beginAnimation() repopulates this._icons via _findIcons() if null; fix St.BoxLayout _extraIcons orientation using modern orientation property directly (avoiding null layout_manager TypeError and deprecated vertical property warning); deleted obsolete DESIGN.md and CHECKLIST.md.
+- 2026-10-06 · 4.3 · PREFLIGHT · tree clean; HEAD 7fe412b; GNOME Shell 50.5.
+- 2026-10-06 · 4.3 · ASSIGN · R-14c C2/C3 icon parts and activate encapsulation. Encapsulate Dash item internal tree extraction (C2: getIconParts(item)) and safe activate/showLabel wrapping (C3: wrapAppIconActivate, wrapAppIconShowLabel) in compat.js.

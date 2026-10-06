@@ -329,7 +329,29 @@ export let Animator = class {
     const NUM_IMAGINARY = 4;
     const TOTAL_CALC_ICONS = NUM_IMAGINARY + NUM_ICONS + NUM_IMAGINARY;
 
-    // --- Step 2: Static Centers & Coordinate Decoupling ---
+    // --- Step 2: Static Centers & Coordinate Decoupling (Measured directly from Clutter!) ---
+    const firstIconObj = animateIcons[0];
+    const lastIconObj = animateIcons[NUM_ICONS - 1];
+    
+    const firstIconPos = vertical ? firstIconObj._fixedPosition[1] : firstIconObj._fixedPosition[0];
+    const firstIconSize = vertical ? firstIconObj.height : firstIconObj.width;
+    const firstIconCenter = firstIconPos + firstIconSize / 2;
+    
+    const staticDockStart = firstIconPos;
+
+    const restingCenters = [];
+    for (let i = 0; i < NUM_ICONS; i++) {
+        const icon = animateIcons[i];
+        const pos_i = vertical ? icon._fixedPosition[1] : icon._fixedPosition[0];
+        const size_i = vertical ? icon.height : icon.width;
+        const center_i = pos_i + size_i / 2;
+        restingCenters.push(center_i - staticDockStart);
+    }
+
+    const lastIconPos = vertical ? lastIconObj._fixedPosition[1] : lastIconObj._fixedPosition[0];
+    const lastIconSize = vertical ? lastIconObj.height : lastIconObj.width;
+    const restingL = (lastIconPos + lastIconSize) - firstIconPos;
+
     const ICON_SIZE = iconSize * scaleFactor;
     const UNANIMATED_PADDING = 2.0;
     const staticPadding = 12.0 * spread;
@@ -345,18 +367,7 @@ export let Animator = class {
         staticCenters.push(i * activeContainerWidth + activeContainerWidth / 2);
     }
 
-    // Compute unwarped compact resting centers for drawing/centering reference
-    const restingCenters = [];
-    for (let i = 0; i < NUM_ICONS; i++) {
-        restingCenters.push(i * containerWidth + containerWidth / 2);
-    }
-    const restingL = NUM_ICONS * containerWidth;
-
     // Compute decoupled mouse coordinates in the 18-icon coordinate system
-    let staticDockStart = 0;
-    if (animateIcons[0] && animateIcons[0]._fixedPosition) {
-        staticDockStart = vertical ? animateIcons[0]._fixedPosition[1] : animateIcons[0]._fixedPosition[0];
-    }
     const primaryMouse = vertical ? py : px;
 
     // Calibrate pointer tracking by measuring relative to the unwarped active dock start

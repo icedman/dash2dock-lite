@@ -222,9 +222,13 @@ app.connect('activate', (app) => {
         const containerWidth = ICON_SIZE + UNANIMATED_PADDING;
         const activeContainerWidth = ICON_SIZE + activePadding;
 
-        // Compute active static centers (unwarped resting centers x_i) using the influenced active padding
+        // --- Ghost Nodes/Imaginary Icons for Edge Transition Stabilization ---
+        const NUM_IMAGINARY = 4;
+        const TOTAL_CALC_ICONS = NUM_IMAGINARY + NUM_ICONS + NUM_IMAGINARY; // 18 calculated icons
+
+        // Compute active static centers (unwarped resting centers x_i) using the influenced active padding for all 18 icons
         const staticCenters = [];
-        for (let i = 0; i < NUM_ICONS; i++) {
+        for (let i = 0; i < TOTAL_CALC_ICONS; i++) {
             staticCenters.push(i * activeContainerWidth + activeContainerWidth / 2);
         }
 
@@ -234,14 +238,17 @@ app.connect('activate', (app) => {
             restingCenters.push(i * containerWidth + containerWidth / 2);
         }
 
-        // --- 2. Compute Scales & Dynamic Widths for All Icons ---
+        // --- 2. Compute Scales & Dynamic Widths for All 18 Icons ---
         const primaryMouse = isVertical ? mouseY : mouseX;
-        const xmClamped = Math.max(0, Math.min(NUM_ICONS * activeContainerWidth, primaryMouse));
+        
+        // Offset the mouse coordinate to align with the 18-icon coordinate system
+        const xmLocalCalculated = primaryMouse + NUM_IMAGINARY * activeContainerWidth;
+        const xmClamped = Math.max(0, Math.min(TOTAL_CALC_ICONS * activeContainerWidth, xmLocalCalculated));
         const p = Math.max(1.0, Math.min(3.0, 2.7 - 1.5 * (riseInfluence - 0.3)));
 
         const iconScales = [];
         const iconWidths = [];
-        for (let i = 0; i < NUM_ICONS; i++) {
+        for (let i = 0; i < TOTAL_CALC_ICONS; i++) {
             const xi = staticCenters[i];
             const targetScale = getScale(xi, xmClamped, radius, maxScale, p);
             const scale = 1.0 + (targetScale - 1.0) * hoverProgress;
@@ -249,10 +256,10 @@ app.connect('activate', (app) => {
             iconWidths.push(ICON_SIZE * scale);
         }
 
-        // --- 3. Compute Perfectly Packed (Non-Overlapping) Centers ---
+        // --- 3. Compute Perfectly Packed (Non-Overlapping) Centers for All 18 Icons ---
         const packedCenters = [];
         let currentPos = 0;
-        for (let i = 0; i < NUM_ICONS; i++) {
+        for (let i = 0; i < TOTAL_CALC_ICONS; i++) {
             const halfW = iconWidths[i] / 2;
             if (i === 0) {
                 currentPos = halfW;
@@ -262,14 +269,14 @@ app.connect('activate', (app) => {
             packedCenters.push(currentPos);
         }
 
-        // Total packed length of the active dock
-        const activeL = packedCenters[NUM_ICONS - 1] + iconWidths[NUM_ICONS - 1] / 2;
+        // Total packed length of the active calculated dock
+        const activeL = packedCenters[TOTAL_CALC_ICONS - 1] + iconWidths[TOTAL_CALC_ICONS - 1] / 2;
 
         // --- 3b. Pre-calculate the total dock width if the mouse was at dead center ---
-        const centerMouse = (NUM_ICONS * activeContainerWidth) / 2;
+        const centerMouse = (TOTAL_CALC_ICONS * activeContainerWidth) / 2;
         const centerScales = [];
         const centerWidths = [];
-        for (let i = 0; i < NUM_ICONS; i++) {
+        for (let i = 0; i < TOTAL_CALC_ICONS; i++) {
             const xi = staticCenters[i];
             const targetScale = getScale(xi, centerMouse, radius, maxScale, p);
             const scale = 1.0 + (targetScale - 1.0) * hoverProgress;
@@ -278,7 +285,7 @@ app.connect('activate', (app) => {
         }
 
         let currentCenterPos = 0;
-        for (let i = 0; i < NUM_ICONS; i++) {
+        for (let i = 0; i < TOTAL_CALC_ICONS; i++) {
             const halfW = centerWidths[i] / 2;
             if (i === 0) {
                 currentCenterPos = halfW;
@@ -286,19 +293,19 @@ app.connect('activate', (app) => {
                 currentCenterPos += centerWidths[i - 1] / 2 + halfW + activePadding;
             }
         }
-        const centerPackedL = currentCenterPos + centerWidths[NUM_ICONS - 1] / 2;
+        const centerPackedL = currentCenterPos + centerWidths[TOTAL_CALC_ICONS - 1] / 2;
 
-        // --- 3c. Distribute the variance evenly to all icons ---
+        // --- 3c. Distribute the variance evenly to all 18 icons ---
         const variance = centerPackedL - activeL;
         const adjustedIconWidths = [];
-        for (let i = 0; i < NUM_ICONS; i++) {
-            adjustedIconWidths.push(iconWidths[i] + variance / NUM_ICONS);
+        for (let i = 0; i < TOTAL_CALC_ICONS; i++) {
+            adjustedIconWidths.push(iconWidths[i] + variance / TOTAL_CALC_ICONS);
         }
 
-        // --- 3d. Re-calculate Packed Centers using Adjusted Widths ---
+        // --- 3d. Re-calculate Packed Centers using Adjusted Widths for All 18 Icons ---
         const adjustedPackedCenters = [];
         let adjCurrentPos = 0;
-        for (let i = 0; i < NUM_ICONS; i++) {
+        for (let i = 0; i < TOTAL_CALC_ICONS; i++) {
             const halfW = adjustedIconWidths[i] / 2;
             if (i === 0) {
                 adjCurrentPos = halfW;
@@ -308,8 +315,10 @@ app.connect('activate', (app) => {
             adjustedPackedCenters.push(adjCurrentPos);
         }
 
-        // The final active dock length is now kept mathematically constant at centerPackedL
-        const finalActiveL = centerPackedL;
+        // Extract the bounds of the 10 real icons from the 18 calculated nodes
+        const realLeftEdge = adjustedPackedCenters[NUM_IMAGINARY] - adjustedIconWidths[NUM_IMAGINARY] / 2;
+        const realRightEdge = adjustedPackedCenters[NUM_IMAGINARY + NUM_ICONS - 1] + adjustedIconWidths[NUM_IMAGINARY + NUM_ICONS - 1] / 2;
+        const realActiveL = realRightEdge - realLeftEdge;
 
         // Compute dock start coordinates on the screen based on position and orientation
         let staticDockStartX, staticDockStartY;
@@ -318,11 +327,11 @@ app.connect('activate', (app) => {
 
         if (!isVertical) {
             staticDockStartX = (width - restingL) / 2;
-            activeDockStartX = (width - finalActiveL) / 2;
+            activeDockStartX = (width - realActiveL) / 2;
             baseline = (currentPosition === Positions.BOTTOM) ? (height - 120) : 120;
         } else {
             staticDockStartY = (height - restingL) / 2;
-            activeDockStartY = (height - finalActiveL) / 2;
+            activeDockStartY = (height - realActiveL) / 2;
             baseline = (currentPosition === Positions.LEFT) ? 120 : (width - 120);
         }
 
@@ -368,12 +377,13 @@ app.connect('activate', (app) => {
         // Map the riseInfluence parameter smoothly to a shape exponent p.
         // As riseInfluence increases, the exponent p decreases towards 1.0 (pointed cusp) more aggressively.
 
-        // Calculate positions and scales for all active icons using the adjusted packed centers
-        const activeIcons = adjustedPackedCenters.map((pc, i) => {
+        // Calculate positions and scales for all 18 active icons, marking imaginary ghost nodes
+        const activeIcons = [];
+        for (let i = 0; i < TOTAL_CALC_ICONS; i++) {
+            const pc = adjustedPackedCenters[i];
             const scale = adjustedIconWidths[i] / ICON_SIZE;
-            const globalPrimary = (!isVertical ? activeDockStartX : activeDockStartY) + pc;
+            const globalPrimary = (!isVertical ? activeDockStartX : activeDockStartY) + (pc - realLeftEdge);
 
-            // Compute secondary axis rise offset (none for static width-scaled stage)
             const dy = 0;
 
             let warpedX, warpedY;
@@ -391,21 +401,25 @@ app.connect('activate', (app) => {
                 warpedY = globalPrimary;
             }
 
-            return {
+            const isImaginary = (i < NUM_IMAGINARY || i >= NUM_IMAGINARY + NUM_ICONS);
+
+            activeIcons.push({
                 warpedX: warpedX,
                 warpedY: warpedY,
                 adjustedScale: scale,
-                originalScale: iconScales[i]
-            };
-        });
+                originalScale: iconScales[i],
+                isImaginary: isImaginary,
+                calcIndex: i
+            });
+        }
 
         // Compute dynamically stretched background bounds
         let bgActiveX, bgActiveY, bgActiveW, bgActiveH;
         let activeLeftX, activeRightX;
         let activeTopY, activeBottomY;
 
-        const firstIcon = activeIcons[0];
-        const lastIcon = activeIcons[activeIcons.length - 1];
+        const firstIcon = activeIcons[NUM_IMAGINARY];
+        const lastIcon = activeIcons[NUM_IMAGINARY + NUM_ICONS - 1];
 
         if (!isVertical) {
             activeLeftX = firstIcon.warpedX - (firstIcon.adjustedScale * ICON_SIZE) / 2 - 12;
@@ -466,9 +480,14 @@ app.connect('activate', (app) => {
                 iconY = icon.warpedY - iconH / 2;
             }
 
-            // Render in plain gray for the outer wireframe box
-            cr.setSourceRGBA(0.7, 0.7, 0.7, 1.0);
-            cr.setLineWidth(2.0);
+            // Render wireframe box (dark gray for imaginary, normal gray for real)
+            if (icon.isImaginary) {
+                cr.setSourceRGBA(0.35, 0.35, 0.35, 0.35);
+                cr.setLineWidth(1.5);
+            } else {
+                cr.setSourceRGBA(0.7, 0.7, 0.7, 1.0);
+                cr.setLineWidth(2.0);
+            }
 
             // Draw rounded-corner icon rectangles (using iconW for width and iconH for height)
             const iconRadius = 8;
@@ -481,61 +500,67 @@ app.connect('activate', (app) => {
             cr.closePath();
             cr.stroke();
 
-            // Render inner icon (rounded rect) at the center of each activeIcon - using original unadjusted scale and height!
-            const r = 0.3 + 0.5 * (idx / NUM_ICONS);
-            const g = 0.5 - 0.2 * (idx / NUM_ICONS);
-            const b = 0.8 - 0.4 * (idx / NUM_ICONS);
+            // Render inner icons only for the real active icons
+            if (!icon.isImaginary) {
+                const realIndex = icon.calcIndex - NUM_IMAGINARY;
+                const r = 0.3 + 0.5 * (realIndex / NUM_ICONS);
+                const g = 0.5 - 0.2 * (realIndex / NUM_ICONS);
+                const b = 0.8 - 0.4 * (realIndex / NUM_ICONS);
 
-            const innerSize = 32 * icon.originalScale;
-            const dy = (icon.originalScale - 1.0) * 55 * riseInfluence;
+                const innerSize = 32 * icon.originalScale;
+                const dy = (icon.originalScale - 1.0) * 55 * riseInfluence;
 
-            let innerX, innerY;
-            if (currentPosition === Positions.BOTTOM) {
-                innerX = icon.warpedX - innerSize / 2;
-                innerY = (baseline - ICON_SIZE / 2 - dy) - innerSize / 2;
-            } else if (currentPosition === Positions.TOP) {
-                innerX = icon.warpedX - innerSize / 2;
-                innerY = (baseline + ICON_SIZE / 2 + dy) - innerSize / 2;
-            } else if (currentPosition === Positions.LEFT) {
-                innerX = (baseline + ICON_SIZE / 2 + dy) - innerSize / 2;
-                innerY = icon.warpedY - innerSize / 2;
-            } else if (currentPosition === Positions.RIGHT) {
-                innerX = (baseline - ICON_SIZE / 2 - dy) - innerSize / 2;
-                innerY = icon.warpedY - innerSize / 2;
+                let innerX, innerY;
+                if (currentPosition === Positions.BOTTOM) {
+                    innerX = icon.warpedX - innerSize / 2;
+                    innerY = (baseline - ICON_SIZE / 2 - dy) - innerSize / 2;
+                } else if (currentPosition === Positions.TOP) {
+                    innerX = icon.warpedX - innerSize / 2;
+                    innerY = (baseline + ICON_SIZE / 2 + dy) - innerSize / 2;
+                } else if (currentPosition === Positions.LEFT) {
+                    innerX = (baseline + ICON_SIZE / 2 + dy) - innerSize / 2;
+                    innerY = icon.warpedY - innerSize / 2;
+                } else if (currentPosition === Positions.RIGHT) {
+                    innerX = (baseline - ICON_SIZE / 2 - dy) - innerSize / 2;
+                    innerY = icon.warpedY - innerSize / 2;
+                }
+
+                cr.setSourceRGBA(r, g, b, 1.0);
+
+                // Draw rounded-corner inner rect icons
+                const innerRadius = 6 * icon.originalScale;
+
+                cr.newSubPath();
+                cr.arc(innerX + innerRadius, innerY + innerRadius, innerRadius, Math.PI, 1.5 * Math.PI);
+                cr.arc(innerX + innerSize - innerRadius, innerY + innerRadius, innerRadius, 1.5 * Math.PI, 2.0 * Math.PI);
+                cr.arc(innerX + innerSize - innerRadius, innerY + innerSize - innerRadius, innerRadius, 0, 0.5 * Math.PI);
+                cr.arc(innerX + innerRadius, innerY + innerSize - innerRadius, innerRadius, 0.5 * Math.PI, Math.PI);
+                cr.closePath();
+                cr.fill();
             }
 
-            cr.setSourceRGBA(r, g, b, 1.0);
-
-            // Draw rounded-corner inner rect icons
-            const innerRadius = 6 * icon.originalScale;
-
-            cr.newSubPath();
-            cr.arc(innerX + innerRadius, innerY + innerRadius, innerRadius, Math.PI, 1.5 * Math.PI);
-            cr.arc(innerX + innerSize - innerRadius, innerY + innerRadius, innerRadius, 1.5 * Math.PI, 2.0 * Math.PI);
-            cr.arc(innerX + innerSize - innerRadius, innerY + innerSize - innerRadius, innerRadius, 0, 0.5 * Math.PI);
-            cr.arc(innerX + innerRadius, innerY + innerSize - innerRadius, innerRadius, 0.5 * Math.PI, Math.PI);
-            cr.closePath();
-            cr.fill();
-
-            // Render a small white dot underneath open/running apps (e.g., indices 1, 4, 7)
-            if (idx === 1 || idx === 4 || idx === 7) {
-                cr.setSourceRGBA(1.0, 1.0, 1.0, 0.8);
-                let dotX, dotY;
-                if (currentPosition === Positions.BOTTOM) {
-                    dotX = icon.warpedX;
-                    dotY = baseline + 8;
-                } else if (currentPosition === Positions.TOP) {
-                    dotX = icon.warpedX;
-                    dotY = baseline - 8;
-                } else if (currentPosition === Positions.LEFT) {
-                    dotX = baseline - 8;
-                    dotY = icon.warpedY;
-                } else if (currentPosition === Positions.RIGHT) {
-                    dotX = baseline + 8;
-                    dotY = icon.warpedY;
+            // Render a small white dot underneath open/running apps (e.g., indices 1, 4, 7) only for real icons
+            if (!icon.isImaginary) {
+                const realIndex = icon.calcIndex - NUM_IMAGINARY;
+                if (realIndex === 1 || realIndex === 4 || realIndex === 7) {
+                    cr.setSourceRGBA(1.0, 1.0, 1.0, 0.8);
+                    let dotX, dotY;
+                    if (currentPosition === Positions.BOTTOM) {
+                        dotX = icon.warpedX;
+                        dotY = baseline + 8;
+                    } else if (currentPosition === Positions.TOP) {
+                        dotX = icon.warpedX;
+                        dotY = baseline - 8;
+                    } else if (currentPosition === Positions.LEFT) {
+                        dotX = baseline - 8;
+                        dotY = icon.warpedY;
+                    } else if (currentPosition === Positions.RIGHT) {
+                        dotX = baseline + 8;
+                        dotY = icon.warpedY;
+                    }
+                    cr.arc(dotX, dotY, 3, 0, 2 * Math.PI);
+                    cr.fill();
                 }
-                cr.arc(dotX, dotY, 3, 0, 2 * Math.PI);
-                cr.fill();
             }
         });
 

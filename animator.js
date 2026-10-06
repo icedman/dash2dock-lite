@@ -227,9 +227,10 @@ export let Animator = class {
     let iconSize = dock._iconSizeScaledDown;
     let scaleFactor = dock._scaleFactor;
 
-    let nearestIdx = -1;
     let nearestIcon = null;
     let nearestDistance = -1;
+    let largestIcon = null;
+    let largestSize = -1;
 
     let iconCenterOffset = (iconSize * scaleFactor) / 2;
     let hitArea = iconSize * ANIM_ICON_HIT_AREA * scaleFactor;
@@ -263,7 +264,6 @@ export let Animator = class {
       ) {
         nearestDistance = dst;
         nearestIcon = icon;
-        nearestIdx = idx;
         icon._distance = dst;
       }
 
@@ -575,6 +575,11 @@ export let Animator = class {
 
       icon._scale = icon._targetScale;
 
+      if (largestSize == -1 || largestSize < icon._scale) {
+        largestIcon = icon;
+        largestSize = icon._scale;
+      }
+
       const isTopOrLeft =
         dock._position === DockPosition.TOP ||
         dock._position === DockPosition.LEFT;
@@ -625,6 +630,10 @@ export let Animator = class {
         icon._appwell._bounce = false;
       }
     });
+
+    if (largestIcon && nearestIcon) {
+      hoveredIcon = largestIcon;
+    }
 
     //--------------
     // renderer

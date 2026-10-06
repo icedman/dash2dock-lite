@@ -265,6 +265,52 @@ app.connect('activate', (app) => {
         // Total packed length of the active dock
         const activeL = packedCenters[NUM_ICONS - 1] + iconWidths[NUM_ICONS - 1] / 2;
 
+        // --- 3b. Pre-calculate the total dock width if the mouse was at dead center ---
+        const centerMouse = (NUM_ICONS * activeContainerWidth) / 2;
+        const centerScales = [];
+        const centerWidths = [];
+        for (let i = 0; i < NUM_ICONS; i++) {
+            const xi = staticCenters[i];
+            const targetScale = getScale(xi, centerMouse, radius, maxScale, p);
+            const scale = 1.0 + (targetScale - 1.0) * hoverProgress;
+            centerScales.push(scale);
+            centerWidths.push(ICON_SIZE * scale);
+        }
+
+        let currentCenterPos = 0;
+        for (let i = 0; i < NUM_ICONS; i++) {
+            const halfW = centerWidths[i] / 2;
+            if (i === 0) {
+                currentCenterPos = halfW;
+            } else {
+                currentCenterPos += centerWidths[i - 1] / 2 + halfW + activePadding;
+            }
+        }
+        const centerPackedL = currentCenterPos + centerWidths[NUM_ICONS - 1] / 2;
+
+        // --- 3c. Distribute the variance evenly to all icons ---
+        const variance = centerPackedL - activeL;
+        const adjustedIconWidths = [];
+        for (let i = 0; i < NUM_ICONS; i++) {
+            adjustedIconWidths.push(iconWidths[i] + variance / NUM_ICONS);
+        }
+
+        // --- 3d. Re-calculate Packed Centers using Adjusted Widths ---
+        const adjustedPackedCenters = [];
+        let adjCurrentPos = 0;
+        for (let i = 0; i < NUM_ICONS; i++) {
+            const halfW = adjustedIconWidths[i] / 2;
+            if (i === 0) {
+                adjCurrentPos = halfW;
+            } else {
+                adjCurrentPos += adjustedIconWidths[i - 1] / 2 + halfW + activePadding;
+            }
+            adjustedPackedCenters.push(adjCurrentPos);
+        }
+
+        // The final active dock length is now kept mathematically constant at centerPackedL
+        const finalActiveL = centerPackedL;
+
         // Compute dock start coordinates on the screen based on position and orientation
         let staticDockStartX, staticDockStartY;
         let activeDockStartX, activeDockStartY;
@@ -272,11 +318,11 @@ app.connect('activate', (app) => {
 
         if (!isVertical) {
             staticDockStartX = (width - restingL) / 2;
-            activeDockStartX = (width - activeL) / 2;
+            activeDockStartX = (width - finalActiveL) / 2;
             baseline = (currentPosition === Positions.BOTTOM) ? (height - 120) : 120;
         } else {
             staticDockStartY = (height - restingL) / 2;
-            activeDockStartY = (height - activeL) / 2;
+            activeDockStartY = (height - finalActiveL) / 2;
             baseline = (currentPosition === Positions.LEFT) ? 120 : (width - 120);
         }
 
@@ -322,9 +368,9 @@ app.connect('activate', (app) => {
         // Map the riseInfluence parameter smoothly to a shape exponent p.
         // As riseInfluence increases, the exponent p decreases towards 1.0 (pointed cusp) more aggressively.
 
-        // Calculate positions and scales for all active icons using the packed centers
-        const activeIcons = packedCenters.map((pc, i) => {
-            const scale = iconScales[i];
+        // Calculate positions and scales for all active icons using the adjusted packed centers
+        const activeIcons = adjustedPackedCenters.map((pc, i) => {
+            const scale = adjustedIconWidths[i] / ICON_SIZE;
             const globalPrimary = (!isVertical ? activeDockStartX : activeDockStartY) + pc;
 
             // Compute secondary axis rise offset (none for static width-scaled stage)
@@ -348,7 +394,8 @@ app.connect('activate', (app) => {
             return {
                 warpedX: warpedX,
                 warpedY: warpedY,
-                scale: scale
+                adjustedScale: scale,
+                originalScale: iconScales[i]
             };
         });
 
@@ -361,8 +408,8 @@ app.connect('activate', (app) => {
         const lastIcon = activeIcons[activeIcons.length - 1];
 
         if (!isVertical) {
-            activeLeftX = firstIcon.warpedX - (firstIcon.scale * ICON_SIZE) / 2 - 12;
-            activeRightX = lastIcon.warpedX + (lastIcon.scale * ICON_SIZE) / 2 + 12;
+            activeLeftX = firstIcon.warpedX - (firstIcon.adjustedScale * ICON_SIZE) / 2 - 12;
+            activeRightX = lastIcon.warpedX + (lastIcon.adjustedScale * ICON_SIZE) / 2 + 12;
             bgActiveX = activeLeftX;
             bgActiveW = activeRightX - activeLeftX;
             bgActiveY = (currentPosition === Positions.BOTTOM) ? (baseline - ICON_SIZE - 10) : (baseline - 10);
@@ -375,7 +422,7 @@ app.connect('activate', (app) => {
             bgActiveH = activeBottomY - activeTopY;
 
             // Since width is scaled horizontally, background width must accommodate the maximum scaled icon width
-            const maxActiveScale = activeIcons.reduce((max, icon) => Math.max(max, icon.scale), 1.0);
+            const maxActiveScale = activeIcons.reduce((max, icon) => Math.max(max, icon.adjustedScale), 1.0);
             const maxIconW = ICON_SIZE * maxActiveScale;
 
             if (currentPosition === Positions.LEFT) {
@@ -401,7 +448,7 @@ app.connect('activate', (app) => {
 
         // Draw Active Icons (Solid colored rectangles with rise offset)
         activeIcons.forEach((icon, idx) => {
-            const iconW = ICON_SIZE * icon.scale;
+            const iconW = ICON_SIZE * icon.adjustedScale;
             const iconH = ICON_SIZE;
 
             let iconX, iconY;
@@ -434,13 +481,13 @@ app.connect('activate', (app) => {
             cr.closePath();
             cr.stroke();
 
-            // Render inner icon (just a rect) at the center of each activeIcon - raised and scaled using the same formula
+            // Render inner icon (rounded rect) at the center of each activeIcon - using original unadjusted scale and height!
             const r = 0.3 + 0.5 * (idx / NUM_ICONS);
             const g = 0.5 - 0.2 * (idx / NUM_ICONS);
             const b = 0.8 - 0.4 * (idx / NUM_ICONS);
 
-            const innerSize = 32 * icon.scale;
-            const dy = (icon.scale - 1.0) * 55 * riseInfluence;
+            const innerSize = 32 * icon.originalScale;
+            const dy = (icon.originalScale - 1.0) * 55 * riseInfluence;
 
             let innerX, innerY;
             if (currentPosition === Positions.BOTTOM) {
@@ -460,7 +507,7 @@ app.connect('activate', (app) => {
             cr.setSourceRGBA(r, g, b, 1.0);
 
             // Draw rounded-corner inner rect icons
-            const innerRadius = 6 * icon.scale;
+            const innerRadius = 6 * icon.originalScale;
 
             cr.newSubPath();
             cr.arc(innerX + innerRadius, innerY + innerRadius, innerRadius, Math.PI, 1.5 * Math.PI);

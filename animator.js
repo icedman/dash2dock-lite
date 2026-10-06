@@ -505,13 +505,6 @@ export let Animator = class {
       slowDown = 0.5;
     }
 
-    let lockPosition =
-      didScale && first && last && first._hoverProgress == 0 && last._hoverProgress == 0;
-
-    if (dock._preview) {
-      lockPosition = false;
-    }
-
     animateIcons.forEach((icon) => {
       if (!icon._icon) return;
       // this fixes jittery hovered icon
@@ -559,45 +552,6 @@ export let Animator = class {
         translationX = appliedVector.x;
         translationY = appliedVector.y;
         icon._deltaVector = appliedVector;
-      }
-
-      // fix jitterness
-      if (lockPosition && icon._hoverProgress == 0) {
-        icon._positionCache = icon._positionCache || [];
-        var lockThreshold = 48;
-        if (
-          (icon._prev && icon._prev._locked) ||
-          (icon._next && icon._next._locked)
-        ) {
-          lockThreshold = 32;
-        }
-        if (icon._positionCache.length > lockThreshold) {
-          [translationX, translationY] =
-            icon._positionCache[icon._positionCache.length - 1];
-          icon._locked = true;
-        } else {
-          icon._positionCache.push([translationX, translationY]);
-
-          let edgeItems = ANIMATE_CACHE_LOOKUP;
-          if (icon._positionCache.length > edgeItems) {
-            let tx = 0; //translationX;
-            let ty = 0; //translationY;
-            for (let i = 0; i < edgeItems; i++) {
-              tx +=
-                icon._positionCache[
-                  icon._positionCache.length - edgeItems + i
-                ][0];
-              ty +=
-                icon._positionCache[
-                  icon._positionCache.length - edgeItems + i
-                ][1];
-            }
-            translationX = tx / edgeItems;
-            translationY = ty / edgeItems;
-          }
-        }
-      } else {
-        icon._positionCache = null;
       }
 
       if (dock.extension.animation_fps > 0) {

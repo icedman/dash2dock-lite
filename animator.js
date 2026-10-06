@@ -463,10 +463,10 @@ export let Animator = class {
     }
     realLeftEdgeUnshifted += NUM_IMAGINARY * activePadding;
 
+    /*
     // --- Proportional Widening/Narrowing of Boundary Imaginary Icons ---
     // Calculate normalized mouse position t on the unexpanded dock
     const t = xmClamped / totalCalcStaticL;
-
     // Calculate the unshifted real active length of the real icons
     let realActiveLUnshifted = 0;
     for (let i = NUM_IMAGINARY; i < NUM_IMAGINARY + NUM_ICONS; i++) {
@@ -475,7 +475,7 @@ export let Animator = class {
     realActiveLUnshifted += (NUM_ICONS - 1) * activePadding;
 
     // Proportional shift based on mouse proximity to edge (pushes icons towards the mouse/center)
-    const shift = 1.6 * (0.5 - t) * (realActiveLUnshifted - restingL) * (hoverActive ? 1.0 : 0.0);
+    const shift = 1.0 * (0.5 - t) * (realActiveLUnshifted - restingL) * (hoverActive ? 1.0 : 0.0);
 
     // Apply shift: widen the first imaginary icons and narrow the last imaginary icons (or vice versa)
     for (let i = 0; i < NUM_IMAGINARY; i++) {
@@ -484,6 +484,7 @@ export let Animator = class {
     for (let i = TOTAL_CALC_ICONS - NUM_IMAGINARY; i < TOTAL_CALC_ICONS; i++) {
         adjustedIconWidths[i] -= shift / NUM_IMAGINARY;
     }
+     */
 
     const adjustedPackedCenters = [];
     let adjCurrentPos = 0;

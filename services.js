@@ -216,7 +216,7 @@ export const Services = class {
 
     this.last_mounted = mount;
     this.setupMountIcon(mount);
-    this.extension.animate();
+    this.extension.animate({ refresh: true });
     return true;
   }
 
@@ -226,7 +226,7 @@ export const Services = class {
     if (this.mountApps) {
       delete this.mountApps[appname];
     }
-    this.extension.animate();
+    this.extension.animate({ refresh: true });
   }
 
   update(elapsed) {
@@ -385,7 +385,7 @@ export const Services = class {
     this._appNotices = update;
 
     if (hasUpdates) {
-      this.extension.animate();
+      this.extension.animate({ refresh: true });
     }
   }
 

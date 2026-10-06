@@ -43,7 +43,7 @@ export const DockItemList = GObject.registerClass(
 
     static createItem(dock, f) {
       let file_explorer = dock.extension.file_explorer();
-      let target = dock.createItem(f.path);
+      let target = dock.createItem(f.path, f.icon);
       target._onClick = () => {
         if (
           dock._position != DockPosition.BOTTOM &&

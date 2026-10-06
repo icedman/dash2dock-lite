@@ -371,6 +371,9 @@ export const DockItemContainer = GObject.registerClass(
         style_class: 'dash-item-container',
         ...(params || {}),
       });
+      if (params.id) {
+        dashIcon._id = params.id;
+      }
       this.set_scale(1, 1);
       this.setChild(dashIcon);
 

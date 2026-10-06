@@ -221,12 +221,15 @@ export let Dock = GObject.registerClass(
       this._beginAnimation();
     }
 
-    createItem(appOrPath) {
+    createItem(appOrPath, id) {
       let params = {};
       if (typeof appOrPath === 'string') {
         params.appinfo_filename = appOrPath;
       } else if (appOrPath) {
         params.app = appOrPath;
+      }
+      if (id) {
+        params.id = id;
       }
       let item = new DockItemContainer(params);
       item.dock = this;
@@ -458,11 +461,37 @@ export let Dock = GObject.registerClass(
       let dashBox = Compat.getDashBox(this.dash);
       if (dashBox) {
         dashBox.clip_to_allocation = false;
+        dashBox.connectObject(
+          'child-added', () => {
+            this._icons = null;
+            this._needsLayout = true;
+            this._beginAnimation();
+          },
+          'child-removed', () => {
+            this._icons = null;
+            this._needsLayout = true;
+            this._beginAnimation();
+          },
+          this
+        );
       }
 
       this._extraIcons = new St.BoxLayout({
         name: 'd2daExtraIcons',
       });
+      this._extraIcons.connectObject(
+        'child-added', () => {
+          this._icons = null;
+          this._needsLayout = true;
+          this._beginAnimation();
+        },
+        'child-removed', () => {
+          this._icons = null;
+          this._needsLayout = true;
+          this._beginAnimation();
+        },
+        this
+      );
       if (dashBox) {
         dashBox.add_child(this._extraIcons);
       }
@@ -741,12 +770,14 @@ export let Dock = GObject.registerClass(
         let _boxIconsLength = dashBox?.get_children().length ?? 0;
         if (_boxIconsLength != this._boxIconsLength) {
           this._icons = null;
+          this._needsLayout = true;
         }
         this._boxIconsLength = _boxIconsLength;
         if (this._extraIcons) {
           let _extraIconsLength = this._extraIcons.get_children().length;
           if (_extraIconsLength != this._extraIconsLength) {
             this._icons = null;
+            this._needsLayout = true;
           }
           this._extraIconsLength = _extraIconsLength;
         }
@@ -937,7 +968,7 @@ export let Dock = GObject.registerClass(
         mountedIds.forEach((mountId) => {
           if (!extraMountIds.includes(mountId)) {
             let app = mountApps[mountId];
-            let mountedIcon = this.createItem(app);
+            let mountedIcon = this.createItem(app, mountId);
             mountedIcon._mountType = true;
             mountedIcon._mountId = mountId;
             mountedIcon._mountPath = mountId;
@@ -1018,7 +1049,7 @@ export let Dock = GObject.registerClass(
         let trashApp =
           this.extension.services?.trashApp ||
           this.extension.services?.setupTrashIcon?.();
-        this._trashIcon = this.createItem(trashApp);
+        this._trashIcon = this.createItem(trashApp, '_trashIcon');
         this._icons = null;
         this._needsLayout = true;
       } else if (this._trashIcon && !this.extension.trash_icon) {
@@ -1058,7 +1089,7 @@ export let Dock = GObject.registerClass(
     }
 
     relayout(force = false) {
-      if (!force && !this._needsLayout) {
+      if (!force && !this._needsLayout && this._icons) {
         return true;
       }
 
@@ -1258,7 +1289,9 @@ export let Dock = GObject.registerClass(
       }
 
       this._needsLayout = false;
-      this._fast_forward = 20;
+      if (!this._fast_forward || this._fast_forward <= 0) {
+        this._fast_forward = 20;
+      }
       return true;
     }
 
@@ -1365,6 +1398,7 @@ export let Dock = GObject.registerClass(
       this._favorite_ids = Compat.getFavoriteAppIds(Fav.getAppFavorites());
       if (!this._icons) {
         this._icons = this._findIcons();
+        this._needsLayout = true;
       }
 
       // if (caller) {

@@ -17,8 +17,6 @@ import { live } from './probe.js';
 import {
   Bounce,
   Linear,
-  CubicEaseOut,
-  QuadraticEaseOut,
 } from './effects/easing.js';
 import {
   get_distance_sqr,
@@ -35,6 +33,16 @@ const ANIM_ICON_HIT_AREA = 2.5;
 const ANIMATE_CACHE_LOOKUP = 4;
 
 const DOT_CANVAS_SIZE = 96;
+
+function getScale(u, xm, R, M, p) {
+    const dist = Math.abs(u - xm);
+    if (dist >= R) {
+        return 1.0;
+    }
+    const y = dist / R;
+    const h = 1.0 - Math.pow(y, p);
+    return 1.0 + (M - 1.0) * h;
+}
 
 export let Animator = class {
   constructor() {
@@ -290,7 +298,6 @@ export let Animator = class {
     }
     dock._nearestIcon = nearestIcon;
 
-    let didScale = false;
     let didBounce = false;
 
     //------------------------
@@ -315,156 +322,166 @@ export let Animator = class {
       edge_distance = 0;
     }
 
-    let total_scale = 0;
-    let did_scale_count = 0;
+    const scaleAtMax = 1.0 + magnify;
 
-    // animate
+    // --- Step 1: Ghost Nodes / Imaginary Icons Setup ---
+    const NUM_ICONS = animateIcons.length;
+    const NUM_IMAGINARY = 4;
+    const TOTAL_CALC_ICONS = NUM_IMAGINARY + NUM_ICONS + NUM_IMAGINARY;
+
+    // --- Step 2: Static Centers & Coordinate Decoupling ---
+    const ICON_SIZE = iconSize * scaleFactor;
+    const UNANIMATED_PADDING = 2.0;
+    const staticPadding = 12.0 * spread;
+
+    const targetPadding = staticPadding * (1.0 + 0.12 * (scaleAtMax - 1.0) * (threshold / 150.0));
+    const activePadding = UNANIMATED_PADDING + (targetPadding - UNANIMATED_PADDING) * (nearestIcon ? 1.0 : 0.0);
+    const containerWidth = ICON_SIZE + UNANIMATED_PADDING;
+    const activeContainerWidth = ICON_SIZE + activePadding;
+
+    // Compute unwarped static centers for all 18 calculated icons
+    const staticCenters = [];
+    for (let i = 0; i < TOTAL_CALC_ICONS; i++) {
+        staticCenters.push(i * activeContainerWidth + activeContainerWidth / 2);
+    }
+
+    // Compute unwarped compact resting centers for drawing/centering reference
+    const restingCenters = [];
+    for (let i = 0; i < NUM_ICONS; i++) {
+        restingCenters.push(i * containerWidth + containerWidth / 2);
+    }
+
+    // Compute decoupled mouse coordinates in the 18-icon coordinate system
+    let staticDockStart = 0;
+    if (animateIcons[0] && animateIcons[0]._fixedPosition) {
+        staticDockStart = vertical ? animateIcons[0]._fixedPosition[1] : animateIcons[0]._fixedPosition[0];
+    }
+    const primaryMouse = vertical ? py : px;
+    const xmLocal = primaryMouse - staticDockStart;
+    const firstRealStaticLeft = staticCenters[NUM_IMAGINARY] - ICON_SIZE / 2;
+    const xmLocalCalculated = xmLocal + firstRealStaticLeft;
+    const totalCalcStaticL = TOTAL_CALC_ICONS * activeContainerWidth;
+    const xmClamped = Math.max(0, Math.min(totalCalcStaticL, xmLocalCalculated));
+
+    // --- Step 3: Parabolic Scaling & Perfectly Packed Centers ---
+    const p = 2.0; // Perfect quadratic parabola shape exponent
+    const iconScales = [];
+    const iconWidths = [];
+    for (let i = 0; i < TOTAL_CALC_ICONS; i++) {
+        const xi = staticCenters[i];
+        const dist = Math.abs(xi - xmClamped);
+        const normDist = Math.min(1.0, dist / threshold);
+        const parabolicFactor = 1.0 - Math.pow(normDist, 2.0); // Parabola: 1.0 at cursor, tapers to 0.0 at radius
+        const scale = 1.0 + (scaleAtMax - 1.0) * parabolicFactor;
+        iconScales.push(scale);
+        iconWidths.push(ICON_SIZE * scale);
+    }
+
+    const packedCenters = [];
+    let currentPos = 0;
+    for (let i = 0; i < TOTAL_CALC_ICONS; i++) {
+        const halfW = iconWidths[i] / 2;
+        if (i === 0) {
+            currentPos = halfW;
+        } else {
+            currentPos += iconWidths[i - 1] / 2 + halfW + activePadding;
+        }
+        packedCenters.push(currentPos);
+    }
+    const activeL = packedCenters[TOTAL_CALC_ICONS - 1] + iconWidths[TOTAL_CALC_ICONS - 1] / 2;
+
+    // --- Step 4: Invariance-Targeted Variance Distribution ---
+    // Pre-calculate target packed dock length at dead center
+    const centerMouse = totalCalcStaticL / 2;
+    const centerScales = [];
+    const centerWidths = [];
+    const activeHoverFactor = nearestIcon ? 1.0 : 0.0;
+    for (let i = 0; i < TOTAL_CALC_ICONS; i++) {
+        const xi = staticCenters[i];
+        const targetScale = getScale(xi, centerMouse, threshold, scaleAtMax, p);
+        const scale = 1.0 + (targetScale - 1.0) * activeHoverFactor;
+        centerScales.push(scale);
+        centerWidths.push(ICON_SIZE * scale);
+    }
+
+    let currentCenterPos = 0;
+    for (let i = 0; i < TOTAL_CALC_ICONS; i++) {
+        const halfW = centerWidths[i] / 2;
+        if (i === 0) {
+            currentCenterPos = halfW;
+        } else {
+            currentCenterPos += centerWidths[i - 1] / 2 + halfW + activePadding;
+        }
+    }
+    const centerPackedL = currentCenterPos + centerWidths[TOTAL_CALC_ICONS - 1] / 2;
+
+    // Distribute length variance evenly across all calculation nodes
+    const variance = centerPackedL - activeL;
+    const adjustedIconWidths = [];
+    for (let i = 0; i < TOTAL_CALC_ICONS; i++) {
+        adjustedIconWidths.push(iconWidths[i] + variance / TOTAL_CALC_ICONS);
+    }
+
+    const adjustedPackedCenters = [];
+    let adjCurrentPos = 0;
+    for (let i = 0; i < TOTAL_CALC_ICONS; i++) {
+        const halfW = adjustedIconWidths[i] / 2;
+        if (i === 0) {
+            adjCurrentPos = halfW;
+        } else {
+            adjCurrentPos += adjustedIconWidths[i - 1] / 2 + halfW + activePadding;
+        }
+        adjustedPackedCenters.push(adjCurrentPos);
+    }
+
+    // Extract the bounds of the 10 real icons from the 18 calculated nodes
+    const realLeftEdge = adjustedPackedCenters[NUM_IMAGINARY] - adjustedIconWidths[NUM_IMAGINARY] / 2;
+
+    // --- Step 5: Decoupled Clutter Translation & Icon Texture Scaling ---
     let firstIcon = null;
     let lastIcon = null;
     let iconTable = [];
+    let didScale = (nearestIcon !== null);
+    let hoveredIcon = nearestIcon;
 
-    let scaleAtMin = 1;
-    let scaleAtMax = 1;
-    if (magnify != 0) {
-      scaleAtMax = 1 + magnify;
-    }
+    animateIcons.forEach((icon, idx) => {
+        if (!icon._icon) return;
 
-    let Ease = QuadraticEaseOut;
-    if (dock.extension.animation_rise_curve == 1) {
-      Ease = CubicEaseOut;
-    }
+        const calcIndex = idx + NUM_IMAGINARY;
+        const pc = adjustedPackedCenters[calcIndex];
+        const activeCenter = pc - realLeftEdge;
 
-    animateIcons.forEach((icon) => {
-      if (!icon._icon) return;
-      let original_pos = [...icon._pos];
+        // Position the Clutter actor perfectly using 1D packing relative to its resting center
+        icon._translate = activeCenter - restingCenters[idx];
 
-      // used by background resizing and repositioning
-      icon._fixedPosition = [...original_pos];
+        // Assign unadjusted original scale to the actor properties
+        const originalScale = iconScales[calcIndex];
+        icon._scale = originalScale;
+        icon._targetScale = originalScale;
 
-      original_pos[0] += icon.width / 2;
-      original_pos[1] += icon.height / 2;
+        // Compute secondary axis rise offset (elevation)
+        const sz = iconSize * (originalScale - 1) * scaleFactor;
+        icon._translateRise = sz * rise;
 
-      icon._pos = [...original_pos];
-      icon._translate = 0;
-      icon._translateRise = 0;
-
-      iconTable.push(icon);
-      if (firstIcon == null) {
-        firstIcon = icon;
-      }
-      lastIcon = null;
-
-      let scale = 1;
-      let dx = original_pos[0] - px;
-      if (vertical) {
-        dx = original_pos[1] - py;
-      }
-
-      icon._hoverProgress = 0;
-      if (dx * dx < threshold * threshold && nearestIcon) {
-        let adx = Math.abs(dx);
-        let hoverProgress = 1.0 - adx / threshold;
-        // let fp = hoverProgress * 0.6 * (1 + magnify);
-        icon._hoverProgress = hoverProgress;
-
-        // affect scale;
-        if (magnify != 0) {
-          // scale += fp;
-          scale = scaleAtMax * Ease(hoverProgress);
-          if (scale < 1) scale = 1;
+        // Apply scale directly to the icon image texture
+        if (
+            icon._icon.gicon &&
+            icon._icon.gicon.file != null &&
+            !icon._icon.gicon.file?.get_path()?.toLowerCase().endsWith('svg')
+        ) {
+            // skip scaling non-SVG image files for performance
+        } else {
+            icon._icon.set_scale(originalScale, originalScale);
         }
 
-        // affect rise
-        // let sz = iconSize * fp * scaleFactor;
-        let sz = iconSize * (scale - 1) * scaleFactor;
-        icon._translateRise = sz * rise;
-        didScale = true;
-
-        total_scale += scale;
-        did_scale_count += 1;
-      }
-
-      icon._scale = scale;
-      icon._targetScale = scale;
-
-      //! what is the difference between set_size and set_icon_size? and effects
-      // set_icon_size resizes the image... avoid changing per frame
-      // set_size resizes the widget
-      // icon._icon.set_size(iconSize * scale, iconSize * scale);
-
-      //! png image makes this extremely slow -- this may be the cause of "lag" experienced by some users
-      //! some themes or apps use PNG instead of SVG... set_scale is apparently resource hog
-      if (
-        icon._icon.gicon &&
-        icon._icon.gicon.file != null &&
-        !icon._icon.gicon.file?.get_path()?.toLowerCase().endsWith('svg')
-      ) {
-        // skip scaling image files!... too costly
-      } else {
-        icon._icon.set_scale(scale, scale);
-      }
-
-      if (!icon._pos) {
-        return;
-      }
+        iconTable.push(icon);
+        if (firstIcon == null) {
+            firstIcon = icon;
+        }
+        lastIcon = icon;
     });
 
-    let largestIconScale = 1;
-
-    //! use better collision test here?
-    let total_spread_left = 0;
-    let total_spread_right = 0;
-    let hoveredIcon = dock._lastHoveredIcon;
-    for (let i = 0; i < iconTable.length; i++) {
-      if (iconTable.length < 2) break;
-      let icon = iconTable[i];
-
-      if (icon._targetScale > largestIconScale) {
-        largestIconScale = icon._targetScale;
-        hoveredIcon = icon;
-      }
-
-      // if (icon._icon && icon._icon.hover) {
-      //   hoveredIcon = icon;
-      // }
-
-      let scale = icon._scale;
-      if (scale > 1.1) {
-        // affect spread
-        let offset = Math.floor(
-          1.25 * (scale - 1) * iconSize * scaleFactor * spread * 0.5
-        );
-        // left
-        for (let j = i - 1; j >= 0; j--) {
-          let left = iconTable[j];
-          left._translate -= offset;
-          total_spread_left += offset;
-        }
-        // right
-        for (let j = i + 1; j < iconTable.length; j++) {
-          let right = iconTable[j];
-          right._translate += offset;
-          total_spread_right += offset;
-        }
-      }
-    }
-
-    // re-center to hovered icon
-    dock._hoveredIcon = hoveredIcon;
-    let TRANSLATE_COEF = 24;
-    if (nearestIcon) {
-      nearestIcon._targetScale += 0.1;
-      let adjust = nearestIcon._translate / 2;
-      animateIcons.forEach((icon) => {
-        if (!icon._icon) return;
-        if (icon._scale > 1) {
-          let o = -adjust * (2 - icon._scale);
-          let nt = icon._translate - o;
-          icon._translate =
-            (icon._translate * TRANSLATE_COEF + nt) / (TRANSLATE_COEF + 1);
-        }
-      });
-    }
+    dock._hoveredIcon = nearestIcon;
 
     //-------------------
     // interpolation / animation

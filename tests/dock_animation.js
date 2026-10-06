@@ -361,6 +361,36 @@ app.connect('activate', (app) => {
             adjustedIconWidths.push(adjWidth);
         }
 
+        // Save the unshifted realLeftEdge before applying the mouse-proximity shift to imaginary icons
+        let realLeftEdgeUnshifted = 0;
+        for (let i = 0; i < NUM_IMAGINARY; i++) {
+            realLeftEdgeUnshifted += adjustedIconWidths[i];
+        }
+        realLeftEdgeUnshifted += NUM_IMAGINARY * activePadding;
+
+        // --- Proportional Widening/Narrowing of Boundary Imaginary Icons ---
+        // Calculate normalized mouse position t on the unexpanded dock
+        const t = xmClamped / totalCalcStaticL;
+        
+        // Calculate the unshifted real active length of the 10 real icons
+        let realActiveLUnshifted = 0;
+        for (let i = NUM_IMAGINARY; i < NUM_IMAGINARY + NUM_ICONS; i++) {
+            realActiveLUnshifted += adjustedIconWidths[i];
+        }
+        realActiveLUnshifted += (NUM_ICONS - 1) * activePadding;
+
+        // Proportional shift based on mouse proximity to edge (pushes icons towards the mouse/center)
+        // Increased the intensity multiplier to 1.6 for a more pronounced widening/narrowing effect
+        const shift = 1.6 * (0.5 - t) * (realActiveLUnshifted - restingL) * hoverProgress;
+
+        // Apply shift: widen the first imaginary icons and narrow the last imaginary icons (or vice versa)
+        for (let i = 0; i < NUM_IMAGINARY; i++) {
+            adjustedIconWidths[i] += shift / NUM_IMAGINARY;
+        }
+        for (let i = TOTAL_CALC_ICONS - NUM_IMAGINARY; i < TOTAL_CALC_ICONS; i++) {
+            adjustedIconWidths[i] -= shift / NUM_IMAGINARY;
+        }
+
         // --- 3d. Re-calculate Packed Centers using Adjusted Widths for All 18 Icons ---
         const adjustedPackedCenters = [];
         let adjCurrentPos = 0;
@@ -441,7 +471,7 @@ app.connect('activate', (app) => {
         for (let i = 0; i < TOTAL_CALC_ICONS; i++) {
             const pc = adjustedPackedCenters[i];
             const scale = adjustedIconWidths[i] / ICON_SIZE;
-            const globalPrimary = (!isVertical ? activeDockStartX : activeDockStartY) + (pc - realLeftEdge);
+            const globalPrimary = (!isVertical ? activeDockStartX : activeDockStartY) + (pc - realLeftEdgeUnshifted);
 
             const dy = 0;
 

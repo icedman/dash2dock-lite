@@ -597,7 +597,7 @@ export let Dock = GObject.registerClass(
     _getStIconFromAppwell(appwell) {
       return Compat.getStIcon(appwell);
     }
-    
+
     _inspectIcon(c) {
       if (!c.visible) return false;
 
@@ -675,7 +675,7 @@ export let Dock = GObject.registerClass(
           }
         }
       }
-      
+
       if (c._icon) {
         // renderer takes care of displaying an icon
         c._icon.opacity = 0;

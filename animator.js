@@ -111,6 +111,9 @@ export let Animator = class {
       target.add_child(renderer);
       this._renderers.push(renderer);
 
+      // force relayout
+      dock._needsLayout = true;
+
       // dot
       let dots = new DockItemDotsOverlay(new Dot(DOT_CANVAS_SIZE), {
         name: 'd2daDotsOverlay',
@@ -332,11 +335,11 @@ export let Animator = class {
     // --- Step 2: Static Centers & Coordinate Decoupling (Measured directly from Clutter!) ---
     const firstIconObj = animateIcons[0];
     const lastIconObj = animateIcons[NUM_ICONS - 1];
-    
+
     const firstIconPos = vertical ? firstIconObj._fixedPosition[1] : firstIconObj._fixedPosition[0];
     const firstIconSize = vertical ? firstIconObj.height : firstIconObj.width;
     const firstIconCenter = firstIconPos + firstIconSize / 2;
-    
+
     const staticDockStart = firstIconPos;
 
     const restingCenters = [];
@@ -353,12 +356,13 @@ export let Animator = class {
     const restingL = (lastIconPos + lastIconSize) - firstIconPos;
 
     const ICON_SIZE = iconSize * scaleFactor;
-    const UNANIMATED_PADDING = 2.0;
-    const staticPadding = 12.0 * spread;
+    const spacingMargin = 8.0 * (dock.extension.icon_spacing || 0.0);
+    const basePadding = 2.0 * spacingMargin + 2.0;
+    const staticPadding = 12.0 * spread + 2.0 * spacingMargin;
 
     const targetPadding = staticPadding * (1.0 + 0.12 * (scaleAtMax - 1.0) * (threshold / 150.0));
-    const activePadding = UNANIMATED_PADDING + (targetPadding - UNANIMATED_PADDING) * (nearestIcon ? 1.0 : 0.0);
-    const containerWidth = ICON_SIZE + UNANIMATED_PADDING;
+    const activePadding = basePadding + (targetPadding - basePadding) * (nearestIcon ? 1.0 : 0.0);
+    const containerWidth = ICON_SIZE + basePadding;
     const activeContainerWidth = ICON_SIZE + activePadding;
 
     // Compute unwarped static centers for all 18 calculated icons

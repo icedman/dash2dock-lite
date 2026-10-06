@@ -366,6 +366,16 @@ export const DockItemContainer = GObject.registerClass(
         desktopApp = DesktopAppInfo.new_from_filename(params.appinfo_filename);
       }
 
+      // for custom buttons 
+      if (!desktopApp.can_open_new_window) {
+        desktopApp.can_open_new_window = () => false;
+        desktopApp.activate = (me) => {
+          if (this._onClick) {
+            // this._onClick();
+          }
+        };
+      }
+
       let dashIcon = new DockIcon(desktopApp, {
         name: 'd2daDockIcon',
         style_class: 'dash-item-container',

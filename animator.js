@@ -565,14 +565,12 @@ export let Animator = class {
 
     let slowDown = dock.extension._config.speed_up || 1;
     if (!didScale) {
-      // slowDown = 0.5;
+      slowDown = 0.5;
     }
 
     animateIcons.forEach((icon) => {
       if (!icon._icon) return;
-      // this fixes jittery hovered icon
-      if (icon._targetScale > 1.9) icon._targetScale = 2;
-
+      
       icon._scale = icon._targetScale;
 
       if (largestSize == -1 || largestSize < icon._scale) {
@@ -600,7 +598,7 @@ export let Animator = class {
       //-------------------
       // High-performance Exponential Easing (LERP) for buttery-smooth and snappy transitions
       {
-        let baseLerpFactor = 0.42; // 42% distance closed per 16.6ms frame (blazing fast!)
+        let baseLerpFactor = 0.42 * slowDown; // 42% distance closed per 16.6ms frame (blazing fast!)
         let factor = 1.0 - Math.pow(1.0 - baseLerpFactor, dt / 16.6);
 
         // Handle edge boundary cases where dt is massive or invalid

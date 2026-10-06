@@ -899,10 +899,10 @@ export let Dock = GObject.registerClass(
                 this._maybeBounce(c);
               }
               this._maybeMinimizeOrMaximize(c._appwell.app, button);
+              return c._appwell._activate(button);
             } catch (e) {
               console.error('d2da: appwell activate', e);
             }
-            return c._appwell._activate(button);
           };
         }
         let icon = c._icon;

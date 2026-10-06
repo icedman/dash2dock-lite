@@ -91,6 +91,7 @@ export let Dock = GObject.registerClass(
       // pretend to be Dash-to-Dock
       // required by blur-my-shell to find the dash upon disabling
       this.fake_dash = new St.Widget({ name: 'dash' });
+      this.fake_dash.has_allocation = () => { return true; };
       this.add_child(this.fake_dash);
       this.fake_dash_background = new St.Widget({
         name: 'd2daFakeDashBackground',

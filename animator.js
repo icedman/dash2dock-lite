@@ -160,6 +160,8 @@ export let Animator = class {
       }
     }
 
+    dock._snapToContainerEdge(dock, dock.dash, true);
+
     if (!dock._icons || !dock._icons.length) {
       return;
     }
@@ -346,7 +348,7 @@ export let Animator = class {
     const ICON_SIZE = iconSize * scaleFactor;
     const spacingMargin = 8.0 * (dock.extension.icon_spacing || 0.0);
     const basePadding = 2.0 * spacingMargin + 2.0;
-    const staticPadding = 2.0 * spread + 2.0 * spacingMargin;
+    const staticPadding = 12.0 * spread + 2.0 * spacingMargin;
 
     const targetPadding = staticPadding * (1.0 + 0.12 * (scaleAtMax - 1.0) * (threshold / 150.0));
     const activePadding = basePadding + (targetPadding - basePadding) * (nearestIcon ? 1.0 : 0.0);
@@ -570,7 +572,7 @@ export let Animator = class {
 
     animateIcons.forEach((icon) => {
       if (!icon._icon) return;
-      
+
       icon._scale = icon._targetScale;
 
       if (largestSize == -1 || largestSize < icon._scale) {

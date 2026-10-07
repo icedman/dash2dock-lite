@@ -80,6 +80,7 @@ export let Dock = GObject.registerClass(
 
       // for blur-my-shell
       this._slider = {
+        // connect: () => false,
         get_child: () => {
           return this;
         },
@@ -97,6 +98,8 @@ export let Dock = GObject.registerClass(
         name: 'd2daFakeDashBackground',
         style_class: 'dash-background',
       });
+      this.fake_dash.connect = () => false;
+      this.fake_dash_background.connect = () => false;
       this.fake_dash.add_child(this.fake_dash_background);
       this.fake_dash._background = this.fake_dash_background;
       this.fake_dash.visible = false;
@@ -108,9 +111,10 @@ export let Dock = GObject.registerClass(
         track_hover: false,
       });
       this.renderArea.opacity = 0;
-      this.add_child(this.renderArea);
 
+      this.add_child(this.renderArea);
       this.add_child(this.createDash());
+
       this._scrollCounter = 0;
 
       this.animator = new Animator();
@@ -294,7 +298,7 @@ export let Dock = GObject.registerClass(
     }
 
     _debouncedBeginAnimation() {
-      this.dash.opacity = 1;
+      this.dash.opacity = 255;
 
       // this elaborate hack - mitigates nvim's "create window when deleting! hmmp"
       if (!this._debounceBeginAnimateSeq) {
@@ -1094,6 +1098,10 @@ export let Dock = GObject.registerClass(
         return true;
       }
 
+      if (force) {
+        this._preferred = null;
+      }
+
       if (!this.dash || !Compat.getDashContainer(this.dash)) {
         this._needsLayout = true;
         return false;
@@ -1260,9 +1268,11 @@ export let Dock = GObject.registerClass(
       } else {
         this.height = fp * scaleFactor;
       }
+
       this._snapToContainerEdge(m, this, true);
       this.x += m.x;
       this.y += m.y;
+
       this._snapToContainerEdge(this, this.dash, true);
 
       this._iconSizeScaledDown = iconSize;
@@ -1402,6 +1412,8 @@ export let Dock = GObject.registerClass(
         this._needsLayout = true;
       }
 
+      this._snapToContainerEdge(this, this.dash, true);
+
       // if (caller) {
       //   console.log(`animation triggered by ${caller}`);
       // }
@@ -1440,7 +1452,7 @@ export let Dock = GObject.registerClass(
         this.extension._loTimer.cancel(this.debounceEndSeq);
       }
       this.autohider._debounceCheckHide();
-      this._icons = null;
+      // this._icons = null;
       this._dragged = null;
       this._lastHoveredIcon = null;
     }

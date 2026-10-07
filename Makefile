@@ -39,7 +39,7 @@ clean:
 	rm -rf ./build
 
 publish:
-	./tools/publish.sh
+	./tools/publish.sh $(VERSION)
 
 install-zip:
 	echo "installing zip..."

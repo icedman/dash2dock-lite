@@ -527,10 +527,10 @@ export const DockBackground = GObject.registerClass(
 
         if (panel_mode) {
           if (vertical) {
-            this.y = dock.y;
+            this.y = 0;
             this.height = dock.height;
           } else {
-            this.x = dock.x;
+            this.x = 0;
             this.width = dock.width;
           }
         }

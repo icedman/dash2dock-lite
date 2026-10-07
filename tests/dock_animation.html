@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fisheye Dock Sandbox</title>
+  <style>
+    /* Reset and background setup */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      background: linear-gradient(135deg, #0f172a, #1e1b4b);
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: flex-end; /* Places the dock at the bottom of the screen */
+      padding-bottom: 40px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      overflow: hidden;
+    }
+
+    /* The Dock Wrapper */
+    .dock-container {
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      padding: 10px 20px;
+      border-radius: 24px;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      display: flex;
+      align-items: flex-end; /* Aligns icons along the baseline when they swell */
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+      height: 70px; /* Keep container boundary uniform */
+    }
+
+    /* Individual Icon Layout */
+    .icon {
+      font-size: 36px;
+      width: 48px;
+      height: 48px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+      user-select: none;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      
+      /* Transforms the bottom-center anchor point so icons swell upward */
+      transform-origin: bottom center; 
+      
+      /* Crucial: Smooth out the scaling transition over 100ms so it doesn't stutter */
+      transition: transform 0.1s ease-out, margin 0.1s ease-out, background 0.2s;
+    }
+
+    /* Light hover effect on the asset container itself */
+    .icon:hover {
+      background: rgba(255, 255, 255, 0.2);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- The Dock Structure -->
+  <div class="dock-container">
+    <div class="icon">Finder</div>
+    <div class="icon">Safari</div>
+    <div class="icon">Messages</div>
+    <div class="icon">Music</div>
+    <div class="icon">Photos</div>
+    <div class="icon">Settings</div>
+  </div>
+
+  <!-- The Mathematical Proximity Script -->
+  <script>
+    const dock = document.querySelector('.dock-container');
+    const icons = document.querySelectorAll('.icon');
+
+    // CONFIGURATION VARIABLES
+    const RADIUS = 160;       // Range of mouse influence (in pixels)
+    const MAX_SCALE = 2.2;     // Maximum multiplier (e.g., 2.2x base size)
+    const BASE_PADDING = 6;    // Base margin separation between icons (in pixels)
+
+    // Track mouse position over the dock
+    dock.addEventListener('mousemove', (event) => {
+      const mouseX = event.clientX;
+
+      icons.forEach((icon) => {
+        // 1. Find the horizontal midpoint (X) of the current icon
+        const rect = icon.getBoundingClientRect();
+        const iconCenterX = rect.left + rect.width / 2;
+
+        // 2. Calculate absolute distance between the cursor and the icon's center
+        const distance = Math.abs(mouseX - iconCenterX);
+
+        let scale = 1;
+        let dynamicMargin = BASE_PADDING;
+
+        // 3. Proximity formula: if inside the radius, calculate magnification factor
+        if (distance < RADIUS) {
+          // Normalize the proximity ratio into a value between 0 (far away) and 1 (directly under mouse)
+          const proximity = 1 - (distance / RADIUS);
+          
+          // Linear transformation scaling formula
+          scale = 1 + (MAX_SCALE - 1) * proximity;
+
+          // Expand margins proportionally to create the "push out" layout shifting effect
+          dynamicMargin = BASE_PADDING + (scale - 1) * 14; 
+        }
+
+        // 4. Inject computed inline styling overrides to the DOM
+        icon.style.transform = `scale(${scale})`;
+        icon.style.marginLeft = `${dynamicMargin}px`;
+        icon.style.marginRight = `${dynamicMargin}px`;
+      });
+    });
+
+    // Reset layout structural properties instantly when mouse cursor exits the boundaries
+    dock.addEventListener('mouseleave', () => {
+      icons.forEach((icon) => {
+        icon.style.transform = 'scale(1)';
+        icon.style.marginLeft = `${BASE_PADDING}px`;
+        icon.style.marginRight = `${BASE_PADDING}px`;
+      });
+    });
+  </script>
+
+</body>
+</html>

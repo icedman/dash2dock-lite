@@ -74,6 +74,7 @@ let lastGlobalX = 300.0; // Track last global pointer X
 let lastGlobalY = 0.0;   // Track last global pointer Y
 
 const NUM_ICONS = 10;
+const NUM_IMAGINARY = 8;
 const ICON_SIZE = 48;
 const UNANIMATED_PADDING = 2.0; // Closely-packed resting padding when unanimated / not hovering
 
@@ -225,7 +226,6 @@ app.connect('activate', (app) => {
         const activeContainerWidth = ICON_SIZE + activePadding;
 
         // --- Ghost Nodes/Imaginary Icons for Edge Transition Stabilization ---
-        const NUM_IMAGINARY = 4;
         const TOTAL_CALC_ICONS = NUM_IMAGINARY + NUM_ICONS + NUM_IMAGINARY; // 18 calculated icons
 
         // Compute active static centers (unwarped resting centers x_i) using the influenced active padding for all 18 icons

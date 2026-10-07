@@ -45,6 +45,11 @@ export const DockItemList = GObject.registerClass(
       let file_explorer = dock.extension.file_explorer();
       let target = dock.createItem(f.path, f.icon);
       target._onClick = () => {
+        let now = Date.now();
+        if (target._lastExecTime && now - target._lastExecTime < 1000) {
+          return;
+        }
+        target._lastExecTime = now;
         if (
           dock._position != DockPosition.BOTTOM &&
           dock._position != DockPosition.TOP

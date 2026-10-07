@@ -272,13 +272,16 @@ export const DockIcon = GObject.registerClass(
       super._init(app);
       this._dot.visible = false;
 
-      this._draggable._onButtonPress = () => {
-        return Clutter.EVENT_PROPAGATE;
-      };
-      this._draggable._onTouchEvent = () => {
-        return Clutter.EVENT_PROPAGATE;
-      };
-      this._draggable._grabActor = () => {};
+      if (this._draggable) {
+        this._draggable.inhibit = true;
+        this._draggable._onButtonPress = () => {
+          return Clutter.EVENT_STOP;
+        };
+        this._draggable._onTouchEvent = () => {
+          return Clutter.EVENT_STOP;
+        };
+        this._draggable._grabActor = () => {};
+      }
     }
 
     _createIcon(size) {
@@ -321,10 +324,15 @@ export const DockIcon = GObject.registerClass(
               container._menu.popup();
             }
           } else {
-            if (container._onClick) {
-              container._onClick();
+            let now = Date.now();
+            if (!container._lastClickTime || now - container._lastClickTime > 1000) {
+              container._lastClickTime = now;
+              if (container._onClick) {
+                container._onClick();
+              }
             }
           }
+          return Clutter.EVENT_STOP;
         },
         this
       );

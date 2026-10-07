@@ -903,6 +903,15 @@ export let Dock = GObject.registerClass(
             icon.connectObject(
               'button-press-event',
               () => {
+                if (this.animated && this._hoveredIcon && this._hoveredIcon !== showAppsIcon) {
+                  let target = this._hoveredIcon;
+                  if (target._onClick) {
+                    target._onClick();
+                  } else if (target._appwell) {
+                    target._appwell.activate(1);
+                  }
+                  return Clutter.EVENT_STOP;
+                }
                 Compat.showOverviewApps(Main.overview);
                 return Clutter.EVENT_PROPAGATE;
               },
@@ -953,6 +962,22 @@ export let Dock = GObject.registerClass(
           c._appwell._activate = c._appwell.activate;
           c._appwell.activate = (button) => {
             try {
+              let target = (this.animated && this._hoveredIcon) ? this._hoveredIcon : c;
+              if (showAppsIcon && target === showAppsIcon) {
+                Compat.showOverviewApps(Main.overview);
+                return;
+              }
+              if (target._onClick) {
+                target._onClick();
+                return;
+              }
+              if (target._appwell) {
+                if (!target._menu) {
+                  this._maybeBounce(target);
+                }
+                this._maybeMinimizeOrMaximize(target._appwell.app, button);
+                return target._appwell._activate(button);
+              }
               if (!c._menu) {
                 this._maybeBounce(c);
               }

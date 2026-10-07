@@ -19,8 +19,6 @@ import {
   Linear,
 } from './effects/easing.js';
 import {
-  get_distance_sqr,
-  get_distance,
   isInRect,
   isOverlapRect,
 } from './utils.js';
@@ -29,7 +27,6 @@ const ANIM_POSITION_PER_SEC = 550 / 1000;
 const ANIM_SIZE_PER_SEC = 250 / 1000;
 const ANIM_ICON_RAISE = 0.5;
 const ANIM_ICON_SCALE = 1.5;
-const ANIM_ICON_HIT_AREA = 2.5;
 const ANIMATE_CACHE_LOOKUP = 4;
 
 const DOT_CANVAS_SIZE = 96;
@@ -230,13 +227,8 @@ export let Animator = class {
     let scaleFactor = dock._scaleFactor;
 
     let nearestIcon = null;
-    let nearestDistance = -1;
     let largestIcon = null;
     let largestSize = -1;
-
-    let iconCenterOffset = (iconSize * scaleFactor) / 2;
-    let hitArea = iconSize * ANIM_ICON_HIT_AREA * scaleFactor;
-    hitArea *= hitArea;
 
     let idx = 0;
     let prevIcon = null;
@@ -252,22 +244,6 @@ export let Animator = class {
 
       icon._pos = [...pos];
       icon._fixedPosition = [...pos];
-
-      // get nearest
-      let bposcenter = [...pos];
-      bposcenter[0] += iconCenterOffset;
-      bposcenter[1] += iconCenterOffset;
-      let dst = get_distance_sqr(pointer, bposcenter);
-
-      if (
-        isWithin &&
-        (nearestDistance == -1 || nearestDistance > dst) &&
-        dst < hitArea
-      ) {
-        nearestDistance = dst;
-        nearestIcon = icon;
-        icon._distance = dst;
-      }
 
       icon._target = pos;
       icon._targetScale = 1;
@@ -287,10 +263,6 @@ export let Animator = class {
       noAnimation = true;
       isWithin = true;
     }
-    if ((!simulation && !isWithin) || noAnimation) {
-      nearestIcon = null;
-    }
-    dock._nearestIcon = nearestIcon;
 
     let didBounce = false;
 
@@ -406,6 +378,38 @@ export let Animator = class {
             iconWidths.push(ICON_SIZE * scale);
         }
     }
+
+    // Align nearestIcon and largestIcon directly with the formula's peak-scaled icon
+    let peakIcon = null;
+    let minPeakDistance = Infinity;
+    let maxScale = -1;
+
+    if (hoverActive && !noAnimation) {
+        animateIcons.forEach((icon, i) => {
+            if (!icon._icon) return;
+            const calcIndex = i + NUM_IMAGINARY;
+            const xi = staticCenters[calcIndex];
+            const dist = Math.abs(xi - xmClamped);
+            const scale = iconScales[calcIndex];
+
+            if (dist < minPeakDistance) {
+                minPeakDistance = dist;
+                peakIcon = icon;
+                maxScale = scale;
+            }
+        });
+
+        const maxReach = Math.max(threshold, activeContainerWidth);
+        if (minPeakDistance > maxReach) {
+            peakIcon = null;
+        }
+    }
+
+    nearestIcon = peakIcon;
+    largestIcon = peakIcon;
+    largestSize = maxScale;
+    dock._nearestIcon = nearestIcon;
+    dock._hoveredIcon = nearestIcon;
 
     const packedCenters = [];
     let currentPos = 0;
@@ -564,6 +568,9 @@ export let Animator = class {
       slowDown = 0.5;
     }
 
+    largestIcon = null;
+    largestSize = -1;
+
     animateIcons.forEach((icon) => {
       if (!icon._icon) return;
 
@@ -627,6 +634,8 @@ export let Animator = class {
 
     if (largestIcon && nearestIcon) {
       hoveredIcon = largestIcon;
+      dock._hoveredIcon = hoveredIcon;
+      dock._nearestIcon = hoveredIcon;
     }
 
     //--------------

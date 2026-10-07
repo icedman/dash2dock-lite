@@ -23,6 +23,7 @@ import {
 } from 'resource:///org/gnome/shell/ui/dash.js';
 
 import { DockPosition } from './dock.js';
+import * as Compat from './compat.js';
 
 class DockItemMenu extends PopupMenu.PopupMenu {
   constructor(sourceActor, side = St.Side.TOP, params = {}) {
@@ -122,7 +123,7 @@ class DockItemMenu extends PopupMenu.PopupMenu {
   _onActivate() {}
 
   popup() {
-    this.open(BoxPointer.PopupAnimation.FULL);
+    Compat.openPopupMenu(this, BoxPointer.PopupAnimation.FULL);
     this._menuManager.ignoreRelease();
   }
 
@@ -425,7 +426,7 @@ export const DockItemContainer = GObject.registerClass(
         this._menu._menuManager = this._menuManager;
         Main.uiGroup.add_child(this._menu.actor);
         this._menuManager.addMenu(this._menu);
-        this._menu.close();
+        Compat.closePopupMenu(this._menu, false);
         dashIcon._menu = this._menu;
         this.connect('destroy', () => this._destroyMenu());
       }

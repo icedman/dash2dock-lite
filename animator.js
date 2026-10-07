@@ -302,15 +302,7 @@ export let Animator = class {
     let magnify = dock.extension.animation_magnify * ANIM_ICON_SCALE;
     let spread = dock.extension.animation_spread;
 
-    // when not much spreading, minimize magnification
-    if (spread < 0.2) {
-      magnify *= 0.8;
-    }
-    // when too much magnification, increase spreading
-    if (magnify > 0.15 && spread < 0.55) {
-      spread = 0.55 + spread * 0.2;
-    }
-
+    // Keep magnification independent from spread
     let threshold = (iconSize + 10) * 2.5 * scaleFactor;
     if (animated && edge_distance < 0) {
       edge_distance = 0;
@@ -347,11 +339,13 @@ export let Animator = class {
 
     const ICON_SIZE = iconSize * scaleFactor;
     const spacingMargin = 8.0 * (dock.extension.icon_spacing || 0.0);
+    // Base resting padding between items
     const basePadding = 2.0 * spacingMargin + 2.0;
-    const staticPadding = 12.0 * spread + 2.0 * spacingMargin;
 
-    const targetPadding = staticPadding * (1.0 + 0.12 * (scaleAtMax - 1.0) * (threshold / 150.0));
-    const activePadding = basePadding + (targetPadding - basePadding) * (nearestIcon ? 1.0 : 0.0);
+    // Zero mouse-entry spread inflation: inter-icon padding stays constant,
+    // exactly as in dock_animation3.js (macOS style). Outward layout shift
+    // comes exclusively from the magnified icon widths themselves.
+    const activePadding = basePadding;
     const activeContainerWidth = ICON_SIZE + activePadding;
 
     // Re-evaluate isWithin using our custom expanded hit-test (including imaginary icons on both ends)

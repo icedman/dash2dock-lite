@@ -43,7 +43,7 @@ export const DockItemList = GObject.registerClass(
 
     static createItem(dock, f) {
       let file_explorer = dock.extension.file_explorer();
-      let target = dock.createItem(f.path);
+      let target = dock.createItem(f.path, f.icon);
       target._onClick = () => {
         if (
           dock._position != DockPosition.BOTTOM &&
@@ -117,9 +117,9 @@ export const DockItemList = GObject.registerClass(
 
       this._target = target;
 
-      this._box = new St.Widget({});
+      this._box = new St.Widget({ name: 'd2daListBox' });
       this.add_child(this._box);
-      this._labels = new St.Widget({});
+      this._labels = new St.Widget({ name: 'd2daListLabels' });
       this.add_child(this._labels);
 
       dock._updateIconEffect();
@@ -137,8 +137,8 @@ export const DockItemList = GObject.registerClass(
 
       let icon_size = iconSize * iconAdjust;
       list.forEach((l) => {
-        let w = new St.Widget({});
-        let wl = new St.Widget({});
+        let w = new St.Widget({ name: 'd2daListItem' });
+        let wl = new St.Widget({ name: 'd2daListLabelContainer' });
         let icon = new St.Widget({
           name: 'icon_placeholder',
           reactive: true,
@@ -150,7 +150,7 @@ export const DockItemList = GObject.registerClass(
         this._labels.add_child(wl);
 
         let short = (l.name ?? '').replace(/(.{32})..+/, '$1...');
-        let label = new St.Label({ style_class: 'dash-label', text: short });
+        let label = new St.Label({ name: 'd2daListLabel', style_class: 'dash-label', text: short });
         w.add_child(icon);
         w._label_container = wl;
         wl.add_child(label);

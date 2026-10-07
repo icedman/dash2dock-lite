@@ -3,14 +3,16 @@
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as BoxPointer from 'resource:///org/gnome/shell/ui/boxpointer.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
+import * as ModalDialog from 'resource:///org/gnome/shell/ui/modalDialog.js';
+import * as Dialog from 'resource:///org/gnome/shell/ui/dialog.js';
 import { trySpawnCommandLine } from './utils.js';
 
 // import { trySpawnCommandLine } from 'resource:///org/gnome/shell/misc/util.js';
 
 import { Dash } from 'resource:///org/gnome/shell/ui/dash.js';
 
-import Shell from 'gi://Shell';
 import Gio from 'gi://Gio';
+import GioUnix from 'gi://GioUnix';
 import GObject from 'gi://GObject';
 import Clutter from 'gi://Clutter';
 import St from 'gi://St';
@@ -32,6 +34,8 @@ class DockItemMenu extends PopupMenu.PopupMenu {
     super(sourceActor, 0.5, side);
 
     let { desktopApp } = params;
+    this.item = params.item || sourceActor;
+    this._confirmDialog = null;
     if (!desktopApp) return;
 
     this.desktopApp = desktopApp;
@@ -44,16 +48,75 @@ class DockItemMenu extends PopupMenu.PopupMenu {
       this._onActivate();
     });
 
-    desktopApp.list_actions().forEach((action) => {
-      let name = desktopApp.get_action_name(action);
-      this.addAction(name, () => {
-        let workspaceManager = global.workspace_manager;
-        let workspace = workspaceManager.get_active_workspace();
-        let ctx = global.create_app_launch_context(0, workspace);
-        desktopApp.launch_action(action, ctx);
-        this.item.dock.extension.animate({ refresh: true });
+    if (desktopApp.list_actions) {
+      desktopApp.list_actions().forEach((action) => {
+        let name = desktopApp.get_action_name(action);
+        this.addAction(name, () => {
+          if (action === 'trash' || name === 'Empty Trash') {
+            this._confirmEmptyTrash(desktopApp, action);
+            return;
+          }
+          let workspaceManager = global.workspace_manager;
+          let workspace = workspaceManager.get_active_workspace();
+          let ctx = global.create_app_launch_context(0, workspace);
+          desktopApp.launch_action(action, ctx);
+          this.item?.dock?.extension?.animate?.({ refresh: true });
+        });
       });
+    }
+  }
+
+  _confirmEmptyTrash(desktopApp, action) {
+    if (this._confirmDialog) {
+      this._confirmDialog.open();
+      return;
+    }
+
+    const dialog = new ModalDialog.ModalDialog();
+    this._confirmDialog = dialog;
+
+    const content = new Dialog.MessageDialogContent({
+      title: 'Empty Trash?',
+      description: 'All items in the Trash will be permanently deleted.',
     });
+    dialog.contentLayout.add_child(content);
+
+    dialog.addButton({
+      label: 'Cancel',
+      action: () => {
+        dialog.close();
+      },
+      key: Clutter.KEY_Escape,
+    });
+
+    const emptyButton = dialog.addButton({
+      label: 'Empty Trash',
+      action: () => {
+        dialog.close();
+        const services = this.item?.dock?.extension?.services;
+        if (services?.emptyTrash) {
+          services.emptyTrash();
+        } else {
+          let workspaceManager = global.workspace_manager;
+          let workspace = workspaceManager.get_active_workspace();
+          let ctx = global.create_app_launch_context(0, workspace);
+          desktopApp.launch_action(action, ctx);
+          this.item?.dock?.extension?.animate?.({ refresh: true });
+        }
+      },
+      default: true,
+    });
+    emptyButton?.add_style_class_name('destructive-action');
+
+    const cleanUp = () => {
+      if (this._confirmDialog === dialog) {
+        this._confirmDialog = null;
+      }
+    };
+    dialog.connect('closed', cleanUp);
+    dialog.connect('destroy', cleanUp);
+
+    dialog.open();
   }
 
   _onActivate() {}
@@ -62,6 +125,16 @@ class DockItemMenu extends PopupMenu.PopupMenu {
     this.open(BoxPointer.PopupAnimation.FULL);
     this._menuManager.ignoreRelease();
   }
+
+  destroy() {
+    if (this._confirmDialog) {
+      const dialog = this._confirmDialog;
+      this._confirmDialog = null;
+      dialog.close();
+      dialog.destroy();
+    }
+    super.destroy();
+  }
 }
 
 const DockItemOverlay = GObject.registerClass(
@@ -69,7 +142,7 @@ const DockItemOverlay = GObject.registerClass(
   class DockItemOverlay extends St.Widget {
     _init(renderer, params) {
       super._init({
-        name: 'DockItemContainer',
+        name: params?.name || 'd2daItemOverlay',
         ...params,
       });
 
@@ -84,6 +157,13 @@ const DockItemOverlay = GObject.registerClass(
 export const DockItemDotsOverlay = GObject.registerClass(
   {},
   class DockItemDotsOverlay extends DockItemOverlay {
+    _init(renderer, params = {}) {
+      super._init(renderer, {
+        name: 'd2daDotsOverlay',
+        ...params,
+      });
+    }
+
     update(icon, data) {
       let renderer = this.renderer;
       let { appCount, position, vertical, extension, dock } = data;
@@ -143,13 +223,25 @@ export const DockItemDotsOverlay = GObject.registerClass(
 export const DockItemBadgeOverlay = GObject.registerClass(
   {},
   class DockItemBadgeOverlay extends DockItemOverlay {
+    _init(renderer, params = {}) {
+      super._init(renderer, {
+        name: 'd2daBadgeOverlay',
+        ...params,
+      });
+    }
+
     update(icon, data) {
       let renderer = this.renderer;
-      let { noticesCount, position, vertical, extension, scale } = data;
+      let { noticesCount, position, vertical, extension, dock } = data;
 
-      renderer.width = icon._icon.width;
-      renderer.height = icon._icon.height;
+      let baseIconSize = dock._iconSizeScaledDown || icon._icon.width;
+      renderer.width = baseIconSize;
+      renderer.height = baseIconSize;
+      renderer.pivot_point = icon._icon.pivot_point;
+
       let canvasScale = renderer.width / renderer._canvas.width;
+      let scale = dock._monitor.geometry_scale || 1;
+      canvasScale *= scale;
       renderer._canvas.set_scale(canvasScale, canvasScale);
 
       let options = extension.notification_badge_style_options;
@@ -157,15 +249,17 @@ export const DockItemBadgeOverlay = GObject.registerClass(
         options[extension.notification_badge_style];
       let notification_badge_color = extension.notification_badge_color;
 
-      renderer.translationX = renderer.width / 1.5;
-      // renderer.translationY = icon._icon.translationY;
+      // Dot canvas draws dots near the bottom (y = size - height, or +0.42*height from center).
+      // translate: [0.35, -0.85] shifts it from bottom to top-right corner in canvas coordinates.
+      renderer.translationX = 0;
+      renderer.translationY = 0;
 
       renderer.set_state({
         count: noticesCount,
         color: notification_badge_color || [1, 1, 1, 1],
         style: notification_badge_style || 'default',
         size: extension.notification_badge_size || 0,
-        translate: [0, -0.85],
+        translate: [0.35, -0.85],
       });
     }
   }
@@ -189,6 +283,7 @@ export const DockIcon = GObject.registerClass(
 
     _createIcon(size) {
       this._iconActor = new St.Icon({
+        name: 'd2daDockIconActor',
         icon_name: this._default_icon_name || 'file',
         icon_size: size,
         style_class: this._default_icon_style_class || '',
@@ -244,7 +339,7 @@ export const DockItemContainer = GObject.registerClass(
   class DockItemContainer extends DashItemContainer {
     _init(params) {
       super._init({
-        name: 'DockItemContainer',
+        name: 'd2daItemContainer',
         style_class: 'dash-item-container',
         ...params,
         scale_x: 1,
@@ -253,22 +348,17 @@ export const DockItemContainer = GObject.registerClass(
 
       this.custom_icon = true;
 
-      // hack to get DesktopAppInfo class
-      let DesktopAppInfo = Main.overview.d2dl.DesktopAppInfo;
-      if (!DesktopAppInfo) {
-        try {
-          DesktopAppInfo =
-            Shell.AppSystem.get_default().get_installed()[0].constructor;
-        } catch (err) {
-          // should be unreachable
-          console.log(err);
-        }
-        Main.overview.d2dl.DesktopAppInfo = DesktopAppInfo;
-      }
+      const DesktopAppInfo = GioUnix?.DesktopAppInfo ?? Gio.DesktopAppInfo;
 
       let desktopApp = params.app;
       if (desktopApp) {
         // monkey patch dummy app
+        if (!desktopApp.get_id) {
+          desktopApp.get_id = () => null;
+        }
+        if (!desktopApp.get_name) {
+          desktopApp.get_name = () => '';
+        }
         if (!desktopApp.get_icon) {
           desktopApp.can_open_new_window = () => false;
           desktopApp.create_icon_texture = () => null;
@@ -279,30 +369,48 @@ export const DockItemContainer = GObject.registerClass(
             };
           };
         }
-      } else {
+      } else if (params.appinfo_filename) {
         desktopApp = DesktopAppInfo.new_from_filename(params.appinfo_filename);
       }
 
+      // for custom buttons 
+      if (!desktopApp.can_open_new_window) {
+        desktopApp.can_open_new_window = () => false;
+        desktopApp.activate = (me) => {
+          if (this._onClick) {
+            // this._onClick();
+          }
+        };
+      }
+
       let dashIcon = new DockIcon(desktopApp, {
-        name: 'DockItemContainer',
+        name: 'd2daDockIcon',
         style_class: 'dash-item-container',
         ...(params || {}),
       });
+      if (params.id) {
+        dashIcon._id = params.id;
+      }
       this.set_scale(1, 1);
       this.setChild(dashIcon);
 
       try {
         this.setLabelText(desktopApp.get_name());
-        dashIcon._default_icon_name = desktopApp.get_icon().get_names()[0];
+        let iconNames =
+          desktopApp.get_icon()?.get_names?.() ||
+          desktopApp.get_icon()?.names ||
+          [];
+        dashIcon._default_icon_name = iconNames[0] || 'file';
       } catch (err) {
         console.log(err);
         console.log(params);
       }
 
       // menu
-      if (params.appinfo_filename) {
+      if (params.appinfo_filename || params.app) {
         this._menu = new DockItemMenu(this, St.Side.TOP, {
           desktopApp,
+          item: this,
         });
         this._menu.item = this;
         this._menuManager = new PopupMenu.PopupMenuManager(this);
@@ -311,7 +419,19 @@ export const DockItemContainer = GObject.registerClass(
         this._menuManager.addMenu(this._menu);
         this._menu.close();
         dashIcon._menu = this._menu;
+        this.connect('destroy', () => this._destroyMenu());
       }
+    }
+
+    _destroyMenu() {
+      let menu = this._menu;
+      if (!menu) return;
+      this._menu = null;
+      // removeMenu pops the modal grab if this menu is the open one
+      this._menuManager?.removeMenu(menu);
+      this._menuManager = null;
+      if (this.child?._menu === menu) this.child._menu = null;
+      menu.destroy();
     }
 
     activateNewWindow() {
@@ -407,10 +527,10 @@ export const DockBackground = GObject.registerClass(
 
         if (panel_mode) {
           if (vertical) {
-            this.y = dock.y;
+            this.y = 0;
             this.height = dock.height;
           } else {
-            this.x = dock.x;
+            this.x = 0;
             this.width = dock.width;
           }
         }

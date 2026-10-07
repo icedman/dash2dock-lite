@@ -27,7 +27,6 @@ import Shell from 'gi://Shell';
 import Graphene from 'gi://Graphene';
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
-import { tempPath, trySpawnCommandLine } from './utils.js';
 import { loadFile } from './utils.js';
 
 import { Timer } from './timer.js';
@@ -35,7 +34,10 @@ import { Style } from './style.js';
 import { Dock } from './dock.js';
 import { Services } from './services.js';
 import { Integrations } from './integrations.js';
+import { WindowTracker } from './windowTracker.js';
 import { runTests } from './diagnostics.js';
+import { probe, applySmokeSettings } from './probe.js';
+import * as Compat from './compat.js';
 
 import {
   Extension,
@@ -73,7 +75,7 @@ export default class Dash2DockLiteExt extends Extension {
       }
       this._config.docks.forEach((dc) => {
         let index = -1;
-        let d_monitor = dc['monitor'] ?? {};
+        let dc_monitor = dc['monitor'] ?? {};
         for (let i = 0; i < Main.layoutManager.monitors.length; i++) {
           let m = Main.layoutManager.monitors[i];
           if (m.x == dc_monitor['x'] && m.y == dc_monitor['y']) {
@@ -109,9 +111,10 @@ export default class Dash2DockLiteExt extends Extension {
       this.multi_monitor_preference == 1
     ) {
       let count = Main.layoutManager.monitors.length;
-      if (count != this.docks.length) {
-        this.destroyDocks();
+      if (this.docks.length == count) {
+        return;
       }
+      this.destroyDocks();
 
       for (let i = 0; i < count; i++) {
         let d = this.createDock();
@@ -121,13 +124,14 @@ export default class Dash2DockLiteExt extends Extension {
   }
 
   destroyDocks() {
+    // Dock.destroy() undocks, cancels its animations and destroys the dash
     (this.docks || []).forEach((dock) => {
-      dock.undock();
-      dock.cancelAnimations();
-      dock.destroyDash();
-      this.dock = null;
+      dock.destroy();
     });
+    this.dock = null;
     this.docks = [];
+    // services has no listener hooks; createDock() rebuilds the list
+    this.listeners = [];
   }
 
   recreateAllDocks(delay = 750) {
@@ -142,30 +146,17 @@ export default class Dash2DockLiteExt extends Extension {
   }
 
   _showMainOverviewDash(show) {
-    Main.overview.dash.opacity = show ? 255 : 0;
-    // Main.overview.dash._background.opacity = show ? 255 : 0;
-    Main.overview.dash._background.style = show
-      ? ''
-      : 'background: transparent !important;';
-
-    let box = Main.overview.dash.__box || Main.overview.dash._box;
-    box.get_children().forEach((c) => {
-      c.opacity = show ? 255 : 0;
-      c.visible = show;
-      if (c.child) {
-        c.child.reactive = show;
-        c.child.track_hover = show;
-      }
-    });
-
-    Main.overview.dash._showAppsIcon.opacity = show ? 255 : 0;
-    Main.overview.dash._showAppsIcon.child.reactive = show;
-    Main.overview.dash._showAppsIcon.child.track_hover = show;
+    if (!this._overviewDashState) {
+      this._overviewDashState = { hiddenChild: null };
+    }
+    Compat.setOverviewDashVisibility(
+      Main.overview.dash,
+      show,
+      this._overviewDashState
+    );
   }
 
   enable() {
-    Main.overview.d2dl = this;
-
     // Use UUID to avoid conflicting with other instances of this extensions (multi user setup)
     if (!this.uuid) {
       this.uuid = GLib.get_user_name();
@@ -186,6 +177,7 @@ export default class Dash2DockLiteExt extends Extension {
     this._loTimer.initialize(750);
 
     this.listeners = [];
+    this.windowTracker = new WindowTracker(() => this.checkHide());
     this.scale = 1.0;
     this.icon_size = 0;
     this.icon_quality = ANIM_ICON_QUALITY;
@@ -193,7 +185,9 @@ export default class Dash2DockLiteExt extends Extension {
     this._style = new Style();
 
     this._enableSettings();
-    this._loadConfig();
+    this._loadConfig().catch((err) => {
+      console.error('d2da: loadConfig', err);
+    });
 
     // no longer needed
     // this._disable_borders = this.border_radius > 0;
@@ -203,7 +197,6 @@ export default class Dash2DockLiteExt extends Extension {
       this._settingsKeys.setValue('animate-icons', true);
     }
 
-    Main.overview.dash.__box = Main.overview.dash._box;
     this._showMainOverviewDash(false);
     this.docks = [];
 
@@ -221,7 +214,11 @@ export default class Dash2DockLiteExt extends Extension {
 
     // todo follow animator and autohider protocol
     this.services.enable();
+    this._lastServicesUpdate = 0;
     this._onCheckServices();
+
+    // after integrations/services exist: the settings switch uses them
+    applySmokeSettings(this._settings);
 
     this._updateAnimationFPS();
     this._updateShrink();
@@ -242,6 +239,12 @@ export default class Dash2DockLiteExt extends Extension {
   }
 
   disable() {
+    const probeTimers = {
+      loop: this._timer,
+      hi: this._hiTimer,
+      lo: this._loTimer,
+    };
+
     this._timer?.shutdown();
     this._hiTimer?.shutdown();
     this._loTimer?.shutdown();
@@ -261,11 +264,20 @@ export default class Dash2DockLiteExt extends Extension {
     this.destroyDocks();
     this.docks = [];
 
+    this.windowTracker?.destroy();
+    this.windowTracker = null;
+
     this.integrations.disable();
     this.integrations = null;
 
     this.services.disable();
     this.services = null;
+    this._lastServicesUpdate = 0;
+
+    this._hiTimer?.cancel(this._debounceStyleSeq);
+    this._loTimer?.cancel(this._iconSpacingDebounceSeq);
+    this._debounceStyleSeq = null;
+    this._iconSpacingDebounceSeq = null;
 
     this._timer = null;
     this._hiTimer = null;
@@ -278,8 +290,9 @@ export default class Dash2DockLiteExt extends Extension {
     delete this.icon_theme;
     this.icon_theme = null;
 
-    Main.overview.d2dl = null;
     console.log('dash2dock-lite disabled');
+
+    probe(this, 'after-disable', probeTimers);
   }
 
   animate(settings = {}) {
@@ -289,7 +302,8 @@ export default class Dash2DockLiteExt extends Extension {
       }
       if (settings.refresh) {
         dock._icons = null;
-        dock.layout();
+        dock._needsLayout = true;
+        dock.relayout(true);
       }
       dock._beginAnimation();
     });
@@ -316,6 +330,8 @@ export default class Dash2DockLiteExt extends Extension {
         dock._debounceEndAnimation();
       });
     }, 10);
+
+    probe(this, 'after-enable');
   }
 
   _autohiders() {
@@ -350,13 +366,19 @@ export default class Dash2DockLiteExt extends Extension {
 
   async _loadConfig() {
     this._config = {};
-    let fn_config = Gio.File.new_for_path('.config/d2da/config.json');
+    const configDir = GLib.build_filenamev([
+      GLib.get_user_config_dir(),
+      'd2da',
+    ]);
+    let fn_config = Gio.File.new_for_path(
+      GLib.build_filenamev([configDir, 'config.json'])
+    );
     if (fn_config.query_exists(null)) {
       try {
         const contents = await loadFile(fn_config);
         this._config = JSON.parse(contents);
       } catch (err) {
-        console.log(err);
+        console.error('d2da: loadConfig', err);
       }
 
       // precompute
@@ -383,7 +405,9 @@ export default class Dash2DockLiteExt extends Extension {
       }
     }
 
-    let fn_icons = Gio.File.new_for_path('.config/d2da/icons.json');
+    let fn_icons = Gio.File.new_for_path(
+      GLib.build_filenamev([configDir, 'icons.json'])
+    );
     if (fn_icons.query_exists(null)) {
       try {
         const contents = await loadFile(fn_icons);
@@ -394,7 +418,9 @@ export default class Dash2DockLiteExt extends Extension {
           Object.keys(this.icon_map).forEach((k) => {
             let path = this.icon_map[k];
             if (path.toLowerCase().endsWith('.svg')) {
-              let file = Gio.File.new_for_path(`.config/d2da/${path}`);
+              let file = Gio.File.new_for_path(
+                GLib.build_filenamev([configDir, path])
+              );
               if (file.query_exists(null)) {
                 console.log(`loading icon ${file.get_path()}`);
                 this.icon_map_cache[k] = new Gio.FileIcon({ file: file });
@@ -408,7 +434,9 @@ export default class Dash2DockLiteExt extends Extension {
           Object.keys(this.app_map).forEach((k) => {
             let path = this.app_map[k];
             if (path.toLowerCase().endsWith('.svg')) {
-              let file = Gio.File.new_for_path(`.config/d2da/${path}`);
+              let file = Gio.File.new_for_path(
+                GLib.build_filenamev([configDir, path])
+              );
               if (file.query_exists(null)) {
                 console.log(`loading icon ${file.get_path()}`);
                 this.app_map_cache[k] = new Gio.FileIcon({ file: file });
@@ -417,11 +445,13 @@ export default class Dash2DockLiteExt extends Extension {
           });
         }
       } catch (err) {
-        console.log(err);
+        console.error('d2da: loadConfig', err);
       }
     }
 
-    let fn_style = Gio.File.new_for_path('.config/d2da/style.css');
+    let fn_style = Gio.File.new_for_path(
+      GLib.build_filenamev([configDir, 'style.css'])
+    );
     if (fn_style.query_exists(null)) {
       let ctx = St.ThemeContext.get_for_stage(global.stage);
       let theme = ctx.get_theme();
@@ -434,7 +464,13 @@ export default class Dash2DockLiteExt extends Extension {
     this.icon_map_cache = {};
     this.app_map_cache = {};
 
-    let fn_style = Gio.File.new_for_path('.config/d2da/style.css');
+    const configDir = GLib.build_filenamev([
+      GLib.get_user_config_dir(),
+      'd2da',
+    ]);
+    let fn_style = Gio.File.new_for_path(
+      GLib.build_filenamev([configDir, 'style.css'])
+    );
     if (fn_style.query_exists(null)) {
       let ctx = St.ThemeContext.get_for_stage(global.stage);
       let theme = ctx.get_theme();
@@ -471,10 +507,19 @@ export default class Dash2DockLiteExt extends Extension {
       switch (name) {
         case 'msg-to-ext': {
           if (value.length) {
-            try {
-              eval(value);
-            } catch (err) {
-              console.log(err);
+            const commands = {
+              'run-diagnostics': () => this.runDiagnostics(),
+              'dump-timers': () => this.dumpTimers(),
+            };
+            const command = commands[value];
+            if (command) {
+              try {
+                command();
+              } catch (err) {
+                console.error(`d2da: msg-to-ext ${value}`, err);
+              }
+            } else {
+              console.warn('d2da: unknown command', value);
             }
             this._settings.set_string('msg-to-ext', '');
           }
@@ -503,6 +548,11 @@ export default class Dash2DockLiteExt extends Extension {
         }
         case 'animation-magnify':
         case 'animation-spread':
+          this._updateLayout();
+          if (this.animate_icons) {
+            this.animate({ preview: true });
+          }
+          break;
         case 'animation-rise':
         case 'animation-rise-curve':
         case 'animation-bounce-height': {
@@ -533,6 +583,7 @@ export default class Dash2DockLiteExt extends Extension {
         case 'calendar-icon':
         case 'clock-icon':
         case 'favorites-only': {
+          this._updateLayout();
           this.animate({ refresh: true });
           break;
         }
@@ -541,6 +592,7 @@ export default class Dash2DockLiteExt extends Extension {
           break;
         // problematic settings needing animator restart
         case 'dock-location':
+          this._updateLayout();
           this.recreateAllDocks();
           this.animate({ preview: true });
           break;
@@ -567,12 +619,18 @@ export default class Dash2DockLiteExt extends Extension {
         }
         case 'icon-spacing': {
           this._updateIconSpacing();
+          this._updateLayout();
           break;
         }
         case 'multi-monitor-preference':
           this._updateMultiMonitorPreference();
           break;
-        case 'icon-size':
+        case 'icon-size': {
+          this._updateShrink();
+          this._updateLayout();
+          this.animate({ refresh: true });
+          break;
+        }
         case 'preferred-monitor': {
           this._updateLayout();
           this.animate({ refresh: true });
@@ -585,12 +643,13 @@ export default class Dash2DockLiteExt extends Extension {
         }
         case 'dock-padding':
         case 'edge-distance': {
+          this._updateLayout();
           this.animate();
           break;
         }
-        case 'shrink-icons':
-        case 'icon-size': {
+        case 'shrink-icons': {
           this._updateShrink();
+          this._updateLayout();
           this.animate();
           break;
         }
@@ -730,14 +789,25 @@ export default class Dash2DockLiteExt extends Extension {
     Main.layoutManager.connectObject(
       'startup-complete',
       () => {
-        Main.overview.dash.last_child.visible = false;
-        Main.overview.dash.opacity = 0;
+        // remember exactly what was hidden so disable() can restore it
+        let child = Compat.getDashContainer(Main.overview.dash);
+        if (child?.visible) {
+          child.visible = false;
+          if (!this._overviewDashState) {
+            this._overviewDashState = { hiddenChild: null };
+          }
+          this._overviewDashState.hiddenChild = child;
+        }
+        if (Main.overview.dash) {
+          Main.overview.dash.opacity = 0;
+        }
         // fix for topbar not blurring
         this._updateBlurredBackground();
       },
       // this.startUp.bind(this),
       'monitors-changed',
       () => {
+        this._onMonitorsChanged();
         this._updateMultiMonitorPreference();
       },
       this
@@ -827,8 +897,9 @@ export default class Dash2DockLiteExt extends Extension {
     if (this.animate_icons) {
       this.services.disable();
       this.services.enable();
+      this._lastServicesUpdate = 0;
     }
-    this._iconTheme = St.IconTheme.new();
+    this.icon_theme = St.IconTheme.new();
     this._updateStyle();
     this.recreateAllDocks();
   }
@@ -862,6 +933,13 @@ export default class Dash2DockLiteExt extends Extension {
     });
   }
 
+  _onMonitorsChanged() {
+    let listeners = [...this.listeners];
+    listeners.forEach((l) => {
+      if (l._onMonitorsChanged) l._onMonitorsChanged();
+    });
+  }
+
   _onOverviewShowing() {
     this._showMainOverviewDash(false);
     //this._loTimer.runOnce(() => { Main.overview.dash.set_height(1); }, 50);
@@ -892,8 +970,16 @@ export default class Dash2DockLiteExt extends Extension {
 
   _onCheckServices() {
     if (!this.services) return; // todo why does this happen?
-    // todo convert services time in seconds
-    this.services.update(SERVICES_UPDATE_INTERVAL);
+    let now = GLib.get_monotonic_time();
+    let elapsed = SERVICES_UPDATE_INTERVAL;
+    if (this._lastServicesUpdate) {
+      elapsed = Math.max(
+        0,
+        Math.round((now - this._lastServicesUpdate) / 1000)
+      );
+    }
+    this._lastServicesUpdate = now;
+    this.services.update(elapsed);
   }
 
   _updateWidgetStyle() {
@@ -1152,8 +1238,10 @@ export default class Dash2DockLiteExt extends Extension {
   }
 
   _updateLayout(disable) {
+    if (disable) return;
     this.docks.forEach((dock) => {
-      dock.layout();
+      dock._needsLayout = true;
+      dock.relayout(true);
     });
   }
 
@@ -1176,6 +1264,7 @@ export default class Dash2DockLiteExt extends Extension {
       this._autohiders().forEach((autohider) => {
         autohider.disable();
       });
+      this.windowTracker?.clear();
     }
 
     if (!disable) {

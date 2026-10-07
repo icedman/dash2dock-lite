@@ -1,10 +1,15 @@
 'use strict';
 
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
-import { tempPath, trySpawnCommandLine } from './utils.js';
+import {
+  trySpawnCommandLine,
+  getDownloadsDir,
+  getDocumentsDir,
+} from './utils.js';
 // import { trySpawnCommandLine } from 'resource:///org/gnome/shell/misc/util.js';
 
 import Gio from 'gi://Gio';
+import GioUnix from 'gi://GioUnix';
 import GLib from 'gi://GLib';
 import Graphene from 'gi://Graphene';
 
@@ -29,7 +34,11 @@ class ServiceCounter {
     if (this._ticks >= this._interval) {
       this._ticks -= this._interval;
       if (this._callback) {
-        this._callback();
+        try {
+          this._callback();
+        } catch (e) {
+          console.error(`d2da: service ${this.name} update`, e);
+        }
       }
       return true;
     }
@@ -39,7 +48,11 @@ class ServiceCounter {
 
 export const Services = class {
   enable() {
+    this._cancellable = new Gio.Cancellable();
     this._mounts = {};
+    this.trashApp = null;
+    this.folderApps = {};
+    this.mountApps = {};
     this._services = [
       new ServiceCounter('trash', 1000 * 15, this.checkTrash.bind(this)),
       new ServiceCounter(
@@ -123,31 +136,46 @@ export const Services = class {
   }
 
   disable() {
-    this._downloadsMonitor.disconnectObject(this);
+    this._cancellable?.cancel();
+    this._cancellable = null;
+    this._downloadsMonitor?.cancel();
+    this._downloadsMonitor?.disconnectObject(this);
     this._downloadsMonitor = null;
     this._services = [];
-    this._volumeMonitor.disconnectObject(this);
+    this._volumeMonitor?.disconnectObject(this);
     this._volumeMonitor = null;
-    this._trashMonitor.disconnectObject(this);
+    this._trashMonitor?.cancel();
+    this._trashMonitor?.disconnectObject(this);
     this._trashMonitor = null;
     this._trashDir = null;
+    this.extension._loTimer?.cancel(this._debounceRecentsSeq);
+    this.extension._loTimer?.cancel(this._debounceDownloadsSeq);
+    this._debounceRecentsSeq = null;
+    this._debounceDownloadsSeq = null;
+    this._mounts = {};
+    this.trashApp = null;
+    this.folderApps = {};
+    this.mountApps = {};
   }
 
   setupDownloads() {
     if (this._downloadsMonitor) {
+      this._downloadsMonitor.cancel();
       this._downloadsMonitor.disconnectObject(this);
       this._downloadsMonitor = null;
     }
     this._downloadsUserDir = this.extension.downloads_path;
-    let fn = Gio.File.new_for_path(this._downloadsUserDir);
-    if (!fn.query_exists(null)) {
+    let fn = this._downloadsUserDir
+      ? Gio.File.new_for_path(this._downloadsUserDir)
+      : null;
+    if (!fn || !fn.query_exists(null)) {
       this._downloadsUserDir = null;
     }
     if (this._downloadsUserDir) {
       this._downloadsDir = Gio.File.new_for_path(this._downloadsUserDir);
     } else {
       // fallback
-      this._downloadsDir = Gio.File.new_for_path('Downloads');
+      this._downloadsDir = Gio.File.new_for_path(getDownloadsDir());
     }
 
     this._downloadsMonitor = this._downloadsDir.monitor(
@@ -187,70 +215,56 @@ export const Services = class {
     }
 
     this.last_mounted = mount;
-    let basename = this._getMountName(mount); // mount.get_default_location().get_basename();
-    // let appname = `mount-${this._toSafeFileName(basename)}-dash2dock-lite.desktop`;
     this.setupMountIcon(mount);
-    this.extension.animate();
+    this.extension.animate({ refresh: true });
     return true;
   }
 
   _onMountRemoved(monitor, mount) {
-    let basename = this._getMountName(mount); //mount.get_default_location().get_basename();
-    let appname = `mount-${this._toSafeFileName(
-      basename
-    )}-dash2dock-lite.desktop`;
-    let mount_id = tempPath(appname);
-    delete this._mounts[mount_id];
-    this.extension.animate();
+    let appname = this._getMountAppName(mount);
+    delete this._mounts[appname];
+    if (this.mountApps) {
+      delete this.mountApps[appname];
+    }
+    this.extension.animate({ refresh: true });
   }
 
   update(elapsed) {
     this._services.forEach((s) => {
-      s.update(elapsed);
+      try {
+        s.update(elapsed);
+      } catch (e) {
+        console.error(`d2da: service ${s.name} update`, e);
+      }
     });
   }
 
+  _createAppInfoFromData(desktopContent) {
+    const kf = new GLib.KeyFile();
+    const length = new TextEncoder().encode(desktopContent).length;
+    kf.load_from_data(desktopContent, length, GLib.KeyFileFlags.NONE);
+    return (GioUnix?.DesktopAppInfo ?? Gio.DesktopAppInfo).new_from_keyfile(kf);
+  }
+
   setupTrashIcon() {
-    let extension_path = this.extension.path;
-    let appname = `trash-dash2dock-lite.desktop`;
-    let app_id = tempPath(appname);
-    let fn = Gio.File.new_for_path(app_id);
     let open_app = 'nautilus --select';
-
-    let trash_action = `${extension_path}/apps/empty-trash.sh`;
-    {
-      let fn = Gio.File.new_for_path('.local/share/Trash');
-      trash_action = `rm -rf "${fn.get_path()}"`;
-    }
-
-    let content = `[Desktop Entry]\nVersion=1.0\nTerminal=false\nType=Application\nName=Trash\nExec=${open_app} trash:///\nIcon=user-trash\nStartupWMClass=trash-dash2dock-lite\nActions=trash\n\n[Desktop Action trash]\nName=Empty Trash\nExec=${trash_action}\nTerminal=true\n`;
-    const [, etag] = fn.replace_contents(
-      content,
-      null,
-      false,
-      Gio.FileCreateFlags.REPLACE_DESTINATION,
-      null
-    );
+    let content = `[Desktop Entry]\nVersion=1.0\nTerminal=false\nType=Application\nName=Trash\nExec=${open_app} trash:///\nIcon=user-trash\nStartupWMClass=trash-dash2dock-lite\nActions=trash;\n\n[Desktop Action trash]\nName=Empty Trash\nExec=gio trash --empty\nTerminal=false\n`;
+    this.trashApp = this._createAppInfoFromData(content);
+    return this.trashApp;
   }
 
   setupFolderIcon(name, title, icon, path) {
-    // expand
-    let full_path = Gio.file_new_for_path(path).get_path();
-    let extension_path = this.extension.path;
-    let appname = `${name}-dash2dock-lite.desktop`;
-    let app_id = tempPath(appname);
-    let fn = Gio.File.new_for_path(app_id);
-    // let open_app = 'xdg-open';
+    let full_path = Gio.File.new_for_path(path).get_path();
+    let quoted_path = GLib.shell_quote(full_path);
     let open_app = 'nautilus --select';
 
-    let content = `[Desktop Entry]\nVersion=1.0\nTerminal=false\nType=Application\nName=${title}\nExec=${open_app} ${full_path}\nIcon=${icon}\nStartupWMClass=${name}-dash2dock-lite\n`;
-    const [, etag] = fn.replace_contents(
-      content,
-      null,
-      false,
-      Gio.FileCreateFlags.REPLACE_DESTINATION,
-      null
-    );
+    let content = `[Desktop Entry]\nVersion=1.0\nTerminal=false\nType=Application\nName=${title}\nExec=${open_app} ${quoted_path}\nIcon=${icon}\nStartupWMClass=${name}-dash2dock-lite\n`;
+    let appInfo = this._createAppInfoFromData(content);
+    if (!this.folderApps) {
+      this.folderApps = {};
+    }
+    this.folderApps[name] = appInfo;
+    return appInfo;
   }
 
   setupFolderIcons() {
@@ -259,13 +273,13 @@ export const Services = class {
       'downloads',
       'Downloads',
       'folder-downloads',
-      'Downloads'
+      getDownloadsDir()
     );
     this.setupFolderIcon(
       'documents',
       'Documents',
       'folder-documents',
-      'Documents'
+      getDocumentsDir()
     );
   }
 
@@ -279,41 +293,32 @@ export const Services = class {
   }
 
   setupMountIcon(mount) {
-    let basename = this._getMountName(mount); // mount.get_default_location().get_basename();
-    if (basename.startsWith('/')) {
-      // why does this happen?? issue #125
-      // unhandled... is this why CD's aren't mounted
-      // return;
-    }
-    let label = mount.get_name();
-    let appname = `mount-${this._toSafeFileName(
-      basename
-    )}-dash2dock-lite.desktop`;
-    let fullpath = mount.get_default_location().get_path();
+    let label = this._escapeDesktopValue(this._getMountName(mount));
+    let appname = this._getMountAppName(mount);
+    let location = mount.get_default_location();
+    let fullpath = location?.get_path() || location?.get_uri() || '';
+    let quoted_path = GLib.shell_quote(fullpath);
     let icon = 'drive-harddisk-solidstate';
     if (mount.get_icon() && mount.get_icon().names) {
       icon =
         this.extension.lookup_icon_from_names(mount.get_icon().names) ?? icon;
     }
     let mount_exec = 'echo "not implemented"';
-    let unmount_exec = `umount ${fullpath}`;
-    let mount_id = tempPath(appname);
-    let fn = Gio.File.new_for_path(mount_id);
+    let unmount_exec = `umount ${quoted_path}`;
 
-    if (!fn.query_exists(null)) {
-      let content = `[Desktop Entry]\nVersion=1.0\nTerminal=false\nType=Application\nName=${label}\nExec=xdg-open ${fullpath}\nIcon=${icon}\nStartupWMClass=mount-${this._toSafeFileName(
-        basename
-      )}-dash2dock-lite\nActions=unmount;\n\n[Desktop Action mount]\nName=Mount\nExec=${mount_exec}\n\n[Desktop Action unmount]\nName=Unmount\nExec=${unmount_exec}\n`;
-      const [, etag] = fn.replace_contents(
-        content,
-        null,
-        false,
-        Gio.FileCreateFlags.REPLACE_DESTINATION,
-        null
-      );
+    // always rewrite: same root URI may come back with a new label/path
+    let content = `[Desktop Entry]\nVersion=1.0\nTerminal=false\nType=Application\nName=${label}\nExec=xdg-open ${quoted_path}\nIcon=${icon}\nStartupWMClass=${appname.replace(
+      /\.desktop$/,
+      ''
+    )}\nActions=unmount;\n\n[Desktop Action mount]\nName=Mount\nExec=${mount_exec}\n\n[Desktop Action unmount]\nName=Unmount\nExec=${unmount_exec}\n`;
+
+    let appInfo = this._createAppInfoFromData(content);
+    if (!this.mountApps) {
+      this.mountApps = {};
     }
-
-    this._mounts[mount_id] = mount;
+    this.mountApps[appname] = appInfo;
+    this._mounts[appname] = mount;
+    return appInfo;
   }
 
   checkNotifications() {
@@ -380,24 +385,86 @@ export const Services = class {
     this._appNotices = update;
 
     if (hasUpdates) {
-      this.extension.animate();
+      this.extension.animate({ refresh: true });
     }
   }
 
-  checkTrash() {
-    if (!this.extension.trash_icon) return;
+  emptyTrash() {
+    if (!this._trashDir) return;
 
-    let iter = this._trashDir.enumerate_children(
-      'standard::*',
-      Gio.FileQueryInfoFlags.NONE,
-      null
-    );
-    let prev = this.trashFull;
-    this.trashFull = iter.next_file(null) != null;
-    if (prev != this.trashFull) {
-      this.extension.animate({ refresh: true });
+    let iter = null;
+    try {
+      iter = this._trashDir.enumerate_children(
+        'standard::*',
+        Gio.FileQueryInfoFlags.NONE,
+        this._cancellable ?? null
+      );
+      let info;
+      while ((info = iter.next_file(this._cancellable ?? null)) !== null) {
+        let child = iter.get_child(info);
+        try {
+          child.delete(this._cancellable ?? null);
+        } catch (e) {
+          if (
+            this._cancellable?.is_cancelled() ||
+            (e?.matches && e.matches(Gio.IOErrorEnum, Gio.IOErrorEnum.CANCELLED))
+          ) {
+            break;
+          }
+          console.error('d2da: services emptyTrash child delete', e);
+        }
+      }
+    } catch (e) {
+      if (
+        !this._cancellable?.is_cancelled() &&
+        !(e?.matches && e.matches(Gio.IOErrorEnum, Gio.IOErrorEnum.CANCELLED))
+      ) {
+        console.error('d2da: services emptyTrash', e);
+      }
+    } finally {
+      try {
+        iter?.close(null);
+      } catch {
+        // ignore close error
+      }
     }
-    return this.trashFull;
+
+    this.checkTrash();
+    this.extension?.animate?.({ refresh: true });
+  }
+
+  checkTrash() {
+    if (!this.extension.trash_icon || !this._trashDir) return;
+
+    let iter = null;
+    try {
+      iter = this._trashDir.enumerate_children(
+        'standard::*',
+        Gio.FileQueryInfoFlags.NONE,
+        this._cancellable ?? null
+      );
+      let prev = this.trashFull;
+      this.trashFull = iter.next_file(this._cancellable ?? null) != null;
+      if (prev != this.trashFull) {
+        this.extension.animate({ refresh: true });
+      }
+      return this.trashFull;
+    } catch (e) {
+      if (
+        this._cancellable?.is_cancelled() ||
+        (e?.matches && e.matches(Gio.IOErrorEnum, Gio.IOErrorEnum.CANCELLED))
+      ) {
+        return this.trashFull;
+      }
+      console.error('d2da: services checkTrash', e);
+      return this.trashFull;
+    } finally {
+      try {
+        iter?.close(null);
+      } catch {
+        // ignore close error
+      }
+    }
   }
 
   async checkRecentFilesInFolder(path) {
@@ -408,55 +475,73 @@ export const Services = class {
     let downloadFilesLength = 0;
 
     let directory = Gio.File.new_for_path(path);
-    let enumerator = directory.enumerate_children(
-      [
-        Gio.FILE_ATTRIBUTE_STANDARD_CONTENT_TYPE,
-        Gio.FILE_ATTRIBUTE_STANDARD_NAME,
-        Gio.FILE_ATTRIBUTE_STANDARD_ICON,
-        Gio.FILE_ATTRIBUTE_TIME_MODIFIED,
-      ].join(','),
-      Gio.FileQueryInfoFlags.NONE,
-      null
-    );
+    let enumerator = null;
+    try {
+      enumerator = directory.enumerate_children(
+        [
+          Gio.FILE_ATTRIBUTE_STANDARD_CONTENT_TYPE,
+          Gio.FILE_ATTRIBUTE_STANDARD_NAME,
+          Gio.FILE_ATTRIBUTE_STANDARD_ICON,
+          Gio.FILE_ATTRIBUTE_TIME_MODIFIED,
+        ].join(','),
+        Gio.FileQueryInfoFlags.NONE,
+        this._cancellable ?? null
+      );
 
-    let fileInfo;
-    while ((fileInfo = enumerator.next_file(null)) !== null) {
-      let fileName = fileInfo.get_name();
-      let fileModified = fileInfo.get_modification_time();
+      let fileInfo;
+      while (
+        (fileInfo = enumerator.next_file(this._cancellable ?? null)) !== null
+      ) {
+        let fileName = fileInfo.get_name();
+        let fileModified = fileInfo.get_modification_time();
 
-      let icon = 'file';
-      if (fileInfo.get_icon() && fileInfo.get_icon().names) {
-        icon =
-          this.extension.lookup_icon_from_names(fileInfo.get_icon().names) ??
-          icon;
+        let icon = 'file';
+        if (fileInfo.get_icon() && fileInfo.get_icon().names) {
+          icon =
+            this.extension.lookup_icon_from_names(fileInfo.get_icon().names) ??
+            icon;
+        }
+
+        downloadFiles.push({
+          index: 0,
+          name: fileName,
+          display: fileName,
+          icon: icon,
+          type: fileInfo.get_content_type(),
+          path: GLib.build_filenamev([path, fileName]),
+          date: fileModified ?? { tv_sec: 0 },
+          fileInfo: fileInfo,
+        });
       }
 
-      downloadFiles.push({
-        index: 0,
-        name: fileName,
-        display: fileName,
-        icon: icon,
-        type: fileInfo.get_content_type(),
-        path: [path, fileName].join('/'),
-        date: fileModified ?? { tv_sec: 0 },
-        fileInfo: fileInfo,
+      downloadFilesLength = downloadFiles.length;
+      downloadFiles.sort((a, b) => {
+        return a.date.tv_sec > b.date.tv_sec ? -1 : 1;
       });
+
+      let index = 0;
+      downloadFiles.forEach((f) => {
+        f.index = index++;
+      });
+
+      downloadFiles.splice(max_recent_items);
+      return [downloadFiles, downloadFilesLength];
+    } catch (e) {
+      if (
+        this._cancellable?.is_cancelled() ||
+        (e?.matches && e.matches(Gio.IOErrorEnum, Gio.IOErrorEnum.CANCELLED))
+      ) {
+        return [[], 0];
+      }
+      console.error('d2da: services checkRecentFilesInFolder', e);
+      return [[], 0];
+    } finally {
+      try {
+        enumerator?.close(null);
+      } catch {
+        // ignore close error
+      }
     }
-
-    downloadFilesLength = downloadFiles.length;
-    downloadFiles.sort((a, b) => {
-      return a.date.tv_sec > b.date.tv_sec ? -1 : 1;
-    });
-
-    let index = 0;
-    downloadFiles.forEach((f) => {
-      f.index = index++;
-    });
-
-    downloadFiles.splice(max_recent_items);
-    // console.log(downloadFiles);
-
-    return Promise.resolve([downloadFiles, downloadFilesLength]);
   }
 
   /*
@@ -497,7 +582,9 @@ export const Services = class {
           continue;
         fileStat.index = idx++;
 
-        const file = Gio.File.new_for_path(`Downloads/${fileName}`);
+        const file = Gio.File.new_for_path(
+          GLib.build_filenamev([path, fileName])
+        );
         const fileInfo = file.query_info(
           'standard::*,unix::uid',
           Gio.FileQueryInfoFlags.NOFOLLOW_SYMLINKS,
@@ -548,7 +635,9 @@ export const Services = class {
     let fn = Gio.File.new_for_path(recentsPath);
     if (fn.query_exists(null)) {
       try {
-        const [success, contents] = await fn.load_contents_async(null);
+        const [success, contents] = await fn.load_contents_async(
+          this._cancellable ?? null
+        );
         const decoder = new TextDecoder();
         let contentsString = decoder.decode(contents);
         let idx = 0;
@@ -575,7 +664,14 @@ export const Services = class {
           recentFilesLength++;
         });
       } catch (err) {
-        console.log(err);
+        if (
+          this._cancellable?.is_cancelled() ||
+          (err?.matches &&
+            err.matches(Gio.IOErrorEnum, Gio.IOErrorEnum.CANCELLED))
+        ) {
+          return [[], 0];
+        }
+        console.error('d2da: services load recents', err);
       }
     }
 
@@ -594,8 +690,8 @@ export const Services = class {
 
   _debounceCheckRecents() {
     if (this.extension._loTimer) {
-      if (!this._debounceCheckSeq) {
-        this._debounceCheckSeq = this.extension._loTimer.runDebounced(
+      if (!this._debounceRecentsSeq) {
+        this._debounceRecentsSeq = this.extension._loTimer.runDebounced(
           () => {
             this.checkRecents();
           },
@@ -603,25 +699,33 @@ export const Services = class {
           'debounceCheckRecents'
         );
       } else {
-        this.extension._loTimer.runDebounced(this._debounceCheckSeq);
+        this.extension._loTimer.runDebounced(this._debounceRecentsSeq);
       }
     }
   }
 
   async checkDownloads() {
     try {
-      let path = this._downloadsDir.get_path();
+      let path = this._downloadsDir?.get_path();
+      if (!path) return;
       [this._downloadFiles, this._downloadFilesLength] =
         await this.checkRecentFilesInFolder(path);
     } catch (err) {
-      console.log(err);
+      if (
+        this._cancellable?.is_cancelled() ||
+        (err?.matches &&
+          err.matches(Gio.IOErrorEnum, Gio.IOErrorEnum.CANCELLED))
+      ) {
+        return;
+      }
+      console.error('d2da: services checkDownloads', err);
     }
   }
 
   _debounceCheckDownloads() {
     if (this.extension._loTimer) {
-      if (!this._debounceCheckSeq) {
-        this._debounceCheckSeq = this.extension._loTimer.runDebounced(
+      if (!this._debounceDownloadsSeq) {
+        this._debounceDownloadsSeq = this.extension._loTimer.runDebounced(
           () => {
             this.checkDownloads();
           },
@@ -629,14 +733,34 @@ export const Services = class {
           'debounceCheckDownloads'
         );
       } else {
-        this.extension._loTimer.runDebounced(this._debounceCheckSeq);
+        this.extension._loTimer.runDebounced(this._debounceDownloadsSeq);
       }
     }
   }
 
+  // keyed by root URI so two volumes with the same name get separate items;
+  // checksum keeps the file name / desktop id stable and filesystem-safe
+  _getMountAppName(mount) {
+    let uri = mount.get_root()?.get_uri() ?? this._getMountName(mount);
+    let key = GLib.compute_checksum_for_string(
+      GLib.ChecksumType.SHA1,
+      uri,
+      -1
+    );
+    return `mount-${key}-dash2dock-lite.desktop`;
+  }
+
+  _escapeDesktopValue(value) {
+    return value
+      .replace(/\\/g, '\\\\')
+      .replace(/\n/g, '\\n')
+      .replace(/\r/g, '\\r')
+      .replace(/\t/g, '\\t');
+  }
+
   _getMountName(mount) {
-    let name = null;
-    if (mount.get_drive()) {
+    let name = mount.get_name();
+    if (!name && mount.get_drive()) {
       name = mount.get_drive().get_name();
     }
 
@@ -652,30 +776,19 @@ export const Services = class {
       }
     }
 
-    return 'Volume';
+    return name || 'Volume';
   }
 
   checkMounts() {
     if (!this.extension.mounted_icon) {
-      this._mounts = [];
+      this._mounts = {};
+      this.mountApps = {};
       return;
     }
 
     let mounts = this._volumeMonitor.get_mounts() || [];
-    let mount_ids = mounts.map((mount) => {
-      let basename = this._getMountName(mount);
-      let appname = `mount-${this._toSafeFileName(
-        basename
-      )}-dash2dock-lite.desktop`;
-      return appname;
-    });
-
     this.mounts = mounts;
     mounts.forEach((mount) => {
-      let basename = this._getMountName(mount);
-      let appname = `mount-${this._toSafeFileName(
-        basename
-      )}-dash2dock-lite.desktop`;
       this._deferredMounts.push(mount);
     });
 
@@ -713,6 +826,13 @@ export const Services = class {
           dock._clock = clock;
           item._clock = clock;
           item._image = clock;
+          // renderArea may be destroyed first (shell shutdown); drop the refs
+          // so dock._cleanupIcon never touches a disposed clock
+          clock.connect('destroy', () => {
+            if (item._image === clock) item._image = null;
+            if (item._clock === clock) item._clock = null;
+            if (dock._clock === clock) dock._clock = null;
+          });
           // item._appwell.first_child.add_child(clock);
           dock.renderArea.add_child(clock);
         }
@@ -746,6 +866,11 @@ export const Services = class {
           dock._calendar = calendar;
           item._calendar = calendar;
           item._image = calendar;
+          calendar.connect('destroy', () => {
+            if (item._image === calendar) item._image = null;
+            if (item._calendar === calendar) item._calendar = null;
+            if (dock._calendar === calendar) dock._calendar = null;
+          });
           dock.renderArea.add_child(calendar);
         }
         if (calendar) {

@@ -3,7 +3,14 @@
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import St from 'gi://St';
-import { tempPath } from './utils.js';
+
+const INSTANCE_ID = (() => {
+  try {
+    return new Gio.Credentials().get_unix_pid();
+  } catch {
+    return GLib.uuid_string_random();
+  }
+})();
 
 export const Style = class {
   constructor() {
@@ -13,23 +20,39 @@ export const Style = class {
 
   unloadAll() {
     let ctx = St.ThemeContext.get_for_stage(global.stage);
-    let theme = ctx.get_theme();
+    let theme = ctx ? ctx.get_theme() : null;
     Object.keys(this.styles).forEach((k) => {
       let fn = this.styles[k];
-      theme.unload_stylesheet(fn);
+      if (theme && fn) {
+        try {
+          theme.unload_stylesheet(fn);
+        } catch (err) {
+          console.error('d2da: style unloadAll unload_stylesheet', err);
+        }
+      }
 
-      try {
-        fn.delete(null);
-      } catch (err) {
-        console.log(err);
+      if (fn) {
+        try {
+          fn.delete(null);
+        } catch (err) {
+          if (
+            !(
+              err?.matches &&
+              err.matches(Gio.IOErrorEnum, Gio.IOErrorEnum.NOT_FOUND)
+            )
+          ) {
+            console.error('d2da: style unloadAll', err);
+          }
+        }
       }
     });
+    this.styles = {};
+    this.style_contents = {};
   }
 
   build(name, style_array) {
-    let fn = this.styles[name];
     let ctx = St.ThemeContext.get_for_stage(global.stage);
-    let theme = ctx.get_theme();
+    let theme = ctx ? ctx.get_theme() : null;
 
     let content = '';
     style_array.forEach((k) => {
@@ -41,15 +64,51 @@ export const Style = class {
       return;
     }
 
+    const runtimeDir = GLib.get_user_runtime_dir() || GLib.get_tmp_dir();
+    GLib.mkdir_with_parents(runtimeDir, 0o700);
+    const targetPath = GLib.build_filenamev([
+      runtimeDir,
+      `d2da-${name}-${INSTANCE_ID}.css`,
+    ]);
+
+    let fn = this.styles[name];
     if (fn) {
-      theme.unload_stylesheet(fn);
+      if (fn.get_path() !== targetPath) {
+        if (theme) {
+          try {
+            theme.unload_stylesheet(fn);
+          } catch (err) {
+            console.error('d2da: style build unload_stylesheet', err);
+          }
+        }
+        try {
+          fn.delete(null);
+        } catch (err) {
+          if (
+            !(
+              err?.matches &&
+              err.matches(Gio.IOErrorEnum, Gio.IOErrorEnum.NOT_FOUND)
+            )
+          ) {
+            console.error('d2da: style build cleanup', err);
+          }
+        }
+        fn = Gio.File.new_for_path(targetPath);
+        this.styles[name] = fn;
+      } else if (theme) {
+        try {
+          theme.unload_stylesheet(fn);
+        } catch (err) {
+          console.error('d2da: style build unload_stylesheet', err);
+        }
+      }
     } else {
-      fn = Gio.File.new_for_path(tempPath(`${name}.css`));
+      fn = Gio.File.new_for_path(targetPath);
       this.styles[name] = fn;
     }
 
     this.style_contents[name] = content;
-    const [, etag] = fn.replace_contents(
+    fn.replace_contents(
       content,
       null,
       false,
@@ -57,7 +116,9 @@ export const Style = class {
       null
     );
 
-    theme.load_stylesheet(fn);
+    if (theme) {
+      theme.load_stylesheet(fn);
+    }
 
     // log(content);
   }

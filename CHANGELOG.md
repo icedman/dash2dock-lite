@@ -11,6 +11,7 @@
 # Next Release
 
 * Bug fixes
+* fix dock sometimes positioned too high when an app opens; deterministic icon/dash sizing (see docs/LAYOUT.md)
 
 # Release 84
 

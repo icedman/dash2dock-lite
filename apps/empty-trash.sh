@@ -1,2 +1,2 @@
 #!/usr/bin/sh
-rm -rf ~/.local/share/Trash/*
+gio trash --empty

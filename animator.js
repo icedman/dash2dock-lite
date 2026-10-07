@@ -893,13 +893,8 @@ export let Animator = class {
             position: dock._position,
             vertical,
             extension: dock.extension,
+            dock,
           });
-          // badge.x = icon._renderer.x + 3 * icon._scale;
-          // badge.y = icon._renderer.y - 3 * icon._scale;
-
-          // if (dock._position == DockPosition.TOP) {
-          //   badge.y = icon._renderer.y + (icon.height - 6) * icon._scale;
-          // }
 
           badge.width = icon._renderer.width * icon._renderer.scaleX;
           badge.height = badge.width;

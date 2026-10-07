@@ -232,11 +232,16 @@ export const DockItemBadgeOverlay = GObject.registerClass(
 
     update(icon, data) {
       let renderer = this.renderer;
-      let { noticesCount, position, vertical, extension, scale } = data;
+      let { noticesCount, position, vertical, extension, dock } = data;
 
-      renderer.width = icon._icon.width;
-      renderer.height = icon._icon.height;
+      let baseIconSize = dock._iconSizeScaledDown || icon._icon.width;
+      renderer.width = baseIconSize;
+      renderer.height = baseIconSize;
+      renderer.pivot_point = icon._icon.pivot_point;
+
       let canvasScale = renderer.width / renderer._canvas.width;
+      let scale = dock._monitor.geometry_scale || 1;
+      canvasScale *= scale;
       renderer._canvas.set_scale(canvasScale, canvasScale);
 
       let options = extension.notification_badge_style_options;
@@ -244,15 +249,17 @@ export const DockItemBadgeOverlay = GObject.registerClass(
         options[extension.notification_badge_style];
       let notification_badge_color = extension.notification_badge_color;
 
-      renderer.translationX = renderer.width / 1.5;
-      // renderer.translationY = icon._icon.translationY;
+      // Dot canvas draws dots near the bottom (y = size - height, or +0.42*height from center).
+      // translate: [0.35, -0.85] shifts it from bottom to top-right corner in canvas coordinates.
+      renderer.translationX = 0;
+      renderer.translationY = 0;
 
       renderer.set_state({
         count: noticesCount,
         color: notification_badge_color || [1, 1, 1, 1],
         style: notification_badge_style || 'default',
         size: extension.notification_badge_size || 0,
-        translate: [0, -0.85],
+        translate: [0.35, -0.85],
       });
     }
   }

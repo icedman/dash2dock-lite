@@ -579,9 +579,12 @@ export let Dock = GObject.registerClass(
       );
     }
 
+    // Pure function of settings + monitor scale: same inputs, same output,
+    // no matter whether relayout() already ran or the dash is populated.
+    // (Before, an unset _scaleFactor made upscale NaN -> 1, so callers
+    // running ahead of relayout() got half the size of later calls.)
     _preferredIconSize() {
       let preferredIconSizes = this._preferredIconSizes;
-      let iconSize = 64;
       if (!preferredIconSizes) {
         preferredIconSizes = [32];
         for (let i = 16; i <= 128; i += 4) {
@@ -590,25 +593,56 @@ export let Dock = GObject.registerClass(
         this._preferredIconSizes = preferredIconSizes;
       }
 
-      //! why the need for upscaling
-      let upscale = 1 + (2 - this._scaleFactor) || 1;
-      if (upscale < 1) {
-        upscale = 1; // does scaleFactor go beyond 2x?
-      }
-      // console.log(`scaleFactor:${this._scaleFactor} upscale:${upscale}`);
-      iconSize =
-        upscale *
-        (preferredIconSizes[
-          Math.floor(this.extension.icon_size * preferredIconSizes.length)
-        ] || 64);
-      iconSize *= this.extension.scale;
+      let scaleFactor =
+        this._scaleFactor ||
+        this._monitor?.geometry_scale ||
+        this.getMonitor()?.geometry_scale ||
+        1;
 
-      if (this.extension._config.icon_size) {
+      //! why the need for upscaling
+      // does scaleFactor go beyond 2x? never below 1
+      let upscale = Math.max(1, 1 + (2 - scaleFactor));
+
+      // icon_size == 1.0 used to index past the end and fall back to 64
+      let idx = Math.floor((this.extension.icon_size || 0) * preferredIconSizes.length);
+      idx = Math.min(preferredIconSizes.length - 1, Math.max(0, idx));
+
+      let iconSize = upscale * (preferredIconSizes[idx] || 64);
+      iconSize *= this.extension.scale || 1;
+
+      if (this.extension._config?.icon_size) {
         iconSize = this.extension._config.icon_size;
       }
 
-      this._iconSize = iconSize;
       return iconSize;
+    }
+
+    // Number of items the dock is sized for. App items come from the app
+    // model (what the Shell Dash _redisplay() will show), not from the actors
+    // present right now - so the size does not depend on when the Dash
+    // populates, or on items still animating out. Non-app items (extra
+    // icons, showApps) are ours and created synchronously.
+    _layoutIconCount() {
+      let icons = this._icons ?? [];
+      let dashBox = Compat.getDashBox(this.dash);
+      let others = icons.filter(
+        (c) => !(c._appwell && c.get_parent?.() === dashBox)
+      ).length;
+
+      let apps = 0;
+      try {
+        let favorites = Fav.getAppFavorites().getFavoriteMap();
+        apps = Object.keys(favorites).length;
+        if (!this.extension.favorites_only) {
+          apps += Shell.AppSystem.get_default()
+            .get_running()
+            .filter((app) => !(app.get_id() in favorites)).length;
+        }
+      } catch {
+        // fall back to the actors found
+        return icons.length;
+      }
+      return apps + others;
     }
 
     // Structure for dash icon container widgets - g42,g43,g44,g45,g46
@@ -634,6 +668,15 @@ export let Dock = GObject.registerClass(
 
     _inspectIcon(c) {
       if (!c.visible) return false;
+
+      // being removed by the Shell Dash (eases scale to 0, then destroys);
+      // collapse it now so layout already matches the final state
+      if (c.animatingOut) {
+        c.width = 0;
+        c.height = 0;
+        c.style = '';
+        return false;
+      }
 
       /* release any reference once destroyed */
       if (!c._destroyConnectId) {
@@ -786,11 +829,22 @@ export let Dock = GObject.registerClass(
           }
           this._extraIconsLength = _extraIconsLength;
         }
+        // removal starts with animateOutAndDestroy(); child-removed only
+        // fires ~200ms later on destroy
+        if (this._icons?.some((c) => c.animatingOut)) {
+          this._icons = null;
+          this._needsLayout = true;
+        }
       }
 
       if (this._icons) {
         // use icons cache
         return this._icons;
+      }
+
+      // favorites_only filtering in _inspectIcon needs these
+      if (!this._favorite_ids) {
+        this._favorite_ids = Compat.getFavoriteAppIds(Fav.getAppFavorites());
       }
 
       this._dashItems = [];
@@ -1173,6 +1227,9 @@ export let Dock = GObject.registerClass(
       let animation_spread = this.extension.animation_spread;
       // let animation_magnify = this.extension.animation_magnify;
 
+      // deterministic: from the app model, not from Dash population timing
+      let iconCount = this._layoutIconCount();
+
       let iconMargins = 0;
       let iconStyle = '';
       if (this.extension.icon_spacing > 0) {
@@ -1182,17 +1239,18 @@ export let Dock = GObject.registerClass(
         } else {
           iconStyle = `margin-left: ${margin}px; margin-right: ${margin}px;`;
         }
-        iconMargins = margin * 2 * this._icons.length;
+        iconMargins = margin * 2 * iconCount;
       }
 
       let iconSize = this._preferredIconSize();
+      this._iconSize = iconSize;
       //! why not use icon_spacing? animation spread should only be when animated
       let iconSizeSpaced = iconSize + 2 + 8 * animation_spread;
 
       let projectedWidth =
         iconSize +
         // (this.animated ? iconSizeSpaced : 0) +
-        iconSizeSpaced * (this._icons.length > 3 ? this._icons.length : 3);
+        iconSizeSpaced * (iconCount > 3 ? iconCount : 3);
       projectedWidth += iconMargins;
 
       let scaleDown = 1.0;
@@ -1221,13 +1279,38 @@ export let Dock = GObject.registerClass(
         this._edge_distance = 0;
       }
 
+      let itemSize = Math.floor(iconSizeSpaced * scaleFactor);
       this._icons.forEach((icon) => {
-        icon.width = Math.floor(iconSizeSpaced * scaleFactor);
-        icon.height = Math.floor(iconSizeSpaced * scaleFactor);
+        icon.width = itemSize;
+        icon.height = itemSize;
         if (icon.style != iconStyle) {
           icon.style = iconStyle;
         }
       });
+
+      // separators must not out-grow the items: Shell's is created at its
+      // own iconSize (64px, never adjusted - see setupDashProxy), ours at 48px
+      if (!vertical) {
+        [...(this._separators ?? []), this._separator].forEach((sep) => {
+          if (!sep) return;
+          sep._d2daHeight ??= sep.height;
+          let sepHeight = Math.min(itemSize, sep._d2daHeight);
+          if (sep.height != sepHeight) {
+            sep.height = sepHeight;
+          }
+        });
+      }
+
+      // The dash cross-axis size is ours, not the natural size of whatever
+      // the Shell Dash holds at this moment (new items request 64px until
+      // sized above). Keeps _snapToContainerEdge() stable.
+      if (vertical) {
+        this.dash.height = -1;
+        this.dash.width = itemSize;
+      } else {
+        this.dash.width = -1;
+        this.dash.height = itemSize;
+      }
 
       //! check with multi-monitor and scaled displays
       this.x = m.x;

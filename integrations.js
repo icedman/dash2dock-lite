@@ -56,7 +56,7 @@ export const Integrations = class {
 
     let dashIcon = null;
 
-    let sz = dock._preferredIconSize();
+    let sz = dock._iconSizeScaledDown || dock._preferredIconSize();
     let ofs = 0;
     if (sz) {
       let scale = dock.getMonitor().geometry_scale || 1;

@@ -126,7 +126,9 @@ export const Clock = GObject.registerClass(
   {},
   class Clock extends St.Widget {
     _init(x, settings = {}) {
-      super._init();
+      super._init({
+        name: 'd2daClock',
+      });
 
       let size = x || 400;
 
@@ -152,7 +154,9 @@ const ClockCanvas = GObject.registerClass(
   {},
   class ClockCanvas extends St.DrawingArea {
     _init(settings = {}) {
-      super._init();
+      super._init({
+        name: 'd2daClockCanvas',
+      });
 
       this.settings = {
         dark_color: [0.2, 0.2, 0.2, 1.0],

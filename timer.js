@@ -2,11 +2,14 @@
 
 import GLib from 'gi://GLib';
 
+// Module-wide so handles from a previous Timer (e.g. before disable/enable)
+// can never share an id with a subscription of the current one.
+let nextSubscriberId = 0xff;
+
 export const Timer = class {
   constructor(name) {
     this._name = name;
     this._subscribers = [];
-    this._subscriberId = 0xff;
   }
 
   initialize(resolution) {
@@ -32,11 +35,27 @@ export const Timer = class {
     }
     this._resolution = resolution || 1000;
     this._time = 0;
-    this._timeoutId = GLib.timeout_add(
+    let sourceId = GLib.timeout_add(
       GLib.PRIORITY_DEFAULT,
       this._resolution,
-      this.onUpdate.bind(this)
+      () => {
+        let keep = false;
+        try {
+          keep = this.onUpdate();
+        } catch (e) {
+          console.error(`d2da: timer ${this._name} update`, e);
+        }
+        if (keep && this._timeoutId === sourceId) {
+          return GLib.SOURCE_CONTINUE;
+        }
+        // the source dies here; keep is_running() truthful
+        if (this._timeoutId === sourceId) {
+          this._timeoutId = null;
+        }
+        return GLib.SOURCE_REMOVE;
+      }
     );
+    this._timeoutId = sourceId;
     this._hibernating = false;
     this.onStart();
   }
@@ -136,11 +155,26 @@ export const Timer = class {
       return true;
     }
 
-    this._subscribers.forEach((s) => {
-      if (s.onUpdate) {
-        s.onUpdate(s, this._resolution);
+    // Iterate a snapshot: unsubscribe() never mutates the array in place
+    // (it replaces it), so subscribers may unsubscribe during the loop.
+    // Not slice()d: a re-armed handle replaced in place by subscribe() must be
+    // seen in its reset state, and this runs every tick of the animation timer.
+    const subscribers = this._subscribers;
+    const count = subscribers.length;
+    for (let i = 0; i < count; i++) {
+      const s = subscribers[i];
+      if (!s.onUpdate) {
+        continue;
       }
-    });
+      try {
+        s.onUpdate(s, this._resolution);
+      } catch (e) {
+        console.error(
+          `d2da: timer ${this._name} subscriber ${s._name ?? s._id}`,
+          e
+        );
+      }
+    }
 
     this._time += this._resolution;
 
@@ -164,9 +198,15 @@ export const Timer = class {
   }
 
   subscribe(obj) {
-    if (!obj._id) {
-      obj._id = this._subscriberId++;
+    // stale handle from another (e.g. pre-disable) Timer: treat as new
+    if (obj._timer && obj._timer !== this) {
+      delete obj._id;
+      delete obj._timer;
     }
+    if (!obj._id) {
+      obj._id = nextSubscriberId++;
+    }
+    obj._timer = this;
     let idx = this._subscribers.findIndex((s) => s._id == obj._id);
     if (idx == -1) {
       this._subscribers.push(obj);
@@ -180,7 +220,8 @@ export const Timer = class {
 
     if (
       (this._hibernating || this._autoStart) &&
-      this._subscribers.length == 1
+      this._subscribers.length > 0 &&
+      !this.is_running()
     ) {
       this.start(this._resolution);
     }
@@ -262,7 +303,7 @@ export const Timer = class {
         s._time += dt;
         if (s._time >= s._delay) {
           if (s._func(s)) {
-            this.unsubscribe(s);
+            s._timer.unsubscribe(s);
           }
           s._time -= s._delay;
         }
@@ -286,7 +327,7 @@ export const Timer = class {
         s._time += dt;
         if (s._time >= s._delay) {
           s._func(s);
-          this.unsubscribe(s);
+          s._timer.unsubscribe(s);
         }
       },
     };
@@ -308,7 +349,7 @@ export const Timer = class {
         s._time += dt;
         if (s._time >= s._delay) {
           s._func(s);
-          this.unsubscribe(s);
+          s._timer.unsubscribe(s);
         }
       },
     };
@@ -329,7 +370,7 @@ export const Timer = class {
       onUpdate: (s, dt) => {
         let current = s._sequences[s._currentIdx];
         if (!current) {
-          this.unsubscribe(s);
+          s._timer.unsubscribe(s);
           return;
         }
         s._time += dt;
@@ -347,9 +388,9 @@ export const Timer = class {
   }
 
   runAnimation(array, settings) {
-    if (typeof func === 'object' && !array.length) {
-      func._time = 0;
-      return this.subscribe(func);
+    if (typeof array === 'object' && !array.length) {
+      array._time = 0;
+      return this.subscribe(array);
     }
 
     let duration = 0;
@@ -387,7 +428,7 @@ export const Timer = class {
         }
 
         if (s._time > s._duration) {
-          this.unsubscribe(s);
+          s._timer.unsubscribe(s);
           s._time = s._duration;
           s._func(s);
           return;

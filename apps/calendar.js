@@ -9,7 +9,9 @@ export const Calendar = GObject.registerClass(
   {},
   class Calendar extends St.Widget {
     _init(x, settings = {}) {
-      super._init();
+      super._init({
+        name: 'd2daCalendar',
+      });
 
       let size = x || 400;
 
@@ -36,7 +38,9 @@ const CalendarCanvas = GObject.registerClass(
   {},
   class CalendarCanvas extends St.DrawingArea {
     _init(settings = {}) {
-      super._init();
+      super._init({
+        name: 'd2daCalendarCanvas',
+      });
 
       this.settings = {
         dark_color: [0.2, 0.2, 0.2, 1.0],

@@ -1,12 +1,15 @@
-// const Gdk = imports.gi.Gdk;
-// const GLib = imports.gi.GLib;
-
-import Gdk from 'gi://Gdk';
 import GLib from 'gi://GLib';
 
 export let PrefKeys = class {
-  constructor() {
+  constructor(patch) {
     this._keys = {};
+    // >0 while widgets are updated from settings; widget handlers must not write back
+    this._syncing = 0;
+    if (patch) {
+      Object.keys(patch).forEach((k) => {
+        this[k] = patch[k];
+      });
+    }
   }
 
   setKeys(keys) {
@@ -104,6 +107,55 @@ export let PrefKeys = class {
     return this._keys;
   }
 
+  _toRGBA() {
+    console.log('implement me!');
+    // implement @ patch
+    return null;
+  }
+
+  // run fn without widget handlers writing back to settings
+  withoutWriteback(fn) {
+    this._syncing++;
+    try {
+      fn();
+    } finally {
+      this._syncing--;
+    }
+  }
+
+  updateWidget(name) {
+    let key = this._keys[name];
+    if (!key || !key.object) return;
+    this.withoutWriteback(() => {
+      try {
+        switch (key.widget_type) {
+          case 'switch':
+            key.object.set_active(key.value);
+            break;
+          case 'dropdown':
+            key.object.set_selected(key.value);
+            break;
+          case 'scale':
+          case 'string':
+            key.object.set_value(key.value);
+            break;
+          case 'color':
+            key.object.set_rgba(
+              this._toRGBA({
+                red: key.value[0],
+                green: key.value[1],
+                blue: key.value[2],
+                alpha: key.value[3],
+              })
+            );
+            break;
+        }
+      } catch (err) {
+        console.error(`d2da: prefs update widget ${name}`, err);
+      }
+    });
+  }
+
   connectSettings(settings, callback) {
     this._settingsListeners = [];
 
@@ -127,47 +179,26 @@ export let PrefKeys = class {
         }
         case 'switch': {
           key.value = settings.get_boolean(name);
-          if (key.object) key.object.set_active(key.value);
           break;
         }
         case 'dropdown': {
           key.value = settings.get_int(name);
-          try {
-            if (key.object) key.object.set_selected(key.value);
-          } catch (err) {
-            //
-          }
           break;
         }
         case 'scale': {
           key.value = settings.get_double(name);
-          if (key.object) key.object.set_value(key.value);
           break;
         }
         case 'string': {
           key.value = settings.get_string(name);
-          if (key.object) key.object.set_value(key.value);
           break;
         }
         case 'color': {
           key.value = settings.get_value(name).deepUnpack();
-          try {
-            if (key.object) {
-              key.object.set_rgba(
-                new Gdk.RGBA({
-                  red: key.value[0],
-                  green: key.value[1],
-                  blue: key.value[2],
-                  alpha: key.value[3],
-                })
-              );
-            }
-          } catch (err) {
-            //
-          }
           break;
         }
       }
+      this.updateWidget(name);
 
       this._settingsListeners.push(
         settings.connect(`changed::${name}`, () => {
@@ -206,6 +237,7 @@ export let PrefKeys = class {
               break;
             }
           }
+          self.updateWidget(name);
           if (callback) callback(name, key.value);
         })
       );
@@ -213,10 +245,17 @@ export let PrefKeys = class {
   }
 
   disconnectSettings() {
-    this._settingsListeners.forEach((id) => {
+    (this._settingsListeners || []).forEach((id) => {
       this._settings.disconnect(id);
     });
     this._settingsListeners = [];
+  }
+
+  disconnectBuilder() {
+    (this._builderListeners || []).forEach((l) => {
+      if (l.signal_id) l.source.disconnect(l.signal_id);
+    });
+    this._builderListeners = [];
   }
 
   connectBuilder(builder) {
@@ -241,6 +280,7 @@ export let PrefKeys = class {
         case 'switch': {
           key.object.set_active(key.default_value);
           signal_id = key.object.connect('state-set', (w) => {
+            if (self._syncing) return;
             let value = w.get_active();
             self.setValue(name, value);
             if (key.callback) {
@@ -251,6 +291,7 @@ export let PrefKeys = class {
         }
         case 'dropdown': {
           signal_id = key.object.connect('notify::selected-item', (w) => {
+            if (self._syncing) return;
             let index = w.get_selected();
             let value = key.maps && index in key.maps ? key.maps[index] : index;
             self.setValue(name, value);
@@ -259,6 +300,7 @@ export let PrefKeys = class {
         }
         case 'scale': {
           signal_id = key.object.connect('value-changed', (w) => {
+            if (self._syncing) return;
             let value = w.get_value();
             self.setValue(name, value);
           });
@@ -266,6 +308,7 @@ export let PrefKeys = class {
         }
         case 'color': {
           signal_id = key.object.connect('color-set', (w) => {
+            if (self._syncing) return;
             let rgba = w.get_rgba();
             let value = [rgba.red, rgba.green, rgba.blue, rgba.alpha];
             self.setValue(name, value);
@@ -282,7 +325,6 @@ export let PrefKeys = class {
         }
       }
 
-      // when do we clean this up?
       this._builderListeners.push({
         source: key.object,
         signal_id: signal_id,

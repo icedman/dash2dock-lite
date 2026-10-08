@@ -161,7 +161,7 @@ Status: `[ ]` todo · `[~]` in progress · `[x]` done (hash) · `[!]` blocked ·
 | | Cycle | Task | Depends | Notes |
 |---|---|---|---|---|
 | [x] db807f4 | 5.1 | R-17 settings reactions as data | 4.3 | |
-| [ ] | 5.2 | R-18 effects base, prune helpers | 3.5 | |
+| [x] d7db821 | 5.2 | R-18 effects base, prune helpers | 3.5 | |
 | [ ] | 5.3 | R-19 module renames / moves | 5.1 | |
 | [ ] | 5.4 | R-20 keys from schema, dead keys | 0.3 | HUMAN OK for key removal |
 | [ ] | 5.5 | R-21 delete obsolete files, README | 0.4 (skipped; re-check before 5.5) | HUMAN — end of phase 5 |
@@ -381,3 +381,6 @@ Format: `YYYY-MM-DD HH:MM · cycle · EVENT · details` where EVENT ∈ `SETUP, 
 - 2026-10-08 · 5.1 · PREFLIGHT · tree clean (agents edits only); GNOME Shell 50.5. Proceeding to Phase 5 (Elegance).
 - 2026-10-08 · 5.1 · ASSIGN · R-17 settings reactions as data. Replace 180-line switch with declarative REACTIONS map and coalesced idle flush in extension.js.
 - 2026-10-08 · 5.1 · AUDIT-PASS · db807f4. check=PASS lint=0/135 settings=exit 0 unit=49/49 compat, 15/15 timer, 20/20 tracker smoke=SKIPPED (human directive). R-17 fixed: declarative REACTIONS dictionary and ACTION_ORDER array replace ~180-line switch in extension.js; settings updates coalesced into one idle flush per tick via GLib.idle_add.
+- 2026-10-08 · 5.2 · PREFLIGHT · tree clean; HEAD 58cbf1d; GNOME Shell 50.5.
+- 2026-10-08 · 5.2 · ASSIGN · R-18 effects base, prune helpers. Collapse effects into ColorShaderEffect with shader cache; delete unused effects; prune dead easing curves in effects/easing.js; delete dead _onKeyPressed in extension.js and dead slideIn check in animator.js.
+- 2026-10-08 · 5.2 · AUDIT-PASS · d7db821. check=PASS lint=0/98 (warns reduced by 37, 0 err) settings=exit 0 unit=49/49 compat, 15/15 timer, 20/20 tracker smoke=SKIPPED (human directive). R-18 / P-9 fixed: unified shader effects on ColorShaderEffect with Map cache, deleted unused blur/color effects, pruned dead curves in easing.js; retained animator.js slideIn check and extension.js _onKeyPressed per human directive.

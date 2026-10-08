@@ -31,14 +31,26 @@ const ANIMATE_CACHE_LOOKUP = 4;
 
 const DOT_CANVAS_SIZE = 96;
 
-function getScale(u, xm, R, M, p) {
+function getScale(u, xm, R, M, type = 0) {
     const dist = Math.abs(u - xm);
     if (dist >= R) {
         return 1.0;
     }
-    const y = dist / R;
-    const h = 1.0 - Math.pow(y, p);
-    return 1.0 + (M - 1.0) * h;
+    const t = 1.0 - (dist / R);
+    let factor = t;
+
+    if (type === 1) {
+        // Linear Proximity
+        factor = t;
+    } else if (type === 2) {
+        // Smoothstep Polynomial
+        factor = t * t * (3 - 2 * t);
+    } else {
+        // 0: Cosine Bell (standard macOS bell curve)
+        factor = Math.cos((dist / R) * (Math.PI / 2));
+    }
+
+    return 1.0 + (M - 1.0) * factor;
 }
 
 export let Animator = class {
@@ -358,8 +370,8 @@ export let Animator = class {
     const totalCalcStaticL = TOTAL_CALC_ICONS * activeContainerWidth;
     const xmClamped = Math.max(0, Math.min(totalCalcStaticL, xmLocalCalculated));
 
-    // --- Step 3: Parabolic Scaling & Perfectly Packed Centers ---
-    const p = 2.0; // Perfect quadratic parabola shape exponent
+    // --- Step 3: Scaling & Perfectly Packed Centers ---
+    const curveType = dock.extension.animation_rise_curve ?? 0;
     const iconScales = [];
     const iconWidths = [];
     const hoverActive = isWithin;
@@ -370,10 +382,7 @@ export let Animator = class {
             iconWidths.push(ICON_SIZE);
         } else {
             const xi = staticCenters[i];
-            const dist = Math.abs(xi - xmClamped);
-            const normDist = Math.min(1.0, dist / threshold);
-            const parabolicFactor = 1.0 - Math.pow(normDist, 2.0); // Parabola: 1.0 at cursor, tapers to 0.0 at radius
-            const scale = 1.0 + (scaleAtMax - 1.0) * parabolicFactor;
+            const scale = getScale(xi, xmClamped, threshold, scaleAtMax, curveType);
             iconScales.push(scale);
             iconWidths.push(ICON_SIZE * scale);
         }
@@ -432,7 +441,7 @@ export let Animator = class {
     const activeHoverFactor = nearestIcon ? 1.0 : 0.0;
     for (let i = 0; i < TOTAL_CALC_ICONS; i++) {
         const xi = staticCenters[i];
-        const targetScale = getScale(xi, centerMouse, threshold, scaleAtMax, p);
+        const targetScale = getScale(xi, centerMouse, threshold, scaleAtMax, curveType);
         const scale = 1.0 + (targetScale - 1.0) * activeHoverFactor;
         centerScales.push(scale);
         centerWidths.push(ICON_SIZE * scale);

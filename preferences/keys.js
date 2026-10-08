@@ -259,7 +259,7 @@ export const SettingsKeys = (patch) => {
     'animation-rise-curve': {
       default_value: 0,
       widget_type: 'dropdown',
-      test: { values: [0, 1] },
+      test: { values: [0, 1, 2] },
       themed: true,
     },
     'icon-shadow': {

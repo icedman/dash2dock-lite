@@ -153,9 +153,9 @@ Status: `[ ]` todo · `[~]` in progress · `[x]` done (hash) · `[!]` blocked ·
 |---|---|---|---|---|
 | [x] d94c310 | 4.1 | R-14a/R-15 baseline apps & icons + public APIs (C5-C8, C10, C17) | 2.4 | Establish app/icon baseline; compat helper; public APIs |
 | [x] f56a070 | 4.2 | R-14b C1/C4 Dash & overview dash encapsulation | 4.1 | Encapsulate Dash & overview dash internals in compat.js |
-| [~] | 4.3 | R-14c C2/C3 icon parts, activate | 4.2 | |
-| [ ] | 4.4 | R-14d C11-C18 | 4.3 | |
-| [ ] | 4.5 | R-16 DockModel evaluation | 4.4 | HUMAN decision before any code |
+| SKIPPED | 4.3 | R-14c C2/C3 icon parts, activate | 4.2 | Skipped by human 2026-10-08 in favor of R-16 (dropping Dash dependency) |
+| SKIPPED | 4.4 | R-14d C11-C18 | 4.3 | Skipped by human 2026-10-08 in favor of R-16 (dropping Dash dependency) |
+| [~] | 4.5 | R-16 DockModel evaluation (dropping Shell Dash.js dependency) | 4.2 | Evaluation and architecture design to drop upstream Dash.js |
 
 ### Phase 5 — Elegance (G4)
 | | Cycle | Task | Depends | Notes |
@@ -213,7 +213,7 @@ Unassigned rows: when a phase ends, either add a card + board row for them or ma
 | Probe after-disable deltas, 5 toggles (uiGroup / stage / dashes / docks / hi / lo / loop / liveDock / liveDash / liveAnimator) | **d95bb11: all 0.** 523cec2: 0 / 0 / 0 / 0 / 0 / 0 / 0 / **+4 / +4 / +4** (B-1). At 2bbf52d `lo` was +1 (T-5 artifact, fixed). Absolute `stage` varies per run ⇒ deltas only | 523cec2 |
 | Shutdown criticals (T-8, "sweeping phase of GC") | **d95bb11: 0** (default and settings variant). 523cec2: 150 at 5 toggles = 30 per toggle (90 @3, 60 @2); 200 with the settings variant. R-7d target ≈ 0 | 523cec2 |
 | Strict leaks (`D2DA_SMOKE_STRICT_LEAKS=1` in G-leaks) | **ON** since d95bb11. Flake policy: a strict FAIL only on probe line counts (missed `gnome-extensions disable`, T-9) ⇒ rerun once; fail if it repeats | d95bb11 |
-| ESLint warnings (errors) | 139 (0) at 37f059d; 140 (0) at d96998c; 145 (0) at 1553b9d; 150 (0) at deb31fb; 151 at 5840f29; 154 at 0821a56; 158 at 1b03ca7; 162 at c9ca876; 166 at ef879f9; 168 at 2a0ae6f. no-unused-vars 162, no-undef 5, no-duplicate-case 1; only remaining demotion: `no-undef: warn` in extension.js for the dead `_onKeyPressed` Clutter use (delete in R-18/R-21) | 2a0ae6f |
+| ESLint warnings (errors) | 135 (0) at ecf4f95; 137 (0) at f56a070; 139 (0) at 37f059d; 140 (0) at d96998c; 145 (0) at 1553b9d; 150 (0) at deb31fb; 151 at 5840f29; 154 at 0821a56; 158 at 1b03ca7; 162 at c9ca876; 166 at ef879f9; 168 at 2a0ae6f. no-unused-vars 162, no-undef 5, no-duplicate-case 1; only remaining demotion: `no-undef: warn` in extension.js for the dead `_onKeyPressed` Clutter use (delete in R-18/R-21) | ecf4f95 |
 | check-settings issues | **5840f29: exit 0, 0 errors / 30 warnings ⇒ G-settings is now a hard gate (must exit 0).** c9ca876: 1 error (B-12) / 30 warnings. At cff438d: exit 1 by design. Errors 2: shared-adjustment 1 (B-12), duplicate-case 1 (B-16); missing-in-schema 0, widget-type 0. Warnings 30: missing-in-keys 5, key-no-widget 8, dead-setting 17 (§6.5 list + `msg-to-ext` false positive). Should exit 0 after R-4a + R-5 ⇒ then make G-settings a hard exit-code gate | cff438d |
 
 ### 5.1 Human-check queue
@@ -374,3 +374,6 @@ Format: `YYYY-MM-DD HH:MM · cycle · EVENT · details` where EVENT ∈ `SETUP, 
 - 2026-10-06 · — · HUMAN · `7fe412b`. Dock animation re-entry fix: ensure _beginAnimation() repopulates this._icons via _findIcons() if null; fix St.BoxLayout _extraIcons orientation using modern orientation property directly (avoiding null layout_manager TypeError and deprecated vertical property warning); deleted obsolete DESIGN.md and CHECKLIST.md.
 - 2026-10-06 · 4.3 · PREFLIGHT · tree clean; HEAD 7fe412b; GNOME Shell 50.5.
 - 2026-10-06 · 4.3 · ASSIGN · R-14c C2/C3 icon parts and activate encapsulation. Encapsulate Dash item internal tree extraction (C2: getIconParts(item)) and safe activate/showLabel wrapping (C3: wrapAppIconActivate, wrapAppIconShowLabel) in compat.js.
+- 2026-10-08 · — · NOTE · External commits landed up to `ecf4f95`: v50.0 release pipeline (`tools/release.sh`, `tools/publish.sh`, `RELEASES.md`, `agents/PUBLISH.md`), curl installer (`install.sh`), dynamic animation improvements and rise curve polynomials (`animator.js`, `preferences/keys.js`, `ui/tweaks.ui`), multi-monitor panel fixes (`dockItems.js`), deterministic layout sizing (`dock.js`, `docs/LAYOUT.md`), extra-icon bounce/drag fixes, and prototype animation models in `tests/`. Lint baseline improved to 135 warnings (0 errors), check-settings 0 errors / 30 warnings, unit tests all pass.
+- 2026-10-08 · 4.5 · HUMAN · User directed to skip R-14 (sub-tasks 4.3 and 4.4 skipped) and focus directly on R-16: Evaluation on dropping Shell Dash.js dependency.
+- 2026-10-08 · 4.5 · ASSIGN · R-16 DockModel evaluation on dropping Dash.js dependency. Architecture evaluation, inventory of Dash usage, dependency matrix, and concrete migration plan.

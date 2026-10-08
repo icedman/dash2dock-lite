@@ -60,18 +60,15 @@ Isolated smoke can't change settings from outside (memory backend is in-process)
 > Written by the ORCHESTRATOR only. Worker: do not edit this section.
 
 ```
-Cycle:      4.3
-Task:       R-14c — C2/C3 icon parts and activate encapsulation
+Cycle:      4.5
+Task:       R-16 — Evaluation on dropping Shell Dash.js dependency
 Attempt:    1
-Card:       §6 "R-14c"
-Notes:      HEAD 7fe412b. Third task of Phase 4 (GNOME-update resilience). Strict leaks ON.
-            Encapsulate Dash item internal tree extraction (getIconParts) and safe
-            activate / showLabel wrapping (wrapAppIconActivate, wrapAppIconShowLabel) in compat.js.
-            Route dock.js _inspectIcon and activate / label patches through compat.js.
-            Never touch timer.js or animator vector math. Keep animation-fps.
-            G-real: NOT allowed (W3).
-            Gates: check; lint 0/137; check-settings exit 0 (0/30); compat_baseline_check all pass;
-            timer_check 15/15; window_tracker_check 20/20; smoke 1 known sig; strict PASS.
+Card:       §6 "R-16"
+Notes:      HEAD ecf4f95. Skipped R-14c/d per human directive.
+            Goal: Comprehensive evaluation of dropping Shell ui/dash.js (`new Dash()`) entirely.
+            Analyze: (1) exact Dash capabilities currently utilized, (2) private monkeypatches/couplings
+            eliminated, (3) replacement architecture using Shell public AppFavorites + AppSystem + WindowTracker,
+            (4) DnD, context menu, and ShowApps decoupling, (5) phased migration strategy.
 ```
 
 ## 5. Report
@@ -608,9 +605,9 @@ Phase 2-5 cards are *stubs*: the Orchestrator expands a stub into a full card (s
 #### R-14c — C2/C3 icon parts and activate encapsulation
 - **Fixes:** C2, C3.
 - **Scope:** `compat.js`; `dock.js`; `tests/compat_baseline_check.js`.
-- **Context (HEAD 7fe412b):**
+- **Context (HEAD ecf4f95):**
   - In `dock.js`: `_inspectIcon(c)` navigates deep item internal structure across GNOME 45–50: `c.child` (appwell / DashIcon / AppIcon), `appwell.icon` (BaseIcon or old IconGrid), `c.icon.icon`, `_dot`, `label`, `_draggable`.
-  - In `dock.js:838-895`: per-instance monkeypatch of `c._appwell.activate` (to trigger bounce and call `_maybeMinimizeOrMaximize`), `c.showLabel` (to respect `hide_labels`), and `_draggable` signal connections.
+  - In `dock.js`: per-instance monkeypatch of `c._appwell.activate` (to trigger bounce, call `_maybeMinimizeOrMaximize`, support hovered icon targeting), `c.showLabel` (to respect `hide_labels`), and `_draggable` signal connections.
 - **Do:**
   - In `compat.js`:
     - Implement `getIconParts(item)`: returns an object `{ appwell, icon, button, grid, dot, label, draggable }` extracting available parts across GNOME 45–50 without hardcoding deep nested paths in `dock.js`.
@@ -641,8 +638,44 @@ Phase 2-5 cards are *stubs*: the Orchestrator expands a stub into a full card (s
   - `D2DA_SMOKE_STRICT_LEAKS=1 tools/smoke-shell.sh 5`
 - **Human:** yes — clicking running app icons minimizes/maximizes, labels show on hover (unless disabled in prefs), dragging items functions normally.
 
-- **R-14d** C11-C18.
-- **R-16** *(needs human decision)* own DockModel prototype behind a setting.
+#### R-16 — Evaluation & Architectural Plan: Dropping Shell Dash.js Dependency
+- **Context:**
+  - Today, each `Dock` instantiates Shell's `Dash` (`new Dash()`, `dock.js:452`) as an invisible proxy.
+  - While this provides app list sync, drag-and-drop, and Shell app item menus for free, it is the **#1 source of GNOME Shell version breakage (C1-C4)** and requires invasive monkeypatching (`_adjustIconSize`, `_createAppItem`, `activate`, `showLabel`, `_box`, `_dashContainer`, `_showAppsIcon`, `_background`).
+  - By replacing `new Dash()` with a standalone `DockModel` + `DockItem` structure fed by GNOME Shell's stable public APIs (`AppFavorites`, `Shell.AppSystem`, `Shell.WindowTracker`), Dash2Dock Animated achieves true GNOME update imperviousness (Goal G3).
+- **Core Investigation & Findings:**
+  1. **What `Dash.js` actually provides today:**
+     - Favorites order & running apps list (`AppFavorites.getAppFavorites()`, `Shell.AppSystem.get_default().get_running()`).
+     - App launch / window focus via `AppIcon`.
+     - App context menus (`AppIconMenu`).
+     - Show Apps icon (`ShowAppsIcon` triggering `Main.overview.showApps()`).
+     - Shell drag-and-drop (`DND.LauncherDraggable` for reordering favorites and dropping app icons to desktop/dock).
+     - Separator actor between favorites and running apps.
+  2. **Couplings eliminated by dropping `Dash.js`:**
+     - `C1`: instantiation, `_box`, `_background`, `_dashContainer`, and monkeypatched `_adjustIconSize`, `_createAppItem`.
+     - `C2`: deep tree traversal across versions (`child.icon.icon`, `_iconBin.child`, `_dot`, `label`, `_draggable`).
+     - `C3`: per-instance monkeypatch of `c._appwell.activate` and `c.showLabel`.
+     - `C4`: overview dash manipulation and expando hacks.
+     - `B-1 / B-40`: complex lifecycle leak paths caused by orphaned Shell Dash internal signal listeners on `AppSystem`/`AppFavorites`.
+  3. **Proposed Replacement Architecture (`DockModel`):**
+     - **Data Layer (`DockModel`)**:
+       - Listens to `AppFavorites.getAppFavorites().connectObject('changed', ...)` for favorites order.
+       - Listens to `Shell.AppSystem.get_default().connectObject('app-state-changed', ...)` and `Shell.WindowTracker.get_default()` for running state and window counts.
+       - Emits clean, typed signals: `items-changed`, `item-added`, `item-removed`.
+     - **View/Actor Layer (`DockContainer` / `DockItemContainer`)**:
+       - Replaces `this.dash` with a lightweight, native `St.BoxLayout` (`this._box`).
+       - Extra items (trash, mounts, downloads, clock, calendar) and app items live as uniform children of `this._box`.
+       - Direct, clean `button-press-event` / `clicked` handling on items without monkeypatching upstream `AppIcon.activate`.
+     - **Context Menus & Show Apps**:
+       - Retain or adapt `PopupMenu` for app menus (instantiating `AppIconMenu` directly or using `Shell.App` window list actions).
+       - Direct `ShowAppsIcon` button calling `Compat.showOverviewApps(Main.overview)`.
+     - **Drag & Drop**:
+       - Reordering favorites directly calls `AppFavorites.getAppFavorites().moveFavoriteToPos(appId, newIndex)`.
+       - Standard Clutter / Shell DND integration isolated to a dedicated helper.
+- **Migration Path:**
+  - **Phase 4.5a (Prototype/Gated)**: Implement `dockModel.js` and allow toggling between legacy `DashProxy` and new `DockModel` via experimental settings or feature flag.
+  - **Phase 4.5b (Cutover)**: Make `DockModel` the default; verify `tests/compat_baseline_check.js`, `make smoke`, and leak-free toggles.
+  - **Phase 4.5c (Cleanup)**: Purge legacy Dash proxy setup, stubbed icon adjusters, and obsolete Dash accessors.
 
 ### Phase 5 — Elegance (stubs)
 - **R-17** settings reactions as data. **R-18** `ColorShaderEffect` base, prune utils/easing/vector/timer. **R-19** `dockItemMenu.js` → `dockItemList.js`, rendering out of `services.js`. **R-20** `keys.js` defaults from schema; dead keys *(schema removal needs human OK)*. **R-21** delete obsolete files, legacy UI, g44 tooling, README update.

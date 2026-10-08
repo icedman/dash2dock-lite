@@ -61,7 +61,11 @@ Run the one-line installer in your terminal. It automatically detects your GNOME
 ```bash
 bash <(curl -sSL https://raw.githubusercontent.com/icedman/dash2dock-lite/main/install.sh)
 ```
-*(or `curl -sSL https://raw.githubusercontent.com/icedman/dash2dock-lite/main/install.sh | bash`)*
+or
+
+```bash
+curl -sSL https://raw.githubusercontent.com/icedman/dash2dock-lite/main/install.sh | bash
+```
 
 ---
 

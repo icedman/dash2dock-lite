@@ -19,9 +19,8 @@ import Cairo from 'gi://cairo';
 import GLib from 'gi://GLib';
 import Rsvg from 'gi://Rsvg';
 import GdkPixbuf from 'gi://GdkPixbuf';
-
 import { ItemType, IndicatorState } from './dockItem.js';
-import { DockModel } from './dockModel.js';
+import { DockModel, DockViewState, stem_flags } from './dockModel.js';
 import {
   MockFavoritesSource,
   MockRunningAppsSource,
@@ -35,20 +34,33 @@ Gtk.init();
 // --- Configuration & Constants ---
 const BASE_ICON_SIZE = 48;
 const BASE_PADDING = 8;
+const BASE_BG_PADDING = 10;
+const SUBDOCK_ICON_SIZE = 44;
+const SUBDOCK_PADDING = 4;
+const SUBDOCK_BG_PADDING = 10;
 const SEPARATOR_WIDTH = 10;
+const LERP_ENTER_SPEED = 0.30;    // Snappier icon magnification on hover enter
+const LERP_LEAVE_SPEED = 0.20;    // Smooth, responsive return on hover leave
+const DRAW_WALLPAPER = false;
 const Positions = { BOTTOM: 0, LEFT: 1, TOP: 2, RIGHT: 3 };
+const SubDockStyle = { DOCK: 0, FAN: 1 };
 
 let currentPosition = Positions.BOTTOM;
+let subDockMode = SubDockStyle.FAN; // Default to perpendicular fan-out without background
+let currentStemMode = stem_flags.CENTER_BASIS; // stem_flags.CENTER_BASIS (Option A) or stem_flags.FIXED_STEM (Option B)
 let maxScale = 2.0;               // Maximum Scale Multiplier (M)
 let radius = 160.0;               // Radius of Influence (R)
 let curveType = 1;                // 0: Linear, 1: Cosine Bell, 2: Smoothstep
 
-// Pointer & Animation State
+// Main Dock View State
+const mainDockState = new DockViewState({ id: 'main' });
+
+// Pointer State for GTK Window
 let mouseX = 0.0;
 let mouseY = 0.0;
-let mouseOver = false;
-let hoverProgress = 0.0;
-let lerpPointer = 0.0;
+let activePointerX = -1;
+let activePointerY = -1;
+let isPointerInside = false;
 
 // Active Sub-Dock Popup (for Drawers)
 let activeSubDock = null;
@@ -119,7 +131,7 @@ app.connect('activate', (app) => {
     label:
       '<b>The Ultimate Shell: Autonomous DockModel &amp; Modular Widgets Prototype</b>\n' +
       '• <b>Unified Items:</b> Apps | Collapsible Drawer Sub-Dock | Cairo Analog Clock | Dynamic Trash | Separator\n' +
-      '• <b>Controls:</b> Click item to trigger actions / drawers | <b>Up/Down:</b> Scale | <b>Left/Right:</b> Radius | <b>C:</b> Curve | <b>R:</b> Edge',
+      '• <b>Controls:</b> Click item: actions/drawers | <b>F:</b> Fan vs Dock popup | <b>S:</b> Stem mode (Center vs Fixed) | <b>Up/Down:</b> Scale | <b>Left/Right:</b> Radius | <b>C:</b> Curve | <b>R:</b> Edge',
     use_markup: true,
     margin_top: 10,
     margin_bottom: 4,
@@ -286,9 +298,11 @@ app.connect('activate', (app) => {
         cr.setFontSize(Math.max(10, 14 * scale));
         const glyph = item.label ? item.label.charAt(0) : '?';
         const ext = cr.textExtents(glyph);
+        const gXBearing = ext.xBearing ?? ext.x_bearing ?? 0;
+        const gYBearing = ext.yBearing ?? ext.y_bearing ?? (-ext.height);
         cr.moveTo(
-          drawX + drawW / 2 - ext.width / 2 - ext.x_bearing,
-          drawY + drawH / 2 - ext.height / 2 - ext.y_bearing
+          drawX + drawW / 2 - ext.width / 2 - gXBearing,
+          drawY + drawH / 2 - ext.height / 2 - gYBearing
         );
         cr.showText(glyph);
         cr.restore();
@@ -321,6 +335,8 @@ app.connect('activate', (app) => {
       const badgeText = String(badge);
       cr.setFontSize(9 * scale);
       const bExt = cr.textExtents(badgeText);
+      const bXBearing = bExt.xBearing ?? bExt.x_bearing ?? 0;
+      const bYBearing = bExt.yBearing ?? bExt.y_bearing ?? (-bExt.height);
       const bW = Math.max(14 * scale, bExt.width + 6 * scale);
       const bH = 12 * scale;
       const bX = rect.x + rect.w - bW + 2;
@@ -334,8 +350,8 @@ app.connect('activate', (app) => {
 
       cr.setSourceRGBA(1.0, 1.0, 1.0, 1.0);
       cr.moveTo(
-        bX + bW / 2 - bExt.width / 2 - bExt.x_bearing,
-        bY + bH / 2 - bExt.height / 2 - bExt.y_bearing
+        bX + bW / 2 - bExt.width / 2 - bXBearing,
+        bY + bH / 2 - bExt.height / 2 - bYBearing
       );
       cr.showText(badgeText);
     }
@@ -351,41 +367,63 @@ app.connect('activate', (app) => {
    * @param {DockModel} dockModel - Observable DockModel containing items
    * @param {Object} winBounds - { width, height }
    * @param {Object} settings - Configurable options:
+   *        state {DockViewState} - State instance for localized tracking & freezing
    *        animate {boolean} - Enable magnification scaling
    *        iconSize {number} - Base icon dimension
    *        padding {number} - Item padding
    *        bgPadding {number} - Padding around items in dock pill
    *        position {number} - Positions enum
-   *        pointerPos {number} - Coordinate along primary axis
-   *        hoverAmount {number} - 0.0 to 1.0 transition factor
+   *        pointerPos {number} - Coordinate along primary axis (overrides state if provided)
+   *        hoverAmount {number} - 0.0 to 1.0 transition factor (overrides state if provided)
    *        isFrozen {boolean} - Whether scaling is locked
+   *        fan {boolean} - Perpendicular fan-out mode (no background, perpendicular to main dock)
+   *        anchorRect {Object} - Target rectangle anchor for fan or callout arrow
    *        arrow {Object} - Optional { targetRect, size } callout arrow anchor
    *        itemContainerBg {boolean} - Draw subtle containers around items
    *        theme {Gtk.IconTheme}
-   * @returns {Object} { layout: Array, pillBounds: Object }
+   * @returns {Object} { layout: Array, pillBounds: Object, primaryRestingStart: number, localPointer: number }
    */
   function drawDock(cr, dockModel, winBounds, settings = {}) {
     const items = dockModel.getItems();
     const count = items.length;
-    if (count === 0) return { layout: [], pillBounds: null };
+    if (count === 0) return { layout: [], pillBounds: null, primaryRestingStart: 0, localPointer: 0 };
 
     const {
+      state = null,
       animate = true,
-      iconSize = BASE_ICON_SIZE,
-      padding = BASE_PADDING,
-      bgPadding = 10,
+      iconSize = settings.iconSize || BASE_ICON_SIZE,
+      padding = settings.padding || BASE_PADDING,
+      bgPadding = settings.bgPadding || 10,
       position = currentPosition,
-      pointerPos = mouseX,
-      hoverAmount = hoverProgress,
-      isFrozen = false,
+      fan = false,
+      stemMode = settings.stemMode ?? settings.stem_flags ?? currentStemMode,
+      anchorRect = null,
       arrow = null,
       itemContainerBg = false,
       theme = iconTheme,
     } = settings;
 
-    const isVertical = position === Positions.LEFT || position === Positions.RIGHT;
+    // Perpendicular fan axis:
+    // When fan is true:
+    // If main dock is BOTTOM or TOP (horizontal), the fan shoots VERTICALLY.
+    // If main dock is LEFT or RIGHT (vertical), the fan shoots HORIZONTALLY.
+    const isMainVertical = position === Positions.LEFT || position === Positions.RIGHT;
+    const isVertical = fan ? !isMainVertical : isMainVertical;
+
     const primarySpan = isVertical ? winBounds.height : winBounds.width;
     const secondarySpan = isVertical ? winBounds.width : winBounds.height;
+
+    // Determine frozen status and effective values
+    const isFrozen = settings.isFrozen ?? (state ? state.isFrozen : false);
+    const frozen = isFrozen && state && state.frozenState ? state.frozenState : null;
+
+    const effectivePointer = frozen && frozen.pointerPrimary !== undefined
+      ? frozen.pointerPrimary
+      : (settings.pointerPos ?? (state ? state.pointerPrimary : (isVertical ? mouseY : mouseX)));
+
+    const effectiveHoverAmount = frozen && frozen.hoverProgress !== undefined
+      ? frozen.hoverProgress
+      : (settings.hoverAmount ?? (state ? state.hoverProgress : 0.0));
 
     // 1. Static resting bounds
     const staticSlots = [];
@@ -404,7 +442,43 @@ app.connect('activate', (app) => {
       curOffset += w + padding;
     }
     const restingTotalLength = curOffset - padding;
-    const restingStart = (primarySpan - restingTotalLength) / 2;
+    const restingPillSpan = restingTotalLength + bgPadding * 2;
+
+    // Compute dock's localized resting start along primary axis
+    let primaryRestingStart = 0;
+    const target = anchorRect || (arrow ? arrow.targetRect : null);
+    const fanGap = 12;
+
+    if (fan && target) {
+      // Perpendicular Fan resting origin: anchored to target and shoots away from main dock
+      if (position === Positions.BOTTOM) {
+        primaryRestingStart = target.y - fanGap - restingTotalLength;
+      } else if (position === Positions.TOP) {
+        primaryRestingStart = target.y + target.h + fanGap;
+      } else if (position === Positions.LEFT) {
+        primaryRestingStart = target.x + target.w + fanGap;
+      } else {
+        primaryRestingStart = target.x - fanGap - restingTotalLength;
+      }
+    } else if (arrow && arrow.targetRect) {
+      if (isVertical) {
+        const restingBgY = Math.max(16, Math.min(primarySpan - restingPillSpan - 16, arrow.targetRect.y + arrow.targetRect.h / 2 - restingPillSpan / 2));
+        primaryRestingStart = restingBgY + bgPadding;
+      } else {
+        const restingBgX = Math.max(16, Math.min(primarySpan - restingPillSpan - 16, arrow.targetRect.x + arrow.targetRect.w / 2 - restingPillSpan / 2));
+        primaryRestingStart = restingBgX + bgPadding;
+      }
+    } else {
+      primaryRestingStart = (primarySpan - restingTotalLength) / 2;
+    }
+
+    // Localized pointer coordinate relative to dock's resting origin
+    let localPointer = 0;
+    if (frozen && frozen.localPointer !== undefined) {
+      localPointer = frozen.localPointer;
+    } else {
+      localPointer = effectivePointer - primaryRestingStart;
+    }
 
     // 2. Scales computation
     const targetScales = new Array(count);
@@ -416,11 +490,10 @@ app.connect('activate', (app) => {
         if (staticSlots[i].isSep) {
           targetScales[i] = 1.0;
         } else {
-          const staticCenter = restingStart + staticSlots[i].center;
-          const dist = Math.abs(pointerPos - staticCenter);
+          const dist = Math.abs(localPointer - staticSlots[i].center);
           targetScales[i] = calculateScale(dist, radius, maxScale, curveType);
         }
-        activeScales[i] = 1.0 + (targetScales[i] - 1.0) * hoverAmount;
+        activeScales[i] = 1.0 + (targetScales[i] - 1.0) * effectiveHoverAmount;
         activeSizes[i] = staticSlots[i].isSep ? SEPARATOR_WIDTH : iconSize * activeScales[i];
       }
     } else {
@@ -443,36 +516,87 @@ app.connect('activate', (app) => {
     let accum = dynamicStart;
 
     // Determine baseline position
-    const bgCrossSize = iconSize + 20;
+    const maxActiveSize = Math.max(...activeSizes);
+    const bgCrossSize = Math.max(iconSize + 20, maxActiveSize + bgPadding * 2);
     let bgX = 0, bgY = 0, bgW = 0, bgH = 0;
 
-    if (arrow && arrow.targetRect) {
+    if (fan && target) {
+      if (stemMode === stem_flags.FIXED_STEM) {
+        // Option B: Fixed stem root pinned at resting boundary (no overflow before resting position)
+        if (position === Positions.BOTTOM) {
+          accum = target.y - fanGap - dynamicTotalLength;
+        } else if (position === Positions.TOP) {
+          accum = target.y + target.h + fanGap;
+        } else if (position === Positions.LEFT) {
+          accum = target.x + target.w + fanGap;
+        } else {
+          accum = target.x - fanGap - dynamicTotalLength;
+        }
+      } else {
+        // Option A: Symmetrical center-basis expansion (allows fan dock to overflow before its resting boundary)
+        accum = primaryRestingStart - (dynamicTotalLength - restingTotalLength) / 2;
+      }
+
+      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+
+      for (let i = 0; i < count; i++) {
+        const item = items[i];
+        const size = activeSizes[i];
+        const scale = activeScales[i];
+
+        let ix = 0;
+        let iy = 0;
+
+        if (isVertical) {
+          // Perpendicular vertical column aligned with target's X center
+          ix = target.x + target.w / 2 - size / 2;
+          iy = accum;
+        } else {
+          // Perpendicular horizontal row aligned with target's Y center
+          ix = accum;
+          iy = target.y + target.h / 2 - size / 2;
+        }
+
+        minX = Math.min(minX, ix);
+        minY = Math.min(minY, iy);
+        maxX = Math.max(maxX, ix + size);
+        maxY = Math.max(maxY, iy + size);
+
+        computedLayout.push({ item, rect: { x: ix, y: iy, w: size, h: size }, scale, size });
+        accum += size + padding;
+      }
+
+      bgX = minX - 8;
+      bgY = minY - 8;
+      bgW = (maxX - minX) + 16;
+      bgH = (maxY - minY) + 16;
+    } else if (arrow && arrow.targetRect) {
       // Anchored Sub-Dock Popup mode: position perpendicular to arrow.targetRect
       const popContentW = dynamicTotalLength + bgPadding * 2;
       const popContentH = bgCrossSize;
-      const target = arrow.targetRect;
+      const aTarget = arrow.targetRect;
 
       if (position === Positions.BOTTOM) {
         bgW = popContentW;
         bgH = popContentH;
-        bgX = Math.max(16, Math.min(winBounds.width - bgW - 16, target.x + target.w / 2 - bgW / 2));
-        bgY = target.y - bgH - 12;
+        bgX = Math.max(16, Math.min(winBounds.width - bgW - 16, aTarget.x + aTarget.w / 2 - bgW / 2));
+        bgY = aTarget.y - bgH - 12;
       } else if (position === Positions.TOP) {
         bgW = popContentW;
         bgH = popContentH;
-        bgX = Math.max(16, Math.min(winBounds.width - bgW - 16, target.x + target.w / 2 - bgW / 2));
-        bgY = target.y + target.h + 12;
+        bgX = Math.max(16, Math.min(winBounds.width - bgW - 16, aTarget.x + aTarget.w / 2 - bgW / 2));
+        bgY = aTarget.y + aTarget.h + 12;
       } else if (position === Positions.LEFT) {
         bgW = popContentH;
         bgH = popContentW;
-        bgX = target.x + target.w + 12;
-        bgY = Math.max(16, Math.min(winBounds.height - bgH - 16, target.y + target.h / 2 - bgH / 2));
+        bgX = aTarget.x + aTarget.w + 12;
+        bgY = Math.max(16, Math.min(winBounds.height - bgH - 16, aTarget.y + aTarget.h / 2 - bgH / 2));
       } else {
         // RIGHT
         bgW = popContentH;
         bgH = popContentW;
-        bgX = target.x - bgW - 12;
-        bgY = Math.max(16, Math.min(winBounds.height - bgH - 16, target.y + target.h / 2 - bgH / 2));
+        bgX = aTarget.x - bgW - 12;
+        bgY = Math.max(16, Math.min(winBounds.height - bgH - 16, aTarget.y + aTarget.h / 2 - bgH / 2));
       }
 
       // Compute item positions inside anchored popup
@@ -497,16 +621,17 @@ app.connect('activate', (app) => {
       }
     } else {
       // Main dock positioning
+      const mainPillCross = iconSize + 20;
       if (isVertical) {
-        bgW = bgCrossSize;
+        bgW = mainPillCross;
         bgH = dynamicTotalLength + bgPadding * 2;
         bgY = dynamicStart - bgPadding;
-        bgX = position === Positions.LEFT ? 8 : secondarySpan - bgCrossSize - 8;
+        bgX = position === Positions.LEFT ? 8 : secondarySpan - mainPillCross - 8;
       } else {
         bgW = dynamicTotalLength + bgPadding * 2;
-        bgH = bgCrossSize;
+        bgH = mainPillCross;
         bgX = dynamicStart - bgPadding;
-        bgY = position === Positions.BOTTOM ? secondarySpan - bgCrossSize - 8 : 8;
+        bgY = position === Positions.BOTTOM ? secondarySpan - mainPillCross - 8 : 8;
       }
 
       for (let i = 0; i < count; i++) {
@@ -536,80 +661,88 @@ app.connect('activate', (app) => {
 
     const pillBounds = { x: bgX, y: bgY, w: bgW, h: bgH };
 
+    if (state) {
+      state.pillBounds = pillBounds;
+      state.computedLayout = computedLayout;
+      state.primaryRestingStart = primaryRestingStart;
+      state.localPointer = localPointer;
+    }
+
     cr.save();
 
-    // 4. Background Shadows & Glassmorphic Body
-    if (arrow) {
-      cr.setSourceRGBA(0, 0, 0, 0.4);
-      drawRoundedRect(cr, bgX + 2, bgY + 4, bgW, bgH, 16);
-      cr.fill();
+    // 4. Background Shadows & Glassmorphic Body (Skipped in fan mode - no background)
+    if (!fan) {
+      if (arrow) {
+        cr.setSourceRGBA(0, 0, 0, 0.4);
+        drawRoundedRect(cr, bgX + 2, bgY + 4, bgW, bgH, 16);
+        cr.fill();
 
-      drawRoundedRect(cr, bgX, bgY, bgW, bgH, 16);
-      cr.setSourceRGBA(0.13, 0.15, 0.2, 0.94);
-      cr.fillPreserve();
-
-      cr.setSourceRGBA(0.42, 0.58, 0.85, 0.6);
-      cr.setLineWidth(1.5);
-      cr.stroke();
-
-      // Callout Arrow Anchor
-      if (arrow.targetRect) {
-        const arrowSize = arrow.size || 7;
-        const target = arrow.targetRect;
-        cr.save();
+        drawRoundedRect(cr, bgX, bgY, bgW, bgH, 16);
         cr.setSourceRGBA(0.13, 0.15, 0.2, 0.94);
+        cr.fillPreserve();
+        cr.setSourceRGBA(0.42, 0.58, 0.85, 0.6);
+        cr.setLineWidth(1.5);
+        cr.stroke();
 
-        if (position === Positions.BOTTOM) {
-          const arrowX = target.x + target.w / 2;
-          cr.moveTo(arrowX - arrowSize, bgY + bgH);
-          cr.lineTo(arrowX + arrowSize, bgY + bgH);
-          cr.lineTo(arrowX, bgY + bgH + arrowSize);
-          cr.closePath();
-          cr.fillPreserve();
-          cr.setSourceRGBA(0.42, 0.58, 0.85, 0.6);
-          cr.setLineWidth(1.5);
-          cr.stroke();
-        } else if (position === Positions.TOP) {
-          const arrowX = target.x + target.w / 2;
-          cr.moveTo(arrowX - arrowSize, bgY);
-          cr.lineTo(arrowX + arrowSize, bgY);
-          cr.lineTo(arrowX, bgY - arrowSize);
-          cr.closePath();
-          cr.fillPreserve();
-          cr.setSourceRGBA(0.42, 0.58, 0.85, 0.6);
-          cr.setLineWidth(1.5);
-          cr.stroke();
-        } else if (position === Positions.LEFT) {
-          const arrowY = target.y + target.h / 2;
-          cr.moveTo(bgX, arrowY - arrowSize);
-          cr.lineTo(bgX, arrowY + arrowSize);
-          cr.lineTo(bgX - arrowSize, arrowY);
-          cr.closePath();
-          cr.fillPreserve();
-          cr.setSourceRGBA(0.42, 0.58, 0.85, 0.6);
-          cr.setLineWidth(1.5);
-          cr.stroke();
-        } else {
-          const arrowY = target.y + target.h / 2;
-          cr.moveTo(bgX + bgW, arrowY - arrowSize);
-          cr.lineTo(bgX + bgW, arrowY + arrowSize);
-          cr.lineTo(bgX + bgW + arrowSize, arrowY);
-          cr.closePath();
-          cr.fillPreserve();
-          cr.setSourceRGBA(0.42, 0.58, 0.85, 0.6);
-          cr.setLineWidth(1.5);
-          cr.stroke();
+        // Callout Arrow Anchor
+        if (arrow.targetRect) {
+          const arrowSize = arrow.size || 7;
+          const arrowTarget = arrow.targetRect;
+          cr.save();
+          cr.setSourceRGBA(0.13, 0.15, 0.2, 0.94);
+
+          if (position === Positions.BOTTOM) {
+            const arrowX = arrowTarget.x + arrowTarget.w / 2;
+            cr.moveTo(arrowX - arrowSize, bgY + bgH);
+            cr.lineTo(arrowX + arrowSize, bgY + bgH);
+            cr.lineTo(arrowX, bgY + bgH + arrowSize);
+            cr.closePath();
+            cr.fillPreserve();
+            cr.setSourceRGBA(0.42, 0.58, 0.85, 0.6);
+            cr.setLineWidth(1.5);
+            cr.stroke();
+          } else if (position === Positions.TOP) {
+            const arrowX = arrowTarget.x + arrowTarget.w / 2;
+            cr.moveTo(arrowX - arrowSize, bgY);
+            cr.lineTo(arrowX + arrowSize, bgY);
+            cr.lineTo(arrowX, bgY - arrowSize);
+            cr.closePath();
+            cr.fillPreserve();
+            cr.setSourceRGBA(0.42, 0.58, 0.85, 0.6);
+            cr.setLineWidth(1.5);
+            cr.stroke();
+          } else if (position === Positions.LEFT) {
+            const arrowY = arrowTarget.y + arrowTarget.h / 2;
+            cr.moveTo(bgX, arrowY - arrowSize);
+            cr.lineTo(bgX, arrowY + arrowSize);
+            cr.lineTo(bgX - arrowSize, arrowY);
+            cr.closePath();
+            cr.fillPreserve();
+            cr.setSourceRGBA(0.42, 0.58, 0.85, 0.6);
+            cr.setLineWidth(1.5);
+            cr.stroke();
+          } else {
+            const arrowY = arrowTarget.y + arrowTarget.h / 2;
+            cr.moveTo(bgX + bgW, arrowY - arrowSize);
+            cr.lineTo(bgX + bgW, arrowY + arrowSize);
+            cr.lineTo(bgX + bgW + arrowSize, arrowY);
+            cr.closePath();
+            cr.fillPreserve();
+            cr.setSourceRGBA(0.42, 0.58, 0.85, 0.6);
+            cr.setLineWidth(1.5);
+            cr.stroke();
+          }
+          cr.restore();
         }
-        cr.restore();
+      } else {
+        // Main dock pill
+        drawRoundedRect(cr, bgX, bgY, bgW, bgH, 18);
+        cr.setSourceRGBA(0.18, 0.2, 0.24, 0.72);
+        cr.fillPreserve();
+        cr.setSourceRGBA(0.4, 0.45, 0.55, 0.35);
+        cr.setLineWidth(1.5);
+        cr.stroke();
       }
-    } else {
-      // Main dock pill
-      drawRoundedRect(cr, bgX, bgY, bgW, bgH, 18);
-      cr.setSourceRGBA(0.18, 0.2, 0.24, 0.72);
-      cr.fillPreserve();
-      cr.setSourceRGBA(0.4, 0.45, 0.55, 0.35);
-      cr.setLineWidth(1.5);
-      cr.stroke();
     }
     cr.restore();
 
@@ -619,22 +752,24 @@ app.connect('activate', (app) => {
         position,
         isVertical,
         theme,
-        pillBounds,
+        pillBounds: fan ? null : pillBounds,
         itemContainerBg,
       });
     }
 
-    return { layout: computedLayout, pillBounds };
+    return { layout: computedLayout, pillBounds, primaryRestingStart, localPointer };
   }
 
   // Wallpaper Pixbuf Cache
   let wallpaperPixbuf = null;
-  const wallpaperPath = GLib.build_filenamev([GLib.get_current_dir(), 'prototype', 'wallpaper.jpg']);
-  if (GLib.file_test(wallpaperPath, GLib.FileTest.EXISTS)) {
-    try {
-      wallpaperPixbuf = GdkPixbuf.Pixbuf.new_from_file(wallpaperPath);
-    } catch (e) {
-      console.warn(`[Prototype] Could not load wallpaper: ${e.message}`);
+  if (DRAW_WALLPAPER) {
+    const wallpaperPath = GLib.build_filenamev([GLib.get_current_dir(), 'prototype', 'wallpaper.jpg']);
+    if (GLib.file_test(wallpaperPath, GLib.FileTest.EXISTS)) {
+      try {
+        wallpaperPixbuf = GdkPixbuf.Pixbuf.new_from_file(wallpaperPath);
+      } catch (e) {
+        console.warn(`[Prototype] Could not load wallpaper: ${e.message}`);
+      }
     }
   }
 
@@ -673,47 +808,155 @@ app.connect('activate', (app) => {
       cr.paint();
     }
 
-    const isFrozen = !!activeSubDock;
-    const effectivePointer = isFrozen && activeSubDock.frozenPointerPos !== undefined
-      ? activeSubDock.frozenPointerPos
-      : mouseX;
-    const effectiveHoverProgress = isFrozen
-      ? (activeSubDock.frozenHoverProgress ?? 1.0)
-      : hoverProgress;
-
     // 1. Draw Main Dock via reusable drawDock
     const mainDockRes = drawDock(cr, model, { width, height }, {
+      state: mainDockState,
       animate: true,
       iconSize: BASE_ICON_SIZE,
       padding: BASE_PADDING,
-      bgPadding: 10,
+      bgPadding: BASE_BG_PADDING,
       position: currentPosition,
-      pointerPos: effectivePointer,
-      hoverAmount: effectiveHoverProgress,
-      isFrozen,
       theme: iconTheme,
     });
 
     currentComputedLayout = mainDockRes.layout;
     currentDockPillBounds = mainDockRes.pillBounds;
 
-    // 2. Draw Sub-Dock Popup (if Drawer is open) via shared drawDock with sub-dock settings
+    // 2. Draw Sub-Dock Popup (if Drawer is open) via shared drawDock with fan or dock settings
     if (activeSubDock) {
       const callingLayout = currentComputedLayout.find(l => l.item.id === activeSubDock.callingItemId);
       const parentRect = callingLayout ? callingLayout.rect : activeSubDock.parentRect;
 
       if (parentRect && activeSubDock.model) {
+        const isFan = subDockMode === SubDockStyle.FAN;
         const subRes = drawDock(cr, activeSubDock.model, { width, height }, {
-          animate: true,               // Sub-dock has static, crisp icon sizes
-          iconSize: 44,                 // Sub-dock icon size
-          padding: 10,
-          bgPadding: 10,
+          state: activeSubDock.state,
+          animate: true,
+          iconSize: SUBDOCK_ICON_SIZE,
+          padding: SUBDOCK_PADDING,
+          bgPadding: SUBDOCK_BG_PADDING,
           position: currentPosition,
-          arrow: { targetRect: parentRect, size: 7 }, // Connected callout arrow
-          itemContainerBg: true,        // Clean container boxes around sub-dock items
+          fan: isFan,
+          stemMode: currentStemMode,
+          anchorRect: parentRect,
+          arrow: isFan ? null : { targetRect: parentRect, size: 7 },
+          itemContainerBg: !isFan,
           theme: iconTheme,
         });
         activeSubDock.computedChildLayout = subRes.layout;
+      }
+    }
+
+    // 3. Hover Label Tooltip: White text over rounded rectangle background
+    // Display only when mouse is over a dock item.
+    // When a sub-dock is present, disable labels for the main dock.
+    if (isPointerInside && activePointerX >= 0 && activePointerY >= 0) {
+      let hoveredLayout = null;
+      let isSubDockItem = false;
+
+      // Check sub-dock hit first
+      if (activeSubDock && activeSubDock.state) {
+        const subHit = activeSubDock.state.getItemAt(activePointerX, activePointerY);
+        if (subHit && subHit.item && subHit.item.type !== ItemType.SEPARATOR) {
+          hoveredLayout = subHit;
+          isSubDockItem = true;
+        }
+      }
+
+      // Check main dock hit ONLY if no sub-dock is present
+      if (!activeSubDock && !hoveredLayout && mainDockState) {
+        const mainHit = mainDockState.getItemAt(activePointerX, activePointerY);
+        if (mainHit && mainHit.item && mainHit.item.type !== ItemType.SEPARATOR) {
+          hoveredLayout = mainHit;
+          isSubDockItem = false;
+        }
+      }
+
+      if (hoveredLayout && hoveredLayout.item) {
+        const labelText = hoveredLayout.item.getLabel ? hoveredLayout.item.getLabel() : (hoveredLayout.item.label || '');
+        if (labelText && labelText.trim().length > 0) {
+          cr.save();
+          cr.selectFontFace('Sans', Cairo.FontSlant.NORMAL, Cairo.FontWeight.BOLD);
+          const fontSize = 12;
+          cr.setFontSize(fontSize);
+          const ext = cr.textExtents(labelText);
+          const tipXBearing = ext.xBearing ?? ext.x_bearing ?? 0;
+          const tipYBearing = ext.yBearing ?? ext.y_bearing ?? (-ext.height);
+
+          const padH = 10;
+          const padV = 6;
+          const tipW = ext.width + padH * 2;
+          const tipH = ext.height + padV * 2;
+          const itemRect = hoveredLayout.rect;
+          const tipRadius = 7;
+          const margin = 12;
+
+          let tipX = 0;
+          let tipY = 0;
+
+          if (isSubDockItem && subDockMode === SubDockStyle.FAN) {
+            // Perpendicular fan orientation
+            if (currentPosition === Positions.BOTTOM || currentPosition === Positions.TOP) {
+              tipX = itemRect.x + itemRect.w + margin;
+              tipY = itemRect.y + (itemRect.h - tipH) / 2;
+              if (tipX + tipW > width - 12) {
+                tipX = itemRect.x - tipW - margin;
+              }
+            } else {
+              tipX = itemRect.x + (itemRect.w - tipW) / 2;
+              tipY = itemRect.y - tipH - margin;
+              if (tipY < 12) {
+                tipY = itemRect.y + itemRect.h + margin;
+              }
+            }
+          } else {
+            // Main dock or enclosed popup orientation
+            if (currentPosition === Positions.BOTTOM) {
+              tipX = itemRect.x + (itemRect.w - tipW) / 2;
+              tipY = itemRect.y - tipH - margin;
+            } else if (currentPosition === Positions.TOP) {
+              tipX = itemRect.x + (itemRect.w - tipW) / 2;
+              tipY = itemRect.y + itemRect.h + margin;
+            } else if (currentPosition === Positions.LEFT) {
+              tipX = itemRect.x + itemRect.w + margin;
+              tipY = itemRect.y + (itemRect.h - tipH) / 2;
+            } else {
+              // RIGHT
+              tipX = itemRect.x - tipW - margin;
+              tipY = itemRect.y + (itemRect.h - tipH) / 2;
+            }
+          }
+
+          // Clamp within window viewport
+          tipX = Math.max(8, Math.min(width - tipW - 8, tipX));
+          tipY = Math.max(8, Math.min(height - tipH - 8, tipY));
+
+          // Draw tooltip shadow
+          cr.newPath();
+          drawRoundedRect(cr, tipX + 1.5, tipY + 2.5, tipW, tipH, tipRadius);
+          cr.setSourceRGBA(0.0, 0.0, 0.0, 0.35);
+          cr.fill();
+          cr.newPath();
+
+          // Draw dark rounded rect background
+          drawRoundedRect(cr, tipX, tipY, tipW, tipH, tipRadius);
+          cr.setSourceRGBA(0.12, 0.14, 0.18, 0.94);
+          cr.fillPreserve();
+          cr.setSourceRGBA(0.40, 0.46, 0.58, 0.65);
+          cr.setLineWidth(1.0);
+          cr.stroke();
+          cr.newPath();
+
+          // Draw clean white text
+          cr.setSourceRGBA(1.0, 1.0, 1.0, 1.0);
+          const textX = tipX + (tipW - ext.width) / 2 - tipXBearing;
+          const textY = tipY + (tipH - ext.height) / 2 - tipYBearing;
+          cr.moveTo(textX, textY);
+          cr.showText(labelText);
+          cr.newPath();
+
+          cr.restore();
+        }
       }
     }
   });
@@ -721,18 +964,12 @@ app.connect('activate', (app) => {
   // --- Animation Tick Loop ---
   drawingArea.add_tick_callback(() => {
     let needsRedraw = false;
-    const targetHover = mouseOver ? 1.0 : 0.0;
-    const delta = targetHover - hoverProgress;
 
-    // Smooth cubic/exponential lerp toward target
-    // Use 0.14 for entering (snappy responsive feel) and 0.10 for leaving (graceful spring-back glide)
-    const lerpSpeed = mouseOver ? 0.16 : 0.10;
-
-    if (Math.abs(delta) > 0.0005) {
-      hoverProgress += delta * lerpSpeed;
+    if (mainDockState.tick(LERP_ENTER_SPEED, LERP_LEAVE_SPEED)) {
       needsRedraw = true;
-    } else if (hoverProgress !== targetHover) {
-      hoverProgress = targetHover;
+    }
+
+    if (activeSubDock && activeSubDock.state && activeSubDock.state.tick(LERP_ENTER_SPEED, LERP_LEAVE_SPEED)) {
       needsRedraw = true;
     }
 
@@ -745,61 +982,65 @@ app.connect('activate', (app) => {
     return GLib.SOURCE_CONTINUE;
   });
 
-  // Helper to test if pointer (x, y) is inside the physical dock pill or any icon bounds
-  function isPointerOverDock(x, y) {
-    if (currentDockPillBounds) {
-      const b = currentDockPillBounds;
-      if (x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h) {
-        return true;
-      }
-    }
-    // Check if within any expanded icon rectangle
-    for (let l of currentComputedLayout) {
-      if (
-        x >= l.rect.x &&
-        x <= l.rect.x + l.rect.w &&
-        y >= l.rect.y &&
-        y <= l.rect.y + l.rect.h
-      ) {
-        return true;
-      }
-    }
-    return false;
-  }
-
   // --- Pointer & Input Handling ---
   const motion = new Gtk.EventControllerMotion();
   drawingArea.add_controller(motion);
 
   function updatePointerState(x, y) {
-    const isInside = isPointerOverDock(x, y);
-    mouseOver = isInside;
+    activePointerX = x;
+    activePointerY = y;
+    isPointerInside = true;
 
-    if (isInside) {
-      mouseX = (currentPosition === Positions.LEFT || currentPosition === Positions.RIGHT) ? y : x;
-      mouseY = (currentPosition === Positions.LEFT || currentPosition === Positions.RIGHT) ? x : y;
+    const isVertical = (currentPosition === Positions.LEFT || currentPosition === Positions.RIGHT);
+    mouseX = isVertical ? y : x;
+    mouseY = isVertical ? x : y;
 
-      // Check hover item for status
-      let hoveredItem = null;
-      for (let l of currentComputedLayout) {
-        if (
-          x >= l.rect.x &&
-          x <= l.rect.x + l.rect.w &&
-          y >= l.rect.y &&
-          y <= l.rect.y + l.rect.h
-        ) {
-          hoveredItem = l;
-          break;
+    // 1. Check active Sub-Dock first
+    if (activeSubDock && activeSubDock.state) {
+      const isOverSub = activeSubDock.state.isPointerOver(x, y);
+      activeSubDock.state.setHover(isOverSub);
+      if (isOverSub) {
+        // If sub-dock is in fan mode, its axis is perpendicular to the main dock
+        const isFan = subDockMode === SubDockStyle.FAN;
+        const subDockVertical = isFan ? !isVertical : isVertical;
+        activeSubDock.state.updatePointer(x, y, subDockVertical);
+        const subItem = activeSubDock.state.getItemAt(x, y);
+        if (subItem) {
+          statusLabel.set_label(`Sub-Dock Hovered: <b>${subItem.item.label || subItem.item.id}</b> [Scale: ${subItem.scale.toFixed(2)}]`);
+        } else {
+          statusLabel.set_label('Sub-Dock: Hovered');
         }
+        return;
       }
+    }
 
-      if (hoveredItem) {
-        statusLabel.set_label(`Hovered: <b>${hoveredItem.item.label || hoveredItem.item.id}</b> [Scale: ${hoveredItem.scale.toFixed(2)}]`);
+    // 2. Check Main Dock
+    const isOverMain = mainDockState.isPointerOver(x, y);
+    if (!mainDockState.isFrozen) {
+      mainDockState.setHover(isOverMain);
+      if (isOverMain) {
+        mainDockState.updatePointer(x, y, isVertical);
+        const hoveredItem = mainDockState.getItemAt(x, y);
+        if (hoveredItem) {
+          statusLabel.set_label(`Hovered: <b>${hoveredItem.item.label || hoveredItem.item.id}</b> [Scale: ${hoveredItem.scale.toFixed(2)}]`);
+        } else {
+          statusLabel.set_label('Dock: Hovered');
+        }
       } else {
-        statusLabel.set_label('Dock: Hovered');
+        statusLabel.set_label('Status: Ready');
       }
     } else {
-      statusLabel.set_label('Status: Ready');
+      // Main dock is frozen while sub-dock is open
+      if (isOverMain) {
+        const hoveredItem = mainDockState.getItemAt(x, y);
+        if (hoveredItem) {
+          statusLabel.set_label(`Dock (Frozen): <b>${hoveredItem.item.label || hoveredItem.item.id}</b>`);
+        } else {
+          statusLabel.set_label('Dock: Frozen (Sub-Dock Active)');
+        }
+      } else if (!activeSubDock || !activeSubDock.state || !activeSubDock.state.mouseOver) {
+        statusLabel.set_label('Status: Ready');
+      }
     }
   }
 
@@ -813,7 +1054,15 @@ app.connect('activate', (app) => {
   });
 
   motion.connect('leave', () => {
-    mouseOver = false;
+    isPointerInside = false;
+    activePointerX = -1;
+    activePointerY = -1;
+    if (activeSubDock && activeSubDock.state) {
+      activeSubDock.state.setHover(false);
+    }
+    if (!mainDockState.isFrozen) {
+      mainDockState.setHover(false);
+    }
     statusLabel.set_label('Status: Ready');
     drawingArea.queue_draw();
   });
@@ -824,66 +1073,70 @@ app.connect('activate', (app) => {
 
   click.connect('pressed', (gesture, n_press, x, y) => {
     // 1. Hit-test on active Sub-Dock items FIRST if open (prevents clicking through popup)
-    if (activeSubDock && activeSubDock.computedChildLayout) {
-      for (let childLayout of activeSubDock.computedChildLayout) {
-        const { item, rect } = childLayout;
-        if (
-          x >= rect.x &&
-          x <= rect.x + rect.w &&
-          y >= rect.y &&
-          y <= rect.y + rect.h
-        ) {
-          console.log(`[SubDock Click] Activated sub-item: ${item.label} (${item.id})`);
-          statusLabel.set_label(`Sub-Item Activated: <b>${item.label}</b>`);
+    if (activeSubDock && activeSubDock.state) {
+      const childHit = activeSubDock.state.getItemAt(x, y);
+      if (childHit) {
+        const item = childHit.item;
+        console.log(`[SubDock Click] Activated sub-item: ${item.label} (${item.id})`);
+        statusLabel.set_label(`Sub-Item Activated: <b>${item.label}</b>`);
+        if (item.onClick) {
           item.onClick(1, 0);
-          drawingArea.queue_draw();
-          return;
         }
-      }
-    }
-
-    // 2. Hit-test on main dock items
-    for (let l of currentComputedLayout) {
-      if (
-        x >= l.rect.x &&
-        x <= l.rect.x + l.rect.w &&
-        y >= l.rect.y &&
-        y <= l.rect.y + l.rect.h
-      ) {
-        const item = l.item;
-        console.log(`[Prototype Click] Activated item: ${item.label} (${item.id})`);
-        statusLabel.set_label(`Activated: <b>${item.label}</b>`);
-
-        // Check if item is a Drawer -> spawn sub-dock and FREEZE magnification
-        if (item.type === ItemType.DRAWER) {
-          if (activeSubDock && activeSubDock.callingItemId === item.id) {
-            // Toggle closed
-            activeSubDock = null;
-          } else {
-            const subItems = item.getChildren();
-            const subModel = new DockModel({ items: subItems });
-            activeSubDock = {
-              drawer: item,
-              callingItemId: item.id,
-              frozenPointerPos: mouseX,
-              frozenHoverProgress: hoverProgress,
-              items: subItems,
-              model: subModel,
-            };
-          }
-        } else {
-          activeSubDock = null;
-        }
-
-        model.activateItem(item, 1, 0);
         drawingArea.queue_draw();
+        return;
+      }
+
+      // If clicked inside the sub-dock pill bounds (background margin)
+      if (activeSubDock.state.isPointerOver(x, y)) {
         return;
       }
     }
 
-    // 3. Clicked empty space: dismiss active sub-dock
-    activeSubDock = null;
-    drawingArea.queue_draw();
+    // 2. Hit-test on main dock items
+    const mainHit = mainDockState.getItemAt(x, y);
+    if (mainHit) {
+      const item = mainHit.item;
+      console.log(`[Prototype Click] Activated item: ${item.label} (${item.id})`);
+      statusLabel.set_label(`Activated: <b>${item.label}</b>`);
+
+      // Check if item is a Drawer -> spawn sub-dock and FREEZE parent dock
+      if (item.type === ItemType.DRAWER) {
+        if (activeSubDock && activeSubDock.callingItemId === item.id) {
+          // Toggle closed
+          activeSubDock = null;
+          mainDockState.unfreeze();
+        } else {
+          // Freeze main dock and open drawer sub-dock
+          mainDockState.freeze();
+          const subItems = item.getChildren();
+          const subModel = new DockModel({ items: subItems });
+          const subState = new DockViewState({ id: `subdock-${item.id}` });
+          activeSubDock = {
+            drawer: item,
+            callingItemId: item.id,
+            items: subItems,
+            model: subModel,
+            state: subState,
+            parentRect: mainHit.rect,
+          };
+        }
+      } else {
+        // Regular item: dismiss sub-dock and unfreeze
+        activeSubDock = null;
+        mainDockState.unfreeze();
+      }
+
+      model.activateItem(item, 1, 0);
+      drawingArea.queue_draw();
+      return;
+    }
+
+    // 3. Clicked empty space: dismiss active sub-dock and unfreeze
+    if (activeSubDock) {
+      activeSubDock = null;
+      mainDockState.unfreeze();
+      drawingArea.queue_draw();
+    }
   });
 
   // Keyboard Shortcuts for Parameter Tuning
@@ -922,8 +1175,29 @@ app.connect('activate', (app) => {
       drawingArea.queue_draw();
       return true;
     }
+    if (keyval === Gdk.KEY_f || keyval === Gdk.KEY_F) {
+      subDockMode = subDockMode === SubDockStyle.FAN ? SubDockStyle.DOCK : SubDockStyle.FAN;
+      statusLabel.set_label(`Sub-Dock Style: <b>${subDockMode === SubDockStyle.FAN ? 'Perpendicular Fan-Out (No Background)' : 'Enclosed Dock Popup'}</b>`);
+      drawingArea.queue_draw();
+      return true;
+    }
+    if (keyval === Gdk.KEY_s || keyval === Gdk.KEY_S) {
+      currentStemMode = currentStemMode === stem_flags.CENTER_BASIS
+        ? stem_flags.FIXED_STEM
+        : stem_flags.CENTER_BASIS;
+      const stemName = currentStemMode === stem_flags.FIXED_STEM
+        ? 'Option B: Fixed Stem (Pinned Root)'
+        : 'Option A: Center Basis (Overflow Allowed)';
+      statusLabel.set_label(`Fan Stem Mode: <b>${stemName}</b>`);
+      drawingArea.queue_draw();
+      return true;
+    }
     if (keyval === Gdk.KEY_r || keyval === Gdk.KEY_R) {
       currentPosition = (currentPosition + 1) % 4;
+      if (activeSubDock) {
+        activeSubDock = null;
+        mainDockState.unfreeze();
+      }
       const posNames = ['BOTTOM', 'LEFT', 'TOP', 'RIGHT'];
       statusLabel.set_label(`Position: ${posNames[currentPosition]}`);
       drawingArea.queue_draw();

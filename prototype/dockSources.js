@@ -2,7 +2,7 @@
 
 import GObject from 'gi://GObject';
 import { DockItem, ItemType, IndicatorState } from './dockItem.js';
-import { ClockWidget, TrashWidget, DrawerItem, SeparatorItem } from './dockWidgets.js';
+import { ClockWidget, CalendarWidget, TrashWidget, DrawerItem, SeparatorItem } from './dockWidgets.js';
 
 export const ItemSource = GObject.registerClass(
   {
@@ -12,10 +12,6 @@ export const ItemSource = GObject.registerClass(
     },
   },
   class ItemSource extends GObject.Object {
-    _init() {
-      super._init();
-    }
-
     getItems() {
       return [];
     }
@@ -174,9 +170,10 @@ export const MockWidgetsSource = GObject.registerClass(
   class MockWidgetsSource extends ItemSource {
     _init() {
       super._init();
+      this.calendar = new CalendarWidget();
       this.clock = new ClockWidget();
       this.trash = new TrashWidget(4);
-      this.items = [this.clock, this.trash];
+      this.items = [this.calendar, this.clock, this.trash];
     }
 
     getItems() {

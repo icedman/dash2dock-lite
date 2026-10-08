@@ -17,8 +17,8 @@ This prototype demonstrates **The Ultimate Shell** architecture outlined in [`do
   - `MockRunningAppsSource`: Dynamically discovered running apps.
   - `MockDrawerSource`: Categorized app groupings (e.g. Media Tools drawer).
   - `MockWidgetsSource`: Micro-widgets and status meters.
-- [`prototype/dockModel.js`](dockModel.js): Reactive collection maintaining the canonical dock order and emitting `items-changed` and `item-activated`.
-- [`prototype/dock_prototype.js`](dock_prototype.js): Standalone GTK4 + Cairo + Rsvg interactive runner with mouse space-warping, magnification, real SVG icon loading, and popup sub-docks.
+- [`prototype/dockModel.js`](dockModel.js): Reactive collection maintaining canonical dock items (`DockModel`) and interactive view state (`DockViewState`) with frozen snapshotting, localized coordinates, and hit-testing.
+- [`prototype/dock_prototype.js`](dock_prototype.js): Standalone GTK4 + Cairo + Rsvg interactive runner with localized mouse space-warping, magnification, real SVG icon loading, wallpaper backdrop, and autonomous popup sub-docks with frozen parent anchoring.
 
 ---
 
@@ -29,10 +29,11 @@ gjs -m prototype/dock_prototype.js
 ```
 
 ### Interactive Controls
-- **Mouse Hover**: Triggers smooth, bell-curve macOS magnification with stationary boundary anchoring.
+- **Mouse Hover**: Triggers smooth, localized bell-curve magnification; lerps gracefully to resting slots on departure.
 - **Left Click on Apps**: Triggers launch / activation simulation with tactile bounce.
 - **Left Click on Trash**: Toggles between full and empty states, updating the notification badge and icon.
-- **Left Click on Drawer**: Spawns an interactive **Child Sub-Dock** popup.
+- **Left Click on Drawer**: Spawns an interactive **Child Sub-Dock** popup. Automatically freezes the calling parent dock at its current layout and locks the callout arrow alignment.
+- **Sub-Dock Interaction**: Sub-dock features fully localized mouse tracking and independent magnification. Clicking outside dismisses the sub-dock and smoothly unfreezes the parent dock.
 - **Up / Down Arrow Keys**: Increase / decrease maximum magnification scale ($M$).
 - **Left / Right Arrow Keys**: Adjust radius of influence ($R$).
 - **C Key**: Cycle bell curve formula (Linear Proximity, Cosine Bell, Smoothstep).

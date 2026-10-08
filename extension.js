@@ -52,6 +52,107 @@ const ANIM_ICON_QUALITY = 2.0;
 const ANIM_INTERVAL = 15;
 const ANIM_INTERVAL_PAD = 15;
 
+const ACTION_ORDER = [
+  'compiz',
+  'bms',
+  'blurred_bg',
+  'downloads_setup',
+  'mounts',
+  'recents_debounce',
+  'animation_fps',
+  'autohide',
+  'multi_monitor',
+  'recreate_docks',
+  'shrink',
+  'icon_resolution',
+  'icon_spacing',
+  'widget_style',
+  'debounced_style',
+  'style',
+  'icon_effect',
+  'icon_effect_color',
+  'layout',
+  'animate_refresh',
+  'animate_preview',
+  'animate',
+];
+
+const REACTIONS = Object.freeze({
+  'lamp-app-animation': ['compiz'],
+  'animation-fps': ['animation_fps'],
+  'debug-visual': ['animate'],
+  'mounted-icon': ['mounts', 'animate_refresh'],
+  'peek-hidden-icons': ['animate'],
+  'animation-magnify': ['layout', 'animate_preview'],
+  'animation-spread': ['layout', 'animate_preview'],
+  'animation-rise': ['animate_preview'],
+  'animation-rise-curve': ['animate_preview'],
+  'animation-bounce-height': ['animate_preview'],
+  'notification-badge-size': ['animate'],
+  'notification-badge-color': ['animate'],
+  'notification-badge-style': ['animate'],
+  'running-indicator-size': ['animate'],
+  'running-indicator-color': ['animate'],
+  'running-indicator-style': ['animate'],
+  'clock-style': ['widget_style'],
+  'calendar-style': ['widget_style'],
+  'max-recent-items': ['recents_debounce'],
+  'apps-icon': ['layout', 'animate_refresh'],
+  'apps-icon-front': ['layout', 'animate_refresh'],
+  'calendar-icon': ['layout', 'animate_refresh'],
+  'clock-icon': ['layout', 'animate_refresh'],
+  'favorites-only': ['layout', 'animate_refresh'],
+  'downloads-path': ['downloads_setup'],
+  'dock-location': ['layout', 'recreate_docks', 'animate_preview'],
+  'icon-resolution': [
+    'icon_resolution',
+    'style',
+    'layout',
+    'icon_spacing',
+    'animate',
+  ],
+  'icon-effect': ['icon_effect'],
+  'icon-effect-color': ['icon_effect_color', 'animate'],
+  'icon-spacing': ['icon_spacing', 'layout'],
+  'multi-monitor-preference': ['multi_monitor'],
+  'icon-size': ['shrink', 'layout', 'animate_refresh'],
+  'preferred-monitor': ['layout', 'animate_refresh'],
+  'autohide-dodge': ['autohide'],
+  'autohide-dash': ['autohide'],
+  'dock-padding': ['layout', 'animate'],
+  'edge-distance': ['layout', 'animate'],
+  'shrink-icons': ['shrink', 'layout', 'animate'],
+  'border-radius': ['debounced_style', 'animate'],
+  'separator-thickness': ['style', 'recreate_docks', 'animate_preview'],
+  'icon-border-color': ['style', 'layout', 'animate'],
+  'icon-border-thickness': ['style', 'layout', 'animate'],
+  'icon-border-radius': ['style', 'layout', 'animate'],
+  'icon-background-color': ['style', 'layout', 'animate'],
+  'separator-color': ['style', 'layout', 'animate'],
+  'border-color': ['style', 'layout', 'animate'],
+  'border-thickness': ['style', 'layout', 'animate'],
+  'customize-topbar': ['style', 'layout', 'animate'],
+  'icon-shadow': ['style', 'layout', 'animate'],
+  'topbar-border-color': ['style', 'layout', 'animate'],
+  'topbar-border-thickness': ['style', 'layout', 'animate'],
+  'topbar-background-color': ['style', 'layout', 'animate'],
+  'topbar-foreground-color': ['style', 'layout', 'animate'],
+  'customize-label': ['style', 'layout', 'animate'],
+  'label-border-radius': ['style', 'layout', 'animate'],
+  'label-border-color': ['style', 'layout', 'animate'],
+  'label-border-thickness': ['style', 'layout', 'animate'],
+  'label-background-color': ['style', 'layout', 'animate'],
+  'label-foreground-color': ['style', 'layout', 'animate'],
+  'panel-mode': ['style', 'layout', 'animate'],
+  'background-color': ['bms', 'blurred_bg', 'style', 'layout', 'animate'],
+  'blur-resolution': ['bms', 'blurred_bg', 'style', 'layout', 'animate'],
+  'blur-background': ['bms', 'blurred_bg', 'style', 'layout', 'animate'],
+  'pressure-sense': [],
+  'downloads-icon': ['layout', 'animate_refresh'],
+  'documents-icon': ['layout', 'animate_refresh'],
+  'trash-icon': ['layout', 'animate_refresh'],
+});
+
 export default class Dash2DockLiteExt extends Extension {
   createDock() {
     let d = new Dock({ extension: this });
@@ -479,6 +580,9 @@ export default class Dash2DockLiteExt extends Extension {
   }
 
   _enableSettings() {
+    this._reactionIdleId = 0;
+    this._pendingReactions = new Set();
+
     try {
       this._interfaceSettings = new Gio.Settings({
         schema_id: 'org.gnome.desktop.interface',
@@ -502,212 +606,30 @@ export default class Dash2DockLiteExt extends Extension {
       let n = name.replace(/-/g, '_');
       this[n] = value;
 
-      // console.log(`${n} ${value}`);
-
-      switch (name) {
-        case 'msg-to-ext': {
-          if (value.length) {
-            const commands = {
-              'run-diagnostics': () => this.runDiagnostics(),
-              'dump-timers': () => this.dumpTimers(),
-            };
-            const command = commands[value];
-            if (command) {
-              try {
-                command();
-              } catch (err) {
-                console.error(`d2da: msg-to-ext ${value}`, err);
-              }
-            } else {
-              console.warn('d2da: unknown command', value);
+      if (name === 'msg-to-ext') {
+        if (value.length) {
+          const commands = {
+            'run-diagnostics': () => this.runDiagnostics(),
+            'dump-timers': () => this.dumpTimers(),
+          };
+          const command = commands[value];
+          if (command) {
+            try {
+              command();
+            } catch (err) {
+              console.error(`d2da: msg-to-ext ${value}`, err);
             }
-            this._settings.set_string('msg-to-ext', '');
+          } else {
+            console.warn('d2da: unknown command', value);
           }
-          break;
+          this._settings.set_string('msg-to-ext', '');
         }
-        case 'lamp-app-animation': {
-          this.integrations.hookCompiz();
-          break;
-        }
-        case 'animation-fps': {
-          this._updateAnimationFPS();
-          break;
-        }
-        case 'debug-visual':
-          this.animate();
-          break;
-        case 'mounted-icon': {
-          this.services.checkMounts();
-          this.services._commitMounts();
-          this.animate({ refresh: true });
-          break;
-        }
-        case 'peek-hidden-icons': {
-          this.animate();
-          break;
-        }
-        case 'animation-magnify':
-        case 'animation-spread':
-          this._updateLayout();
-          if (this.animate_icons) {
-            this.animate({ preview: true });
-          }
-          break;
-        case 'animation-rise':
-        case 'animation-rise-curve':
-        case 'animation-bounce-height': {
-          if (this.animate_icons) {
-            this.animate({ preview: true });
-          }
-          break;
-        }
-        case 'notification-badge-size':
-        case 'notification-badge-color':
-        case 'notification-badge-style':
-        case 'running-indicator-size':
-        case 'running-indicator-color':
-        case 'running-indicator-style': {
-          this.animate();
-          break;
-        }
-        case 'clock-style':
-        case 'calendar-style':
-          this._updateWidgetStyle();
-          break;
-        case 'max-recent-items':
-          this.services._debounceCheckDownloads();
-          this.services._debounceCheckRecents();
-          break;
-        case 'apps-icon':
-        case 'apps-icon-front':
-        case 'calendar-icon':
-        case 'clock-icon':
-        case 'favorites-only': {
-          this._updateLayout();
-          this.animate({ refresh: true });
-          break;
-        }
-        case 'downloads-path':
-          this.services.setupDownloads();
-          break;
-        // problematic settings needing animator restart
-        case 'dock-location':
-          this._updateLayout();
-          this.recreateAllDocks();
-          this.animate({ preview: true });
-          break;
-        case 'icon-resolution': {
-          this._updateIconResolution();
-          this._updateStyle();
-          this._updateLayout();
-          this._updateIconSpacing();
-          this.animate();
-          break;
-        }
-        case 'icon-effect': {
-          this.docks.forEach((dock) => {
-            dock._updateIconEffect();
-          });
-          break;
-        }
-        case 'icon-effect-color': {
-          this.docks.forEach((dock) => {
-            dock._updateIconEffectColor(this.icon_effect_color);
-          });
-          this.animate();
-          break;
-        }
-        case 'icon-spacing': {
-          this._updateIconSpacing();
-          this._updateLayout();
-          break;
-        }
-        case 'multi-monitor-preference':
-          this._updateMultiMonitorPreference();
-          break;
-        case 'icon-size': {
-          this._updateShrink();
-          this._updateLayout();
-          this.animate({ refresh: true });
-          break;
-        }
-        case 'preferred-monitor': {
-          this._updateLayout();
-          this.animate({ refresh: true });
-          break;
-        }
-        case 'autohide-dodge':
-        case 'autohide-dash': {
-          this._updateAutohide();
-          break;
-        }
-        case 'dock-padding':
-        case 'edge-distance': {
-          this._updateLayout();
-          this.animate();
-          break;
-        }
-        case 'shrink-icons': {
-          this._updateShrink();
-          this._updateLayout();
-          this.animate();
-          break;
-        }
-        case 'border-radius':
-          this._debouncedUpdateStyle();
-          this.animate();
-          break;
-        case 'separator-thickness':
-          this._updateStyle();
-          this.recreateAllDocks();
-          this.animate({ preview: true });
-          break;
-        case 'icon-border-color':
-        case 'icon-border-thickness':
-        case 'icon-border-radius':
-        case 'icon-background-color':
-        case 'separator-color':
-        case 'border-color':
-        case 'border-thickness':
-        case 'customize-topbar':
-        case 'icon-shadow':
-        case 'topbar-border-color':
-        case 'topbar-border-thickness':
-        case 'topbar-background-color':
-        case 'topbar-foreground-color':
-        case 'customize-label':
-        case 'label-border-radius':
-        case 'label-border-color':
-        case 'label-border-thickness':
-        case 'label-background-color':
-        case 'label-foreground-color':
-        case 'panel-mode': {
-          this._updateStyle();
-          this._updateLayout();
-          this.animate();
-          break;
-        }
-        // case 'topbar-background-color':
-        // case 'topbar-blur-background':
-        case 'background-color':
-        case 'blur-resolution':
-        case 'blur-background':
-          this.integrations.hookBms();
-          this._updateBlurredBackground();
-          this._updateStyle();
-          this._updateLayout();
-          this.animate();
-          break;
-        case 'pressure-sense': {
-          break;
-        }
-        case 'downloads-icon':
-        case 'documents-icon':
-        case 'trash-icon': {
-          this._updateLayout();
-          this.animate({ refresh: true });
-          break;
-        }
+        return;
+      }
+
+      const actions = REACTIONS[name];
+      if (actions && actions.length > 0) {
+        this._queueReactions(actions);
       }
     });
 
@@ -722,7 +644,98 @@ export default class Dash2DockLiteExt extends Extension {
     });
   }
 
+  _queueReactions(actions) {
+    if (!actions || actions.length === 0) return;
+    if (!this._pendingReactions) {
+      this._pendingReactions = new Set();
+    }
+    for (const action of actions) {
+      this._pendingReactions.add(action);
+    }
+    if (!this._reactionIdleId) {
+      this._reactionIdleId = GLib.idle_add(
+        GLib.PRIORITY_DEFAULT_IDLE,
+        () => {
+          this._flushReactions();
+          return GLib.SOURCE_REMOVE;
+        }
+      );
+    }
+  }
+
+  _flushReactions() {
+    this._reactionIdleId = 0;
+    if (
+      !this._pendingReactions ||
+      this._pendingReactions.size === 0 ||
+      !this._settings
+    ) {
+      return;
+    }
+
+    const pending = this._pendingReactions;
+    this._pendingReactions = new Set();
+
+    const handlers = {
+      compiz: () => this.integrations?.hookCompiz(),
+      bms: () => this.integrations?.hookBms(),
+      blurred_bg: () => this._updateBlurredBackground(),
+      downloads_setup: () => this.services?.setupDownloads(),
+      mounts: () => {
+        this.services?.checkMounts();
+        this.services?._commitMounts();
+      },
+      recents_debounce: () => {
+        this.services?._debounceCheckDownloads();
+        this.services?._debounceCheckRecents();
+      },
+      animation_fps: () => this._updateAnimationFPS(),
+      autohide: () => this._updateAutohide(),
+      multi_monitor: () => this._updateMultiMonitorPreference(),
+      recreate_docks: () => this.recreateAllDocks(),
+      shrink: () => this._updateShrink(),
+      icon_resolution: () => this._updateIconResolution(),
+      icon_spacing: () => this._updateIconSpacing(),
+      widget_style: () => this._updateWidgetStyle(),
+      debounced_style: () => this._debouncedUpdateStyle(),
+      style: () => this._updateStyle(),
+      icon_effect: () => {
+        this.docks?.forEach((dock) => {
+          dock._updateIconEffect();
+        });
+      },
+      icon_effect_color: () => {
+        this.docks?.forEach((dock) => {
+          dock._updateIconEffectColor(this.icon_effect_color);
+        });
+      },
+      layout: () => this._updateLayout(),
+      animate_refresh: () => this.animate({ refresh: true }),
+      animate_preview: () => {
+        if (this.animate_icons) this.animate({ preview: true });
+      },
+      animate: () => this.animate(),
+    };
+
+    for (const action of ACTION_ORDER) {
+      if (pending.has(action)) {
+        try {
+          handlers[action]?.();
+        } catch (err) {
+          console.error(`d2da: reaction ${action}`, err);
+        }
+      }
+    }
+  }
+
   _disableSettings() {
+    if (this._reactionIdleId) {
+      GLib.source_remove(this._reactionIdleId);
+      this._reactionIdleId = 0;
+    }
+    this._pendingReactions?.clear();
+    this._pendingReactions = null;
+
     this._settingsKeys.disconnectSettings();
     this._settingsKeys = null;
     this._settings = null;

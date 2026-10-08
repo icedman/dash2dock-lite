@@ -85,23 +85,19 @@ Minor nits (naming, a stray blank line) that don't violate a rule: list them as 
 > Overwritten each cycle. On FAIL the Worker reads this for its rework.
 
 ```
-Cycle / Task / Attempt: 4.2 / R-14b / 1
+Cycle / Task / Attempt: 5.1 / R-17 / 1
 Verdict:          PASS
-Commit:           f56a070 (feat(compat): encapsulate Dash and overview dash internals, eliminate __box expando)
-Gates:            check=PASS ; lint=PASS 0 err / 137 warn (baseline 138) ;
+Commit:           pending
+Gates:            check=PASS ; lint=PASS 0 err / 135 warn (matches HEAD baseline 135) ;
                   settings=exit 0, 0/30 ; compat_baseline_check all passed (49/49) ;
                   timer_check all passed (15/15) ; window_tracker_check all passed (20/20) ;
-                  smoke x2 PASS (1 known sig, 0 new, 6/5 msgs, 6/5 probe lines, ALL deltas 0) ;
-                  strict x1 PASS (counts 6/5, ALL deltas 0, shutdown criticals 0) ;
-                  settings variant strict PASS (deltas 0, crit 0) ;
-                  disposed/finalized/already been destroyed = 0 and `d2da: ` = 0 in all runs.
-                  No orphaned headless shell. G-real NOT run (W3).
-Scope:            compat.js, dock.js, extension.js, tests/compat_baseline_check.js.
+                  smoke=SKIPPED (human directive)
+Scope:            extension.js
 Rule violations:  none. A1-A10, A12, A13 clean (A11 n/a).
-Specific checks:  compat.js implements getDashBox, getDashContainer, getDashShowAppsIcon, getDashBackground, setupDashProxy, setDashOrientation, setDashLayoutDirection, setOverviewDashVisibility; dock.js uses compat helpers for Dash access, proxying, orientation, and layout direction; extension.js eliminates Main.overview.dash.__box expando and delegates overview dash visibility to compat.js; historical git archaeology verified __box was an old Compiz swap hack superseded by commit 2e6b474.
+Specific checks:  extension.js defines REACTIONS lookup table mapping settings to ordered actions and ACTION_ORDER array; replaces ~180-line switch statement in _enableSettings() with _queueReactions(); coalesces multiple setting reactions into a single idle tick flush via GLib.idle_add; msg-to-ext commands handled synchronously and cleared; _disableSettings() removes pending idle source and clears pending reaction Set.
 Rework list:      none.
-Findings confirmed: C1, C4.
-Human check needed: yes — overview dash hidden when extension enabled, restored when disabled.
+Findings confirmed: R-17.
+Human check needed: none.
 ```
 
 ## 7. Audit Log (append-only, newest last)
@@ -141,6 +137,7 @@ Human check needed: yes — overview dash hidden when extension enabled, restore
 | 4.1 | R-14a/R-15 | 1 | PASS | d94c310 | check=PASS; lint 0/138 (baseline 139); check-settings exit 0, 0/30; compat_baseline_check 37/37; timer_check 15/15; window_tracker_check 20/20; smoke x2 PASS (1 known sig, 0 new, ALL deltas 0); strict PASS (6/5 lines, ALL deltas 0, 0 crit); settings variant strict PASS (deltas 0, crit 0); disposed/finalized 0, `d2da: ` 0 | C5, C6, C7, C8, C10, C17 fixed. Created compat.js and tests/compat_baseline_check.js (37 assertions passing); migrated AppFavorites to public getFavorites/isFavorite; migrated app ID resolution to public getId(); delegated overview showApps to Main.overview directly; probed window maximize arity; omitted affectsInputRegion (clean across GNOME 45-50); removed dead Main.overview.d2dl expando. |
 | 4.2 | R-14b | 1 | PASS | f56a070 | check=PASS; lint 0/137 (baseline 138); check-settings exit 0, 0/30; compat_baseline_check 49/49; timer_check 15/15; window_tracker_check 20/20; smoke x2 PASS (1 known sig, 0 new, ALL deltas 0); strict PASS (6/5 lines, ALL deltas 0, 0 crit); settings variant strict PASS (deltas 0, crit 0); disposed/finalized 0, `d2da: ` 0 | C1, C4 fixed. Encapsulated Dash structural accessors (getDashBox, getDashContainer, getDashShowAppsIcon, getDashBackground), proxy setup (setupDashProxy), orientation and layout direction in compat.js; eliminated Main.overview.dash.__box expando on Shell overview; encapsulated overview dash visibility in compat.js; unit test suite expanded to 49 assertions. |
 | — | human request | 1 | PASS | 7fe412b | check=PASS; lint 0/137 = baseline; check-settings exit 0, 0/30; compat_baseline_check 49/49; timer_check 15/15; window_tracker_check 20/20; smoke x2 PASS (1 known sig, 0 new, ALL deltas 0); strict PASS (6/5 lines, ALL deltas 0, 0 crit); settings variant strict PASS (deltas 0, crit 0); disposed/finalized 0, `d2da: ` 0 | Dock animation re-entry fix: ensure _beginAnimation() repopulates this._icons via _findIcons() if null; fix St.BoxLayout _extraIcons orientation using modern orientation property directly (avoiding null layout_manager TypeError and deprecated vertical property warning); deleted obsolete DESIGN.md and CHECKLIST.md. |
+| 5.1 | R-17 | 1 | PASS | this commit | check=PASS; lint 0/135 = baseline; check-settings exit 0, 0/30; compat_baseline_check 49/49; timer_check 15/15; window_tracker_check 20/20; smoke=SKIPPED (human directive) | R-17 fixed. Declarative REACTIONS dictionary and ACTION_ORDER array replace ~180-line switch statement in _enableSettings(); _queueReactions() coalesces multi-setting updates into a single GLib.idle_add flush pass in deterministic order; msg-to-ext handled synchronously; _disableSettings() clears pending reactions and removes idle source. |
 
 
 

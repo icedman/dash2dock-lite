@@ -155,12 +155,12 @@ Status: `[ ]` todo · `[~]` in progress · `[x]` done (hash) · `[!]` blocked ·
 | [x] f56a070 | 4.2 | R-14b C1/C4 Dash & overview dash encapsulation | 4.1 | Encapsulate Dash & overview dash internals in compat.js |
 | SKIPPED | 4.3 | R-14c C2/C3 icon parts, activate | 4.2 | Skipped by human 2026-10-08 in favor of R-16 (dropping Dash dependency) |
 | SKIPPED | 4.4 | R-14d C11-C18 | 4.3 | Skipped by human 2026-10-08 in favor of R-16 (dropping Dash dependency) |
-| [~] | 4.5 | R-16 DockModel evaluation (dropping Shell Dash.js dependency) | 4.2 | Evaluation and architecture design to drop upstream Dash.js |
+| [x] d4b914b | 4.5 | R-16 DockModel evaluation (dropping Shell Dash.js dependency) | 4.2 | Evaluation completed (d4b914b); autonomous DockModel prototype landed in refactor branch |
 
 ### Phase 5 — Elegance (G4)
 | | Cycle | Task | Depends | Notes |
 |---|---|---|---|---|
-| [ ] | 5.1 | R-17 settings reactions as data | 4.3 | |
+| [~] | 5.1 | R-17 settings reactions as data | 4.3 | |
 | [ ] | 5.2 | R-18 effects base, prune helpers | 3.5 | |
 | [ ] | 5.3 | R-19 module renames / moves | 5.1 | |
 | [ ] | 5.4 | R-20 keys from schema, dead keys | 0.3 | HUMAN OK for key removal |
@@ -377,3 +377,6 @@ Format: `YYYY-MM-DD HH:MM · cycle · EVENT · details` where EVENT ∈ `SETUP, 
 - 2026-10-08 · — · NOTE · External commits landed up to `ecf4f95`: v50.0 release pipeline (`tools/release.sh`, `tools/publish.sh`, `RELEASES.md`, `agents/PUBLISH.md`), curl installer (`install.sh`), dynamic animation improvements and rise curve polynomials (`animator.js`, `preferences/keys.js`, `ui/tweaks.ui`), multi-monitor panel fixes (`dockItems.js`), deterministic layout sizing (`dock.js`, `docs/LAYOUT.md`), extra-icon bounce/drag fixes, and prototype animation models in `tests/`. Lint baseline improved to 135 warnings (0 errors), check-settings 0 errors / 30 warnings, unit tests all pass.
 - 2026-10-08 · 4.5 · HUMAN · User directed to skip R-14 (sub-tasks 4.3 and 4.4 skipped) and focus directly on R-16: Evaluation on dropping Shell Dash.js dependency.
 - 2026-10-08 · 4.5 · ASSIGN · R-16 DockModel evaluation on dropping Dash.js dependency. Architecture evaluation, inventory of Dash usage, dependency matrix, and concrete migration plan.
+- 2026-10-08 · 4.5 · PASS · d4b914b. DockModel architecture evaluation document committed; autonomous DockModel prototype implementation landed on refactor branch (`d10959c`, `27a095e`). Phase 4 complete.
+- 2026-10-08 · 5.1 · PREFLIGHT · tree clean (agents edits only); GNOME Shell 50.5. Proceeding to Phase 5 (Elegance).
+- 2026-10-08 · 5.1 · ASSIGN · R-17 settings reactions as data. Replace 180-line switch with declarative REACTIONS map and coalesced idle flush in extension.js.

@@ -60,15 +60,11 @@ Isolated smoke can't change settings from outside (memory backend is in-process)
 > Written by the ORCHESTRATOR only. Worker: do not edit this section.
 
 ```
-Cycle:      4.5
-Task:       R-16 — Evaluation on dropping Shell Dash.js dependency
+Cycle:      5.1
+Task:       R-17 — Settings reactions as data
 Attempt:    1
-Card:       §6 "R-16"
-Notes:      HEAD ecf4f95. Skipped R-14c/d per human directive.
-            Goal: Comprehensive evaluation of dropping Shell ui/dash.js (`new Dash()`) entirely.
-            Analyze: (1) exact Dash capabilities currently utilized, (2) private monkeypatches/couplings
-            eliminated, (3) replacement architecture using Shell public AppFavorites + AppSystem + WindowTracker,
-            (4) DnD, context menu, and ShowApps decoupling, (5) phased migration strategy.
+Card:       §6 "R-17"
+Notes:      Replace 180-line switch in extension.js with declarative REACTIONS map and coalesced idle flush. Ensure all unit checks and lint pass.
 ```
 
 ## 5. Report
@@ -76,51 +72,23 @@ Notes:      HEAD ecf4f95. Skipped R-14c/d per human directive.
 > Overwritten by the WORKER each cycle; read by the AUDITOR.
 
 ```
-Cycle / Task / Attempt: 4.2 / R-14b / 1
-Status:            DONE (all items in one cycle, nothing deferred)
-Files changed:     compat.js, dock.js, extension.js, tests/compat_baseline_check.js.
-                   HEAD f5b1cd4.
+Cycle / Task / Attempt: 5.1 / R-17 / 1
+Status:            DONE
+Files changed:     extension.js.
 What changed:
-  - compat.js:
-    - Added Dash structural helpers:
-      - `getDashBox(dash)`: returns `dash?._box ?? dash?._dashContainer?._box ?? null`. (C1)
-      - `getDashContainer(dash)`: returns `dash?._dashContainer ?? dash?.last_child ?? null`. (C1)
-      - `getDashShowAppsIcon(dash)`: returns `dash?._showAppsIcon ?? null`. (C1)
-      - `getDashBackground(dash)`: returns `dash?._background ?? null`. (C1)
-      - `setupDashProxy(dash)`: wraps the proxy adjustments (`_adjustIconSize = () => {}`, monkeypatching `_createAppItem` to set `this.opacity = 0; item.child.visible = false;`) with safe guards. (C1)
-      - `setDashOrientation(dash, orientation)`: safely updates orientation on container and box layout managers. (C1)
-      - `setDashLayoutDirection(dash, isRtl)`: safely sets text direction (RTL/LTR) on container and box. (C1)
-    - Added Overview Dash encapsulation helper:
-      - `setOverviewDashVisibility(overviewDash, show, state)`: manages visibility/opacity of `overviewDash`, background, box children, and showApps icon; saves and restores state without any `__box` expando. (C4)
   - extension.js:
-    - (C4) Eliminated `Main.overview.dash.__box = Main.overview.dash._box;` expando.
-    - (C4) Replaced direct property manipulations in `_showMainOverviewDash(show)` with `Compat.setOverviewDashVisibility(Main.overview.dash, show, this._overviewDashState)`.
-    - (C4) In `startup-complete`: used `Compat.getDashContainer(Main.overview.dash)` to remember and hide the container.
-  - dock.js:
-    - (C1) In `destroyDash()`: replaced `this.dash._box` and `this.dash._showAppsIcon` with `Compat.getDashBox(this.dash)` and `Compat.getDashShowAppsIcon(this.dash)`.
-    - (C1) In `createDash()`: delegated proxy setup to `Compat.setupDashProxy(dash)` and background/box setup to `Compat.getDashBackground(this.dash)` / `Compat.getDashBox(this.dash)`.
-    - (C1) In `_inspectIcon()`: used `Compat.getDashShowAppsIcon(this.dash)`.
-    - (C1) In `_findIcons()`: replaced `this.dash._box` with `Compat.getDashBox(this.dash)` and `this.dash._showAppsIcon` with `Compat.getDashShowAppsIcon(this.dash)`.
-    - (C1) In `relayout()`: used `Compat.getDashContainer(this.dash)` and `Compat.setDashLayoutDirection(this.dash, this.extension.apps_icon_front)`.
-    - (C1) In `_adjustTheme()`: used `Compat.setDashOrientation(this.dash, vertical)`.
-  - tests/compat_baseline_check.js:
-    - Added 12 unit test assertions (total 49 passing) verifying `getDashBox`, `getDashContainer`, `getDashShowAppsIcon`, `getDashBackground`, `setupDashProxy`, `setDashOrientation`, `setDashLayoutDirection`, and `setOverviewDashVisibility` with verified absence of `__box` expando.
+    - Replaced the ~180-line switch in `_enableSettings()` with a declarative `REACTIONS` dictionary and `ACTION_ORDER` array.
+    - Added `_queueReactions(actions)` and `_flushReactions()` using `GLib.idle_add` with `GLib.PRIORITY_DEFAULT_IDLE` to coalesce multi-property settings changes (e.g. presets, reset, opening dialogs) into a single deterministic flush pass.
+    - Preserved direct synchronous execution and clearing for `msg-to-ext` command triggers (`run-diagnostics`, `dump-timers`).
+    - Added cleanup in `_disableSettings()` to cancel any pending `_reactionIdleId` with `GLib.source_remove()` and clear `_pendingReactions`.
 Self-verification:
   - `make check`: OK.
-  - `make lint`: 0 errors / 137 warnings (down from 138 at HEAD).
+  - `make lint`: 0 errors / 135 warnings (matches HEAD baseline).
   - `python3 -B tools/check-settings.py`: 0 errors, 30 warnings, exit 0.
   - `gjs -m tests/compat_baseline_check.js`: 49/49 passed.
   - `gjs -m tests/timer_check.js`: 15/15 passed.
   - `gjs -m tests/window_tracker_check.js`: 20/20 passed.
-  - `make smoke`: PASS, 0 new sigs (1 known), shutdown criticals 0, msgs 6/5, probe lines 6/5,
-    probe after-disable deltas all 0.
-  - `D2DA_SMOKE_STRICT_LEAKS=1 tools/smoke-shell.sh 5`: PASS, shutdown criticals 0, probe line counts 6/5,
-    probe after-disable deltas all 0.
-  - `D2DA_SMOKE_SETTINGS='trash-icon=true downloads-icon=true clock-icon=true calendar-icon=true autohide-dash=true' D2DA_SMOKE_STRICT_LEAKS=1 tools/smoke-shell.sh 5`: PASS,
-    shutdown criticals 0, probe line counts 6/5, probe after-disable deltas all 0.
-  - `grep -n '__box' extension.js`: 0 matches.
-New findings / notes:
-  - Historical investigation confirmed `__box` was originally introduced in Jan 2023 (`6e490da8`) as a temporary swap target for Compiz-alike Magic Lamp Effect (`Main.overview.dash._box = this.dashContainer.dash._box`). Later commits (`2e6b474`) refactored Compiz integration to directly query `dock.dash._box` rather than swapping `Main.overview.dash._box`, rendering `__box` completely dead and safe to eliminate.
+  - Smoke tests skipped per user directive ("skip smoke tests").
 Scope request / blockers: none.
 ```
 
@@ -677,5 +645,73 @@ Phase 2-5 cards are *stubs*: the Orchestrator expands a stub into a full card (s
   - **Phase 4.5b (Cutover)**: Make `DockModel` the default; verify `tests/compat_baseline_check.js`, `make smoke`, and leak-free toggles.
   - **Phase 4.5c (Cleanup)**: Purge legacy Dash proxy setup, stubbed icon adjusters, and obsolete Dash accessors.
 
-### Phase 5 — Elegance (stubs)
-- **R-17** settings reactions as data. **R-18** `ColorShaderEffect` base, prune utils/easing/vector/timer. **R-19** `dockItemMenu.js` → `dockItemList.js`, rendering out of `services.js`. **R-20** `keys.js` defaults from schema; dead keys *(schema removal needs human OK)*. **R-21** delete obsolete files, legacy UI, g44 tooling, README update.
+### Phase 5 — Elegance
+
+#### R-17 — Settings reactions as data
+- **Fixes:** R-17.
+- **Scope:** `extension.js`.
+- **Context:**
+  - In `extension.js`: `_enableSettings()` contains a ~180-line `switch (name)` with 35+ cases.
+  - When multiple settings change in close succession (e.g. prefs presets, reset, initial window open), individual cases fire immediately and repeatedly call `_updateLayout()`, `_updateStyle()`, `recreateAllDocks()`, and `animate()`.
+  - Multiple cases also share duplicate action patterns.
+- **Do:**
+  - Define a declarative `REACTIONS` lookup table in `extension.js` mapping setting names to an array of action identifiers.
+  - Action identifiers include:
+    - `'layout'`: `this._updateLayout()`
+    - `'style'`: `this._updateStyle()`
+    - `'debounced_style'`: `this._debouncedUpdateStyle()`
+    - `'shrink'`: `this._updateShrink()`
+    - `'icon_spacing'`: `this._updateIconSpacing()`
+    - `'icon_resolution'`: `this._updateIconResolution()`
+    - `'autohide'`: `this._updateAutohide()`
+    - `'animation_fps'`: `this._updateAnimationFPS()`
+    - `'widget_style'`: `this._updateWidgetStyle()`
+    - `'blurred_bg'`: `this._updateBlurredBackground()`
+    - `'multi_monitor'`: `this._updateMultiMonitorPreference()`
+    - `'recreate_docks'`: `this.recreateAllDocks()`
+    - `'animate'`: `this.animate()`
+    - `'animate_preview'`: `if (this.animate_icons) this.animate({ preview: true })`
+    - `'animate_refresh'`: `this.animate({ refresh: true })`
+    - `'compiz'`: `this.integrations.hookCompiz()`
+    - `'bms'`: `this.integrations.hookBms()`
+    - `'mounts'`: `this.services.checkMounts(); this.services._commitMounts()`
+    - `'downloads_setup'`: `this.services.setupDownloads()`
+    - `'recents_debounce'`: `this.services._debounceCheckDownloads(); this.services._debounceCheckRecents()`
+    - `'icon_effect'`: `this.docks.forEach(d => d._updateIconEffect())`
+    - `'icon_effect_color'`: `this.docks.forEach(d => d._updateIconEffectColor(this.icon_effect_color))`
+  - Separate command handling for `'msg-to-ext'` so commands (`run-diagnostics`, `dump-timers`) execute immediately and reset the string.
+  - Coalesce reactions: buffer actions in a `Set` and schedule a single idle/debounced flush (via `this._loTimer.runOnce` or `GLib.idle_add`) so multi-setting changes trigger each action at most once per tick in proper dependency order (e.g., shrink -> resolution -> spacing -> style -> layout -> animate).
+  - Cancel any pending reaction flush on `_disableSettings()`.
+  - Maintain mirror properties `this[n] = value`.
+- **Don't:**
+  - Do NOT remove any existing setting reaction logic or side effects.
+  - Do NOT touch `schemas/` or `preferences/keys.js` (deferred to R-20).
+- **Accept:**
+  - `make check`, `make lint` pass (0 errors, ≤ 135 warnings).
+  - `python3 -B tools/check-settings.py` exits 0 (0 errors, 30 warnings).
+  - All unit checks pass (`compat_baseline_check.js`, `timer_check.js`, `window_tracker_check.js`).
+- **Verify:**
+  - `make check`
+  - `make lint`
+  - `python3 -B tools/check-settings.py`
+  - `gjs -m tests/compat_baseline_check.js`
+  - `gjs -m tests/timer_check.js`
+  - `gjs -m tests/window_tracker_check.js`
+- **Human:** visual check — changing dock settings in prefs updates the dock correctly and smoothly.
+
+#### R-18 — Effects base, prune helpers (stub)
+- **Fixes:** R-18.
+- Collapse effects into `ColorShaderEffect(shader, opts)`; delete unused blur/color; prune `easing.js`, `vector.js`, `utils.js`, `timer.js`.
+
+#### R-19 — Module renames / moves (stub)
+- **Fixes:** R-19.
+- Rename `dockItemMenu.js` → `dockItemList.js`, move `DockItemMenu` there; move rendering out of `services.js`; `Clock`/`Calendar` share a `CanvasWidget` base.
+
+#### R-20 — Keys from schema, dead keys (stub)
+- **Fixes:** R-20.
+- Make `keys.js` UI-metadata only (defaults/types from schema); remove dead keys with schema migration note (requires human OK).
+
+#### R-21 — Delete obsolete files, README (stub)
+- **Fixes:** R-21.
+- Delete obsolete files, legacy UI, g44 tooling; update README (45-50 only).
+

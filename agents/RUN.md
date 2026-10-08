@@ -160,7 +160,7 @@ Status: `[ ]` todo · `[~]` in progress · `[x]` done (hash) · `[!]` blocked ·
 ### Phase 5 — Elegance (G4)
 | | Cycle | Task | Depends | Notes |
 |---|---|---|---|---|
-| [~] | 5.1 | R-17 settings reactions as data | 4.3 | |
+| [x] db807f4 | 5.1 | R-17 settings reactions as data | 4.3 | |
 | [ ] | 5.2 | R-18 effects base, prune helpers | 3.5 | |
 | [ ] | 5.3 | R-19 module renames / moves | 5.1 | |
 | [ ] | 5.4 | R-20 keys from schema, dead keys | 0.3 | HUMAN OK for key removal |
@@ -380,3 +380,4 @@ Format: `YYYY-MM-DD HH:MM · cycle · EVENT · details` where EVENT ∈ `SETUP, 
 - 2026-10-08 · 4.5 · PASS · d4b914b. DockModel architecture evaluation document committed; autonomous DockModel prototype implementation landed on refactor branch (`d10959c`, `27a095e`). Phase 4 complete.
 - 2026-10-08 · 5.1 · PREFLIGHT · tree clean (agents edits only); GNOME Shell 50.5. Proceeding to Phase 5 (Elegance).
 - 2026-10-08 · 5.1 · ASSIGN · R-17 settings reactions as data. Replace 180-line switch with declarative REACTIONS map and coalesced idle flush in extension.js.
+- 2026-10-08 · 5.1 · AUDIT-PASS · db807f4. check=PASS lint=0/135 settings=exit 0 unit=49/49 compat, 15/15 timer, 20/20 tracker smoke=SKIPPED (human directive). R-17 fixed: declarative REACTIONS dictionary and ACTION_ORDER array replace ~180-line switch in extension.js; settings updates coalesced into one idle flush per tick via GLib.idle_add.

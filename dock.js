@@ -548,7 +548,9 @@ export let Dock = GObject.registerClass(
 
       Main.layoutManager.addChrome(this, {
         affectsStruts: false,
-        // affectsInputRegion: false,
+        ...(Config.PACKAGE_VERSION[0] == '4'
+          ? { affectsInputRegion: false }
+          : {}),
         trackFullscreen: true,
       });
 

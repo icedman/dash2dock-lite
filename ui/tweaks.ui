@@ -70,7 +70,6 @@
             <property name="title" translatable="yes">Rise Curve</property>
             <property name="subtitle" translatable="yes">Rise curve function.</property>
             <property name="activatable-widget">animation-rise-curve</property>
-            <property name="visible">false</property>
             <child>
               <object class="GtkDropDown" id="animation-rise-curve">
                 <property name="valign">center</property>
@@ -389,8 +388,9 @@
   </object>
   <object class="GtkStringList" id="animation-rise-curve-model">
     <items>
-      <item translatable="yes">Quadratic Ease Out</item>
-      <item translatable="yes">Cubic Ease Out</item>
+      <item translatable="yes">Cosine Bell</item>
+      <item translatable="yes">Linear Proximity</item>
+      <item translatable="yes">Smoothstep Polynomial</item>
     </items>
   </object>
 </interface>

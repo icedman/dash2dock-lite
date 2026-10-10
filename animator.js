@@ -850,27 +850,55 @@ export let Animator = class {
           // icon._label.style = 'font-size: 32pt';
           // icon._label.set_scale(0.5, 0.5);
           let lsz = icon._label.get_transformed_size();
-          if (!isNaN(lsz[0]) && !isNaN(lsz[1])) {
-            icon._label.x = tPos[0] + sw / 2 - lsz[0] / 2;
-            icon._label.y = tPos[1] + sh / 2 - lsz[1] / 2;
-            if (vertical) {
-              if (dock._position == DockPosition.LEFT) {
-                icon._label.x += sh / 1.5 + icon._label.width / 2;
-              } else {
-                icon._label.x -= sh / 1.5 + icon._label.width / 2;
-              }
-              icon._label.y += 2 * (m.geometry_scale || 1);
-            } else {
-              if (magnify == 0 || dock._iconSize <= 4) {
-                sh *= 1.5;
-              }
-              if (dock._position == DockPosition.BOTTOM) {
-                icon._label.y -= sh / 1.25;
-              } else {
-                icon._label.y += sh / 1.25;
-              }
-              icon._label.x += 2 * (m.geometry_scale || 1);
+          if (
+            !isNaN(lsz[0]) &&
+            !isNaN(lsz[1]) &&
+            !isNaN(p[0]) &&
+            !isNaN(p[1])
+          ) {
+            // The label follows the icon along the dock, but its distance from
+            // the dock is fixed: it is computed from the icon's resting
+            // position and its size at full magnification, not from the
+            // per-frame size of the renderer. Otherwise the label jitters
+            // while the icon scales.
+            let peakScale = Math.max(1, scaleAtMax);
+            let peakSize = unscaledIconSize * peakScale;
+            let peakRise = unscaledIconSize * (peakScale - 1) * rise;
+            if (peakSize > icon.height) {
+              peakRise += (peakSize - icon.height) * 0.5;
             }
+            // direction away from the screen edge
+            let away =
+              dock._position == DockPosition.BOTTOM ||
+              dock._position == DockPosition.RIGHT
+                ? -1
+                : 1;
+            let gap = 2 * (m.geometry_scale || 1);
+
+            let lx;
+            let ly;
+            if (vertical) {
+              lx =
+                p[0] +
+                icon.width / 2 -
+                lsz[0] / 2 +
+                away * (peakRise + peakSize / 1.5 + icon._label.width / 2);
+              ly = tPos[1] + sh / 2 - lsz[1] / 2 + gap;
+            } else {
+              let peakHeight = peakSize;
+              if (magnify == 0 || dock._iconSize <= 4) {
+                peakHeight *= 1.5;
+              }
+              lx = tPos[0] + sw / 2 - lsz[0] / 2 + gap;
+              ly =
+                p[1] +
+                icon.height / 2 -
+                lsz[1] / 2 +
+                away * (peakRise + peakHeight / 1.25);
+            }
+            // whole pixels only, sub-pixel positions make the text shimmer
+            icon._label.x = Math.round(lx);
+            icon._label.y = Math.round(ly);
           }
         }
 

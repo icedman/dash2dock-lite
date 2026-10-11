@@ -548,7 +548,7 @@ export let Dock = GObject.registerClass(
 
       Main.layoutManager.addChrome(this, {
         affectsStruts: false,
-        // affectsInputRegion: false,
+        affectsInputRegion: false,
         trackFullscreen: true,
       });
 
@@ -1388,7 +1388,7 @@ export let Dock = GObject.registerClass(
 
       // dwell
       //! add scaleFactor?
-      let dwellHeight = 2;
+      let dwellHeight = 4;
       if (vertical) {
         this.dwell.width = dwellHeight;
         this.dwell.height = this.height;

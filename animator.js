@@ -239,8 +239,6 @@ export let Animator = class {
     let scaleFactor = dock._scaleFactor;
 
     let nearestIcon = null;
-    let largestIcon = null;
-    let largestSize = -1;
 
     let idx = 0;
     let prevIcon = null;
@@ -332,17 +330,25 @@ export let Animator = class {
     const activePadding = basePadding;
     const activeContainerWidth = ICON_SIZE + activePadding;
 
-    // Re-evaluate isWithin using our custom expanded hit-test (including imaginary icons on both ends)
+    // Hit-test strictly within the visual bounds of the dock
     const primaryMouseVal = vertical ? py : px;
     const secondaryMouseVal = vertical ? px : py;
     const firstIconSecondary = vertical ? firstIconObj._fixedPosition[0] : firstIconObj._fixedPosition[1];
 
-    const secondaryDist = Math.abs(secondaryMouseVal - (firstIconSecondary + ICON_SIZE / 2));
-    const isWithinSecondary = (secondaryDist < ICON_SIZE * 2.0);
+    const dockPad = iconSize * 0.1 * (dock.extension.dock_padding || 0) * scaleFactor;
+    const tx1 = firstIconObj._icon ? (vertical ? firstIconObj._icon.translationY : firstIconObj._icon.translationX) : 0;
+    const tx2 = lastIconObj._icon ? (vertical ? lastIconObj._icon.translationY : lastIconObj._icon.translationX) : 0;
 
-    const expandedStart = staticDockStart - NUM_IMAGINARY * activeContainerWidth;
-    const expandedEnd = staticDockStart + restingL + NUM_IMAGINARY * activeContainerWidth;
-    const isWithinPrimary = (primaryMouseVal >= expandedStart && primaryMouseVal <= expandedEnd);
+    const dockVisualStart = staticDockStart + (animated ? Math.min(0, tx1) : 0) - dockPad;
+    const dockVisualEnd = staticDockStart + restingL + (animated ? Math.max(0, tx2) : 0) + dockPad;
+    const isWithinPrimary = (primaryMouseVal >= dockVisualStart && primaryMouseVal <= dockVisualEnd);
+
+    const iconCenterSec = firstIconSecondary + ICON_SIZE / 2;
+    const secondaryDist = Math.abs(secondaryMouseVal - iconCenterSec);
+    const maxSecReach = animated
+      ? (scaleAtMax * ICON_SIZE) / 2 + rise * scaleFactor + dockPad + 4
+      : ICON_SIZE / 2 + dockPad + 4;
+    const isWithinSecondary = (secondaryDist <= maxSecReach);
 
     isWithin = isWithinPrimary && isWithinSecondary;
     if (m.inFullscreen) {
@@ -388,37 +394,7 @@ export let Animator = class {
         }
     }
 
-    // Align nearestIcon and largestIcon directly with the formula's peak-scaled icon
-    let peakIcon = null;
-    let minPeakDistance = Infinity;
-    let maxScale = -1;
 
-    if (hoverActive && !noAnimation) {
-        animateIcons.forEach((icon, i) => {
-            if (!icon._icon) return;
-            const calcIndex = i + NUM_IMAGINARY;
-            const xi = staticCenters[calcIndex];
-            const dist = Math.abs(xi - xmClamped);
-            const scale = iconScales[calcIndex];
-
-            if (dist < minPeakDistance) {
-                minPeakDistance = dist;
-                peakIcon = icon;
-                maxScale = scale;
-            }
-        });
-
-        const maxReach = Math.max(threshold, activeContainerWidth);
-        if (minPeakDistance > maxReach) {
-            peakIcon = null;
-        }
-    }
-
-    nearestIcon = peakIcon;
-    largestIcon = peakIcon;
-    largestSize = maxScale;
-    dock._nearestIcon = nearestIcon;
-    dock._hoveredIcon = nearestIcon;
 
     const packedCenters = [];
     let currentPos = 0;
@@ -438,7 +414,7 @@ export let Animator = class {
     const centerMouse = totalCalcStaticL / 2;
     const centerScales = [];
     const centerWidths = [];
-    const activeHoverFactor = nearestIcon ? 1.0 : 0.0;
+    const activeHoverFactor = (hoverActive && !noAnimation) ? 1.0 : 0.0;
     for (let i = 0; i < TOTAL_CALC_ICONS; i++) {
         const xi = staticCenters[i];
         const targetScale = getScale(xi, centerMouse, threshold, scaleAtMax, curveType);
@@ -516,11 +492,43 @@ export let Animator = class {
     let firstIcon = null;
     let lastIcon = null;
     let iconTable = [];
-    let didScale = (nearestIcon !== null);
-    let hoveredIcon = nearestIcon;
 
     // Centering shift to align the dynamic packed dock center with the resting dock center
     const centeringShift = (restingL - realActiveL) / 2;
+
+    // Nearest icon computed directly from rendered visual centers on screen
+    nearestIcon = null;
+    let minDistance = Infinity;
+
+    if (hoverActive && !noAnimation) {
+      animateIcons.forEach((icon, idx) => {
+        if (!icon._icon) return;
+        const calcIndex = idx + NUM_IMAGINARY;
+        const pc = adjustedPackedCenters[calcIndex];
+        const activeCenter = pc - realLeftEdgeUnshifted;
+        const visualCenter = staticDockStart + activeCenter + centeringShift;
+        const dist = Math.abs(visualCenter - primaryMouse);
+
+        if (dist < minDistance) {
+          minDistance = dist;
+          nearestIcon = icon;
+        }
+      });
+
+      if (nearestIcon) {
+        const nearestIndex = animateIcons.indexOf(nearestIcon) + NUM_IMAGINARY;
+        const nearestScale = iconScales[nearestIndex] ?? 1.0;
+        const halfWidth = (ICON_SIZE * nearestScale) / 2 + activePadding;
+        if (minDistance > halfWidth) {
+          nearestIcon = null;
+        }
+      }
+    }
+
+    let didScale = (nearestIcon !== null);
+    let hoveredIcon = nearestIcon;
+    dock._nearestIcon = nearestIcon;
+    dock._hoveredIcon = nearestIcon;
 
     animateIcons.forEach((icon, idx) => {
         if (!icon._icon) return;
@@ -528,6 +536,8 @@ export let Animator = class {
         const calcIndex = idx + NUM_IMAGINARY;
         const pc = adjustedPackedCenters[calcIndex];
         const activeCenter = pc - realLeftEdgeUnshifted;
+        const visualCenter = staticDockStart + activeCenter + centeringShift;
+        icon._visualCenter = visualCenter;
 
         // Position the Clutter actor perfectly using 1D packing relative to its resting center
         icon._translate = activeCenter + centeringShift - restingCenters[idx];
@@ -559,8 +569,6 @@ export let Animator = class {
         lastIcon = icon;
     });
 
-    dock._hoveredIcon = nearestIcon;
-
     //-------------------
     // interpolation / animation
     //-------------------
@@ -577,18 +585,10 @@ export let Animator = class {
       slowDown = 0.5;
     }
 
-    largestIcon = null;
-    largestSize = -1;
-
     animateIcons.forEach((icon) => {
       if (!icon._icon) return;
 
       icon._scale = icon._targetScale;
-
-      if (largestSize == -1 || largestSize < icon._scale) {
-        largestIcon = icon;
-        largestSize = icon._scale;
-      }
 
       const isTopOrLeft =
         dock._position === DockPosition.TOP ||
@@ -641,11 +641,6 @@ export let Animator = class {
       }
     });
 
-    if (largestIcon && nearestIcon) {
-      hoveredIcon = largestIcon;
-      dock._hoveredIcon = hoveredIcon;
-      dock._nearestIcon = hoveredIcon;
-    }
 
     //--------------
     // renderer

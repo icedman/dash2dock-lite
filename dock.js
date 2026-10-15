@@ -274,6 +274,41 @@ export let Dock = GObject.registerClass(
       this._debounceBeginAnimateSeq = null;
     }
 
+    activateTargetIcon(target, button = 1) {
+      if (!target) return false;
+      let showAppsIcon = Compat.getDashShowAppsIcon(this.dash);
+      if (showAppsIcon && target === showAppsIcon) {
+        Compat.showOverviewApps(Main.overview);
+        return true;
+      }
+      if (target._onClick) {
+        let now = Date.now();
+        if (!target._lastClickTime || now - target._lastClickTime > 1000) {
+          target._lastClickTime = now;
+          target._onClick();
+        }
+        return true;
+      }
+      if (target._appwell) {
+        let now = Date.now();
+        if (target._lastAppwellClickTime && now - target._lastAppwellClickTime < 500) {
+          return true;
+        }
+        target._lastAppwellClickTime = now;
+        if (!target._menu) {
+          this._maybeBounce(target);
+        }
+        this._maybeMinimizeOrMaximize(target._appwell.app, button);
+        if (target._appwell._activate) {
+          target._appwell._activate(button);
+        } else if (target._appwell.activate) {
+          target._appwell.activate(button);
+        }
+        return true;
+      }
+      return false;
+    }
+
     _onButtonPressEvent(evt) {
       return Clutter.EVENT_PROPAGATE;
     }
@@ -903,17 +938,16 @@ export let Dock = GObject.registerClass(
             icon.connectObject(
               'button-press-event',
               () => {
-                if (this.animated && this._hoveredIcon && this._hoveredIcon !== showAppsIcon) {
-                  let target = this._hoveredIcon;
-                  if (target._onClick) {
-                    target._onClick();
-                  } else if (target._appwell) {
-                    target._appwell.activate(1);
-                  }
+                let target =
+                  this.animated && (this._nearestIcon || this._hoveredIcon)
+                    ? this._nearestIcon || this._hoveredIcon
+                    : null;
+                if (target && target !== showAppsIcon) {
+                  this.activateTargetIcon(target, 1);
                   return Clutter.EVENT_STOP;
                 }
                 Compat.showOverviewApps(Main.overview);
-                return Clutter.EVENT_PROPAGATE;
+                return Clutter.EVENT_STOP;
               },
               'enter-event',
               () => {
@@ -962,27 +996,11 @@ export let Dock = GObject.registerClass(
           c._appwell._activate = c._appwell.activate;
           c._appwell.activate = (button) => {
             try {
-              let target = (this.animated && this._hoveredIcon) ? this._hoveredIcon : c;
-              if (showAppsIcon && target === showAppsIcon) {
-                Compat.showOverviewApps(Main.overview);
-                return;
-              }
-              if (target._onClick) {
-                target._onClick();
-                return;
-              }
-              if (target._appwell) {
-                if (!target._menu) {
-                  this._maybeBounce(target);
-                }
-                this._maybeMinimizeOrMaximize(target._appwell.app, button);
-                return target._appwell._activate(button);
-              }
-              if (!c._menu) {
-                this._maybeBounce(c);
-              }
-              this._maybeMinimizeOrMaximize(c._appwell.app, button);
-              return c._appwell._activate(button);
+              let target =
+                this.animated && (this._nearestIcon || this._hoveredIcon)
+                  ? this._nearestIcon || this._hoveredIcon
+                  : c;
+              this.activateTargetIcon(target, button);
             } catch (e) {
               console.error('d2da: appwell activate', e);
             }

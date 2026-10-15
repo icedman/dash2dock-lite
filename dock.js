@@ -726,6 +726,7 @@ export let Dock = GObject.registerClass(
           c._renderer = null;
           c._badge = null;
           c._dots = null;
+          c._showLabel = null;
         });
       }
 
@@ -846,6 +847,7 @@ export let Dock = GObject.registerClass(
       c._renderer = null;
       c._badge = null;
       c._dots = null;
+      c._showLabel = null;
       this._needsLayout = true;
     }
 
@@ -985,6 +987,11 @@ export let Dock = GObject.registerClass(
             }
             if (c._label) {
               c._showLabel();
+              try {
+                this.animator?.alignLabel(c);
+              } catch (err) {
+                console.error('d2da: alignLabel on showLabel', err);
+              }
             }
           };
         }

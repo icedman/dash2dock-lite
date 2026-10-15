@@ -810,24 +810,18 @@ export let Animator = class {
 
         // label
         if (
+          !dock.extension.hide_labels &&
           icon === hoveredIcon &&
           icon._label &&
           icon._label.text &&
           icon._label.text.length
         ) {
-          let tSize = renderer.get_transformed_size();
-          // let tPos = icon._icon.get_transformed_position();
-          let tPos = renderer.get_transformed_position();
-          if (isNaN(tPos[0]) || isNaN(tPos[1])) {
-            tPos[0] = 0;
-            tPos[1] = 0;
-          }
-          let sw = !isNaN(tSize[0]) ? tSize[0] : 0;
-          let sh = !isNaN(tSize[1]) ? tSize[1] : 0;
-
           if (this._dwellIcon === icon) {
             this._dwellTick += dt;
-            if (this._dwellTick > 450 && icon._targetScale > 1) {
+            if (
+              this._dwellTick > 450 &&
+              (icon._targetScale > 1 || magnify == 0)
+            ) {
               try {
                 hideLabel = false;
                 if (icon._label.opacity < 255 - 25) {
@@ -844,31 +838,7 @@ export let Animator = class {
           }
           this._dwellIcon = icon;
 
-          // icon._label.style = 'font-size: 32pt';
-          // icon._label.set_scale(0.5, 0.5);
-          let lsz = icon._label.get_transformed_size();
-          if (!isNaN(lsz[0]) && !isNaN(lsz[1])) {
-            icon._label.x = tPos[0] + sw / 2 - lsz[0] / 2;
-            icon._label.y = tPos[1] + sh / 2 - lsz[1] / 2;
-            if (vertical) {
-              if (dock._position == DockPosition.LEFT) {
-                icon._label.x += sh / 1.5 + icon._label.width / 2;
-              } else {
-                icon._label.x -= sh / 1.5 + icon._label.width / 2;
-              }
-              icon._label.y += 2 * (m.geometry_scale || 1);
-            } else {
-              if (magnify == 0 || dock._iconSize <= 4) {
-                sh *= 1.5;
-              }
-              if (dock._position == DockPosition.BOTTOM) {
-                icon._label.y -= sh / 1.25;
-              } else {
-                icon._label.y += sh / 1.25;
-              }
-              icon._label.x += 2 * (m.geometry_scale || 1);
-            }
-          }
+          this.alignLabel(icon);
         }
 
         if (hideLabel && icon._label) {
@@ -1146,6 +1116,78 @@ export let Animator = class {
     }
 
     dock.extension.integrations.bms_update_size(this);
+  }
+
+  alignLabel(icon) {
+    if (!icon || !icon._label) return;
+    let renderer =
+      icon._renderer ||
+      (icon._idx !== undefined ? this._renderers?.[icon._idx] : null);
+
+    let dock = this.dock;
+    if (!dock) return;
+
+    let tPos, tSize;
+    if (renderer) {
+      tSize = renderer.get_transformed_size();
+      tPos = renderer.get_transformed_position();
+    } else {
+      let iconActor = icon._icon || icon;
+      tSize = iconActor.get_transformed_size();
+      tPos = iconActor.get_transformed_position();
+    }
+
+    if (isNaN(tPos[0]) || isNaN(tPos[1])) {
+      tPos[0] = 0;
+      tPos[1] = 0;
+    }
+    let sw = !isNaN(tSize[0]) ? tSize[0] : 0;
+    let sh = !isNaN(tSize[1]) ? tSize[1] : 0;
+
+    let lsz = icon._label.get_transformed_size();
+    let lw = !isNaN(lsz[0]) && lsz[0] > 0 ? lsz[0] : 0;
+    let lh = !isNaN(lsz[1]) && lsz[1] > 0 ? lsz[1] : 0;
+    if (!lw || !lh) {
+      try {
+        let [, natW] = icon._label.get_preferred_width(-1);
+        let [, natH] = icon._label.get_preferred_height(natW);
+        lw = lw || natW || icon._label.width || 0;
+        lh = lh || natH || icon._label.height || 0;
+      } catch {
+        lw = lw || icon._label.width || 0;
+        lh = lh || icon._label.height || 0;
+      }
+    }
+
+    let lx = tPos[0] + sw / 2 - lw / 2;
+    let ly = tPos[1] + sh / 2 - lh / 2;
+
+    let vertical = dock.isVertical();
+    let m = dock._monitor;
+    let scale = m?.geometry_scale || 1;
+
+    if (vertical) {
+      if (dock._position == DockPosition.LEFT) {
+        lx += sh / 1.5 + lw / 2;
+      } else {
+        lx -= sh / 1.5 + lw / 2;
+      }
+      ly += 2 * scale;
+    } else {
+      let magnify = dock.extension.animation_magnify;
+      if (magnify == 0 || dock._iconSize <= 4) {
+        sh *= 1.5;
+      }
+      if (dock._position == DockPosition.BOTTOM) {
+        ly -= sh / 1.25;
+      } else {
+        ly += sh / 1.25;
+      }
+      lx += 2 * scale;
+    }
+
+    icon._label.x = Math.round(lx);
+    icon._label.y = Math.round(ly);
   }
 
   bounceIcon(appwell) {

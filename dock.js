@@ -115,7 +115,6 @@ export let Dock = GObject.registerClass(
       this.renderArea.opacity = 0;
 
       this.add_child(this.renderArea);
-      this.add_child(this.createDash());
 
       this._scrollCounter = 0;
 
@@ -150,6 +149,8 @@ export let Dock = GObject.registerClass(
         this.autohider._onLeaveEvent.bind(this.autohider),
         this
       );
+
+      this.add_child(this.createDash());
     }
 
     destroy() {
@@ -1547,7 +1548,7 @@ export let Dock = GObject.registerClass(
 
     //! move these generic functions outside of this class
     _isWithinDash(p) {
-      if (this._hidden) {
+      if (this._hidden || !this.struts) {
         return false;
       }
       let xy = this.struts.get_transformed_position();
@@ -1561,8 +1562,8 @@ export let Dock = GObject.registerClass(
     _beginAnimation(caller) {
       if (this.extension.debug_visual) {
         this.add_style_class_name('hi');
-        this.struts.add_style_class_name('hi');
-        this.dwell.add_style_class_name('hi');
+        this.struts?.add_style_class_name('hi');
+        this.dwell?.add_style_class_name('hi');
       }
 
       this._favorite_ids = Compat.getFavoriteAppIds(Fav.getAppFavorites());
@@ -1600,8 +1601,8 @@ export let Dock = GObject.registerClass(
     _endAnimation() {
       if (this.extension.debug_visual) {
         this.remove_style_class_name('hi');
-        this.struts.remove_style_class_name('hi');
-        this.dwell.remove_style_class_name('hi');
+        this.struts?.remove_style_class_name('hi');
+        this.dwell?.remove_style_class_name('hi');
       }
 
       this._updateFocusedIcon();

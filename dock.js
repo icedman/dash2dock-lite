@@ -109,6 +109,8 @@ export let Dock = GObject.registerClass(
         offscreen_redirect: Clutter.OffscreenRedirect.ALWAYS,
         reactive: false,
         track_hover: false,
+        x_expand: true,
+        y_expand: true,
       });
       this.renderArea.opacity = 0;
 
@@ -1386,13 +1388,26 @@ export let Dock = GObject.registerClass(
       //   this.dash.y = this.height * f.edgeY + this.dash.height * f.offsetY;
       // }
 
-      // computation derived from animation scale
+      // computation derived from animation scale, bounce travel, and edge distance
       let magnify = this.extension.animation_magnify * 1.8;
-      let fp = iconSize * 2 + iconSize * (0.6 * (1 + magnify));
+      let bounceHeight = this.extension.animation_bounce_height ?? 0.75;
+      let bounceTravel = (iconSize / 3) * ((0.25 + bounceHeight) * 1.5);
+      let edgeDistance = (this.extension.edge_distance || 0) * 20;
+      if (this.extension.panel_mode) {
+        edgeDistance = 0;
+      }
+
+      // Footprint must provide enough cross-axis clearance for:
+      // itemSize + magnification/rise expansion + bounce travel + edge distance + margin buffer
+      let maxMagnifyRise = iconSize * (1.2 * (1 + magnify));
+      let fp = iconSize + maxMagnifyRise + bounceTravel + edgeDistance + 16;
+      let maxFp = (vertical ? m.width : m.height) * 0.9;
+      fp = Math.min(fp, maxFp / scaleFactor);
+
       if (vertical) {
-        this.width = fp * scaleFactor;
+        this.width = Math.round(fp * scaleFactor);
       } else {
-        this.height = fp * scaleFactor;
+        this.height = Math.round(fp * scaleFactor);
       }
 
       this._snapToContainerEdge(m, this, true);
@@ -1400,6 +1415,11 @@ export let Dock = GObject.registerClass(
       this.y += m.y;
 
       this._snapToContainerEdge(this, this.dash, true);
+
+      this.renderArea.x = 0;
+      this.renderArea.y = 0;
+      this.renderArea.width = this.width;
+      this.renderArea.height = this.height;
 
       this._iconSizeScaledDown = iconSize;
       this._scaledDown = scaleDown;

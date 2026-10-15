@@ -634,6 +634,7 @@ export let Animator = class {
 
       // clear bounce animation
       if (icon._appwell) {
+        icon._appwell.translationX = 0;
         icon._appwell.translationY = 0;
         didBounce = icon._appwell._bounce;
         // clear bounce
@@ -695,6 +696,7 @@ export let Animator = class {
         icon._renderer.set_style_class_name('');
 
         if (!icon._appwell?._bounce) {
+          icon._renderer.translationX = 0;
           icon._renderer.translationY = 0;
         }
 
@@ -1141,11 +1143,11 @@ export let Animator = class {
     let app_id = Compat.getAppId(appwell);
 
     // let scaleFactor = dock.getMonitor().geometry_scale;
-    //! why not scaleFactor?
+    let iconSize = dock._iconSizeScaledDown || dock._iconSize;
     let travel =
-      (dock._iconSize / 3) *
-      ((0.25 + dock.extension.animation_bounce_height) * 1.5);
-    // * scaleFactor;
+      (iconSize / 3) *
+      ((0.25 + (dock.extension.animation_bounce_height ?? 0.75)) * 1.5);
+    appwell.translation_x = 0;
     appwell.translation_y = 0;
 
     const getTarget = (app_id) => {
@@ -1165,14 +1167,26 @@ export let Animator = class {
     const translateDecor = (container, appwell) => {
       try {
         if (!container._icon) return;
-        if (container._renderer) {
-          container._renderer.translationY = appwell.translationY;
-        }
-        if (container._image) {
-          container._image.translationY = appwell.translationY;
-        }
-        if (container._badge) {
-          container._badge.translationY = appwell.translationY;
+        if (dock.isVertical()) {
+          if (container._renderer) {
+            container._renderer.translationX = appwell.translationX;
+          }
+          if (container._image) {
+            container._image.translationX = appwell.translationX;
+          }
+          if (container._badge) {
+            container._badge.translationX = appwell.translationX;
+          }
+        } else {
+          if (container._renderer) {
+            container._renderer.translationY = appwell.translationY;
+          }
+          if (container._image) {
+            container._image.translationY = appwell.translationY;
+          }
+          if (container._badge) {
+            container._badge.translationY = appwell.translationY;
+          }
         }
         if (container._label) {
           container._label.opacity = 0;
@@ -1266,6 +1280,7 @@ export let Animator = class {
             appwell.translation_y = 0;
             if (container._renderer) {
               container._renderer.translationX = 0;
+              container._renderer.translationY = 0;
             }
           } catch (err) {
             console.log(err);

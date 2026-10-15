@@ -85,19 +85,19 @@ Minor nits (naming, a stray blank line) that don't violate a rule: list them as 
 > Overwritten each cycle. On FAIL the Worker reads this for its rework.
 
 ```
-Cycle / Task / Attempt: 5.1 / R-17 / 1
+Cycle / Task / Attempt: — / human request / 1
 Verdict:          PASS
-Commit:           db807f4 (refactor(extension): settings reactions as data and coalesced flush)
-Gates:            check=PASS ; lint=PASS 0 err / 135 warn (matches HEAD baseline 135) ;
+Commit:           pending
+Gates:            check=PASS ; lint=PASS 0 err / 98 warn (matches baseline) ;
                   settings=exit 0, 0/30 ; compat_baseline_check all passed (49/49) ;
                   timer_check all passed (15/15) ; window_tracker_check all passed (20/20) ;
-                  smoke=SKIPPED (human directive)
-Scope:            extension.js
-Rule violations:  none. A1-A10, A12, A13 clean (A11 n/a).
-Specific checks:  extension.js defines REACTIONS lookup table mapping settings to ordered actions and ACTION_ORDER array; replaces ~180-line switch statement in _enableSettings() with _queueReactions(); coalesces multiple setting reactions into a single idle tick flush via GLib.idle_add; msg-to-ext commands handled synchronously and cleared; _disableSettings() removes pending idle source and clears pending reaction Set.
+                  smoke: all probe leak deltas 0 (liveDock/liveDash/liveAnimator 0), 0 shutdown GC criticals
+Scope:            dock.js, animator.js
+Rule violations:  none. A1-A10, A12, A14 clean (A11 n/a).
+Specific checks:  dock.js factors in bounce travel, edge distance, and margin buffer in footprint (fp) calculation; explicitly sizes and positions renderArea to match dock dimensions (x=0, y=0, width=this.width, height=this.height); adds x_expand/y_expand to renderArea; animator.js bounceIcon computes travel using scaled icon size; translateDecor handles vertical dock X bounce for badges and calendar/clock images; translationX/translationY reset cleanly.
 Rework list:      none.
-Findings confirmed: R-17.
-Human check needed: none.
+Findings confirmed: renderArea clipping at large icon sizes during bounce resolved.
+Human check needed: visual verification of icon bounce with large icon size and max bounce height.
 ```
 
 ## 7. Audit Log (append-only, newest last)
@@ -139,6 +139,7 @@ Human check needed: none.
 | — | human request | 1 | PASS | 7fe412b | check=PASS; lint 0/137 = baseline; check-settings exit 0, 0/30; compat_baseline_check 49/49; timer_check 15/15; window_tracker_check 20/20; smoke x2 PASS (1 known sig, 0 new, ALL deltas 0); strict PASS (6/5 lines, ALL deltas 0, 0 crit); settings variant strict PASS (deltas 0, crit 0); disposed/finalized 0, `d2da: ` 0 | Dock animation re-entry fix: ensure _beginAnimation() repopulates this._icons via _findIcons() if null; fix St.BoxLayout _extraIcons orientation using modern orientation property directly (avoiding null layout_manager TypeError and deprecated vertical property warning); deleted obsolete DESIGN.md and CHECKLIST.md. |
 | 5.1 | R-17 | 1 | PASS | db807f4 | check=PASS; lint 0/135 = baseline; check-settings exit 0, 0/30; compat_baseline_check 49/49; timer_check 15/15; window_tracker_check 20/20; smoke=SKIPPED (human directive) | R-17 fixed. Declarative REACTIONS dictionary and ACTION_ORDER array replace ~180-line switch statement in _enableSettings(); _queueReactions() coalesces multi-setting updates into a single GLib.idle_add flush pass in deterministic order; msg-to-ext handled synchronously; _disableSettings() clears pending reactions and removes idle source. |
 | 5.2 | R-18 | 1 | PASS | d7db821 | check=PASS; lint 0/98 (warns reduced by 37, 0 err); check-settings exit 0, 0/30; compat_baseline_check 49/49; timer_check 15/15; window_tracker_check 20/20; smoke=SKIPPED (human directive) | R-18 / P-9 fixed. Base ColorShaderEffect created with in-memory Map shader cache; TintEffect and MonochromeEffect extend ColorShaderEffect passing GLSL filenames; unused blur/color effects deleted; dead easing curves pruned in easing.js down to used 4. animator.js slideIn check and extension.js _onKeyPressed preserved per human directive. |
+| — | human request | 1 | PASS | this commit | check=PASS; lint 0/98 = baseline; check-settings exit 0, 0/30; compat_baseline_check 49/49; timer_check 15/15; window_tracker_check 20/20; smoke deltas ALL 0, 0 GC crit | Dock footprint (fp) calculation expanded to include bounce travel, edge distance, and margin buffer; renderArea explicitly sized to match dock dimensions (x=0, y=0, width=this.width, height=this.height); x_expand/y_expand added; bounceIcon computes travel using scaled icon size; translateDecor handles vertical dock X bounce for badges and calendar/clock images; translationX/translationY reset cleanly. |
 
 
 

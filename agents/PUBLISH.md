@@ -30,7 +30,8 @@ All release operations are centralized in [`tools/release.sh`](file:///home/icem
 | **1. Prepare** | `./tools/release.sh prepare <gnome-major> <version> [source-branch]` | Switches to branch `g<major>`, merges `main`, updates `metadata.json` (`shell-version` & `version`). |
 | **2. Quality Gates** | `./tools/release.sh check` | Runs `make check`, `make lint`, `make check-settings`, `make smoke`. Exits non-zero on failure. |
 | **3. Package** | `./tools/release.sh package <version>` (or `make publish VERSION=<version>`) | Builds EGO zip (`dash2dock-lite@icedman.github.com.zip`) and release zip (`dash2dock-lite-v<version>.zip`). |
-| **4. Publish** | `./tools/release.sh publish <version> [remote]` | Verifies clean git state, creates git tag `v<version>`, pushes branch + tag to remote, and creates GitHub Release via `gh` (or prints upload instructions). |
+| **4. Pre-Publish Check** | `./tools/release.sh check-zip [zip-path]` | Runs `shexli` static analysis on the package zip. Enforces 0 errors and minimal warnings — otherwise blocks and reports. |
+| **5. Publish** | `./tools/release.sh publish <version> [remote]` | Runs pre-publish check-zip, verifies clean git state, creates git tag `v<version>`, pushes branch + tag to remote, and creates GitHub Release via `gh`. |
 
 ---
 
@@ -45,8 +46,11 @@ flowchart TD
     C -- No --> D["Report Failure & Stop"]
     C -- Yes --> E["3. Commit Release Bump<br/>git commit -m 'release: v50.0'"]
     E --> F["4. Package<br/>./tools/release.sh package 50.0"]
-    F --> G["5. Publish & Tag<br/>./tools/release.sh publish 50.0 origin"]
-    G --> H["6. Final Summary Report"]
+    F --> G["5. Pre-Publish Check<br/>./tools/release.sh check-zip"]
+    G --> H{"shexli: 0 errors?"}
+    H -- No --> I["Block Release & Report Findings"]
+    H -- Yes --> J["6. Publish & Tag<br/>./tools/release.sh publish 50.0 origin"]
+    J --> K["7. Final Summary Report"]
 ```
 
 ### Stage 1: Prepare
@@ -93,16 +97,31 @@ Verifies two artifacts are generated in the repository root:
 1. `dash2dock-lite@icedman.github.com.zip` (for extensions.gnome.org)
 2. `dash2dock-lite-v50.0.zip` (for GitHub Releases)
 
-### Stage 4: Tag & Publish (Committed Publish)
+### Stage 4: Pre-Publish Verification (`shexli`)
+Before publishing or tagging, the packaged ZIP file MUST pass static analysis check via `shexli`:
+
+```bash
+./tools/release.sh check-zip
+# Or directly:
+shexli dash2dock-lite@icedman.github.com.zip
+```
+
+**Quality Rules & Enforcements:**
+1. **0 Errors Required:** Any error reported by `shexli` (e.g., deprecated or removed GNOME Shell APIs, missing manifest fields, disallowed calls) **strictly blocks release**.
+2. **Minimal Warnings:** Warnings must be kept minimal and thoroughly reviewed (e.g. ungated logging threshold, unnecessary or unreachable files).
+3. **Block & Report:** If `shexli` returns any error or excessive warnings, the Publisher subagent **MUST block release immediately** and report the full breakdown with rule IDs, affected files, line numbers, and snippets.
+
+### Stage 5: Tag & Publish (Committed Publish)
 A committed publish tags the exact source tree commit with the release version:
 ```bash
 ./tools/release.sh publish 50.0 origin
 ```
 The script enforces and performs the following:
-1. **Tree Verification:** Validates that the working tree is clean and fully committed.
-2. **Source Tagging:** Tags the exact source commit with `v<VERSION>` (e.g. `v50.0`, `v50.1` on current `HEAD`).
-3. **Pushing:** Pushes both the branch (`g50`) and tag (`v50.0`) to the git remote.
-4. **GitHub Release:** Uploads both `dash2dock-lite-v50.0.zip` and `dash2dock-lite@icedman.github.com.zip` to the release tag (via `gh` or interactive link).
+1. **Pre-Publish Gate:** Automatically runs `tools/release.sh check-zip` against the EGO zip; fails immediately if errors > 0.
+2. **Tree Verification:** Validates that the working tree is clean and fully committed.
+3. **Source Tagging:** Tags the exact source commit with `v<VERSION>` (e.g. `v50.0`, `v50.1` on current `HEAD`).
+4. **Pushing:** Pushes both the branch (`g50`) and tag (`v50.0`) to the git remote.
+5. **GitHub Release:** Uploads both `dash2dock-lite-v50.0.zip` and `dash2dock-lite@icedman.github.com.zip` to the release tag (via `gh` or interactive link).
 
 ---
 
@@ -117,6 +136,7 @@ For point releases fixing bugs in GNOME 50:
    git commit -am "release: bump to v50.1"
    ./tools/release.sh check
    ./tools/release.sh package 50.1
+   ./tools/release.sh check-zip
    ./tools/release.sh publish 50.1 origin
    ```
 
@@ -137,6 +157,7 @@ When the subagent completes, output the summary:
   - `make lint`: PASSED
   - `make check-settings`: PASSED
   - `make smoke`: PASSED
+  - `shexli` (pre-publish zip check): PASSED (0 errors, <N> warnings)
 - **Artifacts Created:**
   - `dash2dock-lite-v<VERSION>.zip` (<SIZE>)
   - `dash2dock-lite@icedman.github.com.zip` (<SIZE>)

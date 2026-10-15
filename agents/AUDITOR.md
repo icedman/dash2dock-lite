@@ -87,17 +87,16 @@ Minor nits (naming, a stray blank line) that don't violate a rule: list them as 
 ```
 Cycle / Task / Attempt: — / human request / 1
 Verdict:          PASS
-Commit:           8bc06d9 (fix(dock): expand footprint and size renderArea to prevent bounce clipping)
+Commit:           pending (fix(animator): sync notification badge translation with bouncing icon)
 Gates:            check=PASS ; lint=PASS 0 err / 98 warn (matches baseline) ;
                   settings=exit 0, 0/30 ; compat_baseline_check all passed (49/49) ;
-                  timer_check all passed (15/15) ; window_tracker_check all passed (20/20) ;
-                  smoke: all probe leak deltas 0 (liveDock/liveDash/liveAnimator 0), 0 shutdown GC criticals
-Scope:            dock.js, animator.js
+                  timer_check all passed (15/15) ; window_tracker_check all passed (20/20)
+Scope:            animator.js, dock.js
 Rule violations:  none. A1-A10, A12, A14 clean (A11 n/a).
-Specific checks:  dock.js factors in bounce travel, edge distance, and margin buffer in footprint (fp) calculation; explicitly sizes and positions renderArea to match dock dimensions (x=0, y=0, width=this.width, height=this.height); adds x_expand/y_expand to renderArea; animator.js bounceIcon computes travel using scaled icon size; translateDecor handles vertical dock X bounce for badges and calendar/clock images; translationX/translationY reset cleanly.
+Specific checks:  animator.js assigns icon._badge = badge and icon._dots = dots; in _animate(), syncs badge translationX/translationY with icon._renderer.translationX/Y and resets to 0 when inactive; in bounceIcon(), getTarget returns [icon, icon._appwell] directly; translateDecor resolves badge from container._badge or this._badges[container._idx] and applies vertical/horizontal translation matching appwell; reset frame zeroes out badge.translationX and badge.translationY; error logs use d2da: prefix; dock.js nulls c._renderer, c._badge, c._dots in destroy handler and _cleanupIcon.
 Rework list:      none.
-Findings confirmed: renderArea clipping at large icon sizes during bounce resolved.
-Human check needed: visual verification of icon bounce with large icon size and max bounce height.
+Findings confirmed: Notification badge now bounces along with the icon in horizontal and vertical dock orientations, and cleanly resets.
+Human check needed: Visual verification of notification badge bouncing when app triggers bounce animation.
 ```
 
 ## 7. Audit Log (append-only, newest last)
@@ -140,9 +139,5 @@ Human check needed: visual verification of icon bounce with large icon size and 
 | 5.1 | R-17 | 1 | PASS | db807f4 | check=PASS; lint 0/135 = baseline; check-settings exit 0, 0/30; compat_baseline_check 49/49; timer_check 15/15; window_tracker_check 20/20; smoke=SKIPPED (human directive) | R-17 fixed. Declarative REACTIONS dictionary and ACTION_ORDER array replace ~180-line switch statement in _enableSettings(); _queueReactions() coalesces multi-setting updates into a single GLib.idle_add flush pass in deterministic order; msg-to-ext handled synchronously; _disableSettings() clears pending reactions and removes idle source. |
 | 5.2 | R-18 | 1 | PASS | d7db821 | check=PASS; lint 0/98 (warns reduced by 37, 0 err); check-settings exit 0, 0/30; compat_baseline_check 49/49; timer_check 15/15; window_tracker_check 20/20; smoke=SKIPPED (human directive) | R-18 / P-9 fixed. Base ColorShaderEffect created with in-memory Map shader cache; TintEffect and MonochromeEffect extend ColorShaderEffect passing GLSL filenames; unused blur/color effects deleted; dead easing curves pruned in easing.js down to used 4. animator.js slideIn check and extension.js _onKeyPressed preserved per human directive. |
 | — | human request | 1 | PASS | 8bc06d9 | check=PASS; lint 0/98 = baseline; check-settings exit 0, 0/30; compat_baseline_check 49/49; timer_check 15/15; window_tracker_check 20/20; smoke deltas ALL 0, 0 GC crit | Dock footprint (fp) calculation expanded to include bounce travel, edge distance, and margin buffer; renderArea explicitly sized to match dock dimensions (x=0, y=0, width=this.width, height=this.height); x_expand/y_expand added; bounceIcon computes travel using scaled icon size; translateDecor handles vertical dock X bounce for badges and calendar/clock images; translationX/translationY reset cleanly. |
-
-
-
-
-
+| — | human request | 1 | PASS | this commit | check=PASS; lint 0/98 = baseline; check-settings exit 0, 0/30; compat_baseline_check 49/49; timer_check 15/15; window_tracker_check 20/20 | Fix notification badge bouncing with icon. In animator.js, assign icon._badge and icon._dots; sync badge.translationX/Y in _animate(); in bounceIcon(), getTarget returns [icon, icon._appwell]; translateDecor translates badge with icon in horizontal/vertical dock; reset frame zeroes translations; d2da error logging; dock.js nulls c._renderer, c._badge, c._dots in destroy and cleanup. |
 

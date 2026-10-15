@@ -885,6 +885,7 @@ export let Animator = class {
       // badges
       //! ***badge location at scaling is messed up***
       let badge = this._badges[icon._idx];
+      icon._badge = badge;
       badge.hide();
       if (icon != dock._dragged) {
         let appNotices = icon._appwell
@@ -909,15 +910,24 @@ export let Animator = class {
           badge.height = badge.width;
           badge.x = icon._renderer.x;
           badge.y = icon._renderer.y;
+          badge.translationX = icon._renderer.translationX;
+          badge.translationY = icon._renderer.translationY;
 
           badge.set_scale(icon._scale, icon._scale);
           badge.show();
+        } else if (badge) {
+          badge.translationX = 0;
+          badge.translationY = 0;
         }
+      } else if (badge) {
+        badge.translationX = 0;
+        badge.translationY = 0;
       }
 
       // dots
       //! ***dot requires a little more aligning at dock position other than bottom***
       let dots = this._dots[icon._idx];
+      icon._dots = dots;
       dots.hide();
       if (
         icon != dock._dragged &&
@@ -1161,38 +1171,49 @@ export let Animator = class {
       if (!icon || !icon._appwell) {
         return [null, null];
       }
-      return [icon._appwell.get_parent(), icon._appwell];
+      return [icon, icon._appwell];
     };
 
     const translateDecor = (container, appwell) => {
       try {
         if (!container._icon) return;
+        let badge =
+          container._badge ||
+          (container._idx !== undefined
+            ? this._badges?.[container._idx]
+            : null);
         if (dock.isVertical()) {
           if (container._renderer) {
             container._renderer.translationX = appwell.translationX;
+            container._renderer.translationY = 0;
           }
           if (container._image) {
             container._image.translationX = appwell.translationX;
+            container._image.translationY = 0;
           }
-          if (container._badge) {
-            container._badge.translationX = appwell.translationX;
+          if (badge) {
+            badge.translationX = appwell.translationX;
+            badge.translationY = 0;
           }
         } else {
           if (container._renderer) {
+            container._renderer.translationX = 0;
             container._renderer.translationY = appwell.translationY;
           }
           if (container._image) {
+            container._image.translationX = 0;
             container._image.translationY = appwell.translationY;
           }
-          if (container._badge) {
-            container._badge.translationY = appwell.translationY;
+          if (badge) {
+            badge.translationX = 0;
+            badge.translationY = appwell.translationY;
           }
         }
         if (container._label) {
           container._label.opacity = 0;
         }
       } catch (err) {
-        console.log(err);
+        console.error('d2da: bounceIcon translateDecor', err);
       }
     };
 
@@ -1209,18 +1230,12 @@ export let Animator = class {
             if (dock.isVertical()) {
               appwell.translation_x =
                 dock._position == DockPosition.LEFT ? res : -res;
-              if (container._renderer) {
-                container._renderer.translationX = appwell.translationX;
-              }
             } else {
               appwell.translation_y =
                 dock._position == DockPosition.BOTTOM ? -res : res;
-              if (container._renderer) {
-                container._renderer.translationY = appwell.translationY;
-              }
             }
           } catch (err) {
-            console.log(err);
+            console.error('d2da: bounceIcon frame', err);
           }
           translateDecor(container, appwell);
         },
@@ -1234,20 +1249,14 @@ export let Animator = class {
           try {
             appwell._bounce = true;
             if (dock.isVertical()) {
-              appwell.translation_x = appwell.translation_x =
+              appwell.translation_x =
                 dock._position == DockPosition.LEFT ? res : -res;
-              if (container._renderer) {
-                container._renderer.translationX = appwell.translationX;
-              }
             } else {
               appwell.translation_y =
                 dock._position == DockPosition.BOTTOM ? -res : res;
-              if (container._renderer) {
-                container._renderer.translationY = appwell.translationY;
-              }
             }
           } catch (err) {
-            console.log(err);
+            console.error('d2da: bounceIcon frame', err);
           }
           translateDecor(container, appwell);
         },
@@ -1282,8 +1291,17 @@ export let Animator = class {
               container._renderer.translationX = 0;
               container._renderer.translationY = 0;
             }
+            let badge =
+              container._badge ||
+              (container._idx !== undefined
+                ? this._badges?.[container._idx]
+                : null);
+            if (badge) {
+              badge.translationX = 0;
+              badge.translationY = 0;
+            }
           } catch (err) {
-            console.log(err);
+            console.error('d2da: bounceIcon reset frame', err);
           }
           translateDecor(container, appwell);
         },
@@ -1296,7 +1314,7 @@ export let Animator = class {
           try {
             appwell._bounce = false;
           } catch (err) {
-            console.log(err);
+            console.error('d2da: bounceIcon end frame', err);
           }
         },
       },

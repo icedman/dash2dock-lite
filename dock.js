@@ -723,6 +723,9 @@ export let Dock = GObject.registerClass(
           c._label = null;
           c._icon = null;
           c._appwell = null;
+          c._renderer = null;
+          c._badge = null;
+          c._dots = null;
         });
       }
 
@@ -840,6 +843,9 @@ export let Dock = GObject.registerClass(
           p.remove_child(c._label);
         }
       }
+      c._renderer = null;
+      c._badge = null;
+      c._dots = null;
       this._needsLayout = true;
     }
 

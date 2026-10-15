@@ -87,16 +87,16 @@ Minor nits (naming, a stray blank line) that don't violate a rule: list them as 
 ```
 Cycle / Task / Attempt: — / human request / 1
 Verdict:          PASS
-Commit:           dd98d4a (fix(dock): align label synchronously on showLabel and fix transformed size fallback)
+Commit:           pending (fix(dock): initialize struts and dwell before creating dash to avoid undefined access)
 Gates:            check=PASS ; lint=PASS 0 err / 98 warn (matches baseline) ;
                   settings=exit 0, 0/30 ; compat_baseline_check all passed (49/49) ;
                   timer_check all passed (15/15) ; window_tracker_check all passed (20/20)
-Scope:            animator.js, dock.js
+Scope:            dock.js
 Rule violations:  none. A1-A10, A12, A14 clean (A11 n/a).
-Specific checks:  animator.js introduces alignLabel(icon) calculating position from renderer transformed position and icon._label dimensions (with get_preferred_width/height fallback when unallocated), and calls alignLabel in _animate(); dock.js invokes this.animator?.alignLabel(c) synchronously inside c.showLabel() right after c._showLabel() to prevent 1-frame display at Shell's default position; nulls c._showLabel on destroy and cleanup.
+Specific checks:  dock.js creates animator, autohider, struts, and dwell before calling this.createDash() so that synchronous child-added signals during dash item setup encounter initialized struts/dwell; adds optional chaining for struts/dwell in _beginAnimation and _endAnimation, and guards _isWithinDash against null struts.
 Rework list:      none.
-Findings confirmed: Label Y position misalignment upon hover and first show resolved; zero-frame delay alignment.
-Human check needed: Visual verification of application label appearing directly at aligned position on hover across bottom, top, left, and right dock orientations.
+Findings confirmed: Startup TypeError on this.struts.add_style_class_name eliminated.
+Human check needed: Verify clean startup in journalctl without struts TypeError.
 ```
 
 ## 7. Audit Log (append-only, newest last)
@@ -141,5 +141,6 @@ Human check needed: Visual verification of application label appearing directly 
 | — | human request | 1 | PASS | 8bc06d9 | check=PASS; lint 0/98 = baseline; check-settings exit 0, 0/30; compat_baseline_check 49/49; timer_check 15/15; window_tracker_check 20/20; smoke deltas ALL 0, 0 GC crit | Dock footprint (fp) calculation expanded to include bounce travel, edge distance, and margin buffer; renderArea explicitly sized to match dock dimensions (x=0, y=0, width=this.width, height=this.height); x_expand/y_expand added; bounceIcon computes travel using scaled icon size; translateDecor handles vertical dock X bounce for badges and calendar/clock images; translationX/translationY reset cleanly. |
 | — | human request | 1 | PASS | 85c5b72 | check=PASS; lint 0/98 = baseline; check-settings exit 0, 0/30; compat_baseline_check 49/49; timer_check 15/15; window_tracker_check 20/20 | Fix notification badge bouncing with icon. In animator.js, assign icon._badge and icon._dots; sync badge.translationX/Y in _animate(); in bounceIcon(), getTarget returns [icon, icon._appwell]; translateDecor translates badge with icon in horizontal/vertical dock; reset frame zeroes translations; d2da error logging; dock.js nulls c._renderer, c._badge, c._dots in destroy and cleanup. |
 | — | human request | 1 | PASS | dd98d4a | check=PASS; lint 0/98 = baseline; check-settings exit 0, 0/30; compat_baseline_check 49/49; timer_check 15/15; window_tracker_check 20/20 | Align label synchronously on showLabel and fix transformed size fallback. animator.js introduces alignLabel(icon) with get_preferred_size fallback and updates _animate(); dock.js calls alignLabel(c) in showLabel() hook; nulls c._showLabel on destroy. |
+| — | human request | 1 | PASS | this commit | check=PASS; lint 0/98 = baseline; check-settings exit 0, 0/30; compat_baseline_check 49/49; timer_check 15/15; window_tracker_check 20/20 | Fix startup TypeError on uninitialized struts/dwell. Initialize animator, autohider, struts, and dwell before createDash() in Dock._init; add defensive optional chaining for struts/dwell in _beginAnimation and _endAnimation, and null guard in _isWithinDash. |
 
 

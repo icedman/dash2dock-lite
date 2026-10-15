@@ -2,10 +2,10 @@
 
 A GNOME Shell 40+ Extension
 
-[!["Buy Me A Coffee"](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://www.buymeacoffee.com/icedman)
-[![Ko-fi](https://img.shields.io/badge/Ko--fi-F16061?style=for-the-badge&logo=ko-fi&logoColor=white)](https://ko-fi.com/icedman)
+[!["Buy Me A Coffee"](https://raw.githubusercontent.com/icedman/dash2dock-lite/main/docs/support-coffee.png)](https://www.buymeacoffee.com/icedman)
+[![Ko-fi](https://raw.githubusercontent.com/icedman/dash2dock-lite/main/docs/support-kofi.png)](https://ko-fi.com/icedman)
 
-![Contributors](https://img.shields.io/github/contributors/icedman/dash2dock-lite?color=dark-green) ![Forks](https://img.shields.io/github/forks/icedman/dash2dock-lite?style=social) ![Stargazers](https://img.shields.io/github/stars/icedman/dash2dock-lite?style=social) ![Issues](https://img.shields.io/github/issues/icedman/dash2dock-lite) ![License](https://img.shields.io/github/license/icedman/dash2dock-lite)
+![Contributors](https://img.shields.io/github/contributors/icedman/dash2dock-lite?color=dark-green) ![Forks](https://img.shields.io/github/forks/icedman/dash2dock-lite?style=social) ![Stargazers](https://img.shields.io/github/stars/icedman/dash2dock-lite?style=social) ![Issues](https://img.shields.io/github/issues/icedman/dash2dock-lite) ![License](https://img.shields.io/github/license/icedman/dash2dock-lite) ![GitHub Downloads](https://img.shields.io/github/downloads/icedman/dash2dock-lite/total)
 
 ![Screen Shot](https://raw.githubusercontent.com/icedman/dash2dock-lite/main/screenshots/Screenshot%20from%202024-03-19%2015-31-27.png)
 
@@ -13,9 +13,9 @@ A GNOME Shell 40+ Extension
 
 Maintenance and GNOME version compatibility updates are now primarily assisted by AI.
 
-Due to GNOME Extensions reviewer policies regarding AI tooling, updates will no longer be submitted to extensions.gnome.org and will be published exclusively through this repository. Releases will include simple installation instructions.
+Due to GNOME Extensions reviewer policies regarding AI tooling, updates may no longer be available at extensions.gnome.org and will be published primarily through this repository. Releases will include simple installation instructions.
 
-If you prefer strictly human-written code, feel free to skip this extension. If you enjoy having updates keep pace with new GNOME releases and want to help fund the AI compute tokens keeping it alive, support via [Buy Me A Coffee](https://www.buymeacoffee.com/icedman) or [Ko-fi](https://ko-fi.com/icedman) is greatly appreciated.
+If you prefer strictly human-maintained code, feel free to skip this extension. If you enjoy having updates keep pace with new GNOME releases and want to help fund the AI compute tokens keeping it alive, support via [Buy Me A Coffee](https://www.buymeacoffee.com/icedman) or [Ko-fi](https://ko-fi.com/icedman) is greatly appreciated.
 
 ### Notice
 
@@ -61,7 +61,11 @@ Run the one-line installer in your terminal. It automatically detects your GNOME
 ```bash
 bash <(curl -sSL https://raw.githubusercontent.com/icedman/dash2dock-lite/main/install.sh)
 ```
-*(or `curl -sSL https://raw.githubusercontent.com/icedman/dash2dock-lite/main/install.sh | bash`)*
+or
+
+```bash
+curl -sSL https://raw.githubusercontent.com/icedman/dash2dock-lite/main/install.sh | bash
+```
 
 ---
 

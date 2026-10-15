@@ -1,5 +1,3 @@
-// Adapted from from Blur-My-Shell
-
 'use strict';
 
 import Shell from 'gi://Shell';
@@ -7,57 +5,53 @@ import GLib from 'gi://GLib';
 import GObject from 'gi://GObject';
 import Clutter from 'gi://Clutter';
 
-const getColorEffectShaderSource = (extensionDir) => {
-  const SHADER_PATH = GLib.build_filenamev([
+const shaderSourceCache = new Map();
+
+export const getShaderSource = (extensionDir, filename) => {
+  if (shaderSourceCache.has(filename)) {
+    return shaderSourceCache.get(filename);
+  }
+  const shaderPath = GLib.build_filenamev([
     extensionDir,
     'effects',
-    'color_effect.glsl',
+    filename,
   ]);
-
   try {
-    return Shell.get_file_contents_utf8_sync(SHADER_PATH);
+    const src = Shell.get_file_contents_utf8_sync(shaderPath);
+    shaderSourceCache.set(filename, src);
+    return src;
   } catch (e) {
-    log(`[d2dl] error loading shader from ${SHADER_PATH}: ${e}`);
+    console.error(`d2da: error loading shader from ${shaderPath}: ${e}`);
     return null;
   }
 };
 
-/// New Clutter Shader Effect that simply mixes a color in, the class applies
-/// the GLSL shader programmed into vfunc_get_static_shader_source and applies
-/// it to an Actor.
-///
-/// Clutter Shader Source Code:
-/// https://github.com/GNOME/clutter/blob/master/clutter/clutter-shader-effect.c
-///
-/// GJS Doc:
-/// https://gjs-docs.gnome.org/clutter10~10_api/clutter.shadereffect
-export const ColorEffect = GObject.registerClass(
+export const ColorShaderEffect = GObject.registerClass(
   {},
-  class D2DAColorShader extends Clutter.ShaderEffect {
-    _init(params) {
+  class ColorShaderEffect extends Clutter.ShaderEffect {
+    _init(params = {}, shaderFilename = '') {
       this._red = null;
       this._green = null;
       this._blue = null;
       this._blend = null;
-
       this._static = true;
-
-      // initialize without color as a parameter
+      this._shaderFilename = shaderFilename;
+      this._source = null;
 
       let _color = params.color;
       delete params.color;
 
       super._init(params);
 
-      // set shader color
       if (_color) this.color = _color;
     }
 
-    preload(path) {
-      // set shader source
-      this._source = getColorEffectShaderSource(path);
-      if (this._source) this.set_shader_source(this._source);
-
+    preload(extensionDir) {
+      if (!this._shaderFilename) return;
+      this._source = getShaderSource(extensionDir, this._shaderFilename);
+      if (this._source) {
+        this.set_shader_source(this._source);
+      }
       this.update_enabled();
     }
 
@@ -68,7 +62,6 @@ export const ColorEffect = GObject.registerClass(
     set red(value) {
       if (this._red !== value) {
         this._red = value;
-
         this.set_uniform_value('red', parseFloat(this._red - 1e-6));
       }
     }
@@ -80,7 +73,6 @@ export const ColorEffect = GObject.registerClass(
     set green(value) {
       if (this._green !== value) {
         this._green = value;
-
         this.set_uniform_value('green', parseFloat(this._green - 1e-6));
       }
     }
@@ -92,7 +84,6 @@ export const ColorEffect = GObject.registerClass(
     set blue(value) {
       if (this._blue !== value) {
         this._blue = value;
-
         this.set_uniform_value('blue', parseFloat(this._blue - 1e-6));
       }
     }
@@ -102,27 +93,33 @@ export const ColorEffect = GObject.registerClass(
     }
 
     set blend(value) {
+      if (value > 0.5) {
+        value *= 0.75;
+        if (value < 0.5) {
+          value = 0.5;
+        }
+      }
       if (this._blend !== value) {
         this._blend = value;
-
         this.set_uniform_value('blend', parseFloat(this._blend - 1e-6));
       }
       this.update_enabled();
-    }
-
-    set color(rgba) {
-      let [r, g, b, a] = rgba;
-      this.red = r;
-      this.green = g;
-      this.blue = b;
-      this.blend = a;
     }
 
     get color() {
       return [this.red, this.green, this.blue, this.blend];
     }
 
-    /// False set function, only cares about the color. Too hard to change.
+    set color(rgba) {
+      if (rgba && rgba.length === 4) {
+        let [r, g, b, a] = rgba;
+        this.red = r;
+        this.green = g;
+        this.blue = b;
+        this.blend = a;
+      }
+    }
+
     set(params) {
       this.color = params.color;
     }

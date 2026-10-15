@@ -83,7 +83,7 @@ g44: build
 	rm -rf build/apps/mount-dash2dock-lite.desktop
 	cp ./effects/*.glsl ./build/effects
 	cp ./LICENSE* ./build
-	cp ./CHANGELOG* ./build
+	-cp ./CHANGELOG* ./build 2>/dev/null || true
 	cp ./README* ./build
 	cp ./stylesheet.css ./build
 	cp ./apps/recents.js ./build/apps

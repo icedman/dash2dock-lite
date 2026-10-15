@@ -91,6 +91,7 @@ export class DockViewState {
     this.frozenState = null;
     this.pillBounds = null;
     this.computedLayout = [];
+    this.itemStates = new Map();
   }
 
   freeze(snapshot = {}) {

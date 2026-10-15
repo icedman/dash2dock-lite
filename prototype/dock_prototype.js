@@ -192,28 +192,36 @@ app.connect('activate', (app) => {
       theme = iconTheme,
       pillBounds = null,
       itemContainerBg = false,
+      iconSize = BASE_ICON_SIZE,
     } = options;
 
     if (item.type === ItemType.SEPARATOR) {
       cr.save();
       cr.setSourceRGBA(0.65, 0.7, 0.8, 0.45);
+      const sepLength = iconSize * 0.65;
+      const sepThickness = 2.0;
+
       if (pillBounds) {
         if (isVertical) {
-          const sepWidth = pillBounds.w * 0.55;
-          const sepX = pillBounds.x + (pillBounds.w - sepWidth) / 2;
-          const sepY = rect.y + rect.h / 2 - 1;
-          cr.rectangle(sepX, sepY, sepWidth, 1.5);
+          // Horizontal line in vertical dock pill
+          const sepX = pillBounds.x + (pillBounds.w - sepLength) / 2;
+          const sepY = rect.y + rect.h / 2 - sepThickness / 2;
+          cr.rectangle(sepX, sepY, sepLength, sepThickness);
         } else {
-          const sepHeight = pillBounds.h * 0.55;
-          const sepX = rect.x + rect.w / 2 - 1;
-          const sepY = pillBounds.y + (pillBounds.h - sepHeight) / 2;
-          cr.rectangle(sepX, sepY, 1.5, sepHeight);
+          // Vertical line in horizontal dock pill
+          const sepX = rect.x + rect.w / 2 - sepThickness / 2;
+          const sepY = pillBounds.y + (pillBounds.h - sepLength) / 2;
+          cr.rectangle(sepX, sepY, sepThickness, sepLength);
         }
       } else {
         if (isVertical) {
-          cr.rectangle(rect.x + 4, rect.y + rect.h / 2 - 1, rect.w - 8, 1.5);
+          const sepX = rect.x + (rect.w - sepLength) / 2;
+          const sepY = rect.y + rect.h / 2 - sepThickness / 2;
+          cr.rectangle(sepX, sepY, sepLength, sepThickness);
         } else {
-          cr.rectangle(rect.x + rect.w / 2 - 1, rect.y + 4, 1.5, rect.h - 8);
+          const sepX = rect.x + rect.w / 2 - sepThickness / 2;
+          const sepY = rect.y + (rect.h - sepLength) / 2;
+          cr.rectangle(sepX, sepY, sepThickness, sepLength);
         }
       }
       cr.fill();
@@ -480,100 +488,240 @@ app.connect('activate', (app) => {
       localPointer = effectivePointer - primaryRestingStart;
     }
 
-    // 2. Scales computation
-    const targetScales = new Array(count);
-    const activeScales = new Array(count);
-    const activeSizes = new Array(count);
+    // 2. Ghost Nodes & Boundary Padding (matching animator.js Step 1 & 2)
+    const NUM_IMAGINARY = 4;
+    const TOTAL_CALC_ICONS = NUM_IMAGINARY + count + NUM_IMAGINARY;
 
-    if (animate) {
-      for (let i = 0; i < count; i++) {
-        if (staticSlots[i].isSep) {
-          targetScales[i] = 1.0;
-        } else {
-          const dist = Math.abs(localPointer - staticSlots[i].center);
-          targetScales[i] = calculateScale(dist, radius, maxScale, curveType);
-        }
-        activeScales[i] = 1.0 + (targetScales[i] - 1.0) * effectiveHoverAmount;
-        activeSizes[i] = staticSlots[i].isSep ? SEPARATOR_WIDTH : iconSize * activeScales[i];
+    const calcStaticSlots = [];
+    let calcOffset = 0;
+    let sepCount = 0;
+    for (let j = 0; j < TOTAL_CALC_ICONS; j++) {
+      let w = iconSize;
+      let isSep = false;
+      if (j >= NUM_IMAGINARY && j < NUM_IMAGINARY + count) {
+        const realIdx = j - NUM_IMAGINARY;
+        w = staticSlots[realIdx].width;
+        isSep = staticSlots[realIdx].isSep;
       }
-    } else {
-      for (let i = 0; i < count; i++) {
-        targetScales[i] = 1.0;
-        activeScales[i] = 1.0;
-        activeSizes[i] = staticSlots[i].isSep ? SEPARATOR_WIDTH : iconSize;
+      if (isSep) sepCount++;
+      calcStaticSlots.push({ start: calcOffset, center: calcOffset + w / 2, width: w, isSep });
+      calcOffset += w + padding;
+    }
+    const totalCalcStaticL = calcOffset - padding;
+
+    // Coordinate Decoupling: map localized pointer to calculation dock space (matching animator.js)
+    const xmLocalCalculated = localPointer + calcStaticSlots[NUM_IMAGINARY].start;
+    const xmClamped = Math.max(0, Math.min(totalCalcStaticL, xmLocalCalculated));
+
+    // 3. Scaling & 1D Deterministic Packing (matching animator.js Step 3)
+    const hoverActive = animate && effectiveHoverAmount > 0.001;
+    const iconScales = new Array(TOTAL_CALC_ICONS);
+    const iconWidths = new Array(TOTAL_CALC_ICONS);
+
+    for (let j = 0; j < TOTAL_CALC_ICONS; j++) {
+      if (calcStaticSlots[j].isSep || !hoverActive) {
+        iconScales[j] = 1.0;
+        iconWidths[j] = calcStaticSlots[j].width;
+      } else {
+        const dist = Math.abs(xmClamped - calcStaticSlots[j].center);
+        const targetScale = calculateScale(dist, radius, maxScale, curveType);
+        const scale = 1.0 + (targetScale - 1.0) * effectiveHoverAmount;
+        iconScales[j] = scale;
+        iconWidths[j] = calcStaticSlots[j].width * scale;
       }
     }
 
-    // 3. Dynamic cumulative continuous offset
-    let dynamicTotalLength = 0;
-    for (let i = 0; i < count; i++) {
-      dynamicTotalLength += activeSizes[i] + padding;
+    const packedCenters = new Array(TOTAL_CALC_ICONS);
+    let currentPos = 0;
+    for (let j = 0; j < TOTAL_CALC_ICONS; j++) {
+      const halfW = iconWidths[j] / 2;
+      if (j === 0) currentPos = halfW;
+      else currentPos += iconWidths[j - 1] / 2 + halfW + padding;
+      packedCenters[j] = currentPos;
     }
-    dynamicTotalLength -= padding;
+    const activeL = packedCenters[TOTAL_CALC_ICONS - 1] + iconWidths[TOTAL_CALC_ICONS - 1] / 2;
 
-    const dynamicStart = (primarySpan - dynamicTotalLength) / 2;
+    // 4. Invariance-Targeted Variance Distribution (matching animator.js Step 4)
+    // Pre-calculate target packed dock length at dead center to lock in invariant dock length
+    const centerMouse = totalCalcStaticL / 2;
+    const centerWidths = new Array(TOTAL_CALC_ICONS);
+    for (let j = 0; j < TOTAL_CALC_ICONS; j++) {
+      if (calcStaticSlots[j].isSep || !hoverActive) {
+        centerWidths[j] = calcStaticSlots[j].width;
+      } else {
+        const dist = Math.abs(centerMouse - calcStaticSlots[j].center);
+        const targetScale = calculateScale(dist, radius, maxScale, curveType);
+        const scale = 1.0 + (targetScale - 1.0) * effectiveHoverAmount;
+        centerWidths[j] = calcStaticSlots[j].width * scale;
+      }
+    }
+
+    let currentCenterPos = 0;
+    for (let j = 0; j < TOTAL_CALC_ICONS; j++) {
+      const halfW = centerWidths[j] / 2;
+      if (j === 0) currentCenterPos = halfW;
+      else currentCenterPos += centerWidths[j - 1] / 2 + halfW + padding;
+    }
+    const centerPackedL = currentCenterPos + centerWidths[TOTAL_CALC_ICONS - 1] / 2;
+
+    const variance = centerPackedL - activeL;
+    const adjustedIconWidths = new Array(TOTAL_CALC_ICONS);
+    const numScalable = Math.max(1, TOTAL_CALC_ICONS - sepCount);
+    for (let j = 0; j < TOTAL_CALC_ICONS; j++) {
+      const v = calcStaticSlots[j].isSep ? 0 : variance / numScalable;
+      adjustedIconWidths[j] = iconWidths[j] + v;
+    }
+
+    let realLeftEdgeUnshifted = 0;
+    for (let j = 0; j < NUM_IMAGINARY; j++) {
+      realLeftEdgeUnshifted += adjustedIconWidths[j];
+    }
+    realLeftEdgeUnshifted += NUM_IMAGINARY * padding;
+
+    const adjustedPackedCenters = new Array(TOTAL_CALC_ICONS);
+    let adjCurrentPos = 0;
+    for (let j = 0; j < TOTAL_CALC_ICONS; j++) {
+      const halfW = adjustedIconWidths[j] / 2;
+      if (j === 0) adjCurrentPos = halfW;
+      else adjCurrentPos += adjustedIconWidths[j - 1] / 2 + halfW + padding;
+      adjustedPackedCenters[j] = adjCurrentPos;
+    }
+
+    const realLeftEdge = adjustedPackedCenters[NUM_IMAGINARY] - adjustedIconWidths[NUM_IMAGINARY] / 2;
+    const realRightEdge = adjustedPackedCenters[NUM_IMAGINARY + count - 1] + adjustedIconWidths[NUM_IMAGINARY + count - 1] / 2;
+    const realActiveL = realRightEdge - realLeftEdge;
+
+    // Centering shift to align the dynamic packed dock center with resting dock center
+    const centeringShift = (restingTotalLength - realActiveL) / 2;
+
+    // 5. Decoupled Clutter-style Translations & LERP smoothing (matching animator.js Step 5)
+    if (state && !state.itemStates) {
+      state.itemStates = new Map();
+    }
+
+    const lerpFactor = 0.42; // Matching animator.js baseLerpFactor
     const computedLayout = [];
-    let accum = dynamicStart;
+    const activeSizes = new Array(count);
+    const activeScales = new Array(count);
 
-    // Determine baseline position
-    const maxActiveSize = Math.max(...activeSizes);
-    const bgCrossSize = Math.max(iconSize + 20, maxActiveSize + bgPadding * 2);
+    // Baseline stem positioning for fan mode vs symmetrical center-basis expansion
+    let primaryBase = primaryRestingStart + centeringShift;
+    if (fan && target && stemMode === stem_flags.FIXED_STEM) {
+      if (position === Positions.BOTTOM) {
+        primaryBase = target.y - fanGap - realActiveL;
+      } else if (position === Positions.TOP) {
+        primaryBase = target.y + target.h + fanGap;
+      } else if (position === Positions.LEFT) {
+        primaryBase = target.x + target.w + fanGap;
+      } else {
+        primaryBase = target.x - fanGap - realActiveL;
+      }
+    }
+
+    for (let i = 0; i < count; i++) {
+      const item = items[i];
+      const calcIndex = i + NUM_IMAGINARY;
+      const pc = adjustedPackedCenters[calcIndex];
+      const activeCenter = pc - realLeftEdgeUnshifted;
+
+      // Position relative to resting center (matching animator.js _translate)
+      const targetTranslate = (fan && target && stemMode === stem_flags.FIXED_STEM)
+        ? (primaryBase + activeCenter) - (primaryRestingStart + staticSlots[i].center)
+        : activeCenter + centeringShift - staticSlots[i].center;
+
+      const isSep = staticSlots[i].isSep;
+      const targetScale = isSep ? 1.0 : iconScales[calcIndex];
+      const targetPrimarySize = isSep ? staticSlots[i].width : iconSize * targetScale;
+
+      let curTranslate = targetTranslate;
+      let curPrimarySize = targetPrimarySize;
+      let curScale = targetScale;
+
+      if (state && !isFrozen) {
+        const itemKey = `${item.id}_${i}`;
+        let anim = state.itemStates.get(itemKey);
+        if (!anim) {
+          anim = { translate: targetTranslate, size: targetPrimarySize, scale: targetScale };
+          state.itemStates.set(itemKey, anim);
+        } else {
+          anim.translate += (targetTranslate - anim.translate) * lerpFactor;
+          anim.size += (targetPrimarySize - anim.size) * lerpFactor;
+          anim.scale += (targetScale - anim.scale) * lerpFactor;
+          if (!hoverActive && Math.abs(anim.translate) < 0.01 && Math.abs(anim.scale - 1.0) < 0.001) {
+            anim.translate = 0;
+            anim.scale = 1.0;
+            anim.size = staticSlots[i].width;
+          }
+        }
+        curTranslate = anim.translate;
+        curPrimarySize = isSep ? staticSlots[i].width : anim.size;
+        curScale = isSep ? 1.0 : anim.scale;
+      }
+
+      activeSizes[i] = curPrimarySize;
+      activeScales[i] = curScale;
+
+      const primaryCenter = primaryRestingStart + staticSlots[i].center + curTranslate;
+      const primaryPos = primaryCenter - curPrimarySize / 2;
+
+      let ix = 0;
+      let iy = 0;
+      const curCrossSize = isSep ? iconSize : curPrimarySize;
+
+      if (fan && target) {
+        const secCenter = isVertical ? (target.x + target.w / 2) : (target.y + target.h / 2);
+        const secPos = secCenter - curCrossSize / 2;
+        ix = isVertical ? secPos : primaryPos;
+        iy = isVertical ? primaryPos : secPos;
+      } else if (arrow && arrow.targetRect) {
+        // Anchored popup item positioning computed below after bg bounds
+      } else {
+        // Main dock positioning
+        let secPos = 0;
+        if (position === Positions.BOTTOM) {
+          secPos = isSep
+            ? secondarySpan - 8 - bgPadding - iconSize
+            : secondarySpan - 18 - curCrossSize;
+        } else if (position === Positions.TOP) {
+          secPos = isSep ? 8 + bgPadding : 18;
+        } else if (position === Positions.LEFT) {
+          secPos = isSep ? 8 + bgPadding : 18;
+        } else {
+          secPos = isSep
+            ? secondarySpan - 8 - bgPadding - iconSize
+            : secondarySpan - 18 - curCrossSize;
+        }
+        ix = isVertical ? secPos : primaryPos;
+        iy = isVertical ? primaryPos : secPos;
+      }
+
+      const itemW = isVertical ? curCrossSize : curPrimarySize;
+      const itemH = isVertical ? curPrimarySize : curCrossSize;
+
+      computedLayout.push({ item, rect: { x: ix, y: iy, w: itemW, h: itemH }, scale: curScale, size: curPrimarySize });
+    }
+
+    // Determine baseline background position (fixed cross size; background height does not grow as icons scale)
+    const bgCrossSize = iconSize + bgPadding * 2;
     let bgX = 0, bgY = 0, bgW = 0, bgH = 0;
 
     if (fan && target) {
-      if (stemMode === stem_flags.FIXED_STEM) {
-        // Option B: Fixed stem root pinned at resting boundary (no overflow before resting position)
-        if (position === Positions.BOTTOM) {
-          accum = target.y - fanGap - dynamicTotalLength;
-        } else if (position === Positions.TOP) {
-          accum = target.y + target.h + fanGap;
-        } else if (position === Positions.LEFT) {
-          accum = target.x + target.w + fanGap;
-        } else {
-          accum = target.x - fanGap - dynamicTotalLength;
-        }
-      } else {
-        // Option A: Symmetrical center-basis expansion (allows fan dock to overflow before its resting boundary)
-        accum = primaryRestingStart - (dynamicTotalLength - restingTotalLength) / 2;
-      }
-
       let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-
       for (let i = 0; i < count; i++) {
-        const item = items[i];
-        const size = activeSizes[i];
-        const scale = activeScales[i];
-
-        let ix = 0;
-        let iy = 0;
-
-        if (isVertical) {
-          // Perpendicular vertical column aligned with target's X center
-          ix = target.x + target.w / 2 - size / 2;
-          iy = accum;
-        } else {
-          // Perpendicular horizontal row aligned with target's Y center
-          ix = accum;
-          iy = target.y + target.h / 2 - size / 2;
-        }
-
-        minX = Math.min(minX, ix);
-        minY = Math.min(minY, iy);
-        maxX = Math.max(maxX, ix + size);
-        maxY = Math.max(maxY, iy + size);
-
-        computedLayout.push({ item, rect: { x: ix, y: iy, w: size, h: size }, scale, size });
-        accum += size + padding;
+        const r = computedLayout[i].rect;
+        minX = Math.min(minX, r.x);
+        minY = Math.min(minY, r.y);
+        maxX = Math.max(maxX, r.x + r.w);
+        maxY = Math.max(maxY, r.y + r.h);
       }
-
       bgX = minX - 8;
       bgY = minY - 8;
       bgW = (maxX - minX) + 16;
       bgH = (maxY - minY) + 16;
     } else if (arrow && arrow.targetRect) {
       // Anchored Sub-Dock Popup mode: position perpendicular to arrow.targetRect
-      const popContentW = dynamicTotalLength + bgPadding * 2;
-      const popContentH = bgCrossSize;
+      const popContentW = isVertical ? bgCrossSize : realActiveL + bgPadding * 2;
+      const popContentH = isVertical ? realActiveL + bgPadding * 2 : bgCrossSize;
       const aTarget = arrow.targetRect;
 
       if (position === Positions.BOTTOM) {
@@ -599,63 +747,43 @@ app.connect('activate', (app) => {
         bgY = Math.max(16, Math.min(winBounds.height - bgH - 16, aTarget.y + aTarget.h / 2 - bgH / 2));
       }
 
-      // Compute item positions inside anchored popup
-      accum = (isVertical ? bgY : bgX) + bgPadding;
+      // Re-align anchored popup items relative to popup background
+      const popPrimaryBase = (isVertical ? bgY : bgX) + bgPadding + centeringShift;
       for (let i = 0; i < count; i++) {
-        const item = items[i];
-        const size = activeSizes[i];
-        const scale = activeScales[i];
-        let ix = bgX + bgPadding;
-        let iy = bgY + bgPadding;
+        const isSep = staticSlots[i].isSep;
+        const curPrimarySize = activeSizes[i];
+        const curCrossSize = isSep ? iconSize : curPrimarySize;
+        const itemKey = `${items[i].id}_${i}`;
+        const itemTrans = (state && state.itemStates && state.itemStates.has(itemKey))
+          ? state.itemStates.get(itemKey).translate
+          : ((state && state.itemStates && state.itemStates.has(items[i].id))
+            ? state.itemStates.get(items[i].id).translate
+            : 0);
+        const primaryCenter = popPrimaryBase + staticSlots[i].center + itemTrans;
+        const primaryPos = primaryCenter - curPrimarySize / 2;
+        const secCenter = (isVertical ? bgX : bgY) + (isVertical ? bgW : bgH) / 2;
+        const secPos = secCenter - curCrossSize / 2;
 
-        if (isVertical) {
-          iy = accum;
-          ix = bgX + (bgW - size) / 2;
-        } else {
-          ix = accum;
-          iy = bgY + (bgH - size) / 2;
-        }
-
-        computedLayout.push({ item, rect: { x: ix, y: iy, w: size, h: size }, scale, size });
-        accum += size + padding;
+        computedLayout[i].rect.x = isVertical ? secPos : primaryPos;
+        computedLayout[i].rect.y = isVertical ? primaryPos : secPos;
+        computedLayout[i].rect.w = isVertical ? curCrossSize : curPrimarySize;
+        computedLayout[i].rect.h = isVertical ? curPrimarySize : curCrossSize;
       }
     } else {
       // Main dock positioning
-      const mainPillCross = iconSize + 20;
+      const bgPrimaryLength = realActiveL + bgPadding * 2;
+      const bgPrimaryStart = primaryBase - bgPadding;
+
       if (isVertical) {
-        bgW = mainPillCross;
-        bgH = dynamicTotalLength + bgPadding * 2;
-        bgY = dynamicStart - bgPadding;
-        bgX = position === Positions.LEFT ? 8 : secondarySpan - mainPillCross - 8;
+        bgW = bgCrossSize;
+        bgH = bgPrimaryLength;
+        bgY = bgPrimaryStart;
+        bgX = position === Positions.LEFT ? 8 : secondarySpan - bgCrossSize - 8;
       } else {
-        bgW = dynamicTotalLength + bgPadding * 2;
-        bgH = mainPillCross;
-        bgX = dynamicStart - bgPadding;
-        bgY = position === Positions.BOTTOM ? secondarySpan - mainPillCross - 8 : 8;
-      }
-
-      for (let i = 0; i < count; i++) {
-        const item = items[i];
-        const size = activeSizes[i];
-        const scale = activeScales[i];
-
-        let secPos = 0;
-        if (position === Positions.BOTTOM) {
-          secPos = secondarySpan - 18 - size;
-        } else if (position === Positions.TOP) {
-          secPos = 18;
-        } else if (position === Positions.LEFT) {
-          secPos = 18;
-        } else {
-          secPos = secondarySpan - 18 - size;
-        }
-
-        const rect = isVertical
-          ? { x: secPos, y: accum, w: size, h: size }
-          : { x: accum, y: secPos, w: size, h: size };
-
-        computedLayout.push({ item, rect, scale, size });
-        accum += size + padding;
+        bgW = bgPrimaryLength;
+        bgH = bgCrossSize;
+        bgX = bgPrimaryStart;
+        bgY = position === Positions.BOTTOM ? secondarySpan - bgCrossSize - 8 : 8;
       }
     }
 
@@ -754,6 +882,7 @@ app.connect('activate', (app) => {
         theme,
         pillBounds: fan ? null : pillBounds,
         itemContainerBg,
+        iconSize,
       });
     }
 

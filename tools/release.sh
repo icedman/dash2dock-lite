@@ -36,10 +36,15 @@ Commands:
       - Release zip: dash2dock-lite-v<version>.zip
       Example: $0 package 50.0
 
+  check-zip [zip-path]
+      Runs pre-publish verification using shexli on the package zip.
+      Requires 0 errors and minimal warnings; otherwise blocks.
+      Example: $0 check-zip dash2dock-lite@icedman.github.com.zip
+
   publish <version> [remote]
-      Verifies clean working directory, tags v<version>, pushes branch
-      and tag to remote (default: origin), and creates GitHub release
-      using gh if installed (or provides release command instructions).
+      Runs pre-publish check-zip, verifies clean working directory,
+      tags v<version>, pushes branch and tag to remote (default: origin),
+      and creates GitHub release using gh if installed (or provides instructions).
       Example: $0 publish 50.0 origin
 
 EOF
@@ -157,6 +162,77 @@ EOF
     VERSION="$VERSION" "$SCRIPT_DIR/publish.sh" "$VERSION"
     ;;
 
+  check-zip)
+    ZIP_PATH="${1:-dash2dock-lite@icedman.github.com.zip}"
+    if [ ! -f "$ZIP_PATH" ]; then
+      echo "Error: Zip file '$ZIP_PATH' not found. Run '$0 package <version>' first."
+      exit 1
+    fi
+
+    echo "==> Running pre-publish checks on ${ZIP_PATH} with shexli..."
+    if ! command -v shexli >/dev/null 2>&1; then
+      echo "Error: 'shexli' is not installed or not in PATH."
+      echo "Install shexli to perform pre-publish package verification."
+      exit 1
+    fi
+
+    python3 - <<EOF
+import json
+import subprocess
+import sys
+
+zip_path = "${ZIP_PATH}"
+res = subprocess.run(["shexli", "--format", "json", zip_path], capture_output=True, text=True)
+if res.returncode != 0 and not res.stdout:
+    print(f"Error: shexli execution failed:\n{res.stderr}")
+    sys.exit(1)
+
+try:
+    data = json.loads(res.stdout)
+except Exception as e:
+    print(f"Error parsing shexli JSON output: {e}\n{res.stdout}")
+    sys.exit(1)
+
+summary = data.get("summary", {})
+severity = summary.get("severity_counts", {})
+errors = severity.get("error", 0)
+warnings = severity.get("warning", 0)
+manual_review = severity.get("manual_review", 0)
+findings = data.get("findings", [])
+
+print(f"shexli analysis for {zip_path}:")
+print(f"  Status: {summary.get('status', 'unknown')}")
+print(f"  Errors: {errors}")
+print(f"  Warnings: {warnings}")
+print(f"  Manual Review: {manual_review}")
+print(f"  Total findings: {summary.get('finding_count', len(findings))}")
+
+if errors > 0:
+    print(f"\n[BLOCKED] shexli reported {errors} error(s) in {zip_path}:")
+    for f in findings:
+        if f.get("severity") == "error":
+            print(f"  - [{f.get('rule_id')}] {f.get('message')}")
+            for ev in f.get("evidence", []):
+                p = ev.get("path", "")
+                ln = ev.get("line")
+                snip = ev.get("snippet", "")
+                loc = f"{p}:{ln}" if ln else p
+                print(f"      --> {loc}")
+                if snip:
+                    print(f"          {snip}")
+    print("\nPre-publish verification FAILED: 0 errors required. Publish blocked.")
+    sys.exit(1)
+
+if warnings > 0:
+    print(f"\nshexli notices ({warnings} warnings, minimal expected):")
+    for f in findings:
+        if f.get("severity") == "warning":
+            print(f"  - [{f.get('rule_id')}] {f.get('message')}")
+
+print("\n==> Pre-publish check PASSED: 0 errors.")
+EOF
+    ;;
+
   publish)
     VERSION="${1:-}"
     REMOTE="${2:-origin}"
@@ -177,6 +253,10 @@ EOF
       echo "Zip packages not found. Running package first..."
       "$SCRIPT_DIR/release.sh" package "$VERSION"
     fi
+
+    # Run pre-publish verification against shexli
+    echo "==> Running pre-publish verification on ${EGO_ZIP}..."
+    "$SCRIPT_DIR/release.sh" check-zip "$EGO_ZIP"
 
     # Determine tag format (accepts e.g. 50.0 or v50.0)
     TAG="v${VERSION}"

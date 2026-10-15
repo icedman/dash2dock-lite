@@ -325,6 +325,21 @@ export const DockIcon = GObject.registerClass(
               container._menu.popup();
             }
           } else {
+            let dock = container.dock;
+            let target =
+              dock?.animated && (dock._nearestIcon || dock._hoveredIcon)
+                ? dock._nearestIcon || dock._hoveredIcon
+                : container;
+            if (target && target !== container) {
+              if (dock?.activateTargetIcon) {
+                dock.activateTargetIcon(target, 1);
+              } else if (target._onClick) {
+                target._onClick();
+              } else if (target._appwell) {
+                target._appwell.activate(1);
+              }
+              return Clutter.EVENT_STOP;
+            }
             let now = Date.now();
             if (!container._lastClickTime || now - container._lastClickTime > 1000) {
               container._lastClickTime = now;

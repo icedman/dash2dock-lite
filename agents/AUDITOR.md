@@ -85,23 +85,18 @@ Minor nits (naming, a stray blank line) that don't violate a rule: list them as 
 > Overwritten each cycle. On FAIL the Worker reads this for its rework.
 
 ```
-Cycle / Task / Attempt: 4.2 / R-14b / 1
+Cycle / Task / Attempt: — / human request / 1
 Verdict:          PASS
-Commit:           f56a070 (feat(compat): encapsulate Dash and overview dash internals, eliminate __box expando)
-Gates:            check=PASS ; lint=PASS 0 err / 137 warn (baseline 138) ;
+Commit:           dd98d4a (fix(dock): align label synchronously on showLabel and fix transformed size fallback)
+Gates:            check=PASS ; lint=PASS 0 err / 98 warn (matches baseline) ;
                   settings=exit 0, 0/30 ; compat_baseline_check all passed (49/49) ;
-                  timer_check all passed (15/15) ; window_tracker_check all passed (20/20) ;
-                  smoke x2 PASS (1 known sig, 0 new, 6/5 msgs, 6/5 probe lines, ALL deltas 0) ;
-                  strict x1 PASS (counts 6/5, ALL deltas 0, shutdown criticals 0) ;
-                  settings variant strict PASS (deltas 0, crit 0) ;
-                  disposed/finalized/already been destroyed = 0 and `d2da: ` = 0 in all runs.
-                  No orphaned headless shell. G-real NOT run (W3).
-Scope:            compat.js, dock.js, extension.js, tests/compat_baseline_check.js.
-Rule violations:  none. A1-A10, A12, A13 clean (A11 n/a).
-Specific checks:  compat.js implements getDashBox, getDashContainer, getDashShowAppsIcon, getDashBackground, setupDashProxy, setDashOrientation, setDashLayoutDirection, setOverviewDashVisibility; dock.js uses compat helpers for Dash access, proxying, orientation, and layout direction; extension.js eliminates Main.overview.dash.__box expando and delegates overview dash visibility to compat.js; historical git archaeology verified __box was an old Compiz swap hack superseded by commit 2e6b474.
+                  timer_check all passed (15/15) ; window_tracker_check all passed (20/20)
+Scope:            animator.js, dock.js
+Rule violations:  none. A1-A10, A12, A14 clean (A11 n/a).
+Specific checks:  animator.js introduces alignLabel(icon) calculating position from renderer transformed position and icon._label dimensions (with get_preferred_width/height fallback when unallocated), and calls alignLabel in _animate(); dock.js invokes this.animator?.alignLabel(c) synchronously inside c.showLabel() right after c._showLabel() to prevent 1-frame display at Shell's default position; nulls c._showLabel on destroy and cleanup.
 Rework list:      none.
-Findings confirmed: C1, C4.
-Human check needed: yes — overview dash hidden when extension enabled, restored when disabled.
+Findings confirmed: Label Y position misalignment upon hover and first show resolved; zero-frame delay alignment.
+Human check needed: Visual verification of application label appearing directly at aligned position on hover across bottom, top, left, and right dock orientations.
 ```
 
 ## 7. Audit Log (append-only, newest last)
@@ -141,9 +136,10 @@ Human check needed: yes — overview dash hidden when extension enabled, restore
 | 4.1 | R-14a/R-15 | 1 | PASS | d94c310 | check=PASS; lint 0/138 (baseline 139); check-settings exit 0, 0/30; compat_baseline_check 37/37; timer_check 15/15; window_tracker_check 20/20; smoke x2 PASS (1 known sig, 0 new, ALL deltas 0); strict PASS (6/5 lines, ALL deltas 0, 0 crit); settings variant strict PASS (deltas 0, crit 0); disposed/finalized 0, `d2da: ` 0 | C5, C6, C7, C8, C10, C17 fixed. Created compat.js and tests/compat_baseline_check.js (37 assertions passing); migrated AppFavorites to public getFavorites/isFavorite; migrated app ID resolution to public getId(); delegated overview showApps to Main.overview directly; probed window maximize arity; omitted affectsInputRegion (clean across GNOME 45-50); removed dead Main.overview.d2dl expando. |
 | 4.2 | R-14b | 1 | PASS | f56a070 | check=PASS; lint 0/137 (baseline 138); check-settings exit 0, 0/30; compat_baseline_check 49/49; timer_check 15/15; window_tracker_check 20/20; smoke x2 PASS (1 known sig, 0 new, ALL deltas 0); strict PASS (6/5 lines, ALL deltas 0, 0 crit); settings variant strict PASS (deltas 0, crit 0); disposed/finalized 0, `d2da: ` 0 | C1, C4 fixed. Encapsulated Dash structural accessors (getDashBox, getDashContainer, getDashShowAppsIcon, getDashBackground), proxy setup (setupDashProxy), orientation and layout direction in compat.js; eliminated Main.overview.dash.__box expando on Shell overview; encapsulated overview dash visibility in compat.js; unit test suite expanded to 49 assertions. |
 | — | human request | 1 | PASS | 7fe412b | check=PASS; lint 0/137 = baseline; check-settings exit 0, 0/30; compat_baseline_check 49/49; timer_check 15/15; window_tracker_check 20/20; smoke x2 PASS (1 known sig, 0 new, ALL deltas 0); strict PASS (6/5 lines, ALL deltas 0, 0 crit); settings variant strict PASS (deltas 0, crit 0); disposed/finalized 0, `d2da: ` 0 | Dock animation re-entry fix: ensure _beginAnimation() repopulates this._icons via _findIcons() if null; fix St.BoxLayout _extraIcons orientation using modern orientation property directly (avoiding null layout_manager TypeError and deprecated vertical property warning); deleted obsolete DESIGN.md and CHECKLIST.md. |
-
-
-
-
+| 5.1 | R-17 | 1 | PASS | db807f4 | check=PASS; lint 0/135 = baseline; check-settings exit 0, 0/30; compat_baseline_check 49/49; timer_check 15/15; window_tracker_check 20/20; smoke=SKIPPED (human directive) | R-17 fixed. Declarative REACTIONS dictionary and ACTION_ORDER array replace ~180-line switch statement in _enableSettings(); _queueReactions() coalesces multi-setting updates into a single GLib.idle_add flush pass in deterministic order; msg-to-ext handled synchronously; _disableSettings() clears pending reactions and removes idle source. |
+| 5.2 | R-18 | 1 | PASS | d7db821 | check=PASS; lint 0/98 (warns reduced by 37, 0 err); check-settings exit 0, 0/30; compat_baseline_check 49/49; timer_check 15/15; window_tracker_check 20/20; smoke=SKIPPED (human directive) | R-18 / P-9 fixed. Base ColorShaderEffect created with in-memory Map shader cache; TintEffect and MonochromeEffect extend ColorShaderEffect passing GLSL filenames; unused blur/color effects deleted; dead easing curves pruned in easing.js down to used 4. animator.js slideIn check and extension.js _onKeyPressed preserved per human directive. |
+| — | human request | 1 | PASS | 8bc06d9 | check=PASS; lint 0/98 = baseline; check-settings exit 0, 0/30; compat_baseline_check 49/49; timer_check 15/15; window_tracker_check 20/20; smoke deltas ALL 0, 0 GC crit | Dock footprint (fp) calculation expanded to include bounce travel, edge distance, and margin buffer; renderArea explicitly sized to match dock dimensions (x=0, y=0, width=this.width, height=this.height); x_expand/y_expand added; bounceIcon computes travel using scaled icon size; translateDecor handles vertical dock X bounce for badges and calendar/clock images; translationX/translationY reset cleanly. |
+| — | human request | 1 | PASS | 85c5b72 | check=PASS; lint 0/98 = baseline; check-settings exit 0, 0/30; compat_baseline_check 49/49; timer_check 15/15; window_tracker_check 20/20 | Fix notification badge bouncing with icon. In animator.js, assign icon._badge and icon._dots; sync badge.translationX/Y in _animate(); in bounceIcon(), getTarget returns [icon, icon._appwell]; translateDecor translates badge with icon in horizontal/vertical dock; reset frame zeroes translations; d2da error logging; dock.js nulls c._renderer, c._badge, c._dots in destroy and cleanup. |
+| — | human request | 1 | PASS | dd98d4a | check=PASS; lint 0/98 = baseline; check-settings exit 0, 0/30; compat_baseline_check 49/49; timer_check 15/15; window_tracker_check 20/20 | Align label synchronously on showLabel and fix transformed size fallback. animator.js introduces alignLabel(icon) with get_preferred_size fallback and updates _animate(); dock.js calls alignLabel(c) in showLabel() hook; nulls c._showLabel on destroy. |
 
 

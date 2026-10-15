@@ -109,6 +109,8 @@ export let Dock = GObject.registerClass(
         offscreen_redirect: Clutter.OffscreenRedirect.ALWAYS,
         reactive: false,
         track_hover: false,
+        x_expand: true,
+        y_expand: true,
       });
       this.renderArea.opacity = 0;
 
@@ -272,6 +274,41 @@ export let Dock = GObject.registerClass(
       this._animationSeq = null;
       this.debounceEndSeq = null;
       this._debounceBeginAnimateSeq = null;
+    }
+
+    activateTargetIcon(target, button = 1) {
+      if (!target) return false;
+      let showAppsIcon = Compat.getDashShowAppsIcon(this.dash);
+      if (showAppsIcon && target === showAppsIcon) {
+        Compat.showOverviewApps(Main.overview);
+        return true;
+      }
+      if (target._onClick) {
+        let now = Date.now();
+        if (!target._lastClickTime || now - target._lastClickTime > 1000) {
+          target._lastClickTime = now;
+          target._onClick();
+        }
+        return true;
+      }
+      if (target._appwell) {
+        let now = Date.now();
+        if (target._lastAppwellClickTime && now - target._lastAppwellClickTime < 500) {
+          return true;
+        }
+        target._lastAppwellClickTime = now;
+        if (!target._menu) {
+          this._maybeBounce(target);
+        }
+        this._maybeMinimizeOrMaximize(target._appwell.app, button);
+        if (target._appwell._activate) {
+          target._appwell._activate(button);
+        } else if (target._appwell.activate) {
+          target._appwell.activate(button);
+        }
+        return true;
+      }
+      return false;
     }
 
     _onButtonPressEvent(evt) {
@@ -686,6 +723,10 @@ export let Dock = GObject.registerClass(
           c._label = null;
           c._icon = null;
           c._appwell = null;
+          c._renderer = null;
+          c._badge = null;
+          c._dots = null;
+          c._showLabel = null;
         });
       }
 
@@ -803,6 +844,10 @@ export let Dock = GObject.registerClass(
           p.remove_child(c._label);
         }
       }
+      c._renderer = null;
+      c._badge = null;
+      c._dots = null;
+      c._showLabel = null;
       this._needsLayout = true;
     }
 
@@ -903,17 +948,16 @@ export let Dock = GObject.registerClass(
             icon.connectObject(
               'button-press-event',
               () => {
-                if (this.animated && this._hoveredIcon && this._hoveredIcon !== showAppsIcon) {
-                  let target = this._hoveredIcon;
-                  if (target._onClick) {
-                    target._onClick();
-                  } else if (target._appwell) {
-                    target._appwell.activate(1);
-                  }
+                let target =
+                  this.animated && (this._nearestIcon || this._hoveredIcon)
+                    ? this._nearestIcon || this._hoveredIcon
+                    : null;
+                if (target && target !== showAppsIcon) {
+                  this.activateTargetIcon(target, 1);
                   return Clutter.EVENT_STOP;
                 }
                 Compat.showOverviewApps(Main.overview);
-                return Clutter.EVENT_PROPAGATE;
+                return Clutter.EVENT_STOP;
               },
               'enter-event',
               () => {
@@ -943,6 +987,11 @@ export let Dock = GObject.registerClass(
             }
             if (c._label) {
               c._showLabel();
+              try {
+                this.animator?.alignLabel(c);
+              } catch (err) {
+                console.error('d2da: alignLabel on showLabel', err);
+              }
             }
           };
         }
@@ -962,27 +1011,11 @@ export let Dock = GObject.registerClass(
           c._appwell._activate = c._appwell.activate;
           c._appwell.activate = (button) => {
             try {
-              let target = (this.animated && this._hoveredIcon) ? this._hoveredIcon : c;
-              if (showAppsIcon && target === showAppsIcon) {
-                Compat.showOverviewApps(Main.overview);
-                return;
-              }
-              if (target._onClick) {
-                target._onClick();
-                return;
-              }
-              if (target._appwell) {
-                if (!target._menu) {
-                  this._maybeBounce(target);
-                }
-                this._maybeMinimizeOrMaximize(target._appwell.app, button);
-                return target._appwell._activate(button);
-              }
-              if (!c._menu) {
-                this._maybeBounce(c);
-              }
-              this._maybeMinimizeOrMaximize(c._appwell.app, button);
-              return c._appwell._activate(button);
+              let target =
+                this.animated && (this._nearestIcon || this._hoveredIcon)
+                  ? this._nearestIcon || this._hoveredIcon
+                  : c;
+              this.activateTargetIcon(target, button);
             } catch (e) {
               console.error('d2da: appwell activate', e);
             }
@@ -1368,13 +1401,26 @@ export let Dock = GObject.registerClass(
       //   this.dash.y = this.height * f.edgeY + this.dash.height * f.offsetY;
       // }
 
-      // computation derived from animation scale
+      // computation derived from animation scale, bounce travel, and edge distance
       let magnify = this.extension.animation_magnify * 1.8;
-      let fp = iconSize * 2 + iconSize * (0.6 * (1 + magnify));
+      let bounceHeight = this.extension.animation_bounce_height ?? 0.75;
+      let bounceTravel = (iconSize / 3) * ((0.25 + bounceHeight) * 1.5);
+      let edgeDistance = (this.extension.edge_distance || 0) * 20;
+      if (this.extension.panel_mode) {
+        edgeDistance = 0;
+      }
+
+      // Footprint must provide enough cross-axis clearance for:
+      // itemSize + magnification/rise expansion + bounce travel + edge distance + margin buffer
+      let maxMagnifyRise = iconSize * (1.2 * (1 + magnify));
+      let fp = iconSize + maxMagnifyRise + bounceTravel + edgeDistance + 16;
+      let maxFp = (vertical ? m.width : m.height) * 0.9;
+      fp = Math.min(fp, maxFp / scaleFactor);
+
       if (vertical) {
-        this.width = fp * scaleFactor;
+        this.width = Math.round(fp * scaleFactor);
       } else {
-        this.height = fp * scaleFactor;
+        this.height = Math.round(fp * scaleFactor);
       }
 
       this._snapToContainerEdge(m, this, true);
@@ -1382,6 +1428,11 @@ export let Dock = GObject.registerClass(
       this.y += m.y;
 
       this._snapToContainerEdge(this, this.dash, true);
+
+      this.renderArea.x = 0;
+      this.renderArea.y = 0;
+      this.renderArea.width = this.width;
+      this.renderArea.height = this.height;
 
       this._iconSizeScaledDown = iconSize;
       this._scaledDown = scaleDown;

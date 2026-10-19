@@ -203,9 +203,37 @@ export const Integrations = class {
       let rw = dock.renderArea.width;
       let rh = dock.renderArea.height;
 
-      let meta_background = bms.first_child.first_child;
+      let meta_background = bms.first_child?.first_child;
       if (!meta_background) {
-        // this should exists
+        // dynamic blur mode (bms-dash-blurred-widget without Meta.BackgroundActor)
+        let blur_widget = bms.first_child;
+        if (!blur_widget) {
+          return;
+        }
+
+        bms.x = 0;
+        bms.y = 0;
+        bms.width = dock.width;
+        bms.height = dock.height;
+
+        blur_widget.x = dock._background.x;
+        blur_widget.y = dock._background.y;
+        blur_widget.width = dock._background.width;
+        blur_widget.height = dock._background.height;
+        blur_widget.visible = dock._background.visible && dock.extension.blur_background;
+
+        animator._blur_effects = blur_widget.get_effects();
+        if (animator._blur_effects) {
+          animator._blur_effects.forEach((e) => {
+            if (e.constructor.name == 'CornerEffect') {
+              e.radius = dock.extension.computed_border_radius;
+            } else if ('corner_radius' in e) {
+              e.corner_radius = dock.extension.computed_border_radius;
+            } else if ('unscaled_corner_radius' in e) {
+              e.unscaled_corner_radius = dock.extension.computed_border_radius;
+            }
+          });
+        }
         return;
       }
 

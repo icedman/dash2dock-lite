@@ -64,7 +64,7 @@ export let Dock = GObject.registerClass(
         clip_to_allocation: true,
         x_align: Clutter.ActorAlign.CENTER,
         y_align: Clutter.ActorAlign.CENTER,
-        offscreen_redirect: Clutter.OffscreenRedirect.ALWAYS,
+        offscreen_redirect: Clutter.OffscreenRedirect.AUTOMATIC_FOR_OPACITY,
       });
 
       this.extension = params.extension;

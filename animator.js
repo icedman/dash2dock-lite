@@ -1059,6 +1059,8 @@ export let Animator = class {
           edge_distance -
           dock._background._padding * scaleFactor;
         dock.struts.height = dock.height;
+        // follow the dock's monitor; autohide narrows it below
+        dock.struts.y = dock.y;
 
         if (dock.extension.autohide_dash) {
           dock.struts.y = dock._background.y + dock._monitor.y;
@@ -1067,7 +1069,6 @@ export let Animator = class {
           // dock.struts.width *= 1.25;
         }
 
-        // dock.struts.y = dock.y;
         if (dock._position == DockPosition.RIGHT) {
           dock.struts.x = dock.x + dock.width - dock.struts.width;
         } else {
@@ -1080,6 +1081,8 @@ export let Animator = class {
           iconSize * 0.2 * scaleFactor +
           edge_distance -
           dock._background._padding * scaleFactor;
+        // follow the dock's monitor; autohide narrows it below
+        dock.struts.x = dock.x;
 
         if (dock.extension.autohide_dash) {
           dock.struts.x = dock._background.x + dock._monitor.x;
@@ -1088,7 +1091,6 @@ export let Animator = class {
           // dock.struts.height *= 1.25;
         }
 
-        // dock.struts.x = dock.x;
         if (dock._position == DockPosition.BOTTOM) {
           dock.struts.y = dock.y + dock.height - dock.struts.height;
         } else {

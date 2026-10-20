@@ -79,14 +79,12 @@ export let Dock = GObject.registerClass(
       this.add_child(this._background);
 
       // for blur-my-shell
-      this._slider = {
-        // connect: () => false,
-        get_child: () => {
-          return this;
-        },
-        get_parent: () => {
-          return this;
-        },
+      this._slider = new St.Bin();
+      this._slider.get_child = () => {
+        return this;
+      };
+      this._slider.get_parent = () => {
+        return this;
       };
 
       // pretend to be Dash-to-Dock
@@ -175,7 +173,10 @@ export let Dock = GObject.registerClass(
         this.dwell.destroy();
         this.struts = null;
         this.dwell = null;
-        this._slider = null;
+        if (this._slider) {
+          this._slider.destroy();
+          this._slider = null;
+        }
       }
       super.destroy();
     }
@@ -1215,7 +1216,12 @@ export let Dock = GObject.registerClass(
         this._preferred = null;
       }
 
-      if (!this.dash || !Compat.getDashContainer(this.dash)) {
+      try {
+        if (!this.dash || !Compat.getDashContainer(this.dash)) {
+          this._needsLayout = true;
+          return false;
+        }
+      } catch (err) {
         this._needsLayout = true;
         return false;
       }
@@ -1508,41 +1514,53 @@ export let Dock = GObject.registerClass(
     }
 
     animate(dt = 15) {
-      if (this._preview) {
-        let p = null;
-
-        if (this._icons && this._icons.length) {
-          let icon = this._icons[this._icons.length >> 1];
-          p = icon._icon.get_transformed_position();
-          let s = icon._icon.get_transformed_size();
-          p[0] += s[0] / 2;
-          p[1] += s[1] / 2;
-        }
-
-        if (!p) {
-          p = this.dash.get_transformed_position();
-          p[0] += this.dash.width / 2;
-          p[1] += this.dash.height / 2;
-        }
-
-        this.simulated_pointer = p;
-        this._preview--;
+      if (!this.dash) {
+        return;
       }
 
-      //! add layout here instead of at the
-      this.animator.animate(dt);
+      try {
+        if (this._preview) {
+          let p = null;
 
-      // hack to mitigate jerkiness when a new icon is inserted
-      if (!this._pauseBounce || this._pauseBounce <= 0) {
-        while (this._fast_forward && this._fast_forward-- > 0) {
-          this.animate(dt);
-          this.dash.opacity = 0;
+          if (this._icons && this._icons.length) {
+            let icon = this._icons[this._icons.length >> 1];
+            if (icon?._icon) {
+              p = icon._icon.get_transformed_position();
+              let s = icon._icon.get_transformed_size();
+              p[0] += s[0] / 2;
+              p[1] += s[1] / 2;
+            }
+          }
+
+          if (!p && this.dash) {
+            p = this.dash.get_transformed_position();
+            p[0] += this.dash.width / 2;
+            p[1] += this.dash.height / 2;
+          }
+
+          this.simulated_pointer = p;
+          this._preview--;
         }
-      }
-      this.simulated_pointer = null;
 
-      if (this._pauseBounce && this._pauseBounce > 0) {
-        this._pauseBounce -= dt;
+        //! add layout here instead of at the
+        this.animator.animate(dt);
+
+        // hack to mitigate jerkiness when a new icon is inserted
+        if (!this._pauseBounce || this._pauseBounce <= 0) {
+          while (this._fast_forward && this._fast_forward-- > 0) {
+            this.animate(dt);
+            if (this.dash) {
+              this.dash.opacity = 0;
+            }
+          }
+        }
+        this.simulated_pointer = null;
+
+        if (this._pauseBounce && this._pauseBounce > 0) {
+          this._pauseBounce -= dt;
+        }
+      } catch (err) {
+        // Safe guard against disposed actors during teardown
       }
     }
 
@@ -1642,10 +1660,23 @@ export let Dock = GObject.registerClass(
     }
 
     cancelAnimations() {
-      this.extension._hiTimer.cancel(this._animationSeq);
+      if (this.extension?._hiTimer) {
+        this.extension._hiTimer.cancel(this._animationSeq);
+        if (this.autohider) {
+          this.extension._hiTimer.cancel(this.autohider._animationSeq);
+        }
+      }
       this._animationSeq = null;
-      this.extension._hiTimer.cancel(this.autohider._animationSeq);
-      this.autohider._animationSeq = null;
+      if (this.autohider) {
+        this.autohider._animationSeq = null;
+      }
+
+      if (this.extension?._loTimer) {
+        this.extension._loTimer.cancel(this.debounceEndSeq);
+        this.extension._loTimer.cancel(this._debounceBeginAnimateSeq);
+      }
+      this.debounceEndSeq = null;
+      this._debounceBeginAnimateSeq = null;
     }
 
     _updateFocusedIcon() {

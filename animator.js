@@ -46,8 +46,12 @@ function getScale(u, xm, R, M, type = 0) {
         // Smoothstep Polynomial
         factor = t * t * (3 - 2 * t);
     } else {
-        // 0: Cosine Bell (standard macOS bell curve)
-        factor = Math.cos((dist / R) * (Math.PI / 2));
+        // 0: raised cosine bell (cos^2): a rounded peak on the hovered icon
+        // that falls off smoothly to the neighbours, like the macOS dock.
+        // A plain cosine is flat near the top, so the direct neighbours
+        // grew almost as large as the hovered icon.
+        const c = Math.cos((dist / R) * (Math.PI / 2));
+        factor = c * c;
     }
 
     return 1.0 + (M - 1.0) * factor;
@@ -284,8 +288,11 @@ export let Animator = class {
     let magnify = dock.extension.animation_magnify * ANIM_ICON_SCALE;
     let spread = dock.extension.animation_spread;
 
-    // Keep magnification independent from spread
-    let threshold = (iconSize + 10) * 2.5 * scaleFactor;
+    // Magnification radius in icon slots, set by the "spread" preference:
+    // 0 -> 1.5 slots (only the direct neighbours grow a little),
+    // 1 -> 4 slots (a wide, gentle wave)
+    let spreadSlots = 1.5 + 2.5 * Math.max(0, Math.min(1, spread ?? 0.42));
+    let threshold = (iconSize + 10) * spreadSlots * scaleFactor;
     if (animated && edge_distance < 0) {
       edge_distance = 0;
     }

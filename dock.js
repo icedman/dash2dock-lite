@@ -1556,7 +1556,30 @@ export let Dock = GObject.registerClass(
       if (isInRect([xy[0], xy[1], wh[0], wh[1]], p, 20)) {
         return true;
       }
-      return false;
+
+      return this.animated && this._isWithinMagnifiedIcons(p);
+    }
+
+    // While magnified, the enlarged icons reach beyond the struts. Count their
+    // whole area (struts plus every visible icon) as inside, else moving the
+    // pointer up onto a magnified icon stops the animation and the icon
+    // shrinks away from under the pointer.
+    _isWithinMagnifiedIcons(p) {
+      if (!this.struts || !this.animator?._renderers) return false;
+      let [x1, y1] = this.struts.get_transformed_position();
+      let x2 = x1 + this.struts.width;
+      let y2 = y1 + this.struts.height;
+      for (const r of this.animator._renderers) {
+        if (!r.visible || !r.mapped) continue;
+        const [rx, ry] = r.get_transformed_position();
+        const [rw, rh] = r.get_transformed_size();
+        if (isNaN(rx) || isNaN(ry)) continue;
+        x1 = Math.min(x1, rx);
+        y1 = Math.min(y1, ry);
+        x2 = Math.max(x2, rx + rw);
+        y2 = Math.max(y2, ry + rh);
+      }
+      return isInRect([x1, y1, x2 - x1, y2 - y1], p, 4);
     }
 
     _beginAnimation(caller) {

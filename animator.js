@@ -115,6 +115,11 @@ export let Animator = class {
         icon_size: 24,
       });
       renderer.visible = false;
+      // Magnified icons stick out above the Shell Dash items, which handle
+      // clicks inside the dock: route clicks on the enlarged part here.
+      renderer.connect('button-release-event', (actor, evt) =>
+        this._onRendererClick(evt)
+      );
       target.add_child(renderer);
       this._renderers.push(renderer);
 
@@ -142,6 +147,25 @@ export let Animator = class {
     }
 
     return true;
+  }
+
+  _onRendererClick(evt) {
+    let dock = this.dock;
+    let target = dock?._nearestIcon || dock?._hoveredIcon;
+    if (!target) return Clutter.EVENT_PROPAGATE;
+
+    let button = evt.get_button();
+    if (button === Clutter.BUTTON_SECONDARY) {
+      if (target._appwell?.popupMenu) {
+        target._appwell.popupMenu();
+      } else if (target._menu?.popup) {
+        target._menu.popup();
+      }
+      return Clutter.EVENT_STOP;
+    }
+
+    dock.activateTargetIcon(target, button);
+    return Clutter.EVENT_STOP;
   }
 
   //! begin optimization
@@ -350,7 +374,12 @@ export let Animator = class {
       : ICON_SIZE / 2 + dockPad + 4;
     const isWithinSecondary = (secondaryDist <= maxSecReach);
 
-    isWithin = isWithinPrimary && isWithinSecondary;
+    // the reach above is measured from the resting icon and misses the top of
+    // a raised, magnified icon: also accept the area the icons are drawn in
+    isWithin =
+      isWithinPrimary &&
+      (isWithinSecondary ||
+        (animated && dock._isWithinMagnifiedIcons([px, py])));
     if (m.inFullscreen) {
         isWithin = false;
     }

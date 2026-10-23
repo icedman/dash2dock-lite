@@ -242,10 +242,15 @@ export let Animator = class {
 
     let idx = 0;
     let prevIcon = null;
+    // icons without a texture or a valid position (being created or torn down
+    // by the Shell Dash) are skipped here, so they must not reach the layout
+    // math below, which reads _fixedPosition of every icon
+    let positionedIcons = [];
     animateIcons.forEach((icon) => {
       if (!icon._icon) return;
       let pos = icon.get_transformed_position();
       if (!pos || isNaN(pos[0]) || isNaN(pos[1])) return;
+      positionedIcons.push(icon);
 
       if (icon._found && !icon._handled) {
         icon._handled = true;
@@ -267,6 +272,11 @@ export let Animator = class {
       }
       prevIcon = icon;
     });
+
+    animateIcons = positionedIcons;
+    if (!animateIcons.length) {
+      return;
+    }
 
     let noAnimation = !dock.extension.animate_icons_unmute;
     if (dock._dragging) {

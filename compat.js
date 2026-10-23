@@ -119,20 +119,12 @@ export function getStIcon(appwell) {
   // GNOME 50: _iconBin.child
   if (baseIcon._iconBin && baseIcon._iconBin.child) return baseIcon._iconBin.child;
 
-  // Force icon creation if not yet initialized
-  try {
-    if (typeof baseIcon.setIconSize === 'function') {
-      const size =
-        typeof baseIcon.iconSize === 'number' && baseIcon.iconSize > 0
-          ? baseIcon.iconSize
-          : 48;
-      baseIcon._createIconTexture(size);
-      if (baseIcon.icon) return baseIcon.icon;
-      if (baseIcon._iconBin && baseIcon._iconBin.child) return baseIcon._iconBin.child;
-    }
-  } catch {
-    // ignore initialization errors
-  }
+  // GNOME owns BaseIcon's child lifecycle. Do not call _createIconTexture()
+  // here: icon discovery can run while Dash._redisplay() is destroying an old
+  // DashItemContainer, and creating a replacement child during
+  // clutter_actor_destroy_all_children() aborts gnome-shell. The animator runs
+  // continuously, so an icon that is not ready yet is picked up on a later
+  // frame. (from icedman/dash2dock-lite#340)
 
   return null;
 }

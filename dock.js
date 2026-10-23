@@ -838,13 +838,10 @@ export let Dock = GObject.registerClass(
       }
       // DockItemContainer menu; idempotent, also run on the item's own destroy
       c._destroyMenu?.();
-      // c._label is owned by the Shell DashItemContainer (destroyed with it)
-      if (c._label) {
-        let p = c._label.get_parent();
-        if (p) {
-          p.remove_child(c._label);
-        }
-      }
+      // c._label is owned by the Shell DashItemContainer (destroyed with it).
+      // Detaching it here can re-enter the parent's child-destruction loop
+      // during Dash teardown and abort gnome-shell: drop only our reference.
+      c._label = null;
       c._renderer = null;
       c._badge = null;
       c._dots = null;
@@ -904,16 +901,6 @@ export let Dock = GObject.registerClass(
         this._inspectIcon(icon);
       });
 
-      // hack: sometimes the Dash creates more than one separator
-      // workaround - remove all separators in such situation
-      //! pinpoint the cause of the errors
-      if (this._separators.length > 1) {
-        while (this._separators.length > 0) {
-          dashBox?.remove_child(this._separators[0]);
-          this._separators.shift();
-        }
-      }
-
       // hide separator between running apps and favorites - if not needed
       if (this.extension.favorites_only) {
         if (this._separators.length) {
@@ -943,10 +930,12 @@ export let Dock = GObject.registerClass(
       if (showAppsIcon) {
         showAppsIcon.visible = this.extension.apps_icon;
         if (this._inspectIcon(showAppsIcon)) {
-          let icon = showAppsIcon._icon;
-          if (!icon._connected) {
-            icon._connected = true;
-            icon.connectObject(
+          // pointer input belongs to the Show Apps button, not the nested
+          // GNOME-owned texture (see icedman/dash2dock-lite#340)
+          let button = showAppsIcon.child;
+          if (button && !button._d2dlConnected) {
+            button._d2dlConnected = true;
+            button.connectObject(
               'button-press-event',
               () => {
                 let target =
@@ -974,8 +963,6 @@ export let Dock = GObject.registerClass(
         }
       }
 
-      let noAnimation = !this.extension.animate_icons_unmute;
-
       let pv = new Point();
       pv.x = 0.5;
       pv.y = 0.5;
@@ -996,16 +983,16 @@ export let Dock = GObject.registerClass(
             }
           };
         }
-        c._icon.track_hover = true;
-        c._icon.reactive = true;
         c._icon.pivot_point = pv;
-        if (c._button) {
-          c._button.reactive = noAnimation;
-          c._button.track_hover = noAnimation;
-          c.toggle_mode = false;
+        if (c._appwell || c === showAppsIcon) {
+          // Pointer input belongs to the owning AppIcon or button. A reactive,
+          // hover-tracked nested StIcon can refresh its style while the
+          // BaseIcon subtree is being destroyed, which aborts gnome-shell in
+          // clutter_actor_destroy_all_children() (icedman/dash2dock-lite#340)
+          c._icon.reactive = false;
+          c._icon.track_hover = false;
         }
         if (c._grid) {
-          // c._grid.style = noAnimation ? '' : 'background: none !important;';
           c._grid.style = 'background: none !important;';
         }
         if (c._appwell && !c._appwell._activate) {
@@ -1022,12 +1009,12 @@ export let Dock = GObject.registerClass(
             }
           };
         }
+        // No destroy callbacks on GNOME-owned StIcons: their destroy runs
+        // inside DashItemContainer teardown, and mutating other actor trees
+        // from there can abort gnome-shell. The container's own destroy
+        // handler (_inspectIcon) drops the cached references, and
+        // destroyDash() does the explicit cleanup when the dock goes away.
         let icon = c._icon;
-        if (icon && !icon._destroyConnectId) {
-          icon._destroyConnectId = icon.connect('destroy', () => {
-            this._cleanupIcon(c);
-          });
-        }
         let { _draggable } = c.child;
         if (_draggable && !_draggable._dragBeginId) {
           _draggable._dragBeginId = _draggable.connect('drag-begin', () => {

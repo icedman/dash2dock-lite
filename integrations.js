@@ -1,5 +1,8 @@
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
+// from this version on Blur my Shell follows the dock background by itself
+const BMS_SELF_TRACKING_VERSION = 76;
+
 // these are hacks to make Dash2Dock Animated compatible with other Extensions
 //
 export const Integrations = class {
@@ -150,7 +153,9 @@ export const Integrations = class {
 
     let bms = Main.extensionManager.lookup('blur-my-shell@aunetx');
     this._bms = bms;
-    if (bms && bms.stateObj && bms.metadata.version >= 70) {
+    // Blur my Shell 76+ tracks the dock geometry by itself: leave it alone
+    if (bms && bms.stateObj && bms.metadata.version >= 70 &&
+        bms.metadata.version < BMS_SELF_TRACKING_VERSION) {
       let obj = bms.stateObj;
       if (obj._dash_to_dock_blur) {
         if (!obj._dash_to_dock_blur.update_size_orig) {
@@ -189,6 +194,16 @@ export const Integrations = class {
 
     bms.visible = dock.extension.blur_background;
     if (!bms.visible) {
+      return;
+    }
+
+    // Blur my Shell 76+ positions, sizes and rounds the blur from the dock
+    // background (fake_dash._background) itself
+    if (
+      dock.extension.integrations._bms &&
+      dock.extension.integrations._bms.metadata.version >=
+        BMS_SELF_TRACKING_VERSION
+    ) {
       return;
     }
 

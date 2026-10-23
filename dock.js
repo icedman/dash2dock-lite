@@ -64,7 +64,9 @@ export let Dock = GObject.registerClass(
         clip_to_allocation: true,
         x_align: Clutter.ActorAlign.CENTER,
         y_align: Clutter.ActorAlign.CENTER,
-        offscreen_redirect: Clutter.OffscreenRedirect.ALWAYS,
+        // not ALWAYS: Blur my Shell's dynamic blur has to see the stage
+        // behind the dock, which an always-offscreen container hides
+        offscreen_redirect: Clutter.OffscreenRedirect.AUTOMATIC_FOR_OPACITY,
       });
 
       this.extension = params.extension;
@@ -78,31 +80,31 @@ export let Dock = GObject.registerClass(
       this._background = new DockBackground({ name: 'd2daBackground' });
       this.add_child(this._background);
 
-      // for blur-my-shell
-      this._slider = {
-        // connect: () => false,
-        get_child: () => {
-          return this;
-        },
-        get_parent: () => {
-          return this;
-        },
+      // for blur-my-shell: it connects signals to the slider (Blur my Shell 76+),
+      // so it has to be a real GObject, not a plain JS object
+      this._slider = new St.Bin({ name: 'd2daSlider', visible: false });
+      this._slider.get_child = () => {
+        return this;
+      };
+      this._slider.get_parent = () => {
+        return this;
       };
 
       // pretend to be Dash-to-Dock
-      // required by blur-my-shell to find the dash upon disabling
-      this.fake_dash = new St.Widget({ name: 'dash' });
-      this.fake_dash.has_allocation = () => { return true; };
-      this.add_child(this.fake_dash);
-      this.fake_dash_background = new St.Widget({
-        name: 'd2daFakeDashBackground',
-        style_class: 'dash-background',
+      // Blur my Shell looks for a child named 'dash' with a '_background' and
+      // only blurs it once both have a real, non-zero allocation. The fake dash
+      // is an empty 1x1 widget that draws nothing; its '_background' is the
+      // real dock background, so the blur follows the dock's shape and radius.
+      // It sits at the bottom of the stack: Blur my Shell inserts its blur
+      // right below it, under the tinted dock background.
+      this.fake_dash = new St.Widget({
+        name: 'dash',
+        reactive: false,
+        width: 1,
+        height: 1,
       });
-      this.fake_dash.connect = () => false;
-      this.fake_dash_background.connect = () => false;
-      this.fake_dash.add_child(this.fake_dash_background);
-      this.fake_dash._background = this.fake_dash_background;
-      this.fake_dash.visible = false;
+      this.insert_child_at_index(this.fake_dash, 0);
+      this.fake_dash._background = this._background;
 
       this.renderArea = new St.Widget({
         name: 'DockRenderArea',
@@ -175,7 +177,10 @@ export let Dock = GObject.registerClass(
         this.dwell.destroy();
         this.struts = null;
         this.dwell = null;
-        this._slider = null;
+        if (this._slider) {
+          this._slider.destroy();
+          this._slider = null;
+        }
       }
       super.destroy();
     }

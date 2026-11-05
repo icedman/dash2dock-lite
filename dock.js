@@ -960,6 +960,18 @@ export let Dock = GObject.registerClass(
                 Compat.showOverviewApps(Main.overview);
                 return Clutter.EVENT_STOP;
               },
+              // touchscreens emit touch-event instead of button-press-event
+              'touch-event',
+              (actor, event) => {
+                let type = event.type();
+                if (type === Clutter.EventType.TOUCH_END) {
+                  Compat.showOverviewApps(Main.overview);
+                }
+                return type === Clutter.EventType.TOUCH_BEGIN ||
+                  type === Clutter.EventType.TOUCH_END
+                  ? Clutter.EVENT_STOP
+                  : Clutter.EVENT_PROPAGATE;
+              },
               'enter-event',
               () => {
                 showAppsIcon.showLabel();

@@ -111,7 +111,7 @@ lint:
 check:
 	find . -path ./node_modules -prune -o -path ./build -prune -o -path ./tests -prune \
 		-o -path ./tools -prune -o -name '*.js' -print \
-		| xargs -n1 node --experimental-default-type=module --check
+		| xargs -n1 node --check
 	@echo "check: OK"
 
 # schema <-> preferences/keys.js <-> ui/*.ui <-> runtime refs. Exits 1 on

@@ -255,6 +255,7 @@ export function setupDashProxy(dash) {
       dash._createAppItem = function (app) {
         const item = origCreateAppItem.call(this, app);
         this.opacity = 0;
+        this.reactive = false;
         if (item?.child) {
           item.child.visible = false;
         }
@@ -293,6 +294,30 @@ export function setDashOrientation(dash, orientation) {
 }
 
 /**
+ * Safely set orientation on an St.BoxLayout, supporting GNOME 51+ where
+ * the legacy .vertical property and methods were removed.
+ *
+ * @param {object} box St.BoxLayout instance
+ * @param {boolean|number} vertical whether orientation is vertical
+ */
+export function setBoxLayoutOrientation(box, vertical) {
+  if (!box) return;
+  try {
+    const isVertical = Boolean(vertical);
+    const orientation = isVertical ? 1 : 0; // Clutter.Orientation.VERTICAL : HORIZONTAL
+    if ('orientation' in box) {
+      box.orientation = orientation;
+    } else if (box.layout_manager && 'orientation' in box.layout_manager) {
+      box.layout_manager.orientation = orientation;
+    } else if ('vertical' in box) {
+      box.vertical = isVertical;
+    }
+  } catch (e) {
+    console.error('d2da: compat setBoxLayoutOrientation', e);
+  }
+}
+
+/**
  * Safely update text direction on a Shell Dash's container and box.
  *
  * @param {object} dash Shell Dash instance
@@ -316,7 +341,7 @@ export function setDashLayoutDirection(dash, isRtl) {
 
 /**
  * Controls visibility and opacity of the stock overview dash.
- * Eliminates the legacy __box expando.
+ * Eliminates the legacy __box expando and handles GNOME 51 dash reactivity.
  *
  * @param {object} overviewDash Main.overview.dash instance
  * @param {boolean} show whether to show or hide the overview dash
@@ -325,7 +350,11 @@ export function setDashLayoutDirection(dash, isRtl) {
 export function setOverviewDashVisibility(overviewDash, show, state = null) {
   if (!overviewDash) return;
   try {
+    if (!show && state && state.origReactive === undefined) {
+      state.origReactive = overviewDash.reactive ?? true;
+    }
     overviewDash.opacity = show ? 255 : 0;
+    overviewDash.reactive = show ? (state?.origReactive ?? true) : false;
     const bg = getDashBackground(overviewDash);
     if (bg) {
       bg.style = show ? '' : 'background: transparent !important;';
@@ -358,6 +387,66 @@ export function setOverviewDashVisibility(overviewDash, show, state = null) {
     }
   } catch (e) {
     console.error('d2da: compat setOverviewDashVisibility', e);
+  }
+}
+
+/**
+ * Safely open a PopupMenu across GNOME Shell versions.
+ * In GNOME 51+, open() accepts a parameters object ({ animate, fadeOnly }).
+ * In GNOME 45–50, open() accepts BoxPointer.PopupAnimation flags or boolean.
+ *
+ * @param {object} menu PopupMenu instance
+ * @param {object|number|boolean} [options=true] Animation flags or params object
+ */
+export function openPopupMenu(menu, options = true) {
+  if (!menu || typeof menu.open !== 'function') return;
+  try {
+    const isModern = typeof menu._getPopupAnimationFromParams === 'function';
+    if (isModern) {
+      const params =
+        typeof options === 'object' && options !== null
+          ? options
+          : { animate: Boolean(options) };
+      menu.open(params);
+    } else {
+      const arg =
+        typeof options === 'object' && options !== null
+          ? (options.animate !== false ? 1 : 0)
+          : options;
+      menu.open(arg);
+    }
+  } catch (e) {
+    console.error('d2da: compat openPopupMenu', e);
+  }
+}
+
+/**
+ * Safely close a PopupMenu across GNOME Shell versions.
+ * In GNOME 51+, close() accepts a parameters object ({ animate, fadeOnly }).
+ * In GNOME 45–50, close() accepts BoxPointer.PopupAnimation flags or boolean.
+ *
+ * @param {object} menu PopupMenu instance
+ * @param {object|number|boolean} [options=true] Animation flags or params object
+ */
+export function closePopupMenu(menu, options = true) {
+  if (!menu || typeof menu.close !== 'function') return;
+  try {
+    const isModern = typeof menu._getPopupAnimationFromParams === 'function';
+    if (isModern) {
+      const params =
+        typeof options === 'object' && options !== null
+          ? options
+          : { animate: Boolean(options) };
+      menu.close(params);
+    } else {
+      const arg =
+        typeof options === 'object' && options !== null
+          ? (options.animate !== false ? 1 : 0)
+          : options;
+      menu.close(arg);
+    }
+  } catch (e) {
+    console.error('d2da: compat closePopupMenu', e);
   }
 }
 

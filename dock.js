@@ -1560,6 +1560,10 @@ export let Dock = GObject.registerClass(
     }
 
     _beginAnimation(caller) {
+      if (!this.get_stage()) {
+        return;
+      }
+
       if (this.extension.debug_visual) {
         this.add_style_class_name('hi');
         this.struts?.add_style_class_name('hi');

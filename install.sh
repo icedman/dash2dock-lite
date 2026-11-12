@@ -43,7 +43,7 @@ else
   if [ -n "$DESKTOP" ]; then
     echo "    Current desktop session reported: ${DESKTOP}"
   fi
-  echo "    Dash2Dock Animated requires GNOME Shell (42-50+). Installation can proceed,"
+  echo "    Dash2Dock Animated requires GNOME Shell (42-51+). Installation can proceed,"
   echo "    but the extension will only function inside a GNOME desktop session."
 fi
 echo ""
@@ -100,9 +100,9 @@ for r in releases:
         compat_info = ""
         is_rec = False
         tag_l = tag.lower()
-        if tag_l.startswith('v50') or tag_l == 'g50':
-            compat_info = "[GNOME 45 - 50]"
-            if gnome_major is not None and 45 <= gnome_major <= 50:
+        if tag_l.startswith('v50') or tag_l.startswith('v51') or tag_l in ('g50', 'g51'):
+            compat_info = "[GNOME 45 - 51]"
+            if gnome_major is not None and 45 <= gnome_major <= 51:
                 is_rec = True
         elif tag_l == 'g45':
             compat_info = "[GNOME 45 - 46]"
@@ -197,7 +197,7 @@ CHOSEN_FILE="${FILENAMES[$CHOICE]}"
 # Check if current system GNOME is greater than the selected release compatibility
 IS_FORCE_INSTALL=0
 if [ -n "$GNOME_MAJOR" ]; then
-  CHOSEN_MAX=50
+  CHOSEN_MAX=51
   if [[ "${CHOSEN_TAG,,}" =~ ^g44 ]]; then
     CHOSEN_MAX=44
   elif [[ "${CHOSEN_TAG,,}" =~ ^g45 ]]; then

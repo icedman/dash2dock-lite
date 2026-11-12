@@ -19,7 +19,7 @@ If you prefer strictly human-maintained code, feel free to skip this extension. 
 
 ### Notice
 
-* Supports GNOME 42, 43, 44, 45, 46, 47, 48, 49, 50
+* Supports GNOME 42, 43, 44, 45, 46, 47, 48, 49, 50, 51
 * Older versions are largely unsupported
 
 ### Features

@@ -7,8 +7,8 @@
 
 set -euo pipefail
 
-REPO="icedman/dash2dock-lite"
-UUID="dash2dock-lite@icedman.github.com"
+REPO="Contra-BlackFlag/dash2dock-lite"
+UUID="dash2dock-animated@Contra-BlackFlag.github.com"
 INSTALL_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/gnome-shell/extensions/${UUID}"
 
 echo "========================================="

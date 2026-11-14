@@ -1,0 +1,238 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <object class="GtkAdjustment" id="autohide-animation-duration-adj">
+    <property name="lower">0.05</property>
+    <property name="upper">2.0</property>
+    <property name="step-increment">0.05</property>
+    <property name="value">0.200</property>
+  </object>
+  <object class="GtkAdjustment" id="autohide-hide-timeout-adj">
+    <property name="lower">0.00</property>
+    <property name="upper">2.0</property>
+    <property name="step-increment">0.05</property>
+    <property name="value">0.200</property>
+  </object>
+  <object class="GtkAdjustment" id="autohide-show-timeout-adj">
+    <property name="lower">0.00</property>
+    <property name="upper">2.0</property>
+    <property name="step-increment">0.05</property>
+    <property name="value">0.250</property>
+  </object>
+  <object class="GtkAdjustment" id="pressure-threshold-adj">
+    <property name="lower">10.0</property>
+    <property name="upper">500.0</property>
+    <property name="step-increment">10.0</property>
+    <property name="value">100.0</property>
+  </object>
+
+  <object class="AdwWindow" id="autohide-dialog">
+    <property name="title" translatable="yes">Intelligent autohide customization</property>
+    <property name="modal">true</property>
+    <property name="default-width">580</property>
+    <property name="default-height">620</property>
+    <property name="content">
+      <object class="AdwToolbarView">
+        <child type="top">
+          <object class="AdwHeaderBar">
+            <property name="show-end-title-buttons">true</property>
+            <child type="end">
+              <object class="GtkButton" id="autohide-reset-button">
+                <property name="label" translatable="yes">Reset to defaults</property>
+                <property name="valign">center</property>
+              </object>
+            </child>
+          </object>
+        </child>
+        <property name="content">
+          <object class="GtkScrolledWindow">
+            <property name="hscrollbar-policy">never</property>
+            <property name="propagate-natural-height">true</property>
+            <child>
+              <object class="AdwClamp">
+                <property name="maximum-size">520</property>
+                <property name="margin-top">18</property>
+                <property name="margin-bottom">18</property>
+                <property name="margin-start">18</property>
+                <property name="margin-end">18</property>
+                <child>
+                  <object class="GtkBox">
+                    <property name="orientation">vertical</property>
+                    <property name="spacing">16</property>
+                    <child>
+                      <object class="AdwPreferencesGroup">
+                        <child>
+                          <object class="AdwActionRow">
+                            <property name="title" translatable="yes">Autohide</property>
+                            <property name="subtitle" translatable="yes">Show the dock by mouse hover on the screen edge.</property>
+                            <property name="activatable-widget">autohide-dialog-dash</property>
+                            <child type="suffix">
+                              <object class="GtkSwitch" id="autohide-dialog-dash">
+                                <property name="valign">center</property>
+                              </object>
+                            </child>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="AdwActionRow">
+                            <property name="title" translatable="yes">Enable in fullscreen mode</property>
+                            <property name="activatable-widget">autohide-in-fullscreen</property>
+                            <child type="prefix">
+                              <object class="GtkCheckButton" id="autohide-in-fullscreen">
+                                <property name="valign">center</property>
+                              </object>
+                            </child>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="AdwActionRow">
+                            <property name="title" translatable="yes">Push to show: require pressure to show the dock</property>
+                            <property name="activatable-widget">pressure-sense</property>
+                            <child type="prefix">
+                              <object class="GtkCheckButton" id="pressure-sense">
+                                <property name="valign">center</property>
+                              </object>
+                            </child>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="AdwActionRow">
+                            <property name="title" translatable="yes">Show dock for urgent notifications</property>
+                            <property name="activatable-widget">show-dock-urgent</property>
+                            <child type="prefix">
+                              <object class="GtkCheckButton" id="show-dock-urgent">
+                                <property name="valign">center</property>
+                              </object>
+                            </child>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="AdwPreferencesGroup">
+                        <child>
+                          <object class="AdwActionRow">
+                            <property name="title" translatable="yes">Dodge windows</property>
+                            <property name="subtitle" translatable="yes">Show the dock when it doesn't obstruct application windows.</property>
+                            <property name="activatable-widget">autohide-dodge</property>
+                            <child type="suffix">
+                              <object class="GtkSwitch" id="autohide-dodge">
+                                <property name="valign">center</property>
+                              </object>
+                            </child>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="AdwActionRow">
+                            <property name="title" translatable="yes">All windows</property>
+                            <property name="activatable-widget">intellihide-mode-all</property>
+                            <child type="prefix">
+                              <object class="GtkCheckButton" id="intellihide-mode-all">
+                                <property name="valign">center</property>
+                              </object>
+                            </child>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="AdwActionRow">
+                            <property name="title" translatable="yes">Only focused application's windows</property>
+                            <property name="activatable-widget">intellihide-mode-focused</property>
+                            <child type="prefix">
+                              <object class="GtkCheckButton" id="intellihide-mode-focused">
+                                <property name="valign">center</property>
+                                <property name="group">intellihide-mode-all</property>
+                              </object>
+                            </child>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="AdwActionRow">
+                            <property name="title" translatable="yes">Only maximized windows</property>
+                            <property name="activatable-widget">intellihide-mode-maximized</property>
+                            <child type="prefix">
+                              <object class="GtkCheckButton" id="intellihide-mode-maximized">
+                                <property name="valign">center</property>
+                                <property name="group">intellihide-mode-all</property>
+                              </object>
+                            </child>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="AdwActionRow">
+                            <property name="title" translatable="yes">Always on top</property>
+                            <property name="activatable-widget">intellihide-mode-always</property>
+                            <child type="prefix">
+                              <object class="GtkCheckButton" id="intellihide-mode-always">
+                                <property name="valign">center</property>
+                                <property name="group">intellihide-mode-all</property>
+                              </object>
+                            </child>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="AdwPreferencesGroup">
+                        <child>
+                          <object class="AdwActionRow">
+                            <property name="title" translatable="yes">Animation duration (s)</property>
+                            <property name="activatable-widget">autohide-animation-duration</property>
+                            <child type="suffix">
+                              <object class="GtkSpinButton" id="autohide-animation-duration">
+                                <property name="adjustment">autohide-animation-duration-adj</property>
+                                <property name="digits">3</property>
+                                <property name="valign">center</property>
+                              </object>
+                            </child>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="AdwActionRow">
+                            <property name="title" translatable="yes">Hide timeout (s)</property>
+                            <property name="activatable-widget">autohide-hide-timeout</property>
+                            <child type="suffix">
+                              <object class="GtkSpinButton" id="autohide-hide-timeout">
+                                <property name="adjustment">autohide-hide-timeout-adj</property>
+                                <property name="digits">3</property>
+                                <property name="valign">center</property>
+                              </object>
+                            </child>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="AdwActionRow">
+                            <property name="title" translatable="yes">Show timeout (s)</property>
+                            <property name="activatable-widget">autohide-show-timeout</property>
+                            <child type="suffix">
+                              <object class="GtkSpinButton" id="autohide-show-timeout">
+                                <property name="adjustment">autohide-show-timeout-adj</property>
+                                <property name="digits">3</property>
+                                <property name="valign">center</property>
+                              </object>
+                            </child>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="AdwActionRow">
+                            <property name="title" translatable="yes">Pressure threshold</property>
+                            <property name="activatable-widget">pressure-threshold</property>
+                            <child type="suffix">
+                              <object class="GtkSpinButton" id="pressure-threshold">
+                                <property name="adjustment">pressure-threshold-adj</property>
+                                <property name="digits">0</property>
+                                <property name="valign">center</property>
+                              </object>
+                            </child>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+              </object>
+            </child>
+          </object>
+        </property>
+      </object>
+    </property>
+  </object>
+</interface>

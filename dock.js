@@ -1547,6 +1547,20 @@ export let Dock = GObject.registerClass(
     }
 
     //! move these generic functions outside of this class
+    _isWithinMagnifiedIcons(p) {
+      if (!this.animator?._renderers) return false;
+      for (let renderer of this.animator._renderers) {
+        if (!renderer || !renderer.visible || !renderer.get_stage()) continue;
+        let pos = renderer.get_transformed_position();
+        if (!pos || isNaN(pos[0]) || isNaN(pos[1])) continue;
+        let [w, h] = renderer.get_transformed_size();
+        if (isInRect([pos[0], pos[1], w, h], p, 6)) {
+          return true;
+        }
+      }
+      return false;
+    }
+
     _isWithinDash(p) {
       if (this._hidden || !this.struts) {
         return false;
@@ -1554,6 +1568,9 @@ export let Dock = GObject.registerClass(
       let xy = this.struts.get_transformed_position();
       let wh = [this.struts.width, this.struts.height];
       if (isInRect([xy[0], xy[1], wh[0], wh[1]], p, 20)) {
+        return true;
+      }
+      if (this.animated && this._isWithinMagnifiedIcons(p)) {
         return true;
       }
       return false;

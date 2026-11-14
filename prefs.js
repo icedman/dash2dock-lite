@@ -164,6 +164,85 @@ export default class Preferences extends ExtensionPreferences {
     }
   }
 
+  setupAutohideDialog(window, builder, settings) {
+    let dialog = builder.get_object('autohide-dialog');
+    if (!dialog) return;
+
+    dialog.connect('close-request', () => {
+      dialog.set_visible(false);
+      return true;
+    });
+
+    let gearButton = builder.get_object('autohide-settings-button');
+    if (gearButton) {
+      gearButton.connect('clicked', () => {
+        dialog.set_transient_for(window);
+        dialog.present();
+      });
+    }
+
+    let dialogDash = builder.get_object('autohide-dialog-dash');
+    if (dialogDash) {
+      settings.bind(
+        'autohide-dash',
+        dialogDash,
+        'active',
+        Gio.SettingsBindFlags.DEFAULT
+      );
+    }
+
+    const intellihideRadios = [
+      builder.get_object('intellihide-mode-all'),
+      builder.get_object('intellihide-mode-focused'),
+      builder.get_object('intellihide-mode-maximized'),
+      builder.get_object('intellihide-mode-always'),
+    ];
+
+    const updateIntellihideRadios = () => {
+      let mode = settings.get_int('intellihide-mode');
+      if (mode < 0 || mode > 3) mode = 1;
+      let activeRadio = intellihideRadios[mode];
+      if (activeRadio && !activeRadio.get_active()) {
+        activeRadio.set_active(true);
+      }
+    };
+    updateIntellihideRadios();
+    let modeId = settings.connect(
+      'changed::intellihide-mode',
+      updateIntellihideRadios
+    );
+
+    intellihideRadios.forEach((radio, index) => {
+      if (!radio) return;
+      radio.connect('toggled', (w) => {
+        if (w.get_active()) {
+          settings.set_int('intellihide-mode', index);
+        }
+      });
+    });
+
+    let resetBtn = builder.get_object('autohide-reset-button');
+    if (resetBtn) {
+      resetBtn.connect('clicked', () => {
+        settings.reset('autohide-dash');
+        settings.reset('autohide-in-fullscreen');
+        settings.reset('pressure-sense');
+        settings.reset('show-dock-urgent');
+        settings.reset('autohide-dodge');
+        settings.reset('intellihide-mode');
+        settings.reset('autohide-animation-duration');
+        settings.reset('autohide-hide-timeout');
+        settings.reset('autohide-show-timeout');
+        settings.reset('pressure-threshold');
+      });
+    }
+
+    window.connect('close-request', () => {
+      settings.disconnect(modeId);
+      dialog.destroy();
+    });
+  }
+
   fillPreferencesWindow(window) {
     // console.log(`>>${window.get_content()}`);
     let builder = new Gtk.Builder();
@@ -171,6 +250,7 @@ export default class Preferences extends ExtensionPreferences {
 
     let UIFolderPath = `${this.path}/ui`;
     builder.add_from_file(`${UIFolderPath}/general.ui`);
+    builder.add_from_file(`${UIFolderPath}/autohide-dialog.ui`);
     builder.add_from_file(`${UIFolderPath}/appearance.ui`);
     builder.add_from_file(`${UIFolderPath}/tweaks.ui`);
     builder.add_from_file(`${UIFolderPath}/others.ui`);
@@ -214,6 +294,7 @@ export default class Preferences extends ExtensionPreferences {
 
     this.addButtonEvents(window, builder, settings);
     this.addMenu(window, builder);
+    this.setupAutohideDialog(window, builder, settings);
 
     if (builder.get_object('peek-hidden-icons-row')) {
       builder.get_object('peek-hidden-icons-row').visible = false;

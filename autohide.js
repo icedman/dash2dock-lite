@@ -1,6 +1,7 @@
 'use strict';
 
 import Meta from 'gi://Meta';
+import Shell from 'gi://Shell';
 
 import { DockPosition } from './dock.js';
 import {
@@ -41,6 +42,11 @@ export let AutoHide = class {
     // _debounceCheckHide() also runs while autohide is off, so always drop it
     this.extension._loTimer?.cancel(this._debounceCheckSeq);
     this._debounceCheckSeq = null;
+
+    if (this._debounceShowSeq) {
+      this.extension._loTimer?.cancel(this._debounceShowSeq);
+      this._debounceShowSeq = null;
+    }
 
     if (!this._enabled) return;
     if (this.extension._hiTimer) {
@@ -84,7 +90,9 @@ export let AutoHide = class {
       }
 
       let dwell_count =
-        80 - 60 * (this.extension.pressure_sense_sensitivity || 0);
+        this.extension.pressure_threshold !== undefined
+          ? Math.round(this.extension.pressure_threshold)
+          : 80 - 60 * (this.extension.pressure_sense_sensitivity || 0);
 
       if (this.dock.isVertical()) {
         if (
@@ -130,11 +138,33 @@ export let AutoHide = class {
 
   _onEnterEvent() {
     if (!this.extension.pressure_sense) {
-      this.show();
+      let showDelay = (this.extension.autohide_show_timeout ?? 0.25) * 1000;
+      if (showDelay <= 10) {
+        this.show();
+      } else if (this.extension._loTimer) {
+        if (!this._debounceShowSeq) {
+          this._debounceShowSeq = this.extension._loTimer.runDebounced(
+            () => {
+              this.show();
+            },
+            showDelay,
+            'debounceShow'
+          );
+        } else {
+          this._debounceShowSeq._delay = showDelay;
+          this.extension._loTimer.runDebounced(this._debounceShowSeq);
+        }
+      } else {
+        this.show();
+      }
     }
   }
 
   _onLeaveEvent() {
+    if (this._debounceShowSeq) {
+      this.extension._loTimer?.cancel(this._debounceShowSeq);
+      this._debounceShowSeq = null;
+    }
     if (this._shown) {
       this._dwell = 0;
       this._debounceCheckHide();
@@ -150,7 +180,11 @@ export let AutoHide = class {
   }
 
   show() {
-    if (!this.dock._monitor || this.dock._monitor.inFullscreen) {
+    if (
+      !this.dock._monitor ||
+      (this.dock._monitor.inFullscreen &&
+        !this.extension.autohide_in_fullscreen)
+    ) {
       return;
     }
     this._dwell = 0;
@@ -165,8 +199,6 @@ export let AutoHide = class {
     this._shown = false;
     this.dock.slideOut();
   }
-
-
 
   _checkOverlap() {
     // console.log("checking overlap...");
@@ -199,14 +231,18 @@ export let AutoHide = class {
     // console.log("checking fullscreen...");
 
     if (this.dock._monitor && this.dock._monitor.inFullscreen) {
-      return true;
+      if (!this.extension.autohide_in_fullscreen) {
+        return true;
+      }
     }
 
     // console.log("checking windows...");
 
     let monitor = this.dock._monitor;
     let actors = global.get_window_actors();
-    let windows = actors.map((a) => a.get_meta_window());
+    let windows = actors
+      .map((a) => a.get_meta_window())
+      .filter((w) => Boolean(w));
     windows = windows.filter((w) => w.can_close());
     windows = windows.filter((w) => w.get_monitor() == monitor.index);
     // windows = windows.filter((w) => !w.is_override_redirect());
@@ -222,6 +258,55 @@ export let AutoHide = class {
     windows = windows.filter((w) =>
       handledWindowTypes.includes(w.get_window_type())
     );
+
+    if (this.extension.show_dock_urgent) {
+      let hasUrgent = windows.some(
+        (w) =>
+          w.demands_attention ||
+          (typeof w.is_demands_attention === 'function' &&
+            w.is_demands_attention()) ||
+          (typeof w.is_urgent === 'function' && w.is_urgent())
+      );
+      if (hasUrgent) {
+        return false;
+      }
+    }
+
+    let intellihideMode = this.extension.intellihide_mode ?? 1;
+    if (intellihideMode === 3) {
+      // Always on top - dock does not dodge windows
+      return false;
+    }
+
+    if (intellihideMode === 1) {
+      // Only focused application's windows
+      let focusWindow = global.display?.focus_window;
+      if (!focusWindow) {
+        return false;
+      }
+      let tracker = Shell.WindowTracker.get_default();
+      let focusApp = tracker ? tracker.get_window_app(focusWindow) : null;
+      windows = windows.filter((w) => {
+        if (w === focusWindow) return true;
+        if (focusApp && tracker?.get_window_app(w) === focusApp) {
+          return true;
+        }
+        return false;
+      });
+    } else if (intellihideMode === 2) {
+      // Only maximized windows
+      windows = windows.filter((w) => {
+        let isMax = false;
+        if (typeof w.is_maximized === 'function') {
+          isMax = w.is_maximized();
+        } else if (typeof w.get_maximized === 'function') {
+          isMax = w.get_maximized() !== 0;
+        } else if (w.maximized_horizontally || w.maximized_vertically) {
+          isMax = true;
+        }
+        return isMax;
+      });
+    }
 
     let isOverlapped = false;
     let dockRect = this.dock.struts.get_transformed_position();
@@ -248,15 +333,20 @@ export let AutoHide = class {
 
   _debounceCheckHide() {
     if (this.extension._loTimer) {
+      let timeout = Math.max(
+        50,
+        Math.round((this.extension.autohide_hide_timeout ?? 0.2) * 1000)
+      );
       if (!this._debounceCheckSeq) {
         this._debounceCheckSeq = this.extension._loTimer.runDebounced(
           () => {
             this._checkHide();
           },
-          DEBOUNCE_HIDE_TIMEOUT,
+          timeout,
           'debounceCheckHide'
         );
       } else {
+        this._debounceCheckSeq._delay = timeout;
         this.extension._loTimer.runDebounced(this._debounceCheckSeq);
       }
     }

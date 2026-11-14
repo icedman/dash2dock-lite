@@ -1,4 +1,5 @@
 import GLib from 'gi://GLib';
+import Gtk from 'gi://Gtk';
 
 export let PrefKeys = class {
   constructor(patch) {
@@ -279,7 +280,9 @@ export let PrefKeys = class {
         }
         case 'switch': {
           key.object.set_active(key.default_value);
-          signal_id = key.object.connect('state-set', (w) => {
+          let signal =
+            key.object instanceof Gtk.CheckButton ? 'toggled' : 'state-set';
+          signal_id = key.object.connect(signal, (w) => {
             if (self._syncing) return;
             let value = w.get_active();
             self.setValue(name, value);

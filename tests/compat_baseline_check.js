@@ -546,6 +546,84 @@ Compat.closePopupMenu(legacyMenu, { animate: false });
 check(legacyCloseArg === 0, 'compat.js: closePopupMenu converts modern params object to legacy flag');
 
 // ---------------------------------------------------------------------
+// Hover Magnification & Intelligent Autohide Unit Checks
+// ---------------------------------------------------------------------
+function isInRect(rect, point, pad = 0) {
+  return (
+    point[0] >= rect[0] - pad &&
+    point[0] <= rect[0] + rect[2] + pad &&
+    point[1] >= rect[1] - pad &&
+    point[1] <= rect[1] + rect[3] + pad
+  );
+}
+
+const mockDock = {
+  _hidden: false,
+  animated: true,
+  struts: {
+    width: 200,
+    height: 40,
+    get_transformed_position() {
+      return [100, 1000];
+    },
+  },
+  animator: {
+    _renderers: [
+      {
+        visible: true,
+        get_stage() { return true; },
+        get_transformed_position() { return [120, 950]; },
+        get_transformed_size() { return [72, 72]; },
+      },
+    ],
+  },
+  _isWithinMagnifiedIcons(p) {
+    if (!this.animator?._renderers) return false;
+    for (let renderer of this.animator._renderers) {
+      if (!renderer || !renderer.visible || !renderer.get_stage()) continue;
+      let pos = renderer.get_transformed_position();
+      if (!pos || isNaN(pos[0]) || isNaN(pos[1])) continue;
+      let [w, h] = renderer.get_transformed_size();
+      if (isInRect([pos[0], pos[1], w, h], p, 6)) {
+        return true;
+      }
+    }
+    return false;
+  },
+  _isWithinDash(p) {
+    if (this._hidden || !this.struts) return false;
+    let xy = this.struts.get_transformed_position();
+    let wh = [this.struts.width, this.struts.height];
+    if (isInRect([xy[0], xy[1], wh[0], wh[1]], p, 20)) {
+      return true;
+    }
+    if (this.animated && this._isWithinMagnifiedIcons(p)) {
+      return true;
+    }
+    return false;
+  },
+};
+
+check(
+  mockDock._isWithinMagnifiedIcons([140, 970]),
+  'dock.js: _isWithinMagnifiedIcons detects pointer inside magnified icon'
+);
+check(
+  !mockDock._isWithinMagnifiedIcons([500, 500]),
+  'dock.js: _isWithinMagnifiedIcons rejects pointer far outside'
+);
+check(
+  mockDock._isWithinDash([140, 960]),
+  'dock.js: _isWithinDash includes elevated magnified icons beyond resting struts'
+);
+
+mockDock.animated = false;
+check(
+  !mockDock._isWithinDash([140, 960]),
+  'dock.js: _isWithinDash does not check elevated renderers when not animated'
+);
+
+// ---------------------------------------------------------------------
 // Summary
 // ---------------------------------------------------------------------
 if (failures === 0) {

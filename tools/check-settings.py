@@ -65,7 +65,9 @@ SWITCH_EXCLUDE = {'eslint.config.js'}
 # ui class -> keys.js widget_type it can be bound as (prefKeys.connectBuilder).
 SETTING_WIDGET_CLASSES = {
     'GtkSwitch': 'switch',
+    'GtkCheckButton': 'switch',
     'GtkScale': 'scale',
+    'GtkSpinButton': 'scale',
     'GtkDropDown': 'dropdown',
     'GtkColorButton': 'color',
 }

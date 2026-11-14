@@ -98,7 +98,7 @@ export const SettingsKeys = (patch) => {
       widget_type: 'scale',
     },
     'autohide-show-timeout': {
-      default_value: 0.250,
+      default_value: 0.000,
       widget_type: 'scale',
     },
     'pressure-threshold': {

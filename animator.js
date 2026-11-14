@@ -118,6 +118,20 @@ export let Animator = class {
       renderer.connect('button-release-event', (actor, evt) =>
         this._onRendererClick(evt)
       );
+      renderer.connect('motion-event', (actor, evt) => {
+        dock._beginAnimation();
+        dock.autohider?._debounceCheckHide();
+        return Clutter.EVENT_PROPAGATE;
+      });
+      renderer.connect('enter-event', (actor, evt) => {
+        dock._beginAnimation();
+        dock.autohider?._onEnterEvent();
+        return Clutter.EVENT_PROPAGATE;
+      });
+      renderer.connect('leave-event', (actor, evt) => {
+        dock.autohider?._onLeaveEvent();
+        return Clutter.EVENT_PROPAGATE;
+      });
       target.add_child(renderer);
       this._renderers.push(renderer);
 

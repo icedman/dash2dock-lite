@@ -1,5 +1,6 @@
 'use strict';
 
+import GLib from 'gi://GLib';
 import Meta from 'gi://Meta';
 import Shell from 'gi://Shell';
 
@@ -43,9 +44,9 @@ export let AutoHide = class {
     this.extension._loTimer?.cancel(this._debounceCheckSeq);
     this._debounceCheckSeq = null;
 
-    if (this._debounceShowSeq) {
-      this.extension._loTimer?.cancel(this._debounceShowSeq);
-      this._debounceShowSeq = null;
+    if (this._showTimeoutId) {
+      GLib.Source.remove(this._showTimeoutId);
+      this._showTimeoutId = null;
     }
 
     if (!this._enabled) return;
@@ -138,32 +139,31 @@ export let AutoHide = class {
 
   _onEnterEvent() {
     if (!this.extension.pressure_sense) {
-      let showDelay = (this.extension.autohide_show_timeout ?? 0.25) * 1000;
-      if (showDelay <= 10) {
-        this.show();
-      } else if (this.extension._loTimer) {
-        if (!this._debounceShowSeq) {
-          this._debounceShowSeq = this.extension._loTimer.runDebounced(
-            () => {
-              this.show();
-            },
-            showDelay,
-            'debounceShow'
-          );
-        } else {
-          this._debounceShowSeq._delay = showDelay;
-          this.extension._loTimer.runDebounced(this._debounceShowSeq);
+      let showDelay = (this.extension.autohide_show_timeout ?? 0.0) * 1000;
+      if (showDelay <= 50) {
+        if (this._showTimeoutId) {
+          GLib.Source.remove(this._showTimeoutId);
+          this._showTimeoutId = null;
         }
-      } else {
         this.show();
+      } else if (!this._showTimeoutId) {
+        this._showTimeoutId = GLib.timeout_add(
+          GLib.PRIORITY_DEFAULT,
+          Math.round(showDelay),
+          () => {
+            this._showTimeoutId = null;
+            this.show();
+            return GLib.SOURCE_REMOVE;
+          }
+        );
       }
     }
   }
 
   _onLeaveEvent() {
-    if (this._debounceShowSeq) {
-      this.extension._loTimer?.cancel(this._debounceShowSeq);
-      this._debounceShowSeq = null;
+    if (this._showTimeoutId) {
+      GLib.Source.remove(this._showTimeoutId);
+      this._showTimeoutId = null;
     }
     if (this._shown) {
       this._dwell = 0;

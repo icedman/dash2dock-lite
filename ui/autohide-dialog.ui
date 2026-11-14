@@ -16,7 +16,7 @@
     <property name="lower">0.00</property>
     <property name="upper">2.0</property>
     <property name="step-increment">0.05</property>
-    <property name="value">0.250</property>
+    <property name="value">0.000</property>
   </object>
   <object class="GtkAdjustment" id="pressure-threshold-adj">
     <property name="lower">10.0</property>

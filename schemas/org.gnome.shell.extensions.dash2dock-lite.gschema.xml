@@ -87,7 +87,7 @@
         <description>Delay in seconds before hiding the dock.</description>
     </key>
     <key type="d" name="autohide-show-timeout">
-        <default>0.250</default>
+        <default>0.000</default>
         <summary>Show timeout</summary>
         <description>Delay in seconds before showing the dock on hover.</description>
     </key>

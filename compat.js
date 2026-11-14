@@ -255,7 +255,6 @@ export function setupDashProxy(dash) {
       dash._createAppItem = function (app) {
         const item = origCreateAppItem.call(this, app);
         this.opacity = 0;
-        this.reactive = false;
         if (item?.child) {
           item.child.visible = false;
         }

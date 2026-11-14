@@ -132,8 +132,31 @@ export let Dock = GObject.registerClass(
 
       this.struts = new St.Widget({
         name: 'DockStruts',
+        reactive: true,
+        track_hover: true,
         offscreen_redirect: Clutter.OffscreenRedirect.ALWAYS,
       });
+      this.struts.connectObject(
+        'motion-event',
+        () => {
+          this._beginAnimation();
+          this.autohider._debounceCheckHide();
+          return Clutter.EVENT_PROPAGATE;
+        },
+        'enter-event',
+        () => {
+          this._beginAnimation();
+          this.autohider._onEnterEvent();
+          return Clutter.EVENT_PROPAGATE;
+        },
+        'leave-event',
+        () => {
+          this.autohider._onLeaveEvent();
+          return Clutter.EVENT_PROPAGATE;
+        },
+        this
+      );
+
       this.dwell = new St.Widget({
         name: 'DockDwell',
         reactive: true,
@@ -142,9 +165,17 @@ export let Dock = GObject.registerClass(
       });
       this.dwell.connectObject(
         'motion-event',
-        this.autohider._onMotionEvent.bind(this.autohider),
+        () => {
+          this._beginAnimation();
+          this.autohider._onMotionEvent();
+          return Clutter.EVENT_PROPAGATE;
+        },
         'enter-event',
-        this.autohider._onEnterEvent.bind(this.autohider),
+        () => {
+          this._beginAnimation();
+          this.autohider._onEnterEvent();
+          return Clutter.EVENT_PROPAGATE;
+        },
         'leave-event',
         this.autohider._onLeaveEvent.bind(this.autohider),
         this
@@ -170,6 +201,7 @@ export let Dock = GObject.registerClass(
         this.autohider = null;
 
         // struts and dwell are chrome actors, not children
+        this.struts.disconnectObject(this);
         this.dwell.disconnectObject(this);
         this.struts.destroy();
         this.dwell.destroy();

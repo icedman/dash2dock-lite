@@ -6,7 +6,7 @@
 
 import { PrefKeys } from './prefKeys.js';
 
-export const schemaId = 'org.gnome.shell.extensions.dash2dock-lite';
+export const schemaId = 'org.gnome.shell.extensions.dash2dock-animated';
 
 export const SettingsKeys = (patch) => {
   let settingsKeys = new PrefKeys(patch);
@@ -76,6 +76,34 @@ export const SettingsKeys = (patch) => {
       widget_type: 'switch',
       key_maps: {},
       test: { pointer: 'slide-down' },
+    },
+    'autohide-in-fullscreen': {
+      default_value: false,
+      widget_type: 'switch',
+    },
+    'show-dock-urgent': {
+      default_value: true,
+      widget_type: 'switch',
+    },
+    'intellihide-mode': {
+      default_value: 1,
+      widget_type: 'integer',
+    },
+    'autohide-animation-duration': {
+      default_value: 0.200,
+      widget_type: 'scale',
+    },
+    'autohide-hide-timeout': {
+      default_value: 0.200,
+      widget_type: 'scale',
+    },
+    'autohide-show-timeout': {
+      default_value: 0.000,
+      widget_type: 'scale',
+    },
+    'pressure-threshold': {
+      default_value: 100.0,
+      widget_type: 'scale',
     },
     'autohide-speed': {
       default_value: 0.5,

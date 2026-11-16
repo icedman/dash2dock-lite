@@ -115,6 +115,23 @@ export let Animator = class {
         icon_size: 24,
       });
       renderer.visible = false;
+      renderer.connect('button-release-event', (actor, evt) =>
+        this._onRendererClick(evt)
+      );
+      renderer.connect('motion-event', (actor, evt) => {
+        dock._beginAnimation();
+        dock.autohider?._debounceCheckHide();
+        return Clutter.EVENT_PROPAGATE;
+      });
+      renderer.connect('enter-event', (actor, evt) => {
+        dock._beginAnimation();
+        dock.autohider?._onEnterEvent();
+        return Clutter.EVENT_PROPAGATE;
+      });
+      renderer.connect('leave-event', (actor, evt) => {
+        dock.autohider?._onLeaveEvent();
+        return Clutter.EVENT_PROPAGATE;
+      });
       target.add_child(renderer);
       this._renderers.push(renderer);
 
@@ -142,6 +159,25 @@ export let Animator = class {
     }
 
     return true;
+  }
+
+  _onRendererClick(evt) {
+    let dock = this.dock;
+    let target = dock?._nearestIcon || dock?._hoveredIcon;
+    if (!target) return Clutter.EVENT_PROPAGATE;
+
+    let button = evt.get_button();
+    if (button === Clutter.BUTTON_SECONDARY) {
+      if (target._appwell?.popupMenu) {
+        target._appwell.popupMenu();
+      } else if (target._menu?.popup) {
+        target._menu.popup();
+      }
+      return Clutter.EVENT_STOP;
+    }
+
+    dock.activateTargetIcon(target, button);
+    return Clutter.EVENT_STOP;
   }
 
   //! begin optimization
@@ -227,7 +263,7 @@ export let Animator = class {
     let vertical = dock.isVertical();
     let isWithin = dock._isWithinDash([px, py]);
 
-    if (m.inFullscreen) {
+    if (m.inFullscreen && !dock.extension.autohide_in_fullscreen) {
       isWithin = false;
     }
 
@@ -346,12 +382,12 @@ export let Animator = class {
     const iconCenterSec = firstIconSecondary + ICON_SIZE / 2;
     const secondaryDist = Math.abs(secondaryMouseVal - iconCenterSec);
     const maxSecReach = animated
-      ? (scaleAtMax * ICON_SIZE) / 2 + rise * scaleFactor + dockPad + 4
+      ? (scaleAtMax * ICON_SIZE) / 2 + (scaleAtMax * ICON_SIZE) * rise + dockPad + 4
       : ICON_SIZE / 2 + dockPad + 4;
     const isWithinSecondary = (secondaryDist <= maxSecReach);
 
-    isWithin = isWithinPrimary && isWithinSecondary;
-    if (m.inFullscreen) {
+    isWithin = isWithinPrimary && (isWithinSecondary || (animated && dock._isWithinMagnifiedIcons([px, py])));
+    if (m.inFullscreen && !dock.extension.autohide_in_fullscreen) {
         isWithin = false;
     }
     animated = isWithin;
@@ -1016,9 +1052,12 @@ export let Animator = class {
       let autohide_slowDown = 1;
       let translationX = targetX;
       let translationY = targetY;
+      let duration = dock.extension.autohide_animation_duration ?? 0.2;
+      let durationScale = 0.2 / Math.max(0.05, duration);
       let speed =
-        ((150 + 300 * dock.extension.autohide_speed * scaleFactor) / 1000) *
-        autohide_slowDown;
+        (((150 + 300 * dock.extension.autohide_speed * scaleFactor) / 1000) *
+        autohide_slowDown) * durationScale;
+      speed = Math.min(1.0, Math.max(0.05, speed));
 
       let v1 = new Vector([targetX, targetY, 0]);
       let v2 = new Vector([dock.dash.translationX, dock.dash.translationY, 0]);
@@ -1065,9 +1104,10 @@ export let Animator = class {
           dock.struts.height = dock._background.height;
           // X11 .. click through fix ..
           // dock.struts.width *= 1.25;
+        } else {
+          dock.struts.y = dock.y;
         }
 
-        // dock.struts.y = dock.y;
         if (dock._position == DockPosition.RIGHT) {
           dock.struts.x = dock.x + dock.width - dock.struts.width;
         } else {
@@ -1086,9 +1126,10 @@ export let Animator = class {
           dock.struts.width = dock._background.width;
           // X11 .. click through fix ..
           // dock.struts.height *= 1.25;
+        } else {
+          dock.struts.x = dock.x;
         }
 
-        // dock.struts.x = dock.x;
         if (dock._position == DockPosition.BOTTOM) {
           dock.struts.y = dock.y + dock.height - dock.struts.height;
         } else {

@@ -495,19 +495,133 @@ check(mockContainer.layout_manager.orientation === 1 && mockBox.layout_manager.o
 Compat.setDashLayoutDirection(mockDash, true);
 check(mockContainer.text_direction === 2 && mockBox.text_direction === 1, 'compat.js: setDashLayoutDirection sets RTL on container and LTR on box');
 
-// overview dash visibility hide and restore
+// overview dash visibility hide and restore (GNOME 51 reactive dash)
 const state = { hiddenChild: mockContainer };
+mockDash.reactive = true;
 Compat.setOverviewDashVisibility(mockDash, false, state);
 check(mockDash.opacity === 0, 'compat.js: setOverviewDashVisibility hides dash opacity');
+check(mockDash.reactive === false, 'compat.js: setOverviewDashVisibility sets dash reactive false (GNOME 51)');
 check(mockBg.style.includes('transparent'), 'compat.js: setOverviewDashVisibility sets background transparent');
 check(mockShowApps.opacity === 0 && mockShowApps.child.reactive === false, 'compat.js: setOverviewDashVisibility disables showApps');
 
 Compat.setOverviewDashVisibility(mockDash, true, state);
 check(mockDash.opacity === 255, 'compat.js: setOverviewDashVisibility restores dash opacity');
+check(mockDash.reactive === true, 'compat.js: setOverviewDashVisibility restores dash reactive (GNOME 51)');
 check(mockBg.style === '', 'compat.js: setOverviewDashVisibility clears background style');
 check(mockShowApps.opacity === 255 && mockShowApps.child.reactive === true, 'compat.js: setOverviewDashVisibility restores showApps');
 check(state.hiddenChild === null, 'compat.js: setOverviewDashVisibility restores hidden child');
 check(!('__box' in mockDash), 'compat.js: no __box expando created on mockDash');
+
+// St.BoxLayout orientation (GNOME 51 dropped .vertical)
+const modernBox = { orientation: 0 };
+Compat.setBoxLayoutOrientation(modernBox, true);
+check(modernBox.orientation === 1, 'compat.js: setBoxLayoutOrientation sets modern orientation property');
+
+const legacyBox = { vertical: false };
+Compat.setBoxLayoutOrientation(legacyBox, true);
+check(legacyBox.vertical === true, 'compat.js: setBoxLayoutOrientation falls back to legacy vertical property');
+
+// PopupMenu open / close (GNOME 51 params object vs legacy)
+let modernOpenArg = null;
+let modernCloseArg = null;
+const modernMenu = {
+  _getPopupAnimationFromParams() {},
+  open(params) { modernOpenArg = params; },
+  close(params) { modernCloseArg = params; },
+};
+Compat.openPopupMenu(modernMenu, 1);
+check(typeof modernOpenArg === 'object' && modernOpenArg.animate === true, 'compat.js: openPopupMenu wraps legacy flag into params object for GNOME 51');
+Compat.closePopupMenu(modernMenu, false);
+check(typeof modernCloseArg === 'object' && modernCloseArg.animate === false, 'compat.js: closePopupMenu wraps false into params object for GNOME 51');
+
+let legacyOpenArg = null;
+let legacyCloseArg = null;
+const legacyMenu = {
+  open(arg) { legacyOpenArg = arg; },
+  close(arg) { legacyCloseArg = arg; },
+};
+Compat.openPopupMenu(legacyMenu, { animate: true });
+check(legacyOpenArg === 1, 'compat.js: openPopupMenu converts modern params object to legacy flag');
+Compat.closePopupMenu(legacyMenu, { animate: false });
+check(legacyCloseArg === 0, 'compat.js: closePopupMenu converts modern params object to legacy flag');
+
+// ---------------------------------------------------------------------
+// Hover Magnification & Intelligent Autohide Unit Checks
+// ---------------------------------------------------------------------
+function isInRect(rect, point, pad = 0) {
+  return (
+    point[0] >= rect[0] - pad &&
+    point[0] <= rect[0] + rect[2] + pad &&
+    point[1] >= rect[1] - pad &&
+    point[1] <= rect[1] + rect[3] + pad
+  );
+}
+
+const mockDock = {
+  _hidden: false,
+  animated: true,
+  struts: {
+    width: 200,
+    height: 40,
+    get_transformed_position() {
+      return [100, 1000];
+    },
+  },
+  animator: {
+    _renderers: [
+      {
+        visible: true,
+        get_stage() { return true; },
+        get_transformed_position() { return [120, 950]; },
+        get_transformed_size() { return [72, 72]; },
+      },
+    ],
+  },
+  _isWithinMagnifiedIcons(p) {
+    if (!this.animator?._renderers) return false;
+    for (let renderer of this.animator._renderers) {
+      if (!renderer || !renderer.visible || !renderer.get_stage()) continue;
+      let pos = renderer.get_transformed_position();
+      if (!pos || isNaN(pos[0]) || isNaN(pos[1])) continue;
+      let [w, h] = renderer.get_transformed_size();
+      if (isInRect([pos[0], pos[1], w, h], p, 6)) {
+        return true;
+      }
+    }
+    return false;
+  },
+  _isWithinDash(p) {
+    if (this._hidden || !this.struts) return false;
+    let xy = this.struts.get_transformed_position();
+    let wh = [this.struts.width, this.struts.height];
+    if (isInRect([xy[0], xy[1], wh[0], wh[1]], p, 20)) {
+      return true;
+    }
+    if (this.animated && this._isWithinMagnifiedIcons(p)) {
+      return true;
+    }
+    return false;
+  },
+};
+
+check(
+  mockDock._isWithinMagnifiedIcons([140, 970]),
+  'dock.js: _isWithinMagnifiedIcons detects pointer inside magnified icon'
+);
+check(
+  !mockDock._isWithinMagnifiedIcons([500, 500]),
+  'dock.js: _isWithinMagnifiedIcons rejects pointer far outside'
+);
+check(
+  mockDock._isWithinDash([140, 960]),
+  'dock.js: _isWithinDash includes elevated magnified icons beyond resting struts'
+);
+
+mockDock.animated = false;
+check(
+  !mockDock._isWithinDash([140, 960]),
+  'dock.js: _isWithinDash does not check elevated renderers when not animated'
+);
 
 // ---------------------------------------------------------------------
 // Summary

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<schemalist gettext-domain="dash2dock-lite">
-  <schema path="/org/gnome/shell/extensions/dash2dock-lite/" id="org.gnome.shell.extensions.dash2dock-lite">
+<schemalist gettext-domain="dash2dock-animated">
+  <schema path="/org/gnome/shell/extensions/dash2dock-animated/" id="org.gnome.shell.extensions.dash2dock-animated">
     <key type="b" name="debug">
         <default>false</default>
         <summary>Debug Mode</summary>
@@ -60,6 +60,41 @@
         <default>false</default>
         <summary>Pressure sense</summary>
         <description>Move pointer down to force dash visibility.</description>
+    </key>
+    <key type="b" name="autohide-in-fullscreen">
+        <default>false</default>
+        <summary>Enable in fullscreen mode</summary>
+        <description>Show the dock by mouse hover on the screen edge even in fullscreen mode.</description>
+    </key>
+    <key type="b" name="show-dock-urgent">
+        <default>true</default>
+        <summary>Show dock for urgent notifications</summary>
+        <description>Reveal the dock when an application or window requests urgency or attention.</description>
+    </key>
+    <key type="i" name="intellihide-mode">
+        <default>1</default>
+        <summary>Intellihide window dodge mode</summary>
+        <description>0: All windows, 1: Only focused application's windows, 2: Only maximized windows, 3: Always on top.</description>
+    </key>
+    <key type="d" name="autohide-animation-duration">
+        <default>0.200</default>
+        <summary>Animation duration</summary>
+        <description>Autohide slide animation duration in seconds.</description>
+    </key>
+    <key type="d" name="autohide-hide-timeout">
+        <default>0.200</default>
+        <summary>Hide timeout</summary>
+        <description>Delay in seconds before hiding the dock.</description>
+    </key>
+    <key type="d" name="autohide-show-timeout">
+        <default>0.000</default>
+        <summary>Show timeout</summary>
+        <description>Delay in seconds before showing the dock on hover.</description>
+    </key>
+    <key type="d" name="pressure-threshold">
+        <default>100.0</default>
+        <summary>Pressure threshold</summary>
+        <description>Threshold required to show dock when pressure sense is enabled.</description>
     </key>
     <key type="d" name="autohide-speed">
         <default>0.5</default>

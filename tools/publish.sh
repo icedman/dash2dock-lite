@@ -71,17 +71,21 @@ rm -f "$BUILD_DIR/"*_.js
 
 # Package into zip
 rm -f "$REPO_ROOT"/*.zip
-(
-  cd "$BUILD_DIR"
-  zip -qr "$ZIP_FILE" .
-)
+if command -v zip >/dev/null 2>&1; then
+  (
+    cd "$BUILD_DIR"
+    zip -qr "$ZIP_FILE" .
+  )
+else
+  python3 -c "import shutil; shutil.make_archive('${ZIP_FILE%.zip}', 'zip', '$BUILD_DIR')"
+fi
 
 echo "==> Successfully created standard EGO zip: ${ZIP_FILE} ($(du -h "$ZIP_FILE" | cut -f1))"
 
 if [ -n "$REL_VERSION" ]; then
   # Strip leading 'v' if provided
   REL_VERSION="${REL_VERSION#v}"
-  VERSIONED_ZIP="$REPO_ROOT/dash2dock-lite-v${REL_VERSION}.zip"
+  VERSIONED_ZIP="$REPO_ROOT/dash2dock-animated-v${REL_VERSION}.zip"
   cp "$ZIP_FILE" "$VERSIONED_ZIP"
   echo "==> Created versioned release zip: ${VERSIONED_ZIP} ($(du -h "$VERSIONED_ZIP" | cut -f1))"
 fi

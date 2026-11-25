@@ -482,11 +482,13 @@ check(Compat.getDashShowAppsIcon(mockDash) === mockShowApps, 'compat.js: getDash
 check(Compat.getDashBackground(mockDash) === mockBg, 'compat.js: getDashBackground returns _background');
 
 // setupDashProxy
+mockDash.reactive = true;
 Compat.setupDashProxy(mockDash);
 mockDash._adjustIconSize(); // should not throw
 const proxyItem = mockDash._createAppItem('test-app');
 check(proxyItem.child.visible === false, 'compat.js: setupDashProxy makes app item invisible');
 check(mockDash.opacity === 0, 'compat.js: setupDashProxy resets dash opacity to 0');
+check(mockDash.reactive === true, 'compat.js: setupDashProxy preserves dash reactive for pointer hover');
 
 // orientation & layout direction
 Compat.setDashOrientation(mockDash, 1);

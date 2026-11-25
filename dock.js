@@ -78,16 +78,10 @@ export let Dock = GObject.registerClass(
       this._background = new DockBackground({ name: 'd2daBackground' });
       this.add_child(this._background);
 
-      // for blur-my-shell
-      this._slider = {
-        // connect: () => false,
-        get_child: () => {
-          return this;
-        },
-        get_parent: () => {
-          return this;
-        },
-      };
+      // for blur-my-shell (checks actor._slider instanceof Clutter.Actor)
+      this._slider = new St.Bin();
+      this._slider.get_child = () => this;
+      this._slider.get_parent = () => this;
 
       // pretend to be Dash-to-Dock
       // required by blur-my-shell to find the dash upon disabling
@@ -175,7 +169,10 @@ export let Dock = GObject.registerClass(
         this.dwell.destroy();
         this.struts = null;
         this.dwell = null;
-        this._slider = null;
+        if (this._slider) {
+          this._slider.destroy();
+          this._slider = null;
+        }
       }
       super.destroy();
     }
@@ -1508,6 +1505,10 @@ export let Dock = GObject.registerClass(
     }
 
     animate(dt = 15) {
+      if (!this.dash || !this.animator) {
+        return;
+      }
+
       if (this._preview) {
         let p = null;
 
@@ -1536,7 +1537,9 @@ export let Dock = GObject.registerClass(
       if (!this._pauseBounce || this._pauseBounce <= 0) {
         while (this._fast_forward && this._fast_forward-- > 0) {
           this.animate(dt);
-          this.dash.opacity = 0;
+          if (this.dash) {
+            this.dash.opacity = 0;
+          }
         }
       }
       this.simulated_pointer = null;
@@ -1560,6 +1563,11 @@ export let Dock = GObject.registerClass(
     }
 
     _beginAnimation(caller) {
+      // Measuring the Dash before addToChrome() logs St-CRITICAL get_theme_node on GNOME 51.
+      if (!this.get_stage()) {
+        return;
+      }
+
       if (this.extension.debug_visual) {
         this.add_style_class_name('hi');
         this.struts?.add_style_class_name('hi');

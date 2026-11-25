@@ -55,8 +55,15 @@ FLAG="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/gnome-shell-disable-extensions"
 
 if [ -z "$D2DA_SMOKE_INNER" ]; then
 	rm -f "$FLAG"
+	SMOKE_RUNTIME=$(mktemp -d "${TMPDIR:-/tmp}/d2da-smoke-run.XXXXXX")
+	chmod 700 "$SMOKE_RUNTIME"
 	# dbus-daemon chatter goes to a side log, not the terminal.
-	D2DA_SMOKE_INNER=1 exec dbus-run-session -- "$0" "$TOGGLES" 2>"$LOG.bus"
+	XDG_RUNTIME_DIR=$SMOKE_RUNTIME D2DA_SMOKE_INNER=1 \
+		dbus-run-session -- "$0" "$TOGGLES" 2>"$LOG.bus"
+	rc=$?
+	fusermount3 -u "$SMOKE_RUNTIME/doc" 2>/dev/null || true
+	rm -rf "$SMOKE_RUNTIME" 2>/dev/null || true
+	exit $rc
 fi
 
 : >"$LOG"
